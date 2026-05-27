@@ -1,3 +1,14 @@
+/**
+ * Defines the central routing structure of the Howly frontend.
+ *
+ * Public pages such as landing, login, and registration are rendered inside
+ * the AuthLayout. Application pages such as dashboard, social, shop,
+ * challenges, and profile are grouped under ProtectedRoute and PageLayout.
+ *
+ * The actual page implementations are intentionally kept separate in
+ * src/pages so routing, layout, and page content stay clearly separated.
+ */
+
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { PageLayout } from '@/components/layout/PageLayout';
