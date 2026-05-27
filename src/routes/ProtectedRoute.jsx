@@ -1,11 +1,5 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 
 export function ProtectedRoute() {
-    const token = localStorage.getItem('howly_token');
-
-    if (!token) {
-        return <Navigate to="/login" replace />;
-    }
-
     return <Outlet />;
 }
