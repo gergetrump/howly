@@ -3,7 +3,6 @@ import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
 export function Companion({
     src,
     name = 'Howly',
-    mood,
     size = 'xl',
     showName = true,
     className,
