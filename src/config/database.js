@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 
-async function connectDB() {
-  const uri = process.env.MONGO_URI;
+// Connect to MongoDB using env config or an override URI (tests).
+async function connectDB(uriOverride) {
+  const uri = uriOverride || process.env.MONGO_URI;
 
   if (!uri) {
     throw new Error('MONGO_URI is missing in .env');
