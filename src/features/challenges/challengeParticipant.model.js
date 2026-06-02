@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 
 const { Schema } = mongoose;
 
@@ -49,7 +49,7 @@ const challengeParticipantSchema = new Schema(
 
 challengeParticipantSchema.index({ challenge: 1, user: 1 }, { unique: true });
 
-module.exports = mongoose.model(
+export default mongoose.model(
   "ChallengeParticipant",
   challengeParticipantSchema
 );
