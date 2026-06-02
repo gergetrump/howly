@@ -1,23 +1,11 @@
 import dotenv from 'dotenv';
-import express from 'express';
 import connectDB from './config/database.js';
-import habitRoutes from './features/habits/habit.routes.js';
+import createApp from './app.js';
 
 dotenv.config();
 
-const app = express();
+const app = createApp();
 const PORT = process.env.PORT || 3000;
-
-// Middleware to parse JSON request bodies
-app.use(express.json());
-
-// Test route
-app.get('/', (req, res) => {
-  res.send('Backend is running');
-});
-
-// Habit routes
-app.use('/api/habits', habitRoutes);
 
 connectDB()
   .then(() => {
