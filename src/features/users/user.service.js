@@ -5,6 +5,19 @@ export async function getUserById(userId) {
     return User.findById(userId);
 }
 
+export async function searchUsersByUsername({ query, currentUserId, limit = 10 }) {
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const users = await User.find({
+        _id: { $ne: currentUserId },
+        isDeleted: false,
+        username: { $regex: escapedQuery, $options: 'i' },
+    })
+        .sort({ username: 1 })
+        .limit(limit);
+
+    return users.map(toPublicUser);
+}
+
 // Update a user by id while enforcing unique username/email.
 export async function updateUserById(userId, updates) {
     if (updates.email) {

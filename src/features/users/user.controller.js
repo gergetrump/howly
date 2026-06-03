@@ -1,5 +1,9 @@
 import * as userService from './user.service.js';
-import { validateUpdateUserInput, validateUserId } from './user.validation.js';
+import {
+    validateSearchUsersInput,
+    validateUpdateUserInput,
+    validateUserId,
+} from './user.validation.js';
 
 const badRequest = (res, message) => res.status(400).json({ message });
 const notFound = (res) => res.status(404).json({ message: 'User not found' });
@@ -19,6 +23,21 @@ export async function getCurrentUser(req, res) {
     }
 
     return res.status(200).json(userService.toPublicUser(user));
+}
+
+export async function searchUsers(req, res) {
+    const { error, value } = validateSearchUsersInput(req.query);
+
+    if (error) {
+        return badRequest(res, error);
+    }
+
+    const users = await userService.searchUsersByUsername({
+        query: value.query,
+        currentUserId: req.user.id,
+    });
+
+    return res.status(200).json(users);
 }
 
 // Update allowed fields for the authenticated user.

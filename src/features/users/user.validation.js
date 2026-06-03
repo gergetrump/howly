@@ -19,6 +19,25 @@ export function validateUserId(id) {
     return { value: id.trim() };
 }
 
+export function validateSearchUsersInput(query = {}) {
+    const searchQuery = isNonEmptyString(query.query) ? query.query.trim() : '';
+    const errors = [];
+
+    if (!searchQuery) {
+        errors.push('query is required');
+    } else if (searchQuery.length < 2) {
+        errors.push('query must be at least 2 characters');
+    } else if (searchQuery.length > 30) {
+        errors.push('query must be 30 characters or less');
+    }
+
+    if (errors.length) {
+        return { error: errors.join(', ') };
+    }
+
+    return { value: { query: searchQuery } };
+}
+
 // Validate and sanitize allowed user profile updates.
 export function validateUpdateUserInput(body = {}) {
     const updates = {};
