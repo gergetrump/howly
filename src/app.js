@@ -3,6 +3,7 @@ import habitRoutes from './features/habits/habit.routes.js';
 import authRoutes from './features/auth/auth.routes.js';
 import userRoutes from './features/users/user.routes.js';
 import devRoutes from './features/dev/dev.routes.js';
+import socialRoutes from './features/social/social.routes.js';
 
 // Build an Express app instance for both server and tests.
 export default function createApp() {
@@ -18,6 +19,7 @@ export default function createApp() {
     app.use('/api/auth', authRoutes);
     app.use('/api/users', userRoutes);
     app.use('/api/dev', devRoutes);
+    app.use('/api/social', socialRoutes);
 
     return app;
 }
