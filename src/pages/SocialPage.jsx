@@ -16,6 +16,7 @@ import {
     sendFriendRequest,
     unlikeMilestone,
 } from '@/services/socialApi';
+import { searchUsers } from '@/services/userApi';
 
 function getDisplayName(user) {
     return user?.fullName || user?.username || 'Howly friend';
@@ -80,7 +81,9 @@ export function SocialPage() {
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState({ incoming: [], outgoing: [] });
     const [feed, setFeed] = useState([]);
-    const [recipientId, setRecipientId] = useState('');
+    const [usernameQuery, setUsernameQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -143,22 +146,42 @@ export function SocialPage() {
         };
     }, []);
 
-    async function handleSendFriendRequest(event) {
+    async function handleSearchUsers(event) {
         event.preventDefault();
 
-        if (!recipientId.trim()) {
-            setError('recipientId is required');
+        if (!usernameQuery.trim()) {
+            setError('Enter a username to search');
             return;
         }
 
+        setIsSearching(true);
+        setError('');
+        setNotice('');
+
+        try {
+            const users = await searchUsers(usernameQuery.trim());
+            setSearchResults(users ?? []);
+
+            if (!users?.length) {
+                setNotice('Hmm, that didn\'t work. Check if the username is correct.');
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsSearching(false);
+        }
+    }
+
+    async function handleSendFriendRequest(user) {
         setIsSubmitting(true);
         setError('');
         setNotice('');
 
         try {
-            await sendFriendRequest(recipientId.trim());
-            setRecipientId('');
-            setNotice('Friend request sent');
+            await sendFriendRequest(user.id);
+            setUsernameQuery('');
+            setSearchResults([]);
+            setNotice(`Friend request sent to ${getDisplayName(user)}`);
             await loadSocialData();
         } catch (err) {
             setError(err.message);
@@ -225,26 +248,53 @@ export function SocialPage() {
             <Heading title="Social" subtitle="See what your friends are building." streakDays={100} />
 
             <PageSection title="Add Friend" width="md">
-                <form className="flex flex-col gap-2 sm:flex-row" onSubmit={handleSendFriendRequest}>
+                <form className="flex flex-col gap-2 sm:flex-row" onSubmit={handleSearchUsers}>
                     <Input
-                        value={recipientId}
-                        placeholder="Recipient user id"
-                        disabled={isSubmitting}
-                        onChange={(event) => setRecipientId(event.target.value)}
+                        value={usernameQuery}
+                        placeholder="Search username"
+                        className="border-white/20 bg-white/10 text-slate-50 placeholder:text-slate-300"
+                        disabled={isSearching}
+                        onChange={(event) => setUsernameQuery(event.target.value)}
                     />
                     <Button
                         type="submit"
                         className="bg-white text-slate-950 hover:bg-slate-200"
-                        disabled={isSubmitting}
+                        disabled={isSearching}
                     >
                         <Send aria-hidden="true" />
-                        Send
+                        Search
                     </Button>
                 </form>
+                {searchResults.length ? (
+                    <div className="grid gap-2">
+                        {searchResults.map((user) => (
+                            <Card
+                                key={user.id}
+                                className="border-white/10 bg-white/8 text-slate-100 shadow-xl shadow-slate-950/20 backdrop-blur"
+                            >
+                                <CardContent className="flex flex-wrap items-center gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="truncate font-semibold">{getDisplayName(user)}</h3>
+                                        <p className="truncate text-sm text-slate-300">@{getUsername(user)}</p>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        className="bg-white text-slate-950 hover:bg-slate-200"
+                                        disabled={isSubmitting}
+                                        onClick={() => handleSendFriendRequest(user)}
+                                    >
+                                        <Send aria-hidden="true" />
+                                        Add
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                ) : null}
                 {outgoingCount > 0 ? (
                     <p className="text-sm text-slate-300">{outgoingCount} pending sent</p>
                 ) : null}
-                {notice ? <p className="text-sm text-emerald-200">{notice}</p> : null}
+                {notice ? <p className="text-sm text-red-400">{notice}</p> : null}
                 {error ? <p className="text-sm text-red-200">{error}</p> : null}
             </PageSection>
 
