@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const { Schema } = mongoose;
 
-const PARTICIPANT_STATUS = ["active", "completed", "failed", "left"];
+export const PARTICIPANT_STATUS = ["active", "completed", "failed", "left"];
 
 const challengeParticipantSchema = new Schema(
   {
@@ -40,6 +40,22 @@ const challengeParticipantSchema = new Schema(
     lastCompletedAt: {
       type: Date,
       default: null,
+    },
+
+    rewardClaimed: {
+      type: Boolean,
+      default: false,
+    },
+
+    rewardClaimedAt: {
+      type: Date,
+      default: null,
+    },
+
+    rewardCoins: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
   },
   {
