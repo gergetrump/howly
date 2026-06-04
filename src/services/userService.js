@@ -16,3 +16,24 @@ export function deleteCurrentUser() {
         method: 'DELETE',
     });
 }
+
+export async function uploadCurrentUserProfilePicture(file) {
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+
+    const response = await apiRequest('/users/me/profile-picture', {
+        method: 'PATCH',
+        body: formData,
+    });
+
+    return response.user;
+}
+
+export async function deleteCurrentUserProfilePicture() {
+
+    const response = await apiRequest('/users/me/profile-picture', {
+        method: 'DELETE',
+    });
+
+    return response.user
+}
