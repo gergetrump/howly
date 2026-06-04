@@ -18,7 +18,7 @@ export async function searchUsersByUsername({ query, currentUserId, limit = 10 }
     return users.map(toPublicUser);
 }
 
-// Update a user by id while enforcing unique username/email.
+// Update a user by id while enforcing unique username/email
 export async function updateUserById(userId, updates) {
     if (updates.email) {
         const existingEmail = await User.findOne({
@@ -50,7 +50,7 @@ export async function updateUserById(userId, updates) {
     return { user };
 }
 
-// Strip sensitive fields before sending user data to clients.
+// Strip sensitive fields before sending user data to clients
 export function toPublicUser(user) {
     if (!user) {
         return null;
@@ -60,7 +60,8 @@ export function toPublicUser(user) {
         id: user._id.toString(),
         username: user.username,
         email: user.email,
-        fullName: user.fullName,
+        firstName: user.firstName,
+        lastName: user.lastName,
         role: user.role,
         authProvider: user.authProvider,
         providerId: user.providerId,

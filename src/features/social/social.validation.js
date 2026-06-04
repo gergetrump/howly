@@ -22,7 +22,3 @@ export function validateSendFriendRequestInput(body = {}) {
 export function validateFriendRequestId(id) {
   return validateObjectId(id, 'requestId');
 }
-
-export function validateMilestonePostId(id) {
-  return validateObjectId(id, 'milestonePostId');
-}

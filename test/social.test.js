@@ -10,9 +10,11 @@ import Habit from '../src/features/habits/habit.model.js';
 import {
   FriendRequest,
   Friendship,
+} from '../src/features/social/social.model.js';
+import {
   MilestoneLike,
   MilestonePost,
-} from '../src/features/social/social.model.js';
+} from '../src/features/milestones/milestone.model.js';
 import User from '../src/features/users/user.model.js';
 
 let mongo;
@@ -24,7 +26,8 @@ async function buildUser(overrides = {}) {
   return User.create({
     username: overrides.username || `user_${suffix}`,
     email: overrides.email || `user_${suffix}@example.com`,
-    fullName: overrides.fullName || 'Test User',
+    firstName: overrides.firstName || 'Test',
+    lastName: overrides.lastName || 'User',
     passwordHash: overrides.passwordHash || 'hashed',
     authProvider: overrides.authProvider || 'local',
     ...overrides,

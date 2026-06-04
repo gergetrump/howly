@@ -2,13 +2,15 @@ import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import {
   acceptFriendRequest,
-  getSocialFeed,
   listFriendRequests,
   listFriends,
   rejectFriendRequest,
   sendFriendRequest,
-  toggleMilestoneLike,
 } from './social.controller.js';
+import {
+  getFriendFeed,
+  toggleMilestoneLike,
+} from '../milestones/milestone.controller.js';
 
 const router = Router();
 
@@ -20,7 +22,7 @@ router.post('/friends/requests', sendFriendRequest);
 router.post('/friends/requests/:requestId/accept', acceptFriendRequest);
 router.post('/friends/requests/:requestId/reject', rejectFriendRequest);
 
-router.get('/feed', getSocialFeed);
+router.get('/feed', getFriendFeed);
 router.post('/milestones/:milestonePostId/like', toggleMilestoneLike);
 
 export default router;

@@ -6,7 +6,7 @@ const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 
-// Validate user id params coming from the request.
+// Validate user id params coming from the request
 export function validateUserId(id) {
     if (!isNonEmptyString(id)) {
         return { error: 'userId is required' };
@@ -38,18 +38,28 @@ export function validateSearchUsersInput(query = {}) {
     return { value: { query: searchQuery } };
 }
 
-// Validate and sanitize allowed user profile updates.
+// Validate and sanitize allowed user profile updates
 export function validateUpdateUserInput(body = {}) {
     const updates = {};
     const errors = [];
 
-    if (body.fullName !== undefined) {
-        if (!isNonEmptyString(body.fullName)) {
-            errors.push('fullName must be a non-empty string');
-        } else if (body.fullName.trim().length > 100) {
-            errors.push('fullName must be 100 characters or less');
+    if (body.firstName !== undefined) {
+        if (!isNonEmptyString(body.firstName)) {
+            errors.push('firstName must be a non-empty string');
+        } else if (body.firstName.trim().length > 50) {
+            errors.push('firstName must be 50 characters or less');
         } else {
-            updates.fullName = body.fullName.trim();
+            updates.firstName = body.firstName.trim();
+        }
+    }
+
+    if (body.lastName !== undefined) {
+        if (!isNonEmptyString(body.lastName)) {
+            errors.push('lastName must be a non-empty string');
+        } else if (body.lastName.trim().length > 50) {
+            errors.push('lastName must be 50 characters or less');
+        } else {
+            updates.lastName = body.lastName.trim();
         }
     }
 

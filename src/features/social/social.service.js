@@ -1,13 +1,6 @@
-import mongoose from 'mongoose';
 import User from '../users/user.model.js';
 import { toPublicUser } from '../users/user.service.js';
-import {
-  FriendRequest,
-  Friendship,
-  MilestoneLike,
-  MilestonePost,
-  MILESTONE_INTERVAL_DAYS,
-} from './social.model.js';
+import { FriendRequest, Friendship } from './social.model.js';
 
 function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
@@ -42,23 +35,6 @@ function toFriendshipResponse(friendship, currentUserId) {
   };
 }
 
-function toMilestonePostResponse(post, likedPostIds = new Set()) {
-  return {
-    id: post._id.toString(),
-    user: toPublicUser(post.user),
-    habit: {
-      id: post.habit?.toString?.() ?? post.habit,
-      title: post.habitTitle,
-    },
-    streakDays: post.streakDays,
-    visibleUntil: post.visibleUntil,
-    likeCount: post.likeCount,
-    likedByCurrentUser: likedPostIds.has(post._id.toString()),
-    createdAt: post.createdAt,
-    updatedAt: post.updatedAt,
-  };
-}
-
 async function areFriends(firstUserId, secondUserId) {
   const pair = buildFriendshipPair(firstUserId, secondUserId);
   const friendship = await Friendship.findOne(pair).lean();
@@ -68,17 +44,17 @@ async function areFriends(firstUserId, secondUserId) {
 
 export async function sendFriendRequest({ requesterId, recipientId }) {
   if (sameId(requesterId, recipientId)) {
-    return { error: 'cannot send a friend request to yourself' };
+    return { errorCode: 'FRIEND_REQUEST_TO_SELF' };
   }
 
   const recipient = await User.findOne({ _id: recipientId, isDeleted: false }).lean();
 
   if (!recipient) {
-    return { error: 'recipient not found' };
+    return { errorCode: 'FRIEND_REQUEST_RECIPIENT_NOT_FOUND' };
   }
 
   if (await areFriends(requesterId, recipientId)) {
-    return { error: 'users are already friends' };
+    return { errorCode: 'USERS_ALREADY_FRIENDS' };
   }
 
   const existingPendingRequest = await FriendRequest.findOne({
@@ -90,7 +66,7 @@ export async function sendFriendRequest({ requesterId, recipientId }) {
   }).lean();
 
   if (existingPendingRequest) {
-    return { error: 'a pending friend request already exists' };
+    return { errorCode: 'PENDING_FRIEND_REQUEST_EXISTS' };
   }
 
   const request = await FriendRequest.create({
@@ -127,7 +103,7 @@ export async function acceptFriendRequest({ requestId, userId }) {
   });
 
   if (!request) {
-    return { error: 'pending friend request not found' };
+    return { errorCode: 'PENDING_FRIEND_REQUEST_NOT_FOUND' };
   }
 
   request.status = 'accepted';
@@ -175,7 +151,7 @@ export async function rejectFriendRequest({ requestId, userId }) {
   ).populate(['requester', 'recipient']);
 
   if (!request) {
-    return { error: 'pending friend request not found' };
+    return { errorCode: 'PENDING_FRIEND_REQUEST_NOT_FOUND' };
   }
 
   return { request: toFriendRequestResponse(request) };
@@ -189,113 +165,4 @@ export async function listFriends({ userId }) {
     .sort({ createdAt: -1 });
 
   return friendships.map((friendship) => toFriendshipResponse(friendship, userId));
-}
-
-export async function createMilestonePostForHabit(habit) {
-  if (!habit || habit.streak < MILESTONE_INTERVAL_DAYS || habit.streak % MILESTONE_INTERVAL_DAYS !== 0) {
-    return { milestonePost: null };
-  }
-
-  const milestonePost = await MilestonePost.findOneAndUpdate(
-    {
-      habit: habit._id,
-      streakDays: habit.streak,
-    },
-    {
-      user: habit.user,
-      habit: habit._id,
-      habitTitle: habit.title,
-      streakDays: habit.streak,
-    },
-    {
-      new: true,
-      upsert: true,
-      runValidators: true,
-      setDefaultsOnInsert: true,
-    }
-  );
-
-  return { milestonePost };
-}
-
-export async function getSocialFeed({ userId }) {
-  const friendships = await Friendship.find({
-    $or: [{ userA: userId }, { userB: userId }],
-  }).lean();
-
-  const visibleUserIds = new Set([userId.toString()]);
-
-  friendships.forEach((friendship) => {
-    const friendId = sameId(friendship.userA, userId) ? friendship.userB : friendship.userA;
-    visibleUserIds.add(friendId.toString());
-  });
-
-  const now = new Date();
-  const posts = await MilestonePost.find({
-    user: { $in: [...visibleUserIds] },
-    visibleUntil: { $gt: now },
-  })
-    .populate('user')
-    .sort({ createdAt: -1 });
-
-  const likes = await MilestoneLike.find({
-    user: userId,
-    milestonePost: { $in: posts.map((post) => post._id) },
-  }).lean();
-  const likedPostIds = new Set(likes.map((like) => like.milestonePost.toString()));
-
-  return posts.map((post) => toMilestonePostResponse(post, likedPostIds));
-}
-
-export async function toggleMilestoneLike({ userId, milestonePostId }) {
-  const post = await MilestonePost.findById(milestonePostId);
-
-  if (!post || post.visibleUntil <= new Date()) {
-    return { error: 'milestone post not found' };
-  }
-
-  if (sameId(post.user, userId)) {
-    return { error: 'cannot like your own milestone post' };
-  }
-
-  if (!(await areFriends(userId, post.user))) {
-    return { error: 'milestone post not found' };
-  }
-
-  const existingLike = await MilestoneLike.findOne({
-    milestonePost: milestonePostId,
-    user: userId,
-  });
-
-  if (existingLike) {
-    await existingLike.deleteOne();
-    post.likeCount = Math.max(0, post.likeCount - 1);
-    await post.save();
-    await post.populate('user');
-
-    return {
-      liked: false,
-      milestonePost: toMilestonePostResponse(post),
-    };
-  }
-
-  try {
-    await MilestoneLike.create({
-      milestonePost: milestonePostId,
-      user: userId,
-    });
-  } catch (err) {
-    if (err instanceof mongoose.Error.ValidationError || err.code !== 11000) {
-      throw err;
-    }
-  }
-
-  post.likeCount += 1;
-  await post.save();
-  await post.populate('user');
-
-  return {
-    liked: true,
-    milestonePost: toMilestonePostResponse(post, new Set([post._id.toString()])),
-  };
 }
