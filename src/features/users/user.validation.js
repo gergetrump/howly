@@ -24,16 +24,24 @@ export function validateUpdateUserInput(body = {}) {
     const updates = {};
     const errors = [];
 
-    if (body.fullName !== undefined) {
-        if (!isNonEmptyString(body.fullName)) {
-            errors.push('fullName must be a non-empty string');
-        } else if (body.fullName.trim().length > 100) {
-            errors.push('fullName must be 100 characters or less');
+    if (body.firstName !== undefined) {
+        if (!isNonEmptyString(body.firstName)) {
+            errors.push('firstName must be a non-empty string');
+        } else if (body.firstName.trim().length > 100) {
+            errors.push('firstName must be 100 characters or less');
         } else {
-            updates.fullName = body.fullName.trim();
+            updates.firstName = body.firstName.trim();
         }
     }
-
+    if (body.lastName !== undefined) {
+        if (!isNonEmptyString(body.lastName)) {
+            errors.push('lastName must be a non-empty string');
+        } else if (body.firstName.trim().length > 100) {
+            errors.push('lastName must be 100 characters or less');
+        } else {
+            updates.lastName = body.lastName.trim();
+        }
+    }
     if (body.username !== undefined) {
         if (!isNonEmptyString(body.username)) {
             errors.push('username must be a non-empty string');

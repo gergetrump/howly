@@ -43,8 +43,14 @@ const userSchema = new Schema(
       },
       select: false,
     },
+    firstName: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+      required: true,
+    },
 
-    fullName: {
+    lastName: {
       type: String,
       trim: true,
       maxlength: 100,
