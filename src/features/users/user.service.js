@@ -44,8 +44,9 @@ export function toPublicUser(user) {
         return null;
     }
 
-    const profilePicturePath =
-        user.profilePictureUrl || '/uploads/profile-pictures/default.png';
+    const profilePictureUrl = user.profilePictureUrl
+        ? user.profilePictureUrl
+        : `${SERVER_BASE_URL}/uploads/profile-pictures/default.png`;
 
     return {
         id: user._id.toString(),
@@ -53,7 +54,7 @@ export function toPublicUser(user) {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        profilePictureUrl: `${SERVER_BASE_URL}${profilePicturePath}`,
+        profilePictureUrl,
         role: user.role,
         authProvider: user.authProvider,
         providerId: user.providerId,

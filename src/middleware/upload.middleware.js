@@ -8,17 +8,7 @@ if (!fs.existsSync(profilePictureDir)) {
     fs.mkdirSync(profilePictureDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, profilePictureDir);
-    },
-
-    filename: (req, file, cb) => {
-        const extension = path.extname(file.originalname);
-        const filename = `${req.user.id}-${Date.now()}${extension}`;
-        cb(null, filename);
-    },
-});
+const storage = multer.memoryStorage();
 
 function fileFilter(req, file, cb) {
     const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];

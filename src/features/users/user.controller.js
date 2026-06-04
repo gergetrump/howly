@@ -1,4 +1,5 @@
 import * as userService from './user.service.js';
+import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cloudinary.service.js';
 import { validateUpdateUserInput, validateUserId } from './user.validation.js';
 
 const badRequest = (res, message) => res.status(400).json({ message });
@@ -68,15 +69,29 @@ export async function deleteCurrentUser(req, res) {
 }
 
 export async function uploadCurrentUserProfilePicture(req, res) {
-    if (!req.file) {
+    try {
+        if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const profilePictureUrl = `/uploads/profile-pictures/${req.file.filename}`;
-
+    const result = await uploadBufferToCloudinary(req.file.buffer, {
+                folder: 'howly/profile-pictures',
+                public_id: req.user.id,
+                overwrite: true,
+                resource_type: 'image',
+                transformation: [
+                    {
+                        width: 400,
+                        height: 400,
+                        crop: 'fill',
+                        gravity: 'face',
+                    },
+                ],
+            });
+            
     const user = await userService.updateUserProfilePicture(
         req.user.id,
-        profilePictureUrl
+        result.secure_url
     );
 
     if (!user) {
@@ -87,16 +102,34 @@ export async function uploadCurrentUserProfilePicture(req, res) {
         message: 'Profile picture uploaded successfully',
         user: userService.toPublicUser(user),
     });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to upload profile picture',
+            error: error.message
+        });
+    }
+    
 }
 
 export async function deleteCurrentUserProfilePicture(req, res) {
-    const user = await userService.resetUserProfilePicture(req.user.id);
+    try {
+        await deleteFromCloudinary(`howly/profile-pictures/${req.user.id}`);
 
-    if (!user) {
-        return notFound(res);
+        const user = await userService.resetUserProfilePicture(req.user.id);
+
+        if (!user) {
+            return notFound(res);
+        }
+
+        return res.status(200).json({
+            user: userService.toPublicUser(user),
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: 'Failed to delete profile picture',
+        });
     }
-
-    return res.status(200).json({
-        user: userService.toPublicUser(user),
-    });
 }
