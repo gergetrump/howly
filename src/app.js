@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import habitRoutes from './features/habits/habit.routes.js';
 import authRoutes from './features/auth/auth.routes.js';
 import userRoutes from './features/users/user.routes.js';
@@ -15,6 +16,8 @@ export default function createApp() {
     }));
 
     app.use(express.json());
+
+    app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
     app.get('/', (req, res) => {
         res.send('Backend is running');

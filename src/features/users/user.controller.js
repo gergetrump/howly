@@ -66,3 +66,37 @@ export async function deleteCurrentUser(req, res) {
 
     return res.status(204).send();
 }
+
+export async function uploadCurrentUserProfilePicture(req, res) {
+    if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const profilePictureUrl = `/uploads/profile-pictures/${req.file.filename}`;
+
+    const user = await userService.updateUserProfilePicture(
+        req.user.id,
+        profilePictureUrl
+    );
+
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({
+        message: 'Profile picture uploaded successfully',
+        user: userService.toPublicUser(user),
+    });
+}
+
+export async function deleteCurrentUserProfilePicture(req, res) {
+    const user = await userService.resetUserProfilePicture(req.user.id);
+
+    if (!user) {
+        return notFound(res);
+    }
+
+    return res.status(200).json({
+        user: userService.toPublicUser(user),
+    });
+}

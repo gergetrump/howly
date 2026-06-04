@@ -49,12 +49,15 @@ const userSchema = new Schema(
       maxlength: 100,
       required: true,
     },
-
     lastName: {
       type: String,
       trim: true,
       maxlength: 100,
       required: true,
+    },
+    profilePictureUrl: {
+      type: String,
+      default: null,
     },
     role: {
       type: String,
@@ -66,7 +69,6 @@ const userSchema = new Schema(
       default: 0,
       min: 0,
     },
-
     streak: {
       type: Number,
       default: 0,
