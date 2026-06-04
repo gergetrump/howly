@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Send, X } from 'lucide-react';
 import { CardGrid, ReactionButton } from '@/components/common';
 import { FeedPostCard, FriendCard } from '@/components/cards';
@@ -19,7 +19,7 @@ import {
 import { searchUsers } from '@/services/userApi';
 
 function getDisplayName(user) {
-    return user?.fullName || user?.username || 'Howly friend';
+    return user?.firstName || user?.username || 'Howly friend';
 }
 
 function getUsername(user) {
@@ -29,6 +29,27 @@ function getUsername(user) {
 function buildMilestoneMessage(post) {
     const habitTitle = post?.habit?.title || 'a habit';
     return `${getDisplayName(post?.user)} kept ${habitTitle} going for ${post?.streakDays} days`;
+}
+
+function getSocialErrorMessage(error, user) {
+    switch (error.code) {
+        case 'FRIEND_REQUEST_TO_SELF':
+            return 'You cannot send a friend request to yourself';
+        case 'FRIEND_REQUEST_RECIPIENT_NOT_FOUND':
+            return 'Hmm, that didn\'t work. Check if the username is correct';
+        case 'USERS_ALREADY_FRIENDS':
+            return `You and ${getDisplayName(user)} are already friends`;
+        case 'PENDING_FRIEND_REQUEST_EXISTS':
+            return `Friend request to ${getDisplayName(user)} is already sent. Let's wait a bit`;
+        case 'PENDING_FRIEND_REQUEST_NOT_FOUND':
+            return 'That friend request is no longer available';
+        case 'MILESTONE_POST_NOT_FOUND':
+            return 'That milestone is no longer available';
+        case 'CANNOT_LIKE_OWN_MILESTONE':
+            return 'You cannot like your own milestone';
+        default:
+            return error.message;
+    }
 }
 
 function EmptyState({ children }) {
@@ -90,8 +111,6 @@ export function SocialPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [busyRequestId, setBusyRequestId] = useState(null);
     const [busyPostId, setBusyPostId] = useState(null);
-
-    const outgoingCount = useMemo(() => requests.outgoing?.length ?? 0, [requests.outgoing]);
 
     async function loadSocialData() {
         setError('');
@@ -163,7 +182,7 @@ export function SocialPage() {
             setSearchResults(users ?? []);
 
             if (!users?.length) {
-                setNotice('Hmm, that didn\'t work. Check if the username is correct.');
+                setError('Hmm, that didn\'t work. Check if the username is correct.');
             }
         } catch (err) {
             setError(err.message);
@@ -184,7 +203,7 @@ export function SocialPage() {
             setNotice(`Friend request sent to ${getDisplayName(user)}`);
             await loadSocialData();
         } catch (err) {
-            setError(err.message);
+            setError(getSocialErrorMessage(err, user));
         } finally {
             setIsSubmitting(false);
         }
@@ -200,7 +219,7 @@ export function SocialPage() {
             setNotice('Friend request accepted');
             await loadSocialData();
         } catch (err) {
-            setError(err.message);
+            setError(getSocialErrorMessage(err));
         } finally {
             setBusyRequestId(null);
         }
@@ -216,7 +235,7 @@ export function SocialPage() {
             setNotice('Friend request rejected');
             await loadSocialData();
         } catch (err) {
-            setError(err.message);
+            setError(getSocialErrorMessage(err));
         } finally {
             setBusyRequestId(null);
         }
@@ -237,7 +256,7 @@ export function SocialPage() {
                 ),
             );
         } catch (err) {
-            setError(err.message);
+            setError(getSocialErrorMessage(err));
         } finally {
             setBusyPostId(null);
         }
@@ -291,10 +310,7 @@ export function SocialPage() {
                         ))}
                     </div>
                 ) : null}
-                {outgoingCount > 0 ? (
-                    <p className="text-sm text-slate-300">{outgoingCount} pending sent</p>
-                ) : null}
-                {notice ? <p className="text-sm text-red-400">{notice}</p> : null}
+                {notice ? <p className="text-sm text-emerald-200">{notice}</p> : null}
                 {error ? <p className="text-sm text-red-200">{error}</p> : null}
             </PageSection>
 
