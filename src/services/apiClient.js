@@ -39,8 +39,13 @@ export async function apiRequest(path, options = {}) {
             typeof responseBody === 'object' && responseBody?.message
                 ? responseBody.message
                 : 'Request failed';
+        const error = new Error(message);
 
-        throw new Error(message);
+        if (typeof responseBody === 'object' && responseBody?.code) {
+            error.code = responseBody.code;
+        }
+
+        throw error;
     }
 
     return responseBody;

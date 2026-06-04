@@ -1,7 +1,7 @@
 import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export function ReactionButton({ liked = false, count = 0, label = 'Like post', onClick, className }) {
+export function ReactionButton({ liked = false, count = 0, label = 'Like post', onClick, className, ...props }) {
     return (
         <button
             type="button"
@@ -13,6 +13,7 @@ export function ReactionButton({ liked = false, count = 0, label = 'Like post', 
             aria-label={label}
             aria-pressed={liked}
             onClick={onClick}
+            {...props}
         >
             <Heart className={cn('size-4', liked && 'fill-pink-300')} aria-hidden="true" />
             {count}
