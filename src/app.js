@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import habitRoutes from './features/habits/habit.routes.js';
 import authRoutes from './features/auth/auth.routes.js';
 import userRoutes from './features/users/user.routes.js';
@@ -7,6 +8,11 @@ import devRoutes from './features/dev/dev.routes.js';
 // Build an Express app instance for both server and tests.
 export default function createApp() {
     const app = express();
+
+    app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+    }));
 
     app.use(express.json());
 
