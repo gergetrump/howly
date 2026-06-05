@@ -1,4 +1,5 @@
 import Challenge from './challenge.model.js';
+import ChallengeInvitation from './challengeInvitation.model.js';
 import ChallengeParticipant from './challengeParticipant.model.js';
 import User from '../users/user.model.js';
 import { Friendship } from '../social/social.model.js';
@@ -11,6 +12,10 @@ function calculateEndDate(startsAt, durationDays) {
 
 function isChallengeOwner(challenge, user) {
     return challenge.createdBy.toString() === user.id || user.role === 'admin';
+}
+
+function isChallengeCreator(challenge, user) {
+    return challenge.createdBy.toString() === user.id;
 }
 
 function sameId(firstId, secondId) {
@@ -62,6 +67,10 @@ function isRewardClaimable(challenge, now = new Date()) {
     return challenge.status === 'completed' || challenge.endsAt <= now;
 }
 
+function isChallengeJoinable(challenge, now = new Date()) {
+    return challenge.status !== 'completed' && challenge.status !== 'failed' && challenge.endsAt > now;
+}
+
 function serializeChallenge(challenge) {
     if (!challenge) {
         return null;
@@ -104,6 +113,27 @@ function serializeParticipant(participant, challenge) {
         pendingRewardCoins: challenge ? getRewardCoins(challenge, participant) : undefined,
         createdAt: participant.createdAt,
         updatedAt: participant.updatedAt,
+    };
+}
+
+function serializeInvitation(invitation) {
+    if (!invitation) {
+        return null;
+    }
+
+    const challenge = typeof invitation.challenge === 'object' && invitation.challenge?._id
+        ? serializeChallenge(invitation.challenge)
+        : invitation.challenge.toString();
+
+    return {
+        id: invitation._id.toString(),
+        challenge,
+        inviter: invitation.inviter.toString(),
+        invitee: invitation.invitee.toString(),
+        status: invitation.status,
+        respondedAt: invitation.respondedAt,
+        createdAt: invitation.createdAt,
+        updatedAt: invitation.updatedAt,
     };
 }
 
@@ -207,6 +237,7 @@ export async function deleteChallenge(challengeId, user) {
     }
 
     await ChallengeParticipant.deleteMany({ challenge: challengeId });
+    await ChallengeInvitation.deleteMany({ challenge: challengeId });
     await Challenge.findByIdAndDelete(challengeId);
 
     return { challenge: serializeChallenge(challenge) };
@@ -223,7 +254,7 @@ export async function joinChallenge(challengeId, user) {
         return { error: 'user must be friends with the challenge creator to join this challenge' };
     }
 
-    if (challenge.status === 'completed' || challenge.status === 'failed' || challenge.endsAt <= new Date()) {
+    if (!isChallengeJoinable(challenge)) {
         return { error: 'challenge is no longer joinable' };
     }
 
@@ -261,6 +292,159 @@ export async function joinChallenge(challengeId, user) {
         challenge: serializeChallenge(challenge),
         participant: serializeParticipant(participant, challenge),
     };
+}
+
+export async function createInvitation(challengeId, inviteeId, user) {
+    const challenge = await Challenge.findById(challengeId);
+
+    if (!challenge) {
+        return { notFound: true };
+    }
+
+    if (!isChallengeCreator(challenge, user)) {
+        return { forbidden: true };
+    }
+
+    if (!isChallengeJoinable(challenge)) {
+        return { error: 'challenge is no longer joinable' };
+    }
+
+    if (sameId(inviteeId, user.id)) {
+        return { error: 'cannot invite yourself to your own challenge' };
+    }
+
+    const invitee = await User.findOne({ _id: inviteeId, isDeleted: false }).lean();
+
+    if (!invitee) {
+        return { error: 'invitee not found' };
+    }
+
+    if (!await areFriends(challenge.createdBy, inviteeId)) {
+        return { error: 'invitee must be friends with the challenge creator' };
+    }
+
+    const existingParticipant = await ChallengeParticipant.findOne({
+        challenge: challengeId,
+        user: inviteeId,
+        status: { $ne: 'left' },
+    }).lean();
+
+    if (existingParticipant) {
+        return { error: 'invitee already joined this challenge' };
+    }
+
+    const existingPendingInvitation = await ChallengeInvitation.findOne({
+        challenge: challengeId,
+        invitee: inviteeId,
+        status: 'pending',
+    }).lean();
+
+    if (existingPendingInvitation) {
+        return { error: 'pending challenge invitation already exists' };
+    }
+
+    const invitation = await ChallengeInvitation.create({
+        challenge: challengeId,
+        inviter: user.id,
+        invitee: inviteeId,
+    });
+
+    await invitation.populate('challenge');
+
+    return { invitation: serializeInvitation(invitation) };
+}
+
+export async function listInvitations(userId) {
+    const [incoming, outgoing] = await Promise.all([
+        ChallengeInvitation.find({ invitee: userId, status: 'pending' })
+            .populate('challenge')
+            .sort({ createdAt: -1 }),
+        ChallengeInvitation.find({ inviter: userId, status: 'pending' })
+            .populate('challenge')
+            .sort({ createdAt: -1 }),
+    ]);
+
+    return {
+        incoming: incoming.map(serializeInvitation),
+        outgoing: outgoing.map(serializeInvitation),
+    };
+}
+
+export async function acceptInvitation(invitationId, user) {
+    const invitation = await ChallengeInvitation.findOne({
+        _id: invitationId,
+        invitee: user.id,
+        status: 'pending',
+    }).populate('challenge');
+
+    if (!invitation) {
+        return { notFound: true };
+    }
+
+    const challenge = invitation.challenge;
+
+    if (!isChallengeJoinable(challenge)) {
+        return { error: 'challenge is no longer joinable' };
+    }
+
+    let participant = await ChallengeParticipant.findOne({
+        challenge: challenge._id,
+        user: user.id,
+    });
+
+    if (participant && participant.status !== 'left') {
+        invitation.status = 'accepted';
+        invitation.respondedAt = new Date();
+        await invitation.save();
+
+        return {
+            invitation: serializeInvitation(invitation),
+            participant: serializeParticipant(participant, challenge),
+        };
+    }
+
+    if (participant) {
+        participant.status = 'active';
+        participant.joinedAt = new Date();
+        participant.daysCompleted = 0;
+        participant.lastCompletedAt = null;
+        participant.rewardClaimed = false;
+        participant.rewardClaimedAt = null;
+        participant.rewardCoins = 0;
+        await participant.save();
+    } else {
+        participant = await ChallengeParticipant.create({
+            challenge: challenge._id,
+            user: user.id,
+        });
+    }
+
+    invitation.status = 'accepted';
+    invitation.respondedAt = new Date();
+    await invitation.save();
+
+    return {
+        invitation: serializeInvitation(invitation),
+        participant: serializeParticipant(participant, challenge),
+    };
+}
+
+export async function rejectInvitation(invitationId, user) {
+    const invitation = await ChallengeInvitation.findOne({
+        _id: invitationId,
+        invitee: user.id,
+        status: 'pending',
+    }).populate('challenge');
+
+    if (!invitation) {
+        return { notFound: true };
+    }
+
+    invitation.status = 'rejected';
+    invitation.respondedAt = new Date();
+    await invitation.save();
+
+    return { invitation: serializeInvitation(invitation) };
 }
 
 export async function leaveChallenge(challengeId, userId) {

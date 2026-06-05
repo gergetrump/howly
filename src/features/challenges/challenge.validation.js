@@ -253,6 +253,24 @@ export function validateChallengeId(id) {
     return { value: id };
 }
 
+export function validateChallengeInvitationId(id) {
+    if (!isValidObjectId(id)) {
+        return { error: 'invitationId must be a valid ObjectId' };
+    }
+
+    return { value: id };
+}
+
+export function validateCreateInvitationInput(body = {}) {
+    const inviteeId = body.inviteeId;
+
+    if (!isValidObjectId(inviteeId)) {
+        return { error: 'inviteeId must be a valid ObjectId' };
+    }
+
+    return { value: { inviteeId } };
+}
+
 export function validateRecordProgressInput(body = {}) {
     const days = body.days === undefined ? 1 : body.days;
     const value = {};

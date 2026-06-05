@@ -1,6 +1,8 @@
 import * as challengeService from './challenge.service.js';
 import {
     validateChallengeId,
+    validateChallengeInvitationId,
+    validateCreateInvitationInput,
     validateCreateChallengeInput,
     validateListChallengesInput,
     validateRecordProgressInput,
@@ -111,6 +113,58 @@ export async function joinChallenge(req, res) {
     const result = await challengeService.joinChallenge(req.params.challengeId, req.user);
 
     return handleServiceResult(res, result, 201);
+}
+
+export async function createInvitation(req, res) {
+    const { error: idError } = validateChallengeId(req.params.challengeId);
+
+    if (idError) {
+        return badRequest(res, idError);
+    }
+
+    const { error, value } = validateCreateInvitationInput(req.body);
+
+    if (error) {
+        return badRequest(res, error);
+    }
+
+    const result = await challengeService.createInvitation(
+        req.params.challengeId,
+        value.inviteeId,
+        req.user
+    );
+
+    return handleServiceResult(res, result, 201);
+}
+
+export async function listInvitations(req, res) {
+    const invitations = await challengeService.listInvitations(req.user.id);
+
+    return res.status(200).json(invitations);
+}
+
+export async function acceptInvitation(req, res) {
+    const { error } = validateChallengeInvitationId(req.params.invitationId);
+
+    if (error) {
+        return badRequest(res, error);
+    }
+
+    const result = await challengeService.acceptInvitation(req.params.invitationId, req.user);
+
+    return handleServiceResult(res, result);
+}
+
+export async function rejectInvitation(req, res) {
+    const { error } = validateChallengeInvitationId(req.params.invitationId);
+
+    if (error) {
+        return badRequest(res, error);
+    }
+
+    const result = await challengeService.rejectInvitation(req.params.invitationId, req.user);
+
+    return handleServiceResult(res, result);
 }
 
 export async function leaveChallenge(req, res) {

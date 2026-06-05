@@ -7,6 +7,7 @@ import createApp from '../src/app.js';
 import connectDB from '../src/config/database.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
 import Challenge from '../src/features/challenges/challenge.model.js';
+import ChallengeInvitation from '../src/features/challenges/challengeInvitation.model.js';
 import ChallengeParticipant from '../src/features/challenges/challengeParticipant.model.js';
 import { Friendship } from '../src/features/social/social.model.js';
 import User from '../src/features/users/user.model.js';
@@ -61,6 +62,7 @@ before(async () => {
 });
 
 afterEach(async () => {
+    await ChallengeInvitation.deleteMany({});
     await ChallengeParticipant.deleteMany({});
     await Challenge.deleteMany({});
     await Friendship.deleteMany({});
@@ -196,4 +198,104 @@ test('friend-only challenges are visible and joinable only for friends', async (
         .expect(201);
 
     assert.equal(joinResponse.body.participant.user, friend._id.toString());
+});
+
+test('challenge owners can invite friends and invitees can accept to join', async () => {
+    const owner = await buildUser();
+    const friend = await buildUser();
+    const ownerToken = signAccessToken(owner);
+    const friendToken = signAccessToken(friend);
+
+    await buildFriendship(owner._id, friend._id);
+
+    const challenge = await createChallenge(ownerToken, {
+        visibility: 'friends',
+    });
+
+    const inviteResponse = await request(app)
+        .post(`/api/challenges/${challenge.id}/invitations`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ inviteeId: friend._id.toString() })
+        .expect(201);
+
+    assert.equal(inviteResponse.body.invitation.invitee, friend._id.toString());
+    assert.equal(inviteResponse.body.invitation.status, 'pending');
+
+    const invitationsResponse = await request(app)
+        .get('/api/challenges/invitations')
+        .set('Authorization', `Bearer ${friendToken}`)
+        .expect(200);
+
+    assert.equal(invitationsResponse.body.incoming.length, 1);
+    assert.equal(invitationsResponse.body.incoming[0].id, inviteResponse.body.invitation.id);
+
+    const acceptResponse = await request(app)
+        .post(`/api/challenges/invitations/${inviteResponse.body.invitation.id}/accept`)
+        .set('Authorization', `Bearer ${friendToken}`)
+        .expect(200);
+
+    assert.equal(acceptResponse.body.invitation.status, 'accepted');
+    assert.equal(acceptResponse.body.participant.user, friend._id.toString());
+
+    const participant = await ChallengeParticipant.findOne({
+        challenge: challenge.id,
+        user: friend._id,
+    });
+    assert.equal(participant.status, 'active');
+});
+
+test('challenge invitations require creator ownership and friendship', async () => {
+    const owner = await buildUser();
+    const friend = await buildUser();
+    const stranger = await buildUser();
+    const ownerToken = signAccessToken(owner);
+    const friendToken = signAccessToken(friend);
+
+    await buildFriendship(owner._id, friend._id);
+
+    const challenge = await createChallenge(ownerToken, {
+        visibility: 'friends',
+    });
+
+    await request(app)
+        .post(`/api/challenges/${challenge.id}/invitations`)
+        .set('Authorization', `Bearer ${friendToken}`)
+        .send({ inviteeId: stranger._id.toString() })
+        .expect(403);
+
+    await request(app)
+        .post(`/api/challenges/${challenge.id}/invitations`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ inviteeId: stranger._id.toString() })
+        .expect(400);
+});
+
+test('rejecting a challenge invitation does not create a participant', async () => {
+    const owner = await buildUser();
+    const friend = await buildUser();
+    const ownerToken = signAccessToken(owner);
+    const friendToken = signAccessToken(friend);
+
+    await buildFriendship(owner._id, friend._id);
+
+    const challenge = await createChallenge(ownerToken);
+
+    const inviteResponse = await request(app)
+        .post(`/api/challenges/${challenge.id}/invitations`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ inviteeId: friend._id.toString() })
+        .expect(201);
+
+    const rejectResponse = await request(app)
+        .post(`/api/challenges/invitations/${inviteResponse.body.invitation.id}/reject`)
+        .set('Authorization', `Bearer ${friendToken}`)
+        .expect(200);
+
+    assert.equal(rejectResponse.body.invitation.status, 'rejected');
+
+    const participant = await ChallengeParticipant.findOne({
+        challenge: challenge.id,
+        user: friend._id,
+    });
+    assert.equal(participant, null);
 });
