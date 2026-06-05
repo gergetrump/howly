@@ -31,7 +31,7 @@ export function signAccessToken(user) {
 }
 
 // Register a local user, returning a created user or an error message.
-export async function registerLocalUser({ username, email, fullName, password }) {
+export async function registerLocalUser({ username, email, firstName, lastName, password }) {
     const existingUser = await User.findOne({ email }).lean();
 
     if (existingUser) {
@@ -43,7 +43,8 @@ export async function registerLocalUser({ username, email, fullName, password })
     const user = await User.create({
         username,
         email,
-        fullName,
+        firstName,
+        lastName,
         passwordHash,
         authProvider: 'local',
     });
@@ -87,7 +88,8 @@ export function toPublicUser(user) {
         id: user._id.toString(),
         username: user.username,
         email: user.email,
-        fullName: user.fullName,
+        firstName: user.firstName,
+        lastName: user.lastName,
         role: user.role,
         authProvider: user.authProvider,
         providerId: user.providerId,
