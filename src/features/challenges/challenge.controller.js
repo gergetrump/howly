@@ -58,13 +58,9 @@ export async function getChallengeById(req, res) {
         return badRequest(res, error);
     }
 
-    const challenge = await challengeService.getChallengeById(req.params.challengeId);
+    const result = await challengeService.getChallengeById(req.params.challengeId, req.user);
 
-    if (!challenge) {
-        return notFound(res);
-    }
-
-    return res.status(200).json(challenge);
+    return handleServiceResult(res, result);
 }
 
 export async function updateChallenge(req, res) {
@@ -112,7 +108,7 @@ export async function joinChallenge(req, res) {
         return badRequest(res, error);
     }
 
-    const result = await challengeService.joinChallenge(req.params.challengeId, req.user.id);
+    const result = await challengeService.joinChallenge(req.params.challengeId, req.user);
 
     return handleServiceResult(res, result, 201);
 }
@@ -136,7 +132,7 @@ export async function listParticipants(req, res) {
         return badRequest(res, error);
     }
 
-    const result = await challengeService.listParticipants(req.params.challengeId);
+    const result = await challengeService.listParticipants(req.params.challengeId, req.user);
 
     return handleServiceResult(res, result);
 }

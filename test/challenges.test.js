@@ -6,9 +6,9 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import createApp from '../src/app.js';
 import connectDB from '../src/config/database.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
-import challengeRoutes from '../src/features/challenges/challenge.routes.js';
 import Challenge from '../src/features/challenges/challenge.model.js';
 import ChallengeParticipant from '../src/features/challenges/challengeParticipant.model.js';
+import { Friendship } from '../src/features/social/social.model.js';
 import User from '../src/features/users/user.model.js';
 
 let mongo;
@@ -20,7 +20,8 @@ async function buildUser(overrides = {}) {
     return User.create({
         username: overrides.username || `challenge_user_${suffix}`,
         email: overrides.email || `challenge_user_${suffix}@example.com`,
-        fullName: overrides.fullName || 'Challenge User',
+        firstName: overrides.firstName || 'Challenge',
+        lastName: overrides.lastName || 'User',
         passwordHash: overrides.passwordHash || 'hashed',
         authProvider: overrides.authProvider || 'local',
         coins: overrides.coins || 0,
@@ -46,17 +47,23 @@ async function createChallenge(token, overrides = {}) {
     return response.body.challenge;
 }
 
+async function buildFriendship(firstUserId, secondUserId) {
+    const [userA, userB] = [firstUserId.toString(), secondUserId.toString()].sort();
+
+    return Friendship.create({ userA, userB });
+}
+
 before(async () => {
     process.env.JWT_SECRET = 'test-secret';
     mongo = await MongoMemoryServer.create();
     await connectDB(mongo.getUri());
     app = createApp();
-    app.use('/api/challenges', challengeRoutes);
 });
 
 afterEach(async () => {
     await ChallengeParticipant.deleteMany({});
     await Challenge.deleteMany({});
+    await Friendship.deleteMany({});
     await User.deleteMany({});
 });
 
@@ -141,4 +148,52 @@ test('PATCH /api/challenges/:challengeId rejects updates from non-owners', async
 
     const unchangedChallenge = await Challenge.findById(challenge.id);
     assert.equal(unchangedChallenge.title, 'Daily Reading');
+});
+
+test('friend-only challenges are visible and joinable only for friends', async () => {
+    const owner = await buildUser();
+    const friend = await buildUser();
+    const stranger = await buildUser();
+    const ownerToken = signAccessToken(owner);
+    const friendToken = signAccessToken(friend);
+    const strangerToken = signAccessToken(stranger);
+
+    await buildFriendship(owner._id, friend._id);
+
+    const challenge = await createChallenge(ownerToken, {
+        title: 'Friends Reading',
+        visibility: 'friends',
+    });
+
+    const friendListResponse = await request(app)
+        .get('/api/challenges')
+        .set('Authorization', `Bearer ${friendToken}`)
+        .expect(200);
+
+    assert.equal(
+        friendListResponse.body.some((listedChallenge) => listedChallenge.id === challenge.id),
+        true
+    );
+
+    const strangerListResponse = await request(app)
+        .get('/api/challenges')
+        .set('Authorization', `Bearer ${strangerToken}`)
+        .expect(200);
+
+    assert.equal(
+        strangerListResponse.body.some((listedChallenge) => listedChallenge.id === challenge.id),
+        false
+    );
+
+    await request(app)
+        .post(`/api/challenges/${challenge.id}/join`)
+        .set('Authorization', `Bearer ${strangerToken}`)
+        .expect(400);
+
+    const joinResponse = await request(app)
+        .post(`/api/challenges/${challenge.id}/join`)
+        .set('Authorization', `Bearer ${friendToken}`)
+        .expect(201);
+
+    assert.equal(joinResponse.body.participant.user, friend._id.toString());
 });

@@ -1,6 +1,7 @@
 import Challenge from './challenge.model.js';
 import ChallengeParticipant from './challengeParticipant.model.js';
 import User from '../users/user.model.js';
+import { Friendship } from '../social/social.model.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -10,6 +11,39 @@ function calculateEndDate(startsAt, durationDays) {
 
 function isChallengeOwner(challenge, user) {
     return challenge.createdBy.toString() === user.id || user.role === 'admin';
+}
+
+function sameId(firstId, secondId) {
+    return firstId?.toString() === secondId?.toString();
+}
+
+function buildFriendshipPair(firstUserId, secondUserId) {
+    const [userA, userB] = [firstUserId.toString(), secondUserId.toString()].sort();
+    return { userA, userB };
+}
+
+async function areFriends(firstUserId, secondUserId) {
+    const friendship = await Friendship.findOne(buildFriendshipPair(firstUserId, secondUserId)).lean();
+
+    return Boolean(friendship);
+}
+
+async function getFriendIds(userId) {
+    const friendships = await Friendship.find({
+        $or: [{ userA: userId }, { userB: userId }],
+    }).lean();
+
+    return friendships.map((friendship) => (
+        sameId(friendship.userA, userId) ? friendship.userB : friendship.userA
+    ));
+}
+
+async function canViewChallenge(challenge, user) {
+    if (challenge.visibility === 'public' || isChallengeOwner(challenge, user)) {
+        return true;
+    }
+
+    return areFriends(user.id, challenge.createdBy);
 }
 
 function canCreateChallenge() {
@@ -45,6 +79,7 @@ function serializeChallenge(challenge) {
         startsAt: challenge.startsAt,
         endsAt: challenge.endsAt,
         status: challenge.status,
+        visibility: challenge.visibility,
         createdAt: challenge.createdAt,
         updatedAt: challenge.updatedAt,
     };
@@ -89,29 +124,52 @@ export async function createChallenge(input, user) {
 }
 
 export async function listChallenges(filters = {}, user) {
-    const query = {};
+    const conditions = [];
 
     if (filters.status) {
-        query.status = filters.status;
+        conditions.push({ status: filters.status });
     }
 
     if (filters.createdBy) {
-        query.createdBy = filters.createdBy;
+        conditions.push({ createdBy: filters.createdBy });
+    }
+
+    if (filters.visibility) {
+        conditions.push({ visibility: filters.visibility });
     }
 
     if (filters.mine) {
-        query.createdBy = user.id;
+        conditions.push({ createdBy: user.id });
+    } else if (user.role !== 'admin') {
+        const friendIds = await getFriendIds(user.id);
+
+        conditions.push({
+            $or: [
+                { visibility: 'public' },
+                { createdBy: user.id },
+                { visibility: 'friends', createdBy: { $in: friendIds } },
+            ],
+        });
     }
 
+    const query = conditions.length ? { $and: conditions } : {};
     const challenges = await Challenge.find(query).sort({ createdAt: -1 });
 
     return challenges.map(serializeChallenge);
 }
 
-export async function getChallengeById(challengeId) {
+export async function getChallengeById(challengeId, user) {
     const challenge = await Challenge.findById(challengeId);
 
-    return serializeChallenge(challenge);
+    if (!challenge) {
+        return { notFound: true };
+    }
+
+    if (!await canViewChallenge(challenge, user)) {
+        return { forbidden: true };
+    }
+
+    return { challenge: serializeChallenge(challenge) };
 }
 
 export async function updateChallenge(challengeId, updates, user) {
@@ -154,11 +212,15 @@ export async function deleteChallenge(challengeId, user) {
     return { challenge: serializeChallenge(challenge) };
 }
 
-export async function joinChallenge(challengeId, userId) {
+export async function joinChallenge(challengeId, user) {
     const challenge = await Challenge.findById(challengeId);
 
     if (!challenge) {
         return { notFound: true };
+    }
+
+    if (!await canViewChallenge(challenge, user)) {
+        return { error: 'user must be friends with the challenge creator to join this challenge' };
     }
 
     if (challenge.status === 'completed' || challenge.status === 'failed' || challenge.endsAt <= new Date()) {
@@ -167,7 +229,7 @@ export async function joinChallenge(challengeId, userId) {
 
     const existingParticipant = await ChallengeParticipant.findOne({
         challenge: challengeId,
-        user: userId,
+        user: user.id,
     });
 
     if (existingParticipant && existingParticipant.status !== 'left') {
@@ -192,7 +254,7 @@ export async function joinChallenge(challengeId, userId) {
 
     const participant = await ChallengeParticipant.create({
         challenge: challengeId,
-        user: userId,
+        user: user.id,
     });
 
     return {
@@ -220,11 +282,15 @@ export async function leaveChallenge(challengeId, userId) {
     };
 }
 
-export async function listParticipants(challengeId) {
+export async function listParticipants(challengeId, user) {
     const challenge = await Challenge.findById(challengeId);
 
     if (!challenge) {
         return { notFound: true };
+    }
+
+    if (!await canViewChallenge(challenge, user)) {
+        return { forbidden: true };
     }
 
     const participants = await ChallengeParticipant.find({ challenge: challengeId }).sort({ joinedAt: 1 });

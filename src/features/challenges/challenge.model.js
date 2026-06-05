@@ -6,6 +6,8 @@ export const CHALLENGE_FREQUENCIES = ["daily", "weekly", "monthly"];
 
 export const CHALLENGE_STATUS = ["notStarted", "active", "completed", "failed"];
 
+export const CHALLENGE_VISIBILITIES = ["public", "friends"];
+
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 function calculateEndDate(startsAt, durationDays) {
@@ -68,6 +70,12 @@ const challengeSchema = new Schema(
       type: String,
       enum: CHALLENGE_STATUS,
       default: "notStarted",
+    },
+    visibility: {
+      type: String,
+      enum: CHALLENGE_VISIBILITIES,
+      default: "public",
+      index: true,
     },
   },
   {

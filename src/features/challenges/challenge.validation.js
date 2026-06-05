@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
-import { CHALLENGE_FREQUENCIES, CHALLENGE_STATUS } from './challenge.model.js';
+import { CHALLENGE_FREQUENCIES, CHALLENGE_STATUS, CHALLENGE_VISIBILITIES } from './challenge.model.js';
 
 const CHALLENGE_FREQUENCY_SET = new Set(CHALLENGE_FREQUENCIES);
 const CHALLENGE_STATUS_SET = new Set(CHALLENGE_STATUS);
+const CHALLENGE_VISIBILITY_SET = new Set(CHALLENGE_VISIBILITIES);
 
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
 
@@ -111,6 +112,16 @@ export function validateCreateChallengeInput(body = {}) {
         }
     }
 
+    if (body.visibility !== undefined) {
+        const visibility = isNonEmptyString(body.visibility) ? body.visibility.trim() : '';
+
+        if (!CHALLENGE_VISIBILITY_SET.has(visibility)) {
+            errors.push(`visibility must be one of: ${CHALLENGE_VISIBILITIES.join(', ')}`);
+        } else {
+            value.visibility = visibility;
+        }
+    }
+
     if (errors.length) {
         return { error: errors.join(', ') };
     }
@@ -174,6 +185,16 @@ export function validateUpdateChallengeInput(body = {}) {
         }
     }
 
+    if (body.visibility !== undefined) {
+        const visibility = isNonEmptyString(body.visibility) ? body.visibility.trim() : '';
+
+        if (!CHALLENGE_VISIBILITY_SET.has(visibility)) {
+            errors.push(`visibility must be one of: ${CHALLENGE_VISIBILITIES.join(', ')}`);
+        } else {
+            updates.visibility = visibility;
+        }
+    }
+
     if (Object.keys(updates).length === 0 && errors.length === 0) {
         errors.push('no valid fields provided');
     }
@@ -207,6 +228,14 @@ export function validateListChallengesInput(query = {}) {
 
     if (query.mine !== undefined) {
         value.mine = query.mine === 'true' || query.mine === true;
+    }
+
+    if (query.visibility !== undefined) {
+        if (!CHALLENGE_VISIBILITY_SET.has(query.visibility)) {
+            errors.push(`visibility must be one of: ${CHALLENGE_VISIBILITIES.join(', ')}`);
+        } else {
+            value.visibility = query.visibility;
+        }
     }
 
     if (errors.length) {
