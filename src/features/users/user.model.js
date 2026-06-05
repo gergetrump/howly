@@ -44,10 +44,16 @@ const userSchema = new Schema(
       select: false,
     },
 
-    fullName: {
+    firstName: {
       type: String,
       trim: true,
-      maxlength: 100,
+      maxlength: 50,
+      required: true,
+    },
+    lastName: {
+      type: String,
+      trim: true,
+      maxlength: 50,
       required: true,
     },
     role: {
