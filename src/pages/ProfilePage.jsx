@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
-import { ThemeToggle } from '@/components/brand/ThemeToggle.jsx';
+// import { ThemeToggle } from '@/components/brand/ThemeToggle.jsx';
 import { logoutUser } from '@/services/authService';
 import { 
     uploadCurrentUserProfilePicture,

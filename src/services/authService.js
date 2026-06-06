@@ -19,3 +19,17 @@ export function logoutUser() {
         method: 'POST',
     });
 }
+
+export function forgotPassword(email) {
+    return apiRequest('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email })
+    });
+}
+
+export function resetPassword(token, password) {
+    return apiRequest('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, password })
+    });
+}
