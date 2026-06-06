@@ -11,7 +11,7 @@ export function ChallengesPage() {
     }
 
     return (
-        <Page background="forest">
+        <Page theme="forest">
             <Heading title="Challenges" subtitle="Join friendly habit challenges." streakDays={user?.streak ?? 0} />
 
             <PageSection width="lg" align="center">

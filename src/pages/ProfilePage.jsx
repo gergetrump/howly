@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
-import { CompanionAvatar } from '@/components/brand/companionAvatar';
+import { ThemeToggle } from '@/components/brand/ThemeToggle.jsx';
 import { logoutUser } from '@/services/authService';
 import { 
     uploadCurrentUserProfilePicture,
@@ -72,6 +72,7 @@ export function ProfilePage() {
     const navigate = useNavigate();
 
     const { user, setUser, isLoadingUser } = useAuth();
+    // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState('');
     const [isUploadingPicture, setIsUploadingPicture] = useState(false);
     const [isDeletingPicture, setIsDeletingPicture] = useState(false);
@@ -126,7 +127,7 @@ export function ProfilePage() {
 
     if (isLoadingUser) {
         return (
-            <Page background="forest">
+            <Page theme="forest">
                 <Heading
                     title="Profile"
                     subtitle="Manage your Howly account."
@@ -139,7 +140,7 @@ export function ProfilePage() {
 
     if (error) {
         return (
-            <Page background="forest">
+            <Page theme="forest">
                 <Heading
                     title="Profile"
                     subtitle="Manage your Howly account."
@@ -157,7 +158,7 @@ export function ProfilePage() {
     const completed = user?.completedHabits ?? 0;
 
     return (
-        <Page background="forest">
+        <Page theme="forest">
             <Heading
                 title="Profile"
                 subtitle="Manage your Howly account."

@@ -56,7 +56,7 @@ export function DashboardPage() {
     const totalCount = habits.length;
 
     return (
-        <Page background="forest">
+        <Page theme="forest">
             <Heading
                 title={`Hi, ${user?.firstName || 'User'}!`}
                 subtitle="Let's make today count."

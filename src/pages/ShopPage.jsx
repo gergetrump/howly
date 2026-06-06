@@ -121,7 +121,7 @@ export function ShopPage() {
     }
 
     return (
-        <Page background="forest">
+        <Page theme="forest">
             <Heading title="Shop" subtitle="Unlock items for your companion." streakDays={user?.streak ?? 0} />
             <section className="flex min-h-72 flex-col items-center justify-end gap-3 text-center">
                 <CompanionAvatar

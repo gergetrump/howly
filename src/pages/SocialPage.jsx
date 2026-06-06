@@ -263,7 +263,7 @@ export function SocialPage() {
     }
 
     return (
-        <Page background="forest">
+        <Page theme="forest">
             <Heading title="Social" subtitle="See what your friends are building." streakDays={user?.streak ?? 0} />
 
             <PageSection title="Add Friend" width="md">
