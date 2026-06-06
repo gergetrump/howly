@@ -1,5 +1,5 @@
-export { ChallengeCard } from './ChallengeCard';
-export { FeedPostCard } from './FeedPostCard';
-export { FriendCard } from './FriendCard';
-export { HabitCard } from './HabitCard';
-export { ShopItemCard } from './ShopItemCard';
+export { ChallengeCard } from './challengeCard';
+export { FeedPostCard } from './feedPostCard';
+export { FriendCard } from './FriendCard.jsx';
+export { HabitCard } from './habitCard';
+export { ShopItemCard } from './shopItemCard';

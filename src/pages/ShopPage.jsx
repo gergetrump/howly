@@ -4,6 +4,7 @@ import { ShopItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
 import { Hoodie, HoodieNew } from '@/components/brand/items';
 import { Page, PageSection, Heading } from '@/components/layout';
+import { useAuth } from '@/context/authContext';
 import { buyItem, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
 
@@ -36,6 +37,7 @@ function renderItemVisual(item, className = 'max-h-full max-w-full') {
 }
 
 export function ShopPage() {
+    const { user } = useAuth();
     const [items, setItems] = useState([]);
     const [ownedItemIds, setOwnedItemIds] = useState(new Set());
     const [selectedItemId, setSelectedItemId] = useState(null);
@@ -120,7 +122,7 @@ export function ShopPage() {
 
     return (
         <Page background="forest">
-            <Heading title="Shop" subtitle="Unlock items for your companion." streakDays={100} />
+            <Heading title="Shop" subtitle="Unlock items for your companion." streakDays={user?.streak ?? 0} />
             <section className="flex min-h-72 flex-col items-center justify-end gap-3 text-center">
                 <CompanionAvatar
                     name="Howly"

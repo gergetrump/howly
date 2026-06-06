@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { MoonCoin } from '@/components/brand/MoonCoin';
+import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
 

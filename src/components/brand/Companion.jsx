@@ -1,4 +1,4 @@
-import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
+import { CompanionAvatar } from '@/components/brand/companionAvatar';
 
 export function Companion({
     src,

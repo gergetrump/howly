@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 
 export function SectionHeader({ title, description, actionLabel, onAction }) {
     return (
@@ -9,7 +10,12 @@ export function SectionHeader({ title, description, actionLabel, onAction }) {
             </div>
 
             {actionLabel ? (
-                <Button type="button" variant="outline" size="sm" onClick={onAction}>
+                <Button 
+                    type="button" 
+                    onClick={onAction}
+                    className="bg-purple-600 hover:bg-purple-700 text-white border-0 shadow-lg shadow-purple-500/20 px-5 py-5 text-sm font-semibold rounded-xl"
+                >
+                    <Plus className="mr-2 h-4 w-4" />
                     {actionLabel}
                 </Button>
             ) : null}

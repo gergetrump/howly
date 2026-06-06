@@ -1,5 +1,5 @@
-import { Trophy } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
+import {Trophy} from 'lucide-react';
+import {Progress} from '@/components/ui/progress';
 
 export function DailyProgressCard({ completed = 0, total = 0 }) {
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;

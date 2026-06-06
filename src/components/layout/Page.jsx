@@ -1,6 +1,6 @@
-import { Background } from '@/components/brand/Background';
+import { Background } from '@/components/brand/background';
 import { NavBar } from '@/components/layout/NavBar.jsx';
-import { PageContent } from '@/components/layout/PageContent';
+import { PageContent } from '@/components/layout/pageContent';
 import { cn } from '@/lib/utils';
 
 export function Page({ background = 'forest', backgroundSrc, showNav = true, children, className }) {

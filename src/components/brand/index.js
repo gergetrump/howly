@@ -1,6 +1,6 @@
-export { Background } from './Background';
-export { Companion } from './Companion';
-export { CompanionAvatar } from './CompanionAvatar';
-export { CompanionStage } from './CompanionStage';
-export { MoonCoin } from './MoonCoin';
-export { StreakBadge } from './StreakBadge';
+export { Background } from './background';
+export { Companion } from './companion';
+export { CompanionAvatar } from './companionAvatar';
+export { CompanionStage } from './companionStage';
+export { MoonCoin } from './MoonCoin.jsx';
+export { StreakBadge } from './StreakBadge.jsx';

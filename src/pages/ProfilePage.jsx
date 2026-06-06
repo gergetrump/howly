@@ -14,13 +14,13 @@ import {
 } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
-import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
+import { CompanionAvatar } from '@/components/brand/companionAvatar';
 import { logoutUser } from '@/services/authService';
 import { 
     uploadCurrentUserProfilePicture,
     deleteCurrentUserProfilePicture,
 } from '@/services/userService';
-import { useAuth } from '@/context/AuthContext.jsx';
+import { useAuth } from '@/context/authContext';
 
 
 function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle }) {

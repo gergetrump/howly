@@ -2,7 +2,7 @@ import { UsersRound } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { MoonCoin } from '@/components/brand/MoonCoin';
+import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
 

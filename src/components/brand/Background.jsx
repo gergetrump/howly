@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils';
-import { Starfield } from './background/Starfield';
-import { Moon } from './background/Moon';
-import { Tree } from './background/Tree';
-import { Ground } from './background/Ground';
+import { Starfield } from './background/Starfield.jsx';
+import { Moon } from './background/Moon.jsx';
+import { Tree } from './background/Tree.jsx';
+import { Ground } from './background/Ground.jsx';
 
 export function Background({ theme = 'forest', className, children }) {
     // We can conditionally render things based on `theme` later.

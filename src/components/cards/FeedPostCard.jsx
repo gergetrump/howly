@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
+import { CompanionAvatar } from '@/components/brand/companionAvatar';
 import { appCardClassName } from '@/components/cards/cardStyles';
 
 export function FeedPostCard({
