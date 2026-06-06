@@ -1,88 +1,78 @@
+import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as habitService from './habit.service.js';
-import {
-    validateCreateHabitInput,
-    validateHabitId,
-    validateListHabitsInput,
-    validateUpdateHabitInput,
-} from './habit.validation.js';
 
-const badRequest = (res, message) => res.status(400).json({ message });
-const notFound = (res) => res.status(404).json({ message: 'Habit not found' });
+/**
+ * GET /api/habits
+ * Returns a paginated list of the authenticated user's habits.
+ */
+export const getHabits = asyncHandler(async (req, res) => {
+    const result = await habitService.getHabitsForUser(req.user.id, {
+        page: Number(req.query.page) || 1,
+        limit: Number(req.query.limit) || 20,
+    });
 
-export async function createHabit(req, res) {
-    const { error, value } = validateCreateHabitInput(req.body);
+    res.status(200).json(result);
+});
 
-    if (error) {
-        return badRequest(res, error);
-    }
+/**
+ * GET /api/habits/:habitId
+ * Returns a single habit by ID (ownership enforced in service).
+ */
+export const getHabitById = asyncHandler(async (req, res) => {
+    const habit = await habitService.getHabitById(req.params.habitId, req.user.id);
+    res.status(200).json({ data: habit });
+});
 
-    const habit = await habitService.createHabit(value);
+/**
+ * POST /api/habits
+ * Creates a new habit for the authenticated user.
+ */
+export const createHabit = asyncHandler(async (req, res) => {
+    const habit = await habitService.createHabit(req.user.id, req.body);
+    res.status(201).json({ data: habit });
+});
 
-    return res.status(201).json(habit);
-}
+/**
+ * POST /api/habits/templates
+ * Bulk-creates habits from an array of template objects (onboarding flow).
+ */
+export const createFromTemplates = asyncHandler(async (req, res) => {
+    const habits = await habitService.createHabitsFromTemplates(req.user.id, req.body.templates);
+    res.status(201).json({ data: habits });
+});
 
-export async function listHabits(req, res) {
-    const { error, value } = validateListHabitsInput(req.query);
+/**
+ * PATCH /api/habits/:habitId
+ * Partially updates a habit (only the provided fields).
+ */
+export const updateHabit = asyncHandler(async (req, res) => {
+    const habit = await habitService.updateHabit(req.params.habitId, req.user.id, req.body);
+    res.status(200).json({ data: habit });
+});
 
-    if (error) {
-        return badRequest(res, error);
-    }
+/**
+ * DELETE /api/habits/:habitId
+ * Deletes a habit. Returns 204 No Content.
+ */
+export const deleteHabit = asyncHandler(async (req, res) => {
+    await habitService.deleteHabit(req.params.habitId, req.user.id);
+    res.status(204).send();
+});
 
-    const habits = await habitService.listHabits(value);
+/**
+ * POST /api/habits/:habitId/check-ins
+ * Marks a habit as completed for today and updates the streak.
+ */
+export const completeHabit = asyncHandler(async (req, res) => {
+    const habit = await habitService.completeHabit(req.params.habitId, req.user.id);
+    res.status(200).json({ data: habit });
+});
 
-    return res.status(200).json(habits);
-}
-
-export async function getHabitById(req, res) {
-    const { error } = validateHabitId(req.params.habitId);
-
-    if (error) {
-        return badRequest(res, error);
-    }
-
-    const habit = await habitService.getHabitById(req.params.habitId);
-
-    if (!habit) {
-        return notFound(res);
-    }
-
-    return res.status(200).json(habit);
-}
-
-export async function updateHabit(req, res) {
-    const { error: idError } = validateHabitId(req.params.habitId);
-
-    if (idError) {
-        return badRequest(res, idError);
-    }
-
-    const { error, value } = validateUpdateHabitInput(req.body);
-
-    if (error) {
-        return badRequest(res, error);
-    }
-
-    const habit = await habitService.updateHabit(req.params.habitId, value);
-
-    if (!habit) {
-        return notFound(res);
-    }
-
-    return res.status(200).json(habit);
-}
-
-export async function deleteHabit(req, res) {
-    const { error } = validateHabitId(req.params.habitId);
-
-    if (error) {
-        return badRequest(res, error);
-    }
-
-    const habit = await habitService.deleteHabit(req.params.habitId);
-
-    if (!habit) {
-        return notFound(res);
-    }
-
-    return res.status(204).send();
-}
+/**
+ * DELETE /api/habits/:habitId/check-ins
+ * Undo completion of a habit for today.
+ */
+export const uncompleteHabit = asyncHandler(async (req, res) => {
+    const habit = await habitService.uncompleteHabit(req.params.habitId, req.user.id);
+    res.status(200).json({ data: habit });
+});
