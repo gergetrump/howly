@@ -1,3 +1,4 @@
+import { HoodieLayer } from '@/components/brand/items/Hoodie';
 import { cn } from '@/lib/utils';
 
 const sizeClasses = {
@@ -8,12 +9,37 @@ const sizeClasses = {
     '2xl': 'w-80 h-80',
 };
 
+const itemLayerKeys = {
+    hoodie: 'hoodie',
+    cozyHoodie: 'hoodie',
+    'cozy-hoodie': 'hoodie',
+    pullover_01: 'hoodie',
+};
+
+function normalizeItemKey(itemKey) {
+    return itemLayerKeys[itemKey?.trim()] ?? null;
+}
+
+function CompanionItemLayer({ itemKey }) {
+    const normalizedItemKey = normalizeItemKey(itemKey);
+
+    if (normalizedItemKey === 'hoodie') {
+        return <HoodieLayer transform="translate(100 770)" />;
+    }
+
+    return null;
+}
+
 export function CompanionAvatar({
-    name = 'Howly',
-    size = 'lg',
-    showName = false,
-    className,
-}) {
+                                    name = 'Howly',
+                                    size = 'lg',
+                                    showName = false,
+                                    previewItemKey,
+                                    equippedItemKeys = [],
+                                    className,
+                                }) {
+    const itemKeys = [...equippedItemKeys, previewItemKey].filter(Boolean);
+
     return (
         <figure className={cn('flex flex-col items-center gap-2', className)}>
             <svg
@@ -59,6 +85,8 @@ export function CompanionAvatar({
 
                 {/* Body */}
                 <rect x="195.998" y="178" width="1000" height="1150" rx="100" fill="var(--color-wolf-body)" />
+
+
 
                 {/* Ears */}
                 <g>
@@ -141,6 +169,11 @@ export function CompanionAvatar({
                     <rect x="531" y="1168" width="320" height="160" fill="var(--color-wolf-belly)" />
                     <circle cx="691" cy="1168" r="160" fill="var(--color-wolf-belly)" />
                 </g>
+
+                {/* Equipped items */}
+                {itemKeys.map((itemKey) => (
+                    <CompanionItemLayer key={itemKey} itemKey={itemKey} />
+                ))}
 
                 {/* Nose (Moved to the absolute front layer) */}
                 <circle cx="696" cy="780" r="45" fill="var(--color-wolf-dark)" />
