@@ -1,11 +1,12 @@
 import jwt from 'jsonwebtoken';
+import config from '../../config.js';
 
 // Read the signing secret once per request path.
 function getJwtSecret() {
-    const secret = process.env.JWT_SECRET;
+    const secret = config.jwtSecret;
 
     if (!secret) {
-        throw new Error('JWT_SECRET is missing in .env');
+        throw new Error('jwtSecret is missing in config.js');
     }
 
     return secret;

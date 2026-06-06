@@ -1,15 +1,16 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import config from '../../../config.js';
 import User from '../users/user.model.js';
 
-const TOKEN_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const TOKEN_EXPIRES_IN = config.jwtExpiresIn || '7d';
 
 // Centralized lookup for the JWT secret.
 function getJwtSecret() {
-    const secret = process.env.JWT_SECRET;
+    const secret = config.jwtSecret;
 
     if (!secret) {
-        throw new Error('JWT_SECRET is missing in .env');
+        throw new Error('jwtSecret is missing in config.js');
     }
 
     return secret;

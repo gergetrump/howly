@@ -4,5 +4,3 @@ services:
     container_name: howly-backend
     ports:
       - "3000:3000"
-    env_file:
-      - .env
