@@ -46,13 +46,6 @@ const userSchema = new Schema(
     firstName: {
       type: String,
       trim: true,
-      maxlength: 100,
-      required: true,
-    },
-
-    firstName: {
-      type: String,
-      trim: true,
       maxlength: 50,
       required: true,
     },
