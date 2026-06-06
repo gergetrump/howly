@@ -13,6 +13,7 @@ const router = Router();
 
 router.use(requireAuth);
 
+router.get('/search', searchUsers);
 router.get('/me', getCurrentUser);
 router.patch('/me', updateCurrentUser);
 router.delete('/me', deleteCurrentUser);

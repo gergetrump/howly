@@ -1,6 +1,13 @@
 import * as userService from './user.service.js';
+<<<<<<< src/features/users/user.controller.js
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cloudinary.service.js';
 import { validateUpdateUserInput, validateUserId } from './user.validation.js';
+import {
+    validateSearchUsersInput,
+    validateUpdateUserInput,
+    validateUserId,
+} from './user.validation.js';
+>>>>>>> src/features/users/user.controller.js
 
 const badRequest = (res, message) => res.status(400).json({ message });
 const notFound = (res) => res.status(404).json({ message: 'User not found' });
@@ -20,6 +27,21 @@ export async function getCurrentUser(req, res) {
     }
 
     return res.status(200).json(userService.toPublicUser(user));
+}
+
+export async function searchUsers(req, res) {
+    const { error, value } = validateSearchUsersInput(req.query);
+
+    if (error) {
+        return badRequest(res, error);
+    }
+
+    const users = await userService.searchUsersByUsername({
+        query: value.query,
+        currentUserId: req.user.id,
+    });
+
+    return res.status(200).json(users);
 }
 
 // Update allowed fields for the authenticated user.
@@ -67,6 +89,7 @@ export async function deleteCurrentUser(req, res) {
 
     return res.status(204).send();
 }
+<<<<<<< src/features/users/user.controller.js
 
 export async function uploadCurrentUserProfilePicture(req, res) {
     try {
@@ -133,3 +156,5 @@ export async function deleteCurrentUserProfilePicture(req, res) {
         });
     }
 }
+=======
+>>>>>>> src/features/users/user.controller.js
