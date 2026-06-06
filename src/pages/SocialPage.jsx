@@ -263,8 +263,8 @@ export function SocialPage() {
     }
 
     return (
-        <Page background="forest">
-            <Heading title="Social" subtitle="See what your friends are building." streakDays={100} />
+        <Page theme="forest">
+            <Heading title="Social" subtitle="See what your friends are building." streakDays={user?.streak ?? 0} />
 
             <PageSection title="Add Friend" width="md">
                 <form className="flex flex-col gap-2 sm:flex-row" onSubmit={handleSearchUsers}>

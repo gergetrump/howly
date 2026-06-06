@@ -6,7 +6,7 @@ const sizeClasses = {
     lg: 'text-2xl gap-2 font-bold',
 };
 
-export function StreakBadge({ days = 0, showLabel = true, size = 'md', className }) {
+export function StreakBadge({ days = 0, showLabel = true, size = 'md', icon = '🌙', className }) {
     return (
         <span
             className={cn(

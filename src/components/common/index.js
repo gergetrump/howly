@@ -1,6 +1,6 @@
-export { ActionButton } from './ActionButton';
-export { ActionStack } from './ActionStack';
-export { CardGrid } from './CardGrid';
-export { CompletionCircle } from './CompletionCircle';
-export { ReactionButton } from './ReactionButton';
-export { SectionHeader } from './SectionHeader';
+export { ActionButton } from './ActionButton.jsx';
+export { ActionStack } from './ActionStack.jsx';
+export { CardGrid } from './CardGrid.jsx';
+export { CompletionCircle } from './CompletionCircle.jsx';
+export { ReactionButton } from './ReactionButton.jsx';
+export { SectionHeader } from './sectionHeader';

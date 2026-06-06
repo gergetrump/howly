@@ -1,9 +1,9 @@
 import { Link, NavLink } from 'react-router-dom';
 import { Dumbbell, Home, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
-import { MoonCoin } from '@/components/brand/MoonCoin';
+import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import howlyIcon from '@/assets/howly.png';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/context/AuthContext.jsx';
+import { useAuth } from '@/context/authContext';
 
 const defaultItems = [
     { label: 'Home', to: '/dashboard', icon: Home },
@@ -32,14 +32,13 @@ const brandSizes = {
 export function NavBar({
     items = defaultItems,
     brandSize = 'lg',
-    coins = 120,
     className,
 }) {    
     const { user } = useAuth();
     const brandSizeClasses = brandSizes[brandSize] ?? brandSizes.md;
     const profileItem = items.find((item) => item.to === '/profile');
     const navigationItems = items.filter((item) => item.to !== '/profile');
-    const coinAmount = typeof coins === 'number' ? coins : user?.coins;
+    const coinAmount = user?.coins ?? 0;
     const navProfilePictureUrl = user?.profilePictureUrl;
 
     return (
@@ -87,7 +86,7 @@ export function NavBar({
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">
-                    {typeof coinAmount === 'number' ? <MoonCoin amount={coinAmount} compact /> : null}
+                    <MoonCoin amount={coinAmount} compact />
                     {profileItem ? (
                         <NavLink
                             to={profileItem.to}

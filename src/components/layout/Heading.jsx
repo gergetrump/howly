@@ -1,6 +1,6 @@
 import { LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { StreakBadge } from '@/components/brand/StreakBadge';
+import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
 import { cn } from '@/lib/utils';
 
 // Available sizes: sm, md, lg.

@@ -1,4 +1,4 @@
-import { Companion } from '@/components/brand/Companion';
+import { Companion } from '@/components/brand/companion';
 import howlyCompanion from '@/assets/howly.png';
 import { cn } from '@/lib/utils';
 

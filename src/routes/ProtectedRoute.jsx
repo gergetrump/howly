@@ -9,8 +9,8 @@
  * Real token validation and redirects to the login page will be added in
  * the dedicated authentication implementation.
  */
-import { Outlet } from 'react-router-dom';
+import {Outlet} from 'react-router-dom';
 
 export function ProtectedRoute() {
-    return <Outlet />;
+    return <Outlet/>;
 }

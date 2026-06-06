@@ -10,17 +10,17 @@
  */
 
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { AuthLayout } from '@/components/layout/AuthLayout';
-import { PageLayout } from '@/components/layout/PageLayout';
-import { ProtectedRoute } from '@/routes/ProtectedRoute';
-import { LandingPage } from '@/pages/LandingPage';
-import { LoginPage } from '@/pages/LoginPage';
-import { RegisterPage } from '@/pages/RegisterPage';
-import { DashboardPage } from '@/pages/DashboardPage';
-import { SocialPage } from '@/pages/SocialPage';
-import { ShopPage } from '@/pages/ShopPage';
-import { ChallengesPage } from '@/pages/ChallengesPage';
-import { ProfilePage } from '@/pages/ProfilePage';
+import { AuthLayout } from '@/components/layout/AuthLayout.jsx';
+import { PageLayout } from '@/components/layout/PageLayout.jsx';
+import { ProtectedRoute } from '@/routes/ProtectedRoute.jsx';
+import { LandingPage } from '@/pages/landingPage';
+import { LoginPage } from '@/pages/loginPage';
+import { RegisterPage } from '@/pages/registerPage';
+import { DashboardPage } from '@/pages/dashboardPage';
+import { SocialPage } from '@/pages/SocialPage.jsx';
+import { ShopPage } from '@/pages/shopPage';
+import { ChallengesPage } from '@/pages/ChallengesPage.jsx';
+import { ProfilePage } from '@/pages/profilePage';
 
 export function AppRoutes() {
     return (

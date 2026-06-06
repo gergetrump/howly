@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
 
 import howlyIcon from '@/assets/howly.png';
-import { Background } from '@/components/brand/Background';
+import { Background } from '@/components/brand/background';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName } from '@/components/cards/cardStyles';
