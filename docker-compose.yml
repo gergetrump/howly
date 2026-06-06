@@ -1,0 +1,6 @@
+services:
+  backend:
+    build: .
+    container_name: howly-backend
+    ports:
+      - "3000:3000"

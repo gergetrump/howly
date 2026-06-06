@@ -7,6 +7,7 @@ import createApp from '../src/app.js';
 import connectDB from '../src/config/database.js';
 import User from '../src/features/users/user.model.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
+import config from '../config.js';
 
 let mongo;
 let app;
@@ -27,7 +28,7 @@ async function buildUser(overrides = {}) {
 
 // Spin up an in-memory MongoDB and app instance for the test suite.
 before(async () => {
-    process.env.JWT_SECRET = 'test-secret';
+    config.jwtSecret = 'test-secret';
     mongo = await MongoMemoryServer.create();
     await connectDB(mongo.getUri());
     app = createApp();
