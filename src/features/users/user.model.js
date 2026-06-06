@@ -62,6 +62,10 @@ const userSchema = new Schema(
       maxlength: 50,
       required: true,
     },
+    profilePictureUrl: {
+      type: String,
+      default: null,
+    },
     role: {
       type: String,
       enum: ["user", "admin"],
@@ -72,7 +76,6 @@ const userSchema = new Schema(
       default: 0,
       min: 0,
     },
-
     streak: {
       type: Number,
       default: 0,

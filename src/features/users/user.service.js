@@ -1,4 +1,5 @@
 import User from './user.model.js';
+const SERVER_BASE_URL = process.env.SERVER_BASE_URL ?? 'http://localhost:3000';
 
 // Fetch a user document by id.
 export async function getUserById(userId) {
@@ -43,7 +44,7 @@ export async function updateUserById(userId, updates) {
     }
 
     const user = await User.findByIdAndUpdate(userId, updates, {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
     });
 
@@ -56,12 +57,17 @@ export function toPublicUser(user) {
         return null;
     }
 
+    const profilePictureUrl = user.profilePictureUrl
+        ? user.profilePictureUrl
+        : `${SERVER_BASE_URL}/uploads/profile-pictures/default.png`;
+
     return {
         id: user._id.toString(),
         username: user.username,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        profilePictureUrl,
         role: user.role,
         authProvider: user.authProvider,
         providerId: user.providerId,
@@ -79,7 +85,7 @@ export async function softDeleteUser(userId) {
             isDeleted: true,
             deletedAt: new Date(),
         },
-        { new: true }
+        { returnDocument: 'after' }
     );
 }
 
@@ -90,6 +96,22 @@ export async function restoreUser(userId) {
             isDeleted: false,
             deletedAt: null,
         },
-        { new: true }
+        { returnDocument: 'after' }
+    );
+}
+
+export async function updateUserProfilePicture(userId, profilePictureUrl) {
+    return User.findByIdAndUpdate(
+        userId,
+        { profilePictureUrl },
+        { returnDocument: 'after' }
+    );
+}
+
+export async function resetUserProfilePicture(userId) {
+    return User.findByIdAndUpdate(
+        userId,
+        { profilePictureUrl: null },
+        { returnDocument: 'after' }
     );
 }
