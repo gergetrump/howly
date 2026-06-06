@@ -17,7 +17,8 @@ export function RegisterPage() {
     const [formData, setFormData] = useState({
         username: '',
         email: '',
-        fullName: '',
+        firstName: '',
+        lastName: '',
         password: '',
     });
 
@@ -123,25 +124,48 @@ export function RegisterPage() {
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label
-                                    htmlFor="fullName"
-                                    className="text-sm font-medium text-slate-200"
-                                >
-                                    Full name
-                                </label>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <label
+                                        htmlFor="firstName"
+                                        className="text-sm font-medium text-slate-200"
+                                    >
+                                        First name
+                                    </label>
 
-                                <input
-                                    id="fullName"
-                                    name="fullName"
-                                    type="text"
-                                    value={formData.fullName}
-                                    onChange={handleChange}
-                                    required
-                                    autoComplete="name"
-                                    placeholder="Alex Wolf"
-                                    className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-howly-primary"
-                                />
+                                    <input
+                                        id="firstName"
+                                        name="firstName"
+                                        type="text"
+                                        value={formData.firstName}
+                                        onChange={handleChange}
+                                        required
+                                        autoComplete="given-name"
+                                        placeholder="Alex"
+                                        className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-howly-primary"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label
+                                        htmlFor="lastName"
+                                        className="text-sm font-medium text-slate-200"
+                                    >
+                                        Last name
+                                    </label>
+
+                                    <input
+                                        id="lastName"
+                                        name="lastName"
+                                        type="text"
+                                        value={formData.lastName}
+                                        onChange={handleChange}
+                                        required
+                                        autoComplete="family-name"
+                                        placeholder="Wolf"
+                                        className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-howly-primary"
+                                    />
+                                </div>
                             </div>
 
                             <div className="space-y-2">
