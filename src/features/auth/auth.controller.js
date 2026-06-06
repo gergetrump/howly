@@ -12,21 +12,33 @@ const unauthorized = (res, message) => res.status(401).json({ message });
 
 // Register a new local user and return an access token.
 export async function register(req, res) {
-    const { error, value } = validateRegisterInput(req.body);
+    try {
+        const { error, value } = validateRegisterInput(req.body);
 
-    if (error) {
-        return badRequest(res, error);
+        if (error) {
+            return badRequest(res, error);
+        }
+
+        const { user, error: serviceError } = await registerLocalUser(value);
+
+        if (serviceError) {
+            return badRequest(res, serviceError);
+        }
+
+        const token = signAccessToken(user);
+
+        return res.status(201).json({ user: toPublicUser(user), token });
+    } catch (error) {
+        if (error.code === 11000) {
+            const duplicatedField = Object.keys(error.keyValue)[0];
+            return res.status(409).json({
+                message: `${duplicatedField} is already in use`,
+            })
+        }
+        return res.status(500).json({
+            message: 'Something went wrong'
+        })
     }
-
-    const { user, error: serviceError } = await registerLocalUser(value);
-
-    if (serviceError) {
-        return badRequest(res, serviceError);
-    }
-
-    const token = signAccessToken(user);
-
-    return res.status(201).json({ user: toPublicUser(user), token });
 }
 
 // Authenticate a local user and return an access token.

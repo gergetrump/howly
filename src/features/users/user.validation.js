@@ -62,7 +62,6 @@ export function validateUpdateUserInput(body = {}) {
             updates.lastName = body.lastName.trim();
         }
     }
-
     if (body.username !== undefined) {
         if (!isNonEmptyString(body.username)) {
             errors.push('username must be a non-empty string');
