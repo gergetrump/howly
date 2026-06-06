@@ -22,15 +22,17 @@ export function validateRegisterInput(body = {}) {
     } else if (!isValidEmail(email)) {
         errors.push('email must be a valid email address');
     }
+
     if (!firstName) {
         errors.push('firstName is required');
-    } else if (firstName.length > 100) {
-        errors.push('firstName must be 100 characters or less');
+    } else if (firstName.length > 50) {
+        errors.push('firstName must be 50 characters or less');
     }
+
     if (!lastName) {
         errors.push('lastName is required');
-    } else if (lastName.length > 100) {
-        errors.push('lastName must be 100 characters or less');
+    } else if (lastName.length > 50) {
+        errors.push('lastName must be 50 characters or less');
     }
     if (!password) {
         errors.push('password is required');
