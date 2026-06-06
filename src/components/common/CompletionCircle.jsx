@@ -6,8 +6,10 @@ export function CompletionCircle({ completed = false, label = 'Mark complete', o
         <button
             type="button"
             className={cn(
-                'flex size-10 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-200',
-                completed && 'border-emerald-300 bg-emerald-400 text-slate-950 hover:bg-emerald-300',
+                'flex size-10 shrink-0 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0ba360]/30',
+                completed 
+                    ? 'border-2 border-[#0ba360] bg-transparent text-[#0ba360] hover:bg-[#0ba360]/10'
+                    : 'border-2 border-white/20 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white',
                 className,
             )}
             aria-label={label}

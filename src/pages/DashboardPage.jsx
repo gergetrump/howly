@@ -4,8 +4,8 @@ import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
 import { CompanionStage } from '@/components/brand';
-import { AddHabitModal } from '@/components/habits/AddHabitModal.jsx';
-import { getMyHabits, deleteHabit, checkInHabit } from '@/services/habitService';
+import { AddHabitModal } from '@/components/habits/addHabitModal';
+import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
 import { useAuth } from '@/context/authContext';
 
 export function DashboardPage() {
@@ -26,10 +26,12 @@ export function DashboardPage() {
         fetchHabits();
     }, []);
 
-    async function handleHabitCompletion(habitId) {
+    async function handleHabitCompletion(habit) {
         try {
-            const updatedHabit = await checkInHabit(habitId);
-            setHabits(prev => prev.map(h => h.id === habitId ? updatedHabit.data : h));
+            const updatedHabit = habit.isCompletedToday
+                ? await uncheckInHabit(habit.id)
+                : await checkInHabit(habit.id);
+            setHabits(prev => prev.map(h => h.id === habit.id ? updatedHabit.data : h));
         } catch (error) {
             console.error('Failed to complete habit:', error);
             // Optionally show toast error here
@@ -89,7 +91,7 @@ export function DashboardPage() {
                         >
                             <CompletionCircle
                                 completed={habit.isCompletedToday}
-                                onClick={() => handleHabitCompletion(habit.id)}
+                                onClick={() => handleHabitCompletion(habit)}
                                 aria-label={`Mark ${habit.title} as completed`}
                             />
                         </HabitCard>

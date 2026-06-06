@@ -68,3 +68,12 @@ export async function checkInHabit(habitId) {
         method: 'POST',
     });
 }
+
+/**
+ * Undo check-in for a habit.
+ */
+export async function uncheckInHabit(habitId) {
+    return apiRequest(`/habits/${habitId}/check-ins`, {
+        method: 'DELETE',
+    });
+}
