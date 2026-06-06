@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Bell,
@@ -16,7 +16,12 @@ import {
 import { Page, PageSection, Heading } from '@/components/layout';
 import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
 import { logoutUser } from '@/services/authService';
-import { getCurrentUser } from '@/services/userService';
+import { 
+    uploadCurrentUserProfilePicture,
+    deleteCurrentUserProfilePicture,
+} from '@/services/userService';
+import { useAuth } from '@/context/AuthContext.jsx';
+
 
 function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle }) {
     return (
@@ -66,24 +71,11 @@ function GhostModeRow() {
 export function ProfilePage() {
     const navigate = useNavigate();
 
-    const [user, setUser] = useState(null);
+    const { user, setUser, isLoadingUser } = useAuth();
     const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        async function loadUser() {
-            try {
-                const currentUser = await getCurrentUser();
-                setUser(currentUser);
-            } catch (error) {
-                setError(error.message || 'Could not load profile');
-            } finally {
-                setIsLoading(false);
-            }
-        }
-
-        loadUser();
-    }, []);
+    const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+    const [isDeletingPicture, setIsDeletingPicture] = useState(false);
+    const [pictureError, setPictureError] = useState('');
 
     async function handleLogout() {
         try {
@@ -96,7 +88,43 @@ export function ProfilePage() {
         }
     }
 
-    if (isLoading) {
+
+    async function handleProfilePictureChange(event) {
+        const file = event.target.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        try {
+            setPictureError('');
+            setIsUploadingPicture(true);
+
+            const updatedUser = await uploadCurrentUserProfilePicture(file);
+            setUser(updatedUser);
+        } catch (error) {
+            setPictureError(error.message || 'Could not upload profile picture');
+        } finally {
+            setIsUploadingPicture(false);
+            event.target.value = '';
+        }
+    }
+
+    async function handleDeleteProfilePicture() {
+        try {
+            setPictureError('');
+            setIsDeletingPicture(true);
+
+            const updatedUser = await deleteCurrentUserProfilePicture();
+            setUser(updatedUser);
+        } catch (error) {
+            setPictureError(error.message || 'Could not delete profile picture');
+        } finally {
+            setIsDeletingPicture(false);
+        }
+    }
+
+    if (isLoadingUser) {
         return (
             <Page background="forest">
                 <Heading
@@ -137,8 +165,44 @@ export function ProfilePage() {
             />
 
             <section className="rounded-2xl bg-slate-800/80 px-6 py-8 text-center shadow-lg">
-                <div className="mx-auto flex size-24 items-center justify-center rounded-full bg-pink-400 text-5xl">
-                    🦊
+                <div className="mx-auto flex flex-col items-center gap-3">
+                    <div className="flex size-24 items-center justify-center overflow-hidden rounded-full bg-slate-700">
+                        {user?.profilePictureUrl ? (
+                            <img
+                                src={user.profilePictureUrl}
+                                alt={`${fullName}'s profile`}
+                                className="size-full object-cover"
+                            />
+                        ) : (
+                            <span className="text-5xl">🦊</span>
+                        )}
+                    </div>
+
+                    <div className="flex items-center justify-center gap-3">
+                        <label className="cursor-pointer rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">
+                            {isUploadingPicture ? 'Uploading...' : 'Change picture'}
+                            <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/jpg"
+                                onChange={handleProfilePictureChange}
+                                disabled={isUploadingPicture}
+                                className="hidden"
+                            />
+                        </label>
+
+                        <button
+                            type="button"
+                            onClick={handleDeleteProfilePicture}
+                            disabled={isUploadingPicture || isDeletingPicture}
+                            className="rounded-xl bg-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-600 disabled:opacity-50"
+                        >
+                            {isDeletingPicture ? 'Removing...' : 'Remove'}
+                        </button>
+                    </div>
+
+                    {pictureError && (
+                        <p className="text-sm text-red-300">{pictureError}</p>
+                    )}
                 </div>
 
                 <h2 className="mt-5 text-2xl font-bold text-white">{fullName}</h2>

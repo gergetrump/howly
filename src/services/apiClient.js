@@ -2,11 +2,15 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000
 
 export async function apiRequest(path, options = {}) {
     const token = localStorage.getItem('howly_token');
+    const isFormData = options.body instanceof FormData;
 
     const headers = {
-        'Content-Type': 'application/json',
         ...options.headers,
     };
+
+    if (!isFormData) {
+        headers['Content-Type'] = 'application/json';
+    }
 
     if (token) {
         headers.Authorization = `Bearer ${token}`;

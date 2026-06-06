@@ -3,6 +3,7 @@ import { Dumbbell, Home, ShoppingBag, Trophy, UserRound, UsersRound } from 'luci
 import { MoonCoin } from '@/components/brand/MoonCoin';
 import howlyIcon from '@/assets/howly.png';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext.jsx';
 
 const defaultItems = [
     { label: 'Home', to: '/dashboard', icon: Home },
@@ -28,10 +29,18 @@ const brandSizes = {
     },
 };
 
-export function NavBar({ items = defaultItems, brandSize = 'lg', coins = 120, className }) {
+export function NavBar({
+    items = defaultItems,
+    brandSize = 'lg',
+    coins = 120,
+    className,
+}) {    
+    const { user } = useAuth();
     const brandSizeClasses = brandSizes[brandSize] ?? brandSizes.md;
     const profileItem = items.find((item) => item.to === '/profile');
     const navigationItems = items.filter((item) => item.to !== '/profile');
+    const coinAmount = typeof coins === 'number' ? coins : user?.coins;
+    const navProfilePictureUrl = user?.profilePictureUrl;
 
     return (
         <nav
@@ -78,7 +87,7 @@ export function NavBar({ items = defaultItems, brandSize = 'lg', coins = 120, cl
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">
-                    {typeof coins === 'number' ? <MoonCoin amount={coins} compact /> : null}
+                    {typeof coinAmount === 'number' ? <MoonCoin amount={coinAmount} compact /> : null}
                     {profileItem ? (
                         <NavLink
                             to={profileItem.to}
@@ -90,7 +99,15 @@ export function NavBar({ items = defaultItems, brandSize = 'lg', coins = 120, cl
                             }
                             aria-label="Profile"
                         >
-                            <UserRound className="size-6" aria-hidden="true" />
+                            {navProfilePictureUrl ? (
+                                <img
+                                    src={navProfilePictureUrl}
+                                    alt="Profile"
+                                    className="size-full rounded-full object-cover"
+                                />
+                            ) : (
+                                <UserRound className="size-6" aria-hidden="true" />
+                            )}
                         </NavLink>
                     ) : null}
                 </div>
