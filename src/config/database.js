@@ -1,11 +1,12 @@
 import mongoose from 'mongoose';
+import config from '../../config.js';
 
-// Connect to MongoDB using env config or an override URI (tests).
+// Connect to MongoDB using committed config or an override URI (tests).
 async function connectDB(uriOverride) {
-  const uri = uriOverride || process.env.MONGO_URI;
+  const uri = uriOverride || config.mongoUri;
 
   if (!uri) {
-    throw new Error('MONGO_URI is missing in .env');
+    throw new Error('mongoUri is missing in config.js');
   }
 
   try {
