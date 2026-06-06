@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import habitRoutes from './features/habits/habit.routes.js';
 import authRoutes from './features/auth/auth.routes.js';
 import userRoutes from './features/users/user.routes.js';
