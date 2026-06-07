@@ -121,12 +121,21 @@ export function LoginPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label
-                                    htmlFor="password"
-                                    className="text-sm font-medium text-slate-200"
-                                >
-                                    Password
-                                </label>
+                                <div className="flex items-center justify-between">
+                                    <label
+                                        htmlFor="password"
+                                        className="text-sm font-medium text-slate-200"
+                                    >
+                                        Password
+                                    </label>
+
+                                    <Link
+                                        to="/forgot-password"
+                                        className="text-sm font-medium text-howly-primary transition-colors hover:text-pink-400"
+                                    >
+                                        Forgot password?
+                                    </Link>
+                                </div>
 
                                 <input
                                     id="password"
@@ -164,6 +173,8 @@ export function LoginPage() {
                             >
                                 Create one
                             </Link>
+
+                            
                         </p>
                     </CardContent>
                 </Card>
