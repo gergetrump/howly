@@ -7,6 +7,12 @@ export function registerUser(userData) {
     });
 }
 
+export function verifyEmail(token) {
+    return apiRequest(`/auth/verify-email?token=${encodeURIComponent(token)}`, {
+        method: 'GET',
+    });
+}
+
 export function loginUser(credentials) {
     return apiRequest('/auth/login', {
         method: 'POST',

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
 
 import howlyIcon from '@/assets/howly.png';
@@ -12,6 +12,7 @@ import { loginUser } from '@/services/authService';
 
 export function LoginPage() {
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [formData, setFormData] = useState({
         email: '',
@@ -19,7 +20,29 @@ export function LoginPage() {
     });
 
     const [error, setError] = useState('');
+    const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (!location.state) {
+            return;
+        }
+
+        const { message: nextMessage, email } = location.state;
+
+        if (nextMessage) {
+            setMessage(nextMessage);
+        }
+
+        if (email) {
+            setFormData((currentData) => ({
+                ...currentData,
+                email,
+            }));
+        }
+
+        navigate(location.pathname, { replace: true, state: null });
+    }, [location, navigate]);
 
     function handleChange(event) {
         const { name, value } = event.target;
@@ -34,6 +57,7 @@ export function LoginPage() {
         event.preventDefault();
 
         setError('');
+        setMessage('');
         setIsSubmitting(true);
 
         try {
@@ -43,6 +67,13 @@ export function LoginPage() {
 
             navigate('/dashboard');
         } catch (error) {
+            if (error.message === 'email address has not been verified') {
+                setError(
+                    'Your email address is not verified yet. Check your inbox for the confirmation link.',
+                );
+                return;
+            }
+
             setError(error.message || 'Login failed');
         } finally {
             setIsSubmitting(false);
@@ -120,6 +151,12 @@ export function LoginPage() {
                                 />
                             </div>
 
+                            {message && (
+                                <p className="rounded-xl border border-green-400/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
+                                    {message}
+                                </p>
+                            )}
+
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <label
@@ -173,8 +210,6 @@ export function LoginPage() {
                             >
                                 Create one
                             </Link>
-
-                            
                         </p>
                     </CardContent>
                 </Card>
