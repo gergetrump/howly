@@ -16,6 +16,7 @@ import { ProtectedRoute } from '@/routes/ProtectedRoute.jsx';
 import { LandingPage } from '@/pages/landingPage';
 import { LoginPage } from '@/pages/loginPage';
 import { RegisterPage } from '@/pages/registerPage';
+import { VerifyEmailPage } from '@/pages/VerifyEmailPage.jsx';
 import { DashboardPage } from '@/pages/dashboardPage';
 import { SocialPage } from '@/pages/SocialPage.jsx';
 import { ShopPage } from '@/pages/shopPage';
@@ -31,8 +32,9 @@ export function AppRoutes() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage/>} />
-                <Route path="/reset-password" element={<ResetPasswordPage/>} />
+                <Route path="/verify-email" element={<VerifyEmailPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
             </Route>
 
             <Route element={<ProtectedRoute />}>

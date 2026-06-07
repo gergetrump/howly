@@ -41,11 +41,17 @@ export function RegisterPage() {
         setIsSubmitting(true);
 
         try {
-            const data = await registerUser(formData);
+            const response = await registerUser(formData);
 
-            localStorage.setItem('howly_token', data.token);
-
-            navigate('/dashboard');
+            navigate('/login', {
+                replace: true,
+                state: {
+                    message:
+                        response.message ||
+                        'Confirmation email sent. Check your inbox to verify your account.',
+                    email: formData.email,
+                },
+            });
         } catch (error) {
             setError(error.message || 'Registration failed');
         } finally {
