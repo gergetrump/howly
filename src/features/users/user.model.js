@@ -46,13 +46,6 @@ const userSchema = new Schema(
     firstName: {
       type: String,
       trim: true,
-      maxlength: 100,
-      required: true,
-    },
-
-    firstName: {
-      type: String,
-      trim: true,
       maxlength: 50,
       required: true,
     },
@@ -86,6 +79,14 @@ const userSchema = new Schema(
       default: false,
     },
     deletedAt: {
+        type: Date,
+        default: null,
+    },
+    passwordResetTokenHash: {
+    type: String,
+    default: null,
+    },
+    passwordResetExpiresAt: {
         type: Date,
         default: null,
     },

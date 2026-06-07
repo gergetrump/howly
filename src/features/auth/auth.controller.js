@@ -2,7 +2,9 @@ import {
     authenticateLocalUser,
     getUserById,
     registerLocalUser,
+    requestPasswordReset,
     signAccessToken,
+    resetPassword as resetUserPassword,
     toPublicUser,
 } from './auth.service.js';
 import { validateLoginInput, validateRegisterInput } from './auth.validation.js';
@@ -74,4 +76,66 @@ export async function getMe(req, res) {
 // Log out by instructing the client to discard its token.
 export async function logout(req, res) {
     return res.status(204).send();
+}
+
+
+export async function forgotPassword(req, res) {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                message: 'Email is required',
+            });
+        }
+
+        await requestPasswordReset(email);
+
+        return res.status(200).json({
+            message:
+                'If an account with this email exists, a password reset link has been sent to the registered email address.',
+        });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+
+        return res.status(500).json({
+            message: 'Something went wrong while requesting a password reset',
+        });
+    }
+}
+
+export async function resetPassword(req, res) {
+    try {
+        const { token, password } = req.body;
+
+        if (!token) {
+            return res.status(400).json({
+                message: 'Reset token is required',
+            });
+        }
+
+        if (!password || password.length < 8) {
+            return res.status(400).json({
+                message: 'Password must be at least 8 characters long',
+            });
+        }
+
+        const result = await resetUserPassword(token, password);
+
+        if (result.error) {
+            return res.status(400).json({
+                message: result.error,
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Password reset successfully',
+        });
+    } catch (error) {
+        console.error('Reset password error:', error);
+
+        return res.status(500).json({
+            message: 'Something went wrong while resetting the password',
+        });
+    }
 }
