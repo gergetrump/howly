@@ -1,10 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Check, Send, X } from 'lucide-react';
+import { Check, MoreVertical, Send, Trash2, X } from 'lucide-react';
+import { AlertDialog as AlertDialogPrimitive } from 'radix-ui';
 import { CardGrid, ReactionButton } from '@/components/common';
 import { FeedPostCard, FriendCard } from '@/components/cards';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+    ConfirmationDialog,
+    ConfirmationDialogContent,
+    ConfirmationDialogDescription,
+    ConfirmationDialogFooter,
+    ConfirmationDialogHeader,
+    ConfirmationDialogTitle,
+} from '@/components/ui/confirmation-dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
     acceptFriendRequest,
@@ -89,7 +104,7 @@ function FriendRequestCard({ request, busy, onAccept, onReject }) {
                     <Button
                         type="button"
                         size="icon"
-                        variant="destructive"
+                        className="border border-white/15 bg-white/10 text-slate-100 hover:bg-white/20"
                         aria-label="Reject friend request"
                         disabled={busy}
                         onClick={() => onReject(request.id)}
@@ -99,6 +114,73 @@ function FriendRequestCard({ request, busy, onAccept, onReject }) {
                 </div>
             </CardContent>
         </Card>
+    );
+}
+
+function FriendActions({ friend, friendshipId, busy, onDelete }) {
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const friendName = getDisplayName(friend);
+
+    return (
+        <div className="flex items-center">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 rounded-full text-slate-300 hover:bg-white/10 hover:text-white"
+                        aria-label={`Open actions for ${friendName}`}
+                        disabled={busy}
+                    >
+                        <MoreVertical aria-hidden="true" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44 border-slate-800 bg-slate-950 text-slate-300">
+                    <DropdownMenuItem
+                        className="cursor-pointer focus:bg-slate-800 focus:text-white"
+                        onClick={() => setIsDeleteDialogOpen(true)}
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete friend
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            <ConfirmationDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <ConfirmationDialogContent className="border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl sm:max-w-md">
+                    <ConfirmationDialogHeader className="space-y-3 text-center">
+                        <ConfirmationDialogTitle className="text-xl font-bold">
+                            Remove this friend?
+                        </ConfirmationDialogTitle>
+                        <ConfirmationDialogDescription className="text-sm text-slate-300">
+                            Are you sure you want to remove this friend?
+                        </ConfirmationDialogDescription>
+                    </ConfirmationDialogHeader>
+                    <ConfirmationDialogFooter className="mt-4 gap-3 sm:justify-center">
+                        <AlertDialogPrimitive.Cancel asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="border-white/15 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                            >
+                                Cancel
+                            </Button>
+                        </AlertDialogPrimitive.Cancel>
+                        <AlertDialogPrimitive.Action asChild>
+                            <Button
+                                type="button"
+                                className="bg-red-500 text-white hover:bg-red-400"
+                                disabled={busy}
+                                onClick={() => onDelete(friendshipId, friend)}
+                            >
+                                Delete friend
+                            </Button>
+                        </AlertDialogPrimitive.Action>
+                    </ConfirmationDialogFooter>
+                </ConfirmationDialogContent>
+            </ConfirmationDialog>
+        </div>
     );
 }
 
@@ -368,16 +450,12 @@ export function SocialPage() {
                                 username={getUsername(friend)}
                                 streakDays={friend?.streak ?? 0}
                                 action={(
-                                    <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="destructive"
-                                        aria-label={`Remove ${getDisplayName(friend)} from friends`}
-                                        disabled={busyFriendId === id}
-                                        onClick={() => handleDeleteFriend(id, friend)}
-                                    >
-                                        <X aria-hidden="true" />
-                                    </Button>
+                                    <FriendActions
+                                        friend={friend}
+                                        friendshipId={id}
+                                        busy={busyFriendId === id}
+                                        onDelete={handleDeleteFriend}
+                                    />
                                 )}
                             />
                         ))}
