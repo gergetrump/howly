@@ -1,5 +1,7 @@
 import User from './user.model.js';
-const SERVER_BASE_URL = process.env.SERVER_BASE_URL ?? 'http://localhost:3000';
+import config from '../../../config.js';
+
+const SERVER_BASE_URL = config.serverBaseUrl ?? 'http://localhost:3000';
 
 // Fetch a user document by id.
 export async function getUserById(userId) {

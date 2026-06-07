@@ -2,41 +2,72 @@ import mongoose from 'mongoose';
 
 const { Schema } = mongoose;
 
-const HABIT_TYPES = ["boolean", "numeric"];
+const FREQUENCIES = ['Daily', 'Weekly', 'Monthly', 'Custom'];
+const CATEGORIES = ['Movement', 'Productivity', 'Nutrition', 'Connection'];
 
 const habitSchema = new Schema(
-  {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-      minlength: 1,
-      maxlength: 100,
+    {
+        title: {
+            type: String,
+            required: true,
+            trim: true,
+            maxlength: 100,
+        },
+        description: {
+            type: String,
+            trim: true,
+            maxlength: 1000,
+            default: '',
+        },
+        icon: {
+            type: String,
+            default: '🎯',
+        },
+        type: {
+            type: String,
+            enum: ['boolean', 'numeric'],
+            required: true,
+            default: 'boolean',
+        },
+        target: {
+            type: Number,
+        },
+        unit: {
+            type: String,
+            trim: true,
+            maxlength: 50,
+        },
+        frequency: {
+            type: String,
+            enum: FREQUENCIES,
+            required: true,
+        },
+        category: {
+            type: String,
+            enum: CATEGORIES,
+        },
+        ownerId: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+            index: true,
+        },
+        streakCount: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        lastCompletedAt: {
+            type: Date,
+            default: null,
+        },
     },
-    type: {
-      type: String,
-      enum: HABIT_TYPES,
-      required: true,
+    {
+        timestamps: true,
     },
-    done: {
-      type: Boolean,
-      default: false,
-    },
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true,
-    },
-    streak: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-  },
-  {
-    timestamps: true,
-  }
 );
 
+habitSchema.index({ ownerId: 1, createdAt: -1 });
+
+export { FREQUENCIES, CATEGORIES };
 export default mongoose.model('Habit', habitSchema);

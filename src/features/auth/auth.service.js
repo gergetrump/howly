@@ -1,15 +1,21 @@
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import config from '../../../config.js';
 import User from '../users/user.model.js';
+import {
+    sendAccountVerificationEmail,
+    sendPasswordResetEmail,
+} from '../mail/mail.service.js';
 
-const TOKEN_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const TOKEN_EXPIRES_IN = config.jwtExpiresIn || '7d';
 
 // Centralized lookup for the JWT secret.
 function getJwtSecret() {
-    const secret = process.env.JWT_SECRET;
+    const secret = config.jwtSecret;
 
     if (!secret) {
-        throw new Error('JWT_SECRET is missing in .env');
+        throw new Error('jwtSecret is missing in config.js');
     }
 
     return secret;
@@ -23,6 +29,14 @@ function buildTokenPayload(user) {
     };
 }
 
+function hashToken(token) {
+    return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+function buildAccountVerificationLink(token) {
+    return `${config.serverBaseUrl}/api/auth/verify-email?token=${token}`;
+}
+
 // Sign a new access token for the given user.
 export function signAccessToken(user) {
     return jwt.sign(buildTokenPayload(user), getJwtSecret(), {
@@ -32,24 +46,37 @@ export function signAccessToken(user) {
 
 // Register a local user, returning a created user or an error message.
 export async function registerLocalUser({ username, email, firstName, lastName, password }) {
-    const existingUser = await User.findOne({ email }).lean();
+    const normalizedEmail = email.toLowerCase().trim();
+    const existingUser = await User.findOne({ email: normalizedEmail }).lean();
 
     if (existingUser) {
-        return { error: 'email is already in use' };
+        return { error: 'Email is already in use' };
     }
 
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenHash = hashToken(verificationToken);
     const passwordHash = await bcrypt.hash(password, 12);
 
     const user = await User.create({
         username,
-        email,
+        email: normalizedEmail,
         firstName,
         lastName,
         passwordHash,
         authProvider: 'local',
+        isEmailVerified: false,
+        emailVerificationTokenHash: verificationTokenHash,
+        emailVerificationExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
 
-    return { user };
+    try {
+        await sendAccountVerificationEmail(user.email, buildAccountVerificationLink(verificationToken));
+    } catch (error) {
+        await User.findByIdAndDelete(user._id);
+        throw error;
+    }
+
+    return { user, verificationToken };
 }
 
 // Validate a local user's credentials and return the user or an error message.
@@ -57,17 +84,24 @@ export async function authenticateLocalUser({ email, password }) {
     const user = await User.findOne({ email, authProvider: 'local' }).select('+passwordHash');
 
     if (!user) {
-        return { error: 'invalid email or password' };
+        return { error: 'Invalid email or password' };
     }
 
     if (user.isDeleted) {
-        return { error: 'account has been deleted' };
+        return { error: 'Account has been deleted' };
     }
 
     const isValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isValid) {
-        return { error: 'invalid email or password' };
+        return { error: 'Invalid email or password' };
+    }
+
+    if (!user.isEmailVerified) {
+        return {
+            error: 'Email address has not been verified',
+            statusCode: 403,
+        };
     }
 
     return { user };
@@ -93,9 +127,84 @@ export function toPublicUser(user) {
         role: user.role,
         authProvider: user.authProvider,
         providerId: user.providerId,
+        isEmailVerified: user.isEmailVerified,
+        emailVerifiedAt: user.emailVerifiedAt,
         coins: user.coins,
         streak: user.streak,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
     };
+}
+
+export async function requestPasswordReset(email) {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({
+        email: normalizedEmail,
+        isDeleted: false,
+    });
+
+    // Do not reveal whether the email exists.
+    if (!user) {
+        return;
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = hashToken(resetToken);
+
+    user.passwordResetTokenHash = resetTokenHash;
+    user.passwordResetExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await user.save();
+
+    const resetLink = `${config.frontendBaseUrl}/reset-password?token=${resetToken}`;
+
+    await sendPasswordResetEmail(user.email, resetLink);
+}
+
+export async function verifyEmail(token) {
+    const tokenHash = hashToken(token);
+
+    const user = await User.findOne({
+        emailVerificationTokenHash: tokenHash,
+        emailVerificationExpiresAt: { $gt: new Date() },
+        isDeleted: false,
+    });
+
+    if (!user) {
+        return { error: 'Invalid or expired verification token' };
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerifiedAt = new Date();
+    user.emailVerificationTokenHash = null;
+    user.emailVerificationExpiresAt = null;
+
+    await user.save();
+
+    return { user };
+}
+
+export async function resetPassword(token, newPassword) {
+    const tokenHash = hashToken(token);
+
+    const user = await User.findOne({
+        passwordResetTokenHash: tokenHash,
+        passwordResetExpiresAt: { $gt: new Date() },
+        isDeleted: false,
+    }).select('+passwordHash');
+
+    if (!user) {
+        return { error: 'Invalid or expired reset token' };
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    user.passwordHash = passwordHash;
+    user.passwordResetTokenHash = null;
+    user.passwordResetExpiresAt = null;
+
+    await user.save();
+
+    return { user };
 }

@@ -7,6 +7,7 @@ import createApp from '../src/app.js';
 import connectDB from '../src/config/database.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
 import Habit from '../src/features/habits/habit.model.js';
+import config from '../config.js';
 import {
   FriendRequest,
   Friendship,
@@ -40,7 +41,7 @@ function authHeader(user) {
 
 // Start an isolated in-memory database for the social test suite
 before(async () => {
-  process.env.JWT_SECRET = 'test-secret';
+  config.jwtSecret = 'test-secret';
   mongo = await MongoMemoryServer.create();
   await connectDB(mongo.getUri());
   app = createApp();
