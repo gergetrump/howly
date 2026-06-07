@@ -1,13 +1,22 @@
 import Challenge from './challenge.model.js';
 import ChallengeInvitation from './challengeInvitation.model.js';
 import ChallengeParticipant from './challengeParticipant.model.js';
+import Habit from '../habits/habit.model.js';
 import User from '../users/user.model.js';
 import { Friendship } from '../social/social.model.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const COINS_PER_CHALLENGE_DAY = 5;
+const FREE_ACTIVE_CHALLENGE_LIMIT = 1;
+const PREMIUM_ACTIVE_CHALLENGE_LIMIT = 2;
+const MAX_ACTIVE_CREATED_CHALLENGES = 1;
 
 function calculateEndDate(startsAt, durationDays) {
     return new Date(startsAt.getTime() + durationDays * DAY_IN_MS);
+}
+
+function getCoinReward(durationDays) {
+    return durationDays * COINS_PER_CHALLENGE_DAY;
 }
 
 function isChallengeOwner(challenge, user) {
@@ -51,9 +60,95 @@ async function canViewChallenge(challenge, user) {
     return areFriends(user.id, challenge.createdBy);
 }
 
-function canCreateChallenge() {
-    // TODO: replace with a real premium/subscription check once User has that field.
-    return true;
+async function getOwnedHabit(habitId, userId) {
+    return Habit.findOne({ _id: habitId, ownerId: userId }).lean();
+}
+
+function hasPremiumMembership(user) {
+    // TODO: replace these placeholder checks with the real premium/subscription field once User has it.
+    return user.role === 'admin'
+        || user.isPremium === true
+        || user.premium === true
+        || user.subscriptionTier === 'premium'
+        || user.plan === 'premium';
+}
+
+function getActiveChallengeLimit(user) {
+    return hasPremiumMembership(user) ? PREMIUM_ACTIVE_CHALLENGE_LIMIT : FREE_ACTIVE_CHALLENGE_LIMIT;
+}
+
+function getActiveChallengeConditions(now = new Date()) {
+    return {
+        status: { $nin: ['completed', 'failed'] },
+        endsAt: { $gt: now },
+    };
+}
+
+async function getActiveChallengeIdsForUser(userId, now = new Date()) {
+    const activeChallengeConditions = getActiveChallengeConditions(now);
+    const activeParticipations = await ChallengeParticipant.find({
+        user: userId,
+        status: 'active',
+    }).select('challenge').lean();
+
+    const participantChallengeIds = activeParticipations.map((participant) => participant.challenge);
+
+    const [createdChallenges, joinedChallenges] = await Promise.all([
+        Challenge.find({
+            createdBy: userId,
+            ...activeChallengeConditions,
+        }).select('_id').lean(),
+        participantChallengeIds.length
+            ? Challenge.find({
+                _id: { $in: participantChallengeIds },
+                ...activeChallengeConditions,
+            }).select('_id').lean()
+            : [],
+    ]);
+
+    return new Set([
+        ...createdChallenges.map((challenge) => challenge._id.toString()),
+        ...joinedChallenges.map((challenge) => challenge._id.toString()),
+    ]);
+}
+
+async function getActiveCreatedChallengeCount(userId, now = new Date()) {
+    return Challenge.countDocuments({
+        createdBy: userId,
+        ...getActiveChallengeConditions(now),
+    });
+}
+
+async function canAddActiveChallenge(user, challengeId) {
+    const activeChallengeIds = await getActiveChallengeIdsForUser(user.id);
+    const activeChallengeLimit = getActiveChallengeLimit(user);
+
+    if (challengeId) {
+        activeChallengeIds.add(challengeId.toString());
+    }
+
+    return activeChallengeIds.size <= activeChallengeLimit;
+}
+
+async function canCreateChallenge(user) {
+    if (!hasPremiumMembership(user)) {
+        return { error: 'premium membership is required to create challenges' };
+    }
+
+    const [activeCreatedChallengeCount, activeChallengeIds] = await Promise.all([
+        getActiveCreatedChallengeCount(user.id),
+        getActiveChallengeIdsForUser(user.id),
+    ]);
+
+    if (activeCreatedChallengeCount >= MAX_ACTIVE_CREATED_CHALLENGES) {
+        return { error: 'premium users can only create one active challenge at a time' };
+    }
+
+    if (activeChallengeIds.size >= getActiveChallengeLimit(user)) {
+        return { error: 'premium users can only participate in two active challenges at a time' };
+    }
+
+    return { allowed: true };
 }
 
 function getRewardCoins(challenge, participant) {
@@ -103,6 +198,7 @@ function serializeParticipant(participant, challenge) {
         id: participant._id.toString(),
         challenge: participant.challenge.toString(),
         user: participant.user.toString(),
+        habit: participant.habit ? participant.habit.toString() : null,
         status: participant.status,
         joinedAt: participant.joinedAt,
         daysCompleted: participant.daysCompleted,
@@ -138,19 +234,37 @@ function serializeInvitation(invitation) {
 }
 
 export async function createChallenge(input, user) {
-    if (!canCreateChallenge(user)) {
-        return { error: 'premium membership is required to create challenges' };
+    const createPermission = await canCreateChallenge(user);
+
+    if (createPermission.error) {
+        return { error: createPermission.error };
+    }
+
+    const habit = await getOwnedHabit(input.habitId, user.id);
+
+    if (!habit) {
+        return { error: 'habitId must belong to the current user' };
     }
 
     const startsAt = input.startsAt || new Date();
     const challenge = await Challenge.create({
         ...input,
         createdBy: user.id,
+        habitTitle: input.habitTitle || habit.title,
+        coinReward: getCoinReward(input.durationDays),
         startsAt,
         endsAt: calculateEndDate(startsAt, input.durationDays),
     });
+    const participant = await ChallengeParticipant.create({
+        challenge: challenge._id,
+        user: user.id,
+        habit: habit._id,
+    });
 
-    return { challenge: serializeChallenge(challenge) };
+    return {
+        challenge: serializeChallenge(challenge),
+        participant: serializeParticipant(participant, challenge),
+    };
 }
 
 export async function listChallenges(filters = {}, user) {
@@ -217,6 +331,7 @@ export async function updateChallenge(challengeId, updates, user) {
     const nextDurationDays = updates.durationDays || challenge.durationDays;
 
     Object.assign(challenge, updates, {
+        coinReward: getCoinReward(nextDurationDays),
         endsAt: calculateEndDate(nextStartsAt, nextDurationDays),
     });
 
@@ -243,11 +358,17 @@ export async function deleteChallenge(challengeId, user) {
     return { challenge: serializeChallenge(challenge) };
 }
 
-export async function joinChallenge(challengeId, user) {
+export async function joinChallenge(challengeId, user, { habitId }) {
     const challenge = await Challenge.findById(challengeId);
 
     if (!challenge) {
         return { notFound: true };
+    }
+
+    const habit = await getOwnedHabit(habitId, user.id);
+
+    if (!habit) {
+        return { error: 'habitId must belong to the current user' };
     }
 
     if (!await canViewChallenge(challenge, user)) {
@@ -256,6 +377,12 @@ export async function joinChallenge(challengeId, user) {
 
     if (!isChallengeJoinable(challenge)) {
         return { error: 'challenge is no longer joinable' };
+    }
+
+    if (!await canAddActiveChallenge(user, challenge._id)) {
+        return { error: hasPremiumMembership(user)
+            ? 'premium users can only participate in two active challenges at a time'
+            : 'free users can only participate in one active challenge at a time' };
     }
 
     const existingParticipant = await ChallengeParticipant.findOne({
@@ -271,6 +398,7 @@ export async function joinChallenge(challengeId, user) {
         existingParticipant.status = 'active';
         existingParticipant.joinedAt = new Date();
         existingParticipant.daysCompleted = 0;
+        existingParticipant.habit = habitId;
         existingParticipant.lastCompletedAt = null;
         existingParticipant.rewardClaimed = false;
         existingParticipant.rewardClaimedAt = null;
@@ -286,6 +414,7 @@ export async function joinChallenge(challengeId, user) {
     const participant = await ChallengeParticipant.create({
         challenge: challengeId,
         user: user.id,
+        habit: habitId,
     });
 
     return {
@@ -370,7 +499,7 @@ export async function listInvitations(userId) {
     };
 }
 
-export async function acceptInvitation(invitationId, user) {
+export async function acceptInvitation(invitationId, user, { habitId }) {
     const invitation = await ChallengeInvitation.findOne({
         _id: invitationId,
         invitee: user.id,
@@ -382,9 +511,20 @@ export async function acceptInvitation(invitationId, user) {
     }
 
     const challenge = invitation.challenge;
+    const habit = await getOwnedHabit(habitId, user.id);
+
+    if (!habit) {
+        return { error: 'habitId must belong to the current user' };
+    }
 
     if (!isChallengeJoinable(challenge)) {
         return { error: 'challenge is no longer joinable' };
+    }
+
+    if (!await canAddActiveChallenge(user, challenge._id)) {
+        return { error: hasPremiumMembership(user)
+            ? 'premium users can only participate in two active challenges at a time'
+            : 'free users can only participate in one active challenge at a time' };
     }
 
     let participant = await ChallengeParticipant.findOne({
@@ -406,6 +546,7 @@ export async function acceptInvitation(invitationId, user) {
     if (participant) {
         participant.status = 'active';
         participant.joinedAt = new Date();
+        participant.habit = habitId;
         participant.daysCompleted = 0;
         participant.lastCompletedAt = null;
         participant.rewardClaimed = false;
@@ -416,6 +557,7 @@ export async function acceptInvitation(invitationId, user) {
         participant = await ChallengeParticipant.create({
             challenge: challenge._id,
             user: user.id,
+            habit: habitId,
         });
     }
 
@@ -445,6 +587,40 @@ export async function rejectInvitation(invitationId, user) {
     await invitation.save();
 
     return { invitation: serializeInvitation(invitation) };
+}
+
+export async function recordProgressForHabit({ userId, habitId, days = 1 }) {
+    const participants = await ChallengeParticipant.find({
+        user: userId,
+        habit: habitId,
+        status: 'active',
+    });
+
+    const results = [];
+
+    for (const participant of participants) {
+        const challenge = await Challenge.findById(participant.challenge);
+
+        if (!challenge || !isChallengeJoinable(challenge)) {
+            continue;
+        }
+
+        participant.daysCompleted = Math.min(participant.daysCompleted + days, challenge.durationDays);
+        participant.lastCompletedAt = new Date();
+
+        if (participant.daysCompleted >= challenge.durationDays) {
+            participant.status = 'completed';
+        }
+
+        await participant.save();
+
+        results.push({
+            challenge: serializeChallenge(challenge),
+            participant: serializeParticipant(participant, challenge),
+        });
+    }
+
+    return results;
 }
 
 export async function leaveChallenge(challengeId, userId) {

@@ -2,8 +2,10 @@ import * as challengeService from './challenge.service.js';
 import {
     validateChallengeId,
     validateChallengeInvitationId,
+    validateAcceptInvitationInput,
     validateCreateInvitationInput,
     validateCreateChallengeInput,
+    validateJoinChallengeInput,
     validateListChallengesInput,
     validateRecordProgressInput,
     validateUpdateChallengeInput,
@@ -110,7 +112,13 @@ export async function joinChallenge(req, res) {
         return badRequest(res, error);
     }
 
-    const result = await challengeService.joinChallenge(req.params.challengeId, req.user);
+    const { error: bodyError, value } = validateJoinChallengeInput(req.body);
+
+    if (bodyError) {
+        return badRequest(res, bodyError);
+    }
+
+    const result = await challengeService.joinChallenge(req.params.challengeId, req.user, value);
 
     return handleServiceResult(res, result, 201);
 }
@@ -150,7 +158,13 @@ export async function acceptInvitation(req, res) {
         return badRequest(res, error);
     }
 
-    const result = await challengeService.acceptInvitation(req.params.invitationId, req.user);
+    const { error: bodyError, value } = validateAcceptInvitationInput(req.body);
+
+    if (bodyError) {
+        return badRequest(res, bodyError);
+    }
+
+    const result = await challengeService.acceptInvitation(req.params.invitationId, req.user, value);
 
     return handleServiceResult(res, result);
 }

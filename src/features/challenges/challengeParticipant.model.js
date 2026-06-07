@@ -20,6 +20,13 @@ const challengeParticipantSchema = new Schema(
       index: true,
     },
 
+    habit: {
+      type: Schema.Types.ObjectId,
+      ref: "Habit",
+      default: null,
+      index: true,
+    },
+
     status: {
       type: String,
       enum: PARTICIPANT_STATUS,

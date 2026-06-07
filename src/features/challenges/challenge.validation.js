@@ -43,15 +43,6 @@ function toPositiveInteger(value, fieldName, min, max, errors, updates) {
     updates[fieldName] = value;
 }
 
-function toNonNegativeNumber(value, fieldName, errors, updates) {
-    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
-        errors.push(`${fieldName} must be a non-negative number`);
-        return;
-    }
-
-    updates[fieldName] = value;
-}
-
 function toDate(value, fieldName, errors, updates) {
     if (value === undefined) {
         return;
@@ -71,8 +62,13 @@ export function validateCreateChallengeInput(body = {}) {
     const errors = [];
     const value = {};
     const title = isNonEmptyString(body.title) ? body.title.trim() : '';
-    const habitTitle = isNonEmptyString(body.habitTitle) ? body.habitTitle.trim() : '';
+    const habitTitle = body.habitTitle === undefined || body.habitTitle === null
+        ? ''
+        : isNonEmptyString(body.habitTitle)
+            ? body.habitTitle.trim()
+            : null;
     const frequency = isNonEmptyString(body.frequency) ? body.frequency.trim() : '';
+    const habitId = body.habitId;
 
     if (!title) {
         errors.push('title is required');
@@ -82,16 +78,25 @@ export function validateCreateChallengeInput(body = {}) {
         value.title = title;
     }
 
-    if (!habitTitle) {
-        errors.push('habitTitle is required');
-    } else if (habitTitle.length > 100) {
-        errors.push('habitTitle must be 100 characters or less');
+    if (!isValidObjectId(habitId)) {
+        errors.push('habitId must be a valid ObjectId');
     } else {
+        value.habitId = habitId;
+    }
+
+    if (habitTitle === null) {
+        errors.push('habitTitle must be a string');
+    } else if (habitTitle && habitTitle.length > 100) {
+        errors.push('habitTitle must be 100 characters or less');
+    } else if (habitTitle) {
         value.habitTitle = habitTitle;
     }
 
     toOptionalString(body.description, 'description', 200, errors, value);
-    toNonNegativeNumber(body.coinReward, 'coinReward', errors, value);
+
+    if (body.coinReward !== undefined) {
+        errors.push('coinReward is calculated from durationDays and cannot be set manually');
+    }
 
     if (!CHALLENGE_FREQUENCY_SET.has(frequency)) {
         errors.push(`frequency must be one of: ${CHALLENGE_FREQUENCIES.join(', ')}`);
@@ -156,7 +161,7 @@ export function validateUpdateChallengeInput(body = {}) {
     toOptionalString(body.description, 'description', 200, errors, updates);
 
     if (body.coinReward !== undefined) {
-        toNonNegativeNumber(body.coinReward, 'coinReward', errors, updates);
+        errors.push('coinReward is calculated from durationDays and cannot be updated manually');
     }
 
     if (body.frequency !== undefined) {
@@ -269,6 +274,26 @@ export function validateCreateInvitationInput(body = {}) {
     }
 
     return { value: { inviteeId } };
+}
+
+export function validateJoinChallengeInput(body = {}) {
+    const habitId = body.habitId;
+
+    if (!isValidObjectId(habitId)) {
+        return { error: 'habitId must be a valid ObjectId' };
+    }
+
+    return { value: { habitId } };
+}
+
+export function validateAcceptInvitationInput(body = {}) {
+    const habitId = body.habitId;
+
+    if (!isValidObjectId(habitId)) {
+        return { error: 'habitId must be a valid ObjectId' };
+    }
+
+    return { value: { habitId } };
 }
 
 export function validateRecordProgressInput(body = {}) {

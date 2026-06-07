@@ -48,6 +48,7 @@ export default function createApp() {
     app.use('/api/users', userRoutes);
     app.use('/api/dev', devRoutes);
     app.use('/api/social', socialRoutes);
+    app.use('/api/challenges', challengeRoutes);
 
     return app;
 }
