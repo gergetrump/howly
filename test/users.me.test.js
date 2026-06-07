@@ -7,6 +7,7 @@ import createApp from '../src/app.js';
 import connectDB from '../src/config/database.js';
 import User from '../src/features/users/user.model.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
+import config from '../config.js';
 
 let mongo;
 let app;
@@ -17,8 +18,8 @@ async function buildUser(overrides = {}) {
     return User.create({
         username: overrides.username || `user_${suffix}`,
         email: overrides.email || `user_${suffix}@example.com`,
-        firstName: overrides.firstName || 'Test',
-        lastName: overrides.lastName || 'User',
+        firstName: overrides.firstName || 'Peter',
+        lastName: overrides.lastName || 'Pan',
         passwordHash: overrides.passwordHash || 'hashed',
         authProvider: overrides.authProvider || 'local',
         ...overrides,
@@ -27,7 +28,7 @@ async function buildUser(overrides = {}) {
 
 // Spin up an in-memory MongoDB and app instance for the test suite.
 before(async () => {
-    process.env.JWT_SECRET = 'test-secret';
+    config.jwtSecret = 'test-secret';
     mongo = await MongoMemoryServer.create();
     await connectDB(mongo.getUri());
     app = createApp();
@@ -70,18 +71,18 @@ test('PATCH /api/users/me updates profile fields', async () => {
         .patch('/api/users/me')
         .set('Authorization', `Bearer ${token}`)
         .send({
-            firstName: 'Updated',
-            lastName: 'Name',
+            firstName: 'Updated First Name',
+            lastName: 'Updated Last Name',
             email: 'updated@example.com',
         })
         .expect(200);
 
-    assert.equal(response.body.firstName, 'Updated');
-    assert.equal(response.body.lastName, 'Name');
+    assert.equal(response.body.firstName, 'Updated First Name');
+    assert.equal(response.body.lastName, 'Updated Last Name');
     assert.equal(response.body.email, 'updated@example.com');
 
     const updatedUser = await User.findById(user._id);
-    assert.equal(updatedUser.firstName, 'Updated');
-    assert.equal(updatedUser.lastName, 'Name');
+    assert.equal(updatedUser.firstName, 'Updated First Name');
+    assert.equal(updatedUser.lastName, 'Updated Last Name');
     assert.equal(updatedUser.email, 'updated@example.com');
 });

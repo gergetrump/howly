@@ -43,7 +43,6 @@ const userSchema = new Schema(
       },
       select: false,
     },
-
     firstName: {
       type: String,
       trim: true,
@@ -56,6 +55,10 @@ const userSchema = new Schema(
       maxlength: 50,
       required: true,
     },
+    profilePictureUrl: {
+      type: String,
+      default: null,
+    },
     role: {
       type: String,
       enum: ["user", "admin"],
@@ -66,7 +69,6 @@ const userSchema = new Schema(
       default: 0,
       min: 0,
     },
-
     streak: {
       type: Number,
       default: 0,
@@ -77,6 +79,14 @@ const userSchema = new Schema(
       default: false,
     },
     deletedAt: {
+        type: Date,
+        default: null,
+    },
+    passwordResetTokenHash: {
+    type: String,
+    default: null,
+    },
+    passwordResetExpiresAt: {
         type: Date,
         default: null,
     },

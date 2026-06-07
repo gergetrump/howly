@@ -1,15 +1,18 @@
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import config from '../../../config.js';
 import User from '../users/user.model.js';
+import { sendPasswordResetEmail } from '../mail/mail.service.js';
 
-const TOKEN_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const TOKEN_EXPIRES_IN = config.jwtExpiresIn || '7d';
 
 // Centralized lookup for the JWT secret.
 function getJwtSecret() {
-    const secret = process.env.JWT_SECRET;
+    const secret = config.jwtSecret;
 
     if (!secret) {
-        throw new Error('JWT_SECRET is missing in .env');
+        throw new Error('jwtSecret is missing in config.js');
     }
 
     return secret;
@@ -98,4 +101,59 @@ export function toPublicUser(user) {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
     };
+}
+
+
+function hashToken(token) {
+    return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+export async function requestPasswordReset(email) {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({
+        email: normalizedEmail,
+        isDeleted: false,
+    });
+
+    // Do not reveal whether the email exists.
+    if (!user) {
+        return;
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = hashToken(resetToken);
+
+    user.passwordResetTokenHash = resetTokenHash;
+    user.passwordResetExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await user.save();
+
+    const resetLink = `${config.frontendBaseUrl}/reset-password?token=${resetToken}`;
+
+    await sendPasswordResetEmail(user.email, resetLink);
+}
+
+export async function resetPassword(token, newPassword) {
+    const tokenHash = hashToken(token);
+
+    const user = await User.findOne({
+        passwordResetTokenHash: tokenHash,
+        passwordResetExpiresAt: { $gt: new Date() },
+        isDeleted: false,
+    }).select('+passwordHash');
+
+    if (!user) {
+        return { error: 'Invalid or expired reset token' };
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    user.passwordHash = passwordHash;
+    user.passwordResetTokenHash = null;
+    user.passwordResetExpiresAt = null;
+
+    await user.save();
+
+    return { user };
 }

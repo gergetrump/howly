@@ -1,18 +1,33 @@
 import { Router } from 'express';
+import { requireAuth } from '../../middleware/auth.middleware.js';
 import {
-    createHabit,
-    deleteHabit,
+    getHabits,
     getHabitById,
-    listHabits,
+    createHabit,
+    createFromTemplates,
     updateHabit,
+    deleteHabit,
+    completeHabit,
+    uncompleteHabit,
 } from './habit.controller.js';
 
 const router = Router();
 
-router.get('/', listHabits);
+// All habit routes require authentication.
+router.use(requireAuth);
+
+// ── Collection routes ───────────────────────────────────────────────
+router.get('/', getHabits);
 router.post('/', createHabit);
+router.post('/templates', createFromTemplates);
+
+// ── Single-resource routes ──────────────────────────────────────────
 router.get('/:habitId', getHabitById);
 router.patch('/:habitId', updateHabit);
 router.delete('/:habitId', deleteHabit);
+
+// ── Check-in (complete a habit for today) ───────────────────────────
+router.post('/:habitId/check-ins', completeHabit);
+router.delete('/:habitId/check-ins', uncompleteHabit);
 
 export default router;

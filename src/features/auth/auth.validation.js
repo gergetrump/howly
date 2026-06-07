@@ -17,7 +17,6 @@ export function validateRegisterInput(body = {}) {
     } else if (username.length < 3 || username.length > 30) {
         errors.push('username must be between 3 and 30 characters');
     }
-
     if (!email) {
         errors.push('email is required');
     } else if (!isValidEmail(email)) {
@@ -35,7 +34,6 @@ export function validateRegisterInput(body = {}) {
     } else if (lastName.length > 50) {
         errors.push('lastName must be 50 characters or less');
     }
-
     if (!password) {
         errors.push('password is required');
     } else if (password.length < 8) {
