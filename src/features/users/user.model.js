@@ -64,6 +64,14 @@ const userSchema = new Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerifiedAt: {
+      type: Date,
+      default: null,
+    },
     coins: {
       type: Number,
       default: 0,
@@ -79,16 +87,24 @@ const userSchema = new Schema(
       default: false,
     },
     deletedAt: {
-        type: Date,
-        default: null,
+      type: Date,
+      default: null,
     },
     passwordResetTokenHash: {
-    type: String,
-    default: null,
+      type: String,
+      default: null,
     },
     passwordResetExpiresAt: {
-        type: Date,
-        default: null,
+      type: Date,
+      default: null,
+    },
+    emailVerificationTokenHash: {
+      type: String,
+      default: null,
+    },
+    emailVerificationExpiresAt: {
+      type: Date,
+      default: null,
     },
   },
   {
