@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName } from '@/components/cards/cardStyles';
 
-export function FriendCard({ name, username, streakDays, avatarSrc }) {
+export function FriendCard({ name, username, streakDays, avatarSrc, action }) {
     const initials = name
         .split(' ')
         .map((part) => part[0])
@@ -25,6 +25,7 @@ export function FriendCard({ name, username, streakDays, avatarSrc }) {
                 </div>
 
                 <Badge className="border border-white/15 bg-white/10 text-slate-100">{streakDays} days</Badge>
+                {action}
             </CardContent>
         </Card>
     );

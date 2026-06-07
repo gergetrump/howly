@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
     acceptFriendRequest,
+    deleteFriend,
     getFriendRequests,
     getFriends,
     getSocialFeed,
@@ -17,6 +18,7 @@ import {
     unlikeMilestone,
 } from '@/services/socialApi';
 import { searchUsers } from '@/services/userApi';
+import { useAuth } from '@/context/authContext';
 
 function getDisplayName(user) {
     return user?.firstName || user?.username || 'Howly friend';
@@ -43,6 +45,8 @@ function getSocialErrorMessage(error, user) {
             return `Friend request to ${getDisplayName(user)} is already sent. Let's wait a bit`;
         case 'PENDING_FRIEND_REQUEST_NOT_FOUND':
             return 'That friend request is no longer available';
+        case 'FRIENDSHIP_NOT_FOUND':
+            return 'That friend is no longer in your friend list';
         case 'MILESTONE_POST_NOT_FOUND':
             return 'That milestone is no longer available';
         case 'CANNOT_LIKE_OWN_MILESTONE':
@@ -99,6 +103,7 @@ function FriendRequestCard({ request, busy, onAccept, onReject }) {
 }
 
 export function SocialPage() {
+    const { user } = useAuth();
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState({ incoming: [], outgoing: [] });
     const [feed, setFeed] = useState([]);
@@ -110,6 +115,7 @@ export function SocialPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [busyRequestId, setBusyRequestId] = useState(null);
+    const [busyFriendId, setBusyFriendId] = useState(null);
     const [busyPostId, setBusyPostId] = useState(null);
 
     async function loadSocialData() {
@@ -241,6 +247,22 @@ export function SocialPage() {
         }
     }
 
+    async function handleDeleteFriend(friendshipId, friend) {
+        setBusyFriendId(friendshipId);
+        setError('');
+        setNotice('');
+
+        try {
+            await deleteFriend(friendshipId);
+            setNotice(`${getDisplayName(friend)} removed from your friends`);
+            await loadSocialData();
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setBusyFriendId(null);
+        }
+    }
+
     async function handleToggleLike(post) {
         setBusyPostId(post.id);
         setError('');
@@ -310,8 +332,8 @@ export function SocialPage() {
                         ))}
                     </div>
                 ) : null}
-                {notice ? <p className="text-sm text-emerald-200">{notice}</p> : null}
-                {error ? <p className="text-sm text-red-200">{error}</p> : null}
+                {notice ? <p className="text-sm text-emerald-800">{notice}</p> : null}
+                {error ? <p className="text-sm text-red-900">{error}</p> : null}
             </PageSection>
 
             <PageSection title="Friend Requests">
@@ -345,6 +367,18 @@ export function SocialPage() {
                                 name={getDisplayName(friend)}
                                 username={getUsername(friend)}
                                 streakDays={friend?.streak ?? 0}
+                                action={(
+                                    <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="destructive"
+                                        aria-label={`Remove ${getDisplayName(friend)} from friends`}
+                                        disabled={busyFriendId === id}
+                                        onClick={() => handleDeleteFriend(id, friend)}
+                                    >
+                                        <X aria-hidden="true" />
+                                    </Button>
+                                )}
                             />
                         ))}
                     </CardGrid>
