@@ -65,11 +65,7 @@ function getChallengeReward(challenge) {
 }
 
 function hasPremiumMembership(user) {
-    return user?.role === 'admin'
-        || user?.isPremium === true
-        || user?.premium === true
-        || user?.subscriptionTier === 'premium'
-        || user?.plan === 'premium';
+    return user?.role === 'admin' || user?.isPremium === true;
 }
 
 function HabitPickerDialog({
