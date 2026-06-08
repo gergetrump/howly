@@ -1,22 +1,21 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
-import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
-import { cn } from '@/lib/utils';
+import { appCardClassName } from '@/components/cards/cardStyles';
 
 export function ShopItemCard({
     name,
-    category,
     price,
     imageSrc,
     visual,
     premiumOnly = false,
     owned = false,
+    children,
 }) {
     return (
         <Card className={appCardClassName}>
-            <CardContent className="space-y-4">
-                <div className={cn('flex aspect-square items-center justify-center rounded-xl p-4', appCardInsetClassName)}>
+            <CardContent className="space-y-3 p-4">
+                <div className="mx-auto flex h-28 w-full items-center justify-center rounded-xl sm:h-32">
                     {visual ? (
                         visual
                     ) : imageSrc ? (
@@ -25,15 +24,15 @@ export function ShopItemCard({
                         <span className="text-sm text-slate-400">Item image</span>
                     )}
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                     <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-semibold">{name}</h3>
-                        {category ? <Badge variant="secondary">{category}</Badge> : null}
+                        <h3 className="text-sm font-semibold">{name}</h3>
                     </div>
                     <MoonCoin amount={price} compact />
                     {premiumOnly ? <Badge className="bg-amber-300 text-slate-950">Premium</Badge> : null}
                     {owned ? <Badge className="bg-emerald-400 text-slate-950">Owned</Badge> : null}
                 </div>
+                {children ? <div className="ml-auto grid w-full max-w-40 grid-cols-2 gap-2 pt-1">{children}</div> : null}
             </CardContent>
         </Card>
     );

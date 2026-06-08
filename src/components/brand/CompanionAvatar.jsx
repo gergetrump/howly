@@ -1,4 +1,4 @@
-import { HoodieLayer } from '@/components/brand/items/Hoodie';
+import { renderCompanionItemLayer } from '@/components/brand/items/itemRegistry';
 import { cn } from '@/lib/utils';
 
 const sizeClasses = {
@@ -9,28 +9,8 @@ const sizeClasses = {
     '2xl': 'w-80 h-80',
 };
 
-const itemLayerKeys = {
-    hoodie: 'hoodie',
-    cozyHoodie: 'hoodie',
-    'cozy-hoodie': 'hoodie',
-    hoodieNew: 'hoodie',
-    'hoodie-new': 'hoodie',
-    pullover_01: 'hoodie',
-    pullover_02: 'hoodie',
-};
-
-function normalizeItemKey(itemKey) {
-    return itemLayerKeys[itemKey?.trim()] ?? null;
-}
-
 function CompanionItemLayer({ itemKey }) {
-    const normalizedItemKey = normalizeItemKey(itemKey);
-
-    if (normalizedItemKey === 'hoodie') {
-        return <HoodieLayer transform="translate(100 770)" />;
-    }
-
-    return null;
+    return renderCompanionItemLayer(itemKey);
 }
 
 export function CompanionAvatar({
@@ -44,12 +24,12 @@ export function CompanionAvatar({
     const itemKeys = [...equippedItemKeys, previewItemKey].filter(Boolean);
 
     return (
-        <figure className={cn('flex flex-col items-center gap-2', className)}>
+        <figure className={cn('flex flex-col items-center gap-2 overflow-visible', className)}>
             <svg
                 viewBox="0 0 1522 1564"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className={cn(sizeClasses[size], 'drop-shadow-2xl')}
+                className={cn(sizeClasses[size], 'overflow-visible drop-shadow-2xl')}
             >
                 {/* Tail */}
                 <g>

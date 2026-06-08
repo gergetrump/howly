@@ -94,7 +94,7 @@ function FriendRequestCard({ request, busy, onAccept, onReject }) {
                     <Button
                         type="button"
                         size="icon"
-                        className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
+                        className="bg-emerald-700 text-white hover:bg-emerald-600"
                         aria-label="Accept friend request"
                         disabled={busy}
                         onClick={() => onAccept(request.id)}
