@@ -22,3 +22,7 @@ export function validateSendFriendRequestInput(body = {}) {
 export function validateFriendRequestId(id) {
   return validateObjectId(id, 'requestId');
 }
+
+export function validateFriendshipId(id) {
+  return validateObjectId(id, 'friendshipId');
+}
