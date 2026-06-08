@@ -40,7 +40,7 @@ export function ShopPage() {
     const { user } = useAuth();
     const [items, setItems] = useState([]);
     const [ownedItemIds, setOwnedItemIds] = useState(new Set());
-    const [selectedItemId, setSelectedItemId] = useState(null);
+    const [previewItemId, setPreviewItemId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [buyingItemId, setBuyingItemId] = useState(null);
     const [notice, setNotice] = useState('');
@@ -61,7 +61,6 @@ export function ShopPage() {
                 if (isCurrent) {
                     setItems(nextItems);
                     setOwnedItemIds(new Set(nextInventory.map((entry) => entry.item?._id).filter(Boolean)));
-                    setSelectedItemId(nextItems[0]?._id ?? null);
                 }
             } catch {
                 if (isCurrent) {
@@ -81,15 +80,15 @@ export function ShopPage() {
         };
     }, []);
 
-    const selectedItem = useMemo(
-        () => items.find((item) => item._id === selectedItemId),
-        [items, selectedItemId],
+    const previewItem = useMemo(
+        () => items.find((item) => item._id === previewItemId),
+        [items, previewItemId],
     );
 
     function handleTryOnItem(itemId) {
         setNotice('');
         setError('');
-        setSelectedItemId(itemId);
+        setPreviewItemId(itemId);
     }
 
     async function handleBuyItem(item) {
@@ -128,7 +127,7 @@ export function ShopPage() {
                     name="Howly"
                     size="xl"
                     showName
-                    previewItemKey={selectedItem?.assetKey}
+                    previewItemKey={previewItem?.assetKey}
                 />
             </section>
 
