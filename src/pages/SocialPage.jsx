@@ -1,13 +1,29 @@
 import { useEffect, useState } from 'react';
-import { Check, Send, X } from 'lucide-react';
+import { Check, MoreVertical, Send, Trash2, X } from 'lucide-react';
+import { AlertDialog as AlertDialogPrimitive } from 'radix-ui';
 import { CardGrid, ReactionButton } from '@/components/common';
 import { FeedPostCard, FriendCard } from '@/components/cards';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+    ConfirmationDialog,
+    ConfirmationDialogContent,
+    ConfirmationDialogDescription,
+    ConfirmationDialogFooter,
+    ConfirmationDialogHeader,
+    ConfirmationDialogTitle,
+} from '@/components/ui/confirmation-dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
     acceptFriendRequest,
+    deleteFriend,
     getFriendRequests,
     getFriends,
     getSocialFeed,
@@ -17,6 +33,7 @@ import {
     unlikeMilestone,
 } from '@/services/socialApi';
 import { searchUsers } from '@/services/userApi';
+import { useAuth } from '@/context/authContext';
 
 function getDisplayName(user) {
     return user?.firstName || user?.username || 'Howly friend';
@@ -43,6 +60,8 @@ function getSocialErrorMessage(error, user) {
             return `Friend request to ${getDisplayName(user)} is already sent. Let's wait a bit`;
         case 'PENDING_FRIEND_REQUEST_NOT_FOUND':
             return 'That friend request is no longer available';
+        case 'FRIENDSHIP_NOT_FOUND':
+            return 'That friend is no longer in your friend list';
         case 'MILESTONE_POST_NOT_FOUND':
             return 'That milestone is no longer available';
         case 'CANNOT_LIKE_OWN_MILESTONE':
@@ -85,7 +104,7 @@ function FriendRequestCard({ request, busy, onAccept, onReject }) {
                     <Button
                         type="button"
                         size="icon"
-                        variant="destructive"
+                        className="border border-white/15 bg-white/10 text-slate-100 hover:bg-white/20"
                         aria-label="Reject friend request"
                         disabled={busy}
                         onClick={() => onReject(request.id)}
@@ -98,7 +117,75 @@ function FriendRequestCard({ request, busy, onAccept, onReject }) {
     );
 }
 
+function FriendActions({ friend, friendshipId, busy, onDelete }) {
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const friendName = getDisplayName(friend);
+
+    return (
+        <div className="flex items-center">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 rounded-full text-slate-300 hover:bg-white/10 hover:text-white"
+                        aria-label={`Open actions for ${friendName}`}
+                        disabled={busy}
+                    >
+                        <MoreVertical aria-hidden="true" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44 border-slate-800 bg-slate-950 text-slate-300">
+                    <DropdownMenuItem
+                        className="cursor-pointer focus:bg-slate-800 focus:text-white"
+                        onClick={() => setIsDeleteDialogOpen(true)}
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete friend
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            <ConfirmationDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <ConfirmationDialogContent className="border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl sm:max-w-md">
+                    <ConfirmationDialogHeader className="space-y-3 text-center">
+                        <ConfirmationDialogTitle className="text-xl font-bold">
+                            Remove this friend?
+                        </ConfirmationDialogTitle>
+                        <ConfirmationDialogDescription className="text-sm text-slate-300">
+                            Are you sure you want to remove this friend?
+                        </ConfirmationDialogDescription>
+                    </ConfirmationDialogHeader>
+                    <ConfirmationDialogFooter className="mt-4 gap-3 sm:justify-center">
+                        <AlertDialogPrimitive.Cancel asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="border-white/15 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                            >
+                                Cancel
+                            </Button>
+                        </AlertDialogPrimitive.Cancel>
+                        <AlertDialogPrimitive.Action asChild>
+                            <Button
+                                type="button"
+                                className="bg-red-500 text-white hover:bg-red-400"
+                                disabled={busy}
+                                onClick={() => onDelete(friendshipId, friend)}
+                            >
+                                Delete friend
+                            </Button>
+                        </AlertDialogPrimitive.Action>
+                    </ConfirmationDialogFooter>
+                </ConfirmationDialogContent>
+            </ConfirmationDialog>
+        </div>
+    );
+}
+
 export function SocialPage() {
+    const { user } = useAuth();
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState({ incoming: [], outgoing: [] });
     const [feed, setFeed] = useState([]);
@@ -110,6 +197,7 @@ export function SocialPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [busyRequestId, setBusyRequestId] = useState(null);
+    const [busyFriendId, setBusyFriendId] = useState(null);
     const [busyPostId, setBusyPostId] = useState(null);
 
     async function loadSocialData() {
@@ -241,6 +329,22 @@ export function SocialPage() {
         }
     }
 
+    async function handleDeleteFriend(friendshipId, friend) {
+        setBusyFriendId(friendshipId);
+        setError('');
+        setNotice('');
+
+        try {
+            await deleteFriend(friendshipId);
+            setNotice(`${getDisplayName(friend)} removed from your friends`);
+            await loadSocialData();
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setBusyFriendId(null);
+        }
+    }
+
     async function handleToggleLike(post) {
         setBusyPostId(post.id);
         setError('');
@@ -310,8 +414,8 @@ export function SocialPage() {
                         ))}
                     </div>
                 ) : null}
-                {notice ? <p className="text-sm text-emerald-200">{notice}</p> : null}
-                {error ? <p className="text-sm text-red-200">{error}</p> : null}
+                {notice ? <p className="text-sm text-emerald-800">{notice}</p> : null}
+                {error ? <p className="text-sm text-red-900">{error}</p> : null}
             </PageSection>
 
             <PageSection title="Friend Requests">
@@ -345,6 +449,14 @@ export function SocialPage() {
                                 name={getDisplayName(friend)}
                                 username={getUsername(friend)}
                                 streakDays={friend?.streak ?? 0}
+                                action={(
+                                    <FriendActions
+                                        friend={friend}
+                                        friendshipId={id}
+                                        busy={busyFriendId === id}
+                                        onDelete={handleDeleteFriend}
+                                    />
+                                )}
                             />
                         ))}
                     </CardGrid>

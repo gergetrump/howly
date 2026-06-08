@@ -13,7 +13,10 @@ const itemLayerKeys = {
     hoodie: 'hoodie',
     cozyHoodie: 'hoodie',
     'cozy-hoodie': 'hoodie',
+    hoodieNew: 'hoodie',
+    'hoodie-new': 'hoodie',
     pullover_01: 'hoodie',
+    pullover_02: 'hoodie',
 };
 
 function normalizeItemKey(itemKey) {

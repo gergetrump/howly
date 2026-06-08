@@ -4,6 +4,12 @@ export function getFriends() {
     return apiRequest('/social/friends');
 }
 
+export function deleteFriend(friendshipId) {
+    return apiRequest(`/social/friends/${friendshipId}`, {
+        method: 'DELETE',
+    });
+}
+
 export function getFriendRequests() {
     return apiRequest('/social/friends/requests');
 }
