@@ -31,14 +31,51 @@ function isYesterday(date) {
 }
 
 /**
- * Returns true if `date` is within the last `days` calendar days.
+ * Checks if a date falls within the current calendar period based on frequency.
  */
-function isWithinDays(date, days) {
+function isCompletedForPeriod(date, frequency) {
     if (!date) return false;
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
-    cutoff.setHours(0, 0, 0, 0);
-    return date >= cutoff;
+    const now = new Date();
+    
+    if (frequency === 'Weekly') {
+        const day = now.getDay() || 7; // 1-7 (Mon-Sun)
+        const monday = new Date(now);
+        monday.setHours(0, 0, 0, 0);
+        monday.setDate(monday.getDate() - day + 1);
+        return date >= monday;
+    }
+    
+    if (frequency === 'Monthly') {
+        return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+    }
+    
+    return isToday(date);
+}
+
+/**
+ * Checks if a date falls strictly in the PREVIOUS calendar period for streak calculation.
+ */
+function isPreviousPeriod(date, frequency) {
+    if (!date) return false;
+    const now = new Date();
+    
+    if (frequency === 'Weekly') {
+        const day = now.getDay() || 7;
+        const lastWeekEnd = new Date(now);
+        lastWeekEnd.setHours(23, 59, 59, 999);
+        lastWeekEnd.setDate(lastWeekEnd.getDate() - day);
+        const lastWeekStart = new Date(lastWeekEnd);
+        lastWeekStart.setHours(0, 0, 0, 0);
+        lastWeekStart.setDate(lastWeekStart.getDate() - 6);
+        return date >= lastWeekStart && date <= lastWeekEnd;
+    }
+    
+    if (frequency === 'Monthly') {
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        return date.getFullYear() === lastMonth.getFullYear() && date.getMonth() === lastMonth.getMonth();
+    }
+    
+    return isYesterday(date);
 }
 
 /**
@@ -56,7 +93,7 @@ function toHabitDto(habit) {
         frequency: habit.frequency,
         category: habit.category ?? null,
         streakCount: habit.streakCount,
-        isCompletedToday: isToday(habit.lastCompletedAt),
+        isCompletedToday: isCompletedForPeriod(habit.lastCompletedAt, habit.frequency),
         createdAt: habit.createdAt.toISOString(),
     };
 }
@@ -164,27 +201,18 @@ export async function completeHabit(habitId, userId) {
         throw ApiError.notFound('Habit not found.');
     }
 
-    if (isToday(habit.lastCompletedAt)) {
-        throw ApiError.badRequest('Habit already completed today.');
+    if (isCompletedForPeriod(habit.lastCompletedAt, habit.frequency)) {
+        throw ApiError.badRequest('Habit already completed for this period.');
     }
 
     // ── Streak calculation ──
     const last = habit.lastCompletedAt;
-
-    switch (habit.frequency) {
-        case 'Daily':
-            habit.streakCount = isYesterday(last) ? habit.streakCount + 1 : 1;
-            break;
-        case 'Weekly':
-            habit.streakCount = isWithinDays(last, 7) ? habit.streakCount + 1 : 1;
-            break;
-        case 'Monthly':
-            habit.streakCount = isWithinDays(last, 30) ? habit.streakCount + 1 : 1;
-            break;
-        case 'Custom':
-        default:
-            habit.streakCount = isWithinDays(last, 30) ? habit.streakCount + 1 : 1;
-            break;
+    
+    // If completed in the immediately previous period, streak continues. Otherwise, resets to 1.
+    if (isPreviousPeriod(last, habit.frequency)) {
+        habit.streakCount += 1;
+    } else {
+        habit.streakCount = 1;
     }
 
     habit.lastCompletedAt = new Date();
@@ -204,8 +232,8 @@ export async function uncompleteHabit(habitId, userId) {
         throw ApiError.notFound('Habit not found.');
     }
 
-    if (!isToday(habit.lastCompletedAt)) {
-        throw ApiError.badRequest('Habit not completed today.');
+    if (!isCompletedForPeriod(habit.lastCompletedAt, habit.frequency)) {
+        throw ApiError.badRequest('Habit not completed for this period.');
     }
 
     // Revert streak
