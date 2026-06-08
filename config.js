@@ -4,6 +4,7 @@ const config = {
     jwtSecret: 'REDACTED',
     serverBaseUrl: 'http://localhost:3000',
     frontendBaseUrl: 'http://localhost:5173',
+    disableEmailSending: false,
     cloudinary: {
         cloudName: 'dxclpq7wx',
         apiKey: 'REDACTED',
