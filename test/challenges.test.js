@@ -100,7 +100,7 @@ after(async () => {
 });
 
 test('POST /api/challenges creates a challenge for a premium user', async () => {
-    const owner = await buildUser({ role: 'admin' });
+    const owner = await buildUser({ isPremium: true });
     const habit = await buildHabit(owner._id);
     const token = signAccessToken(owner);
 
@@ -143,7 +143,7 @@ test('free users cannot create challenges', async () => {
 });
 
 test('premium users can create only one active challenge at a time', async () => {
-    const owner = await buildUser({ role: 'admin' });
+    const owner = await buildUser({ isPremium: true });
     const ownerToken = signAccessToken(owner);
     const firstHabit = await buildHabit(owner._id, { title: 'Reading' });
     const secondHabit = await buildHabit(owner._id, { title: 'Running' });
@@ -166,8 +166,8 @@ test('premium users can create only one active challenge at a time', async () =>
 });
 
 test('free users can only join one active challenge at a time', async () => {
-    const firstOwner = await buildUser({ role: 'admin' });
-    const secondOwner = await buildUser({ role: 'admin' });
+    const firstOwner = await buildUser({ isPremium: true });
+    const secondOwner = await buildUser({ isPremium: true });
     const participant = await buildUser();
     const participantToken = signAccessToken(participant);
     const firstChallenge = await createChallenge(signAccessToken(firstOwner), {
@@ -198,11 +198,11 @@ test('free users can only join one active challenge at a time', async () => {
 
 test('premium users can join two active challenges but not three', async () => {
     const owners = await Promise.all([
-        buildUser({ role: 'admin' }),
-        buildUser({ role: 'admin' }),
-        buildUser({ role: 'admin' }),
+        buildUser({ isPremium: true }),
+        buildUser({ isPremium: true }),
+        buildUser({ isPremium: true }),
     ]);
-    const participant = await buildUser({ role: 'admin' });
+    const participant = await buildUser({ isPremium: true });
     const participantToken = signAccessToken(participant);
     const challenges = [];
 
@@ -240,7 +240,7 @@ test('premium users can join two active challenges but not three', async () => {
 });
 
 test('challenge participants can join, record progress, and claim prorated rewards', async () => {
-    const owner = await buildUser({ role: 'admin' });
+    const owner = await buildUser({ isPremium: true });
     const participant = await buildUser();
     const ownerToken = signAccessToken(owner);
     const participantToken = signAccessToken(participant);
@@ -289,8 +289,40 @@ test('challenge participants can join, record progress, and claim prorated rewar
     assert.equal(updatedParticipant.coins, 75);
 });
 
+test('habit check-in increments linked active challenge progress', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const participant = await buildUser();
+    const ownerToken = signAccessToken(owner);
+    const participantToken = signAccessToken(participant);
+    const ownerHabit = await buildHabit(owner._id);
+    const participantHabit = await buildHabit(participant._id);
+    const challenge = await createChallenge(ownerToken, {
+        habit: ownerHabit,
+        ownerId: owner._id,
+    });
+
+    await request(app)
+        .post(`/api/challenges/${challenge.id}/join`)
+        .set('Authorization', `Bearer ${participantToken}`)
+        .send({ habitId: participantHabit._id.toString() })
+        .expect(201);
+
+    await request(app)
+        .post(`/api/habits/${participantHabit._id}/check-ins`)
+        .set('Authorization', `Bearer ${participantToken}`)
+        .expect(200);
+
+    const participantRecord = await ChallengeParticipant.findOne({
+        challenge: challenge.id,
+        user: participant._id,
+    });
+
+    assert.equal(participantRecord.daysCompleted, 1);
+    assert.ok(participantRecord.lastCompletedAt);
+});
+
 test('PATCH /api/challenges/:challengeId rejects updates from non-owners', async () => {
-    const owner = await buildUser({ role: 'admin' });
+    const owner = await buildUser({ isPremium: true });
     const participant = await buildUser();
     const ownerToken = signAccessToken(owner);
     const participantToken = signAccessToken(participant);
@@ -311,7 +343,7 @@ test('PATCH /api/challenges/:challengeId rejects updates from non-owners', async
 });
 
 test('friend-only challenges are visible and joinable only for friends', async () => {
-    const owner = await buildUser({ role: 'admin' });
+    const owner = await buildUser({ isPremium: true });
     const friend = await buildUser();
     const stranger = await buildUser();
     const ownerToken = signAccessToken(owner);
@@ -367,7 +399,7 @@ test('friend-only challenges are visible and joinable only for friends', async (
 });
 
 test('challenge owners can invite friends and invitees can accept to join', async () => {
-    const owner = await buildUser({ role: 'admin' });
+    const owner = await buildUser({ isPremium: true });
     const friend = await buildUser();
     const ownerToken = signAccessToken(owner);
     const friendToken = signAccessToken(friend);
@@ -418,7 +450,7 @@ test('challenge owners can invite friends and invitees can accept to join', asyn
 });
 
 test('challenge invitations require creator ownership and friendship', async () => {
-    const owner = await buildUser({ role: 'admin' });
+    const owner = await buildUser({ isPremium: true });
     const friend = await buildUser();
     const stranger = await buildUser();
     const ownerToken = signAccessToken(owner);
@@ -447,7 +479,7 @@ test('challenge invitations require creator ownership and friendship', async () 
 });
 
 test('rejecting a challenge invitation does not create a participant', async () => {
-    const owner = await buildUser({ role: 'admin' });
+    const owner = await buildUser({ isPremium: true });
     const friend = await buildUser();
     const ownerToken = signAccessToken(owner);
     const friendToken = signAccessToken(friend);

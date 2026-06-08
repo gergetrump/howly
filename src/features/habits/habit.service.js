@@ -1,5 +1,6 @@
 import Habit from './habit.model.js';
 import { ApiError } from '../../errors/ApiError.js';
+import { recordProgressForHabit } from '../challenges/challenge.service.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -189,6 +190,7 @@ export async function completeHabit(habitId, userId) {
 
     habit.lastCompletedAt = new Date();
     await habit.save();
+    await recordProgressForHabit({ userId, habitId: habit._id });
 
     return toHabitDto(habit);
 }

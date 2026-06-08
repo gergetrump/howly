@@ -64,6 +64,10 @@ const userSchema = new Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    isPremium: {
+      type: Boolean,
+      default: false,
+    },
     isEmailVerified: {
       type: Boolean,
       default: false,

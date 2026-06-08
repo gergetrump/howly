@@ -64,13 +64,20 @@ async function getOwnedHabit(habitId, userId) {
     return Habit.findOne({ _id: habitId, ownerId: userId }).lean();
 }
 
+async function getChallengeUserContext(user) {
+    const currentUser = await User.findOne({ _id: user.id, isDeleted: false })
+        .select('role isPremium')
+        .lean();
+
+    return {
+        id: user.id,
+        role: currentUser?.role ?? user.role,
+        isPremium: currentUser?.isPremium === true,
+    };
+}
+
 function hasPremiumMembership(user) {
-    // TODO: replace these placeholder checks with the real premium/subscription field once User has it.
-    return user.role === 'admin'
-        || user.isPremium === true
-        || user.premium === true
-        || user.subscriptionTier === 'premium'
-        || user.plan === 'premium';
+    return user.role === 'admin' || user.isPremium === true;
 }
 
 function getActiveChallengeLimit(user) {
@@ -120,31 +127,37 @@ async function getActiveCreatedChallengeCount(userId, now = new Date()) {
 }
 
 async function canAddActiveChallenge(user, challengeId) {
-    const activeChallengeIds = await getActiveChallengeIdsForUser(user.id);
-    const activeChallengeLimit = getActiveChallengeLimit(user);
+    const currentUser = await getChallengeUserContext(user);
+    const activeChallengeIds = await getActiveChallengeIdsForUser(currentUser.id);
+    const activeChallengeLimit = getActiveChallengeLimit(currentUser);
 
     if (challengeId) {
         activeChallengeIds.add(challengeId.toString());
     }
 
-    return activeChallengeIds.size <= activeChallengeLimit;
+    return {
+        allowed: activeChallengeIds.size <= activeChallengeLimit,
+        isPremium: hasPremiumMembership(currentUser),
+    };
 }
 
 async function canCreateChallenge(user) {
-    if (!hasPremiumMembership(user)) {
+    const currentUser = await getChallengeUserContext(user);
+
+    if (!hasPremiumMembership(currentUser)) {
         return { error: 'premium membership is required to create challenges' };
     }
 
     const [activeCreatedChallengeCount, activeChallengeIds] = await Promise.all([
-        getActiveCreatedChallengeCount(user.id),
-        getActiveChallengeIdsForUser(user.id),
+        getActiveCreatedChallengeCount(currentUser.id),
+        getActiveChallengeIdsForUser(currentUser.id),
     ]);
 
     if (activeCreatedChallengeCount >= MAX_ACTIVE_CREATED_CHALLENGES) {
         return { error: 'premium users can only create one active challenge at a time' };
     }
 
-    if (activeChallengeIds.size >= getActiveChallengeLimit(user)) {
+    if (activeChallengeIds.size >= getActiveChallengeLimit(currentUser)) {
         return { error: 'premium users can only participate in two active challenges at a time' };
     }
 
@@ -379,8 +392,10 @@ export async function joinChallenge(challengeId, user, { habitId }) {
         return { error: 'challenge is no longer joinable' };
     }
 
-    if (!await canAddActiveChallenge(user, challenge._id)) {
-        return { error: hasPremiumMembership(user)
+    const joinPermission = await canAddActiveChallenge(user, challenge._id);
+
+    if (!joinPermission.allowed) {
+        return { error: joinPermission.isPremium
             ? 'premium users can only participate in two active challenges at a time'
             : 'free users can only participate in one active challenge at a time' };
     }
@@ -521,8 +536,10 @@ export async function acceptInvitation(invitationId, user, { habitId }) {
         return { error: 'challenge is no longer joinable' };
     }
 
-    if (!await canAddActiveChallenge(user, challenge._id)) {
-        return { error: hasPremiumMembership(user)
+    const joinPermission = await canAddActiveChallenge(user, challenge._id);
+
+    if (!joinPermission.allowed) {
+        return { error: joinPermission.isPremium
             ? 'premium users can only participate in two active challenges at a time'
             : 'free users can only participate in one active challenge at a time' };
     }

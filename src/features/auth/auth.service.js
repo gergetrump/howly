@@ -125,6 +125,7 @@ export function toPublicUser(user) {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        isPremium: user.isPremium,
         authProvider: user.authProvider,
         providerId: user.providerId,
         isEmailVerified: user.isEmailVerified,

@@ -90,6 +90,7 @@ export function toPublicUser(user) {
         lastName: user.lastName,
         profilePictureUrl,
         role: user.role,
+        isPremium: user.isPremium,
         authProvider: user.authProvider,
         providerId: user.providerId,
         coins: user.coins,
