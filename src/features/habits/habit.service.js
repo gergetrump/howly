@@ -1,6 +1,7 @@
 import Habit from './habit.model.js';
 import { ApiError } from '../../errors/ApiError.js';
 import { createMilestonePostForHabit } from '../milestones/milestone.service.js';
+import { recordProgressForHabit } from '../challenges/challenge.service.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -271,7 +272,11 @@ export async function completeHabit(habitId, userId) {
 
     habit.lastCompletedAt = new Date();
     await habit.save();
+<<<<<<< src/features/habits/habit.service.js
     const { milestonePost } = await createMilestonePostForHabit(habit);
+=======
+    await recordProgressForHabit({ userId, habitId: habit._id });
+>>>>>>> src/features/habits/habit.service.js
 
     return {
         habit: toHabitDto(habit),
