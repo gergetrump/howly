@@ -31,11 +31,13 @@ function isYesterday(date) {
 }
 
 /**
- * Checks if a date falls within the current calendar period based on frequency.
+ * Checks if a date falls within the current calendar period based on habit frequency.
  */
-function isCompletedForPeriod(date, frequency) {
+function isCompletedForPeriod(habit) {
+    const date = habit.lastCompletedAt;
     if (!date) return false;
     const now = new Date();
+    const frequency = habit.frequency;
     
     if (frequency === 'Weekly') {
         const day = now.getDay() || 7; // 1-7 (Mon-Sun)
@@ -49,15 +51,44 @@ function isCompletedForPeriod(date, frequency) {
         return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
     }
     
+    // Custom specific days acts exactly like Daily (must be completed today)
     return isToday(date);
+}
+
+function getPreviousScheduledDate(customDays) {
+    const now = new Date();
+    const currentDay = now.getDay() || 7; // 1-7
+    
+    if (!customDays || customDays.length === 0) {
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        return yesterday;
+    }
+
+    let previousDay = -1;
+    let fromLastWeek = false;
+
+    const smallerDays = customDays.filter(d => d < currentDay);
+    if (smallerDays.length > 0) {
+        previousDay = Math.max(...smallerDays);
+    } else {
+        previousDay = Math.max(...customDays);
+        fromLastWeek = true;
+    }
+
+    let daysAgo = fromLastWeek ? currentDay + (7 - previousDay) : currentDay - previousDay;
+    const prevDate = new Date(now);
+    prevDate.setDate(prevDate.getDate() - daysAgo);
+    return prevDate;
 }
 
 /**
  * Checks if a date falls strictly in the PREVIOUS calendar period for streak calculation.
  */
-function isPreviousPeriod(date, frequency) {
+function isPreviousPeriod(habit, date) {
     if (!date) return false;
     const now = new Date();
+    const frequency = habit.frequency;
     
     if (frequency === 'Weekly') {
         const day = now.getDay() || 7;
@@ -73,6 +104,13 @@ function isPreviousPeriod(date, frequency) {
     if (frequency === 'Monthly') {
         const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         return date.getFullYear() === lastMonth.getFullYear() && date.getMonth() === lastMonth.getMonth();
+    }
+
+    if (frequency === 'Custom' && habit.customDays && habit.customDays.length > 0) {
+        const prevDate = getPreviousScheduledDate(habit.customDays);
+        return date.getFullYear() === prevDate.getFullYear() &&
+               date.getMonth() === prevDate.getMonth() &&
+               date.getDate() === prevDate.getDate();
     }
     
     return isYesterday(date);
@@ -91,9 +129,10 @@ function toHabitDto(habit) {
         target: habit.target ?? null,
         unit: habit.unit ?? null,
         frequency: habit.frequency,
+        customDays: habit.customDays || [],
         category: habit.category ?? null,
         streakCount: habit.streakCount,
-        isCompletedToday: isCompletedForPeriod(habit.lastCompletedAt, habit.frequency),
+        isCompletedToday: isCompletedForPeriod(habit),
         createdAt: habit.createdAt.toISOString(),
     };
 }
@@ -154,6 +193,7 @@ export async function createHabitsFromTemplates(userId, templates) {
         title: t.title,
         icon: t.icon ?? '🎯',
         frequency: t.frequency,
+        customDays: t.customDays || [],
         category: t.category,
         ownerId: userId,
     }));
@@ -201,7 +241,7 @@ export async function completeHabit(habitId, userId) {
         throw ApiError.notFound('Habit not found.');
     }
 
-    if (isCompletedForPeriod(habit.lastCompletedAt, habit.frequency)) {
+    if (isCompletedForPeriod(habit)) {
         throw ApiError.badRequest('Habit already completed for this period.');
     }
 
@@ -209,7 +249,7 @@ export async function completeHabit(habitId, userId) {
     const last = habit.lastCompletedAt;
     
     // If completed in the immediately previous period, streak continues. Otherwise, resets to 1.
-    if (isPreviousPeriod(last, habit.frequency)) {
+    if (isPreviousPeriod(habit, last)) {
         habit.streakCount += 1;
     } else {
         habit.streakCount = 1;
@@ -232,7 +272,7 @@ export async function uncompleteHabit(habitId, userId) {
         throw ApiError.notFound('Habit not found.');
     }
 
-    if (!isCompletedForPeriod(habit.lastCompletedAt, habit.frequency)) {
+    if (!isCompletedForPeriod(habit)) {
         throw ApiError.badRequest('Habit not completed for this period.');
     }
 
