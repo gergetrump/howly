@@ -16,18 +16,28 @@ import {
 import { Page, PageSection, Heading } from '@/components/layout';
 // import { ThemeToggle } from '@/components/brand/ThemeToggle.jsx';
 import { logoutUser } from '@/services/authService';
-import { 
+import {
     uploadCurrentUserProfilePicture,
     deleteCurrentUserProfilePicture,
 } from '@/services/userService';
 import { useAuth } from '@/context/authContext';
+import { createCheckoutSession } from '@/services/paymentService';
 
 
-function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle }) {
+function SettingsRow({
+    icon: Icon,
+    iconColor = 'text-slate-400',
+    title,
+    subtitle,
+    onClick,
+    disabled = false,
+}) {
     return (
         <button
             type="button"
-            className="flex w-full items-center justify-between border-b border-slate-700/50 bg-slate-800/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-slate-700/70"
+            onClick={onClick}
+            disabled={disabled}
+            className="flex w-full items-center justify-between border-b border-slate-700/50 bg-slate-800/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-slate-700/70 disabled:cursor-not-allowed disabled:opacity-60"
         >
             <div className="flex items-center gap-4">
                 <Icon className={`size-5 ${iconColor}`} />
@@ -74,9 +84,35 @@ export function ProfilePage() {
     const { user, setUser, isLoadingUser } = useAuth();
     // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState('');
+    const [premiumError, setPremiumError] = useState('');
+    const [isStartingCheckout, setIsStartingCheckout] = useState(false);
     const [isUploadingPicture, setIsUploadingPicture] = useState(false);
     const [isDeletingPicture, setIsDeletingPicture] = useState(false);
     const [pictureError, setPictureError] = useState('');
+
+    async function handleUpgradeToPremium() {
+        try {
+            setPremiumError('');
+            setIsStartingCheckout(true);
+
+            const response = await createCheckoutSession();
+
+            if (!response?.url) {
+                throw new Error('Checkout session did not include a URL');
+            }
+
+            window.location.href = response.url;
+        } catch (error) {
+            console.error('Could not start checkout:', error);
+            setPremiumError(
+                error.message === 'Request failed'
+                    ? 'Premium checkout is unavailable right now.'
+                    : error.message || 'Could not start checkout'
+            );
+        } finally {
+            setIsStartingCheckout(false);
+        }
+    }
 
     async function handleLogout() {
         try {
@@ -153,7 +189,7 @@ export function ProfilePage() {
         );
     }
 
-    const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Howly User';    const username = user?.username || 'unknown';
+    const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Howly User'; const username = user?.username || 'unknown';
     const streak = user?.streak ?? 0;
     const completed = user?.completedHabits ?? 0;
 
@@ -237,11 +273,18 @@ export function ProfilePage() {
                     <SettingsRow
                         icon={Crown}
                         iconColor="text-yellow-400"
-                        title="Upgrade to Premium"
+                        title={isStartingCheckout ? 'Starting checkout...' : 'Upgrade to Premium'}
+                        onClick={handleUpgradeToPremium}
+                        disabled={isStartingCheckout}
                     />
                     <SettingsRow icon={Bell} title="Notifications" />
                     <SettingsRow icon={Lock} title="Privacy & Security" />
                 </div>
+                {premiumError && (
+                    <p className="mt-3 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                        {premiumError}
+                    </p>
+                )}
             </PageSection>
 
             <PageSection title="Support">
