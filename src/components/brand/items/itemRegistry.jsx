@@ -13,7 +13,7 @@ const itemRegistry = {
         transform: 'translate(55 845)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },
-    cup: {
+    'cup': {
         visual: Cup,
         layer: CupLayer,
         transform: 'translate(1300 750)',
@@ -25,7 +25,7 @@ const itemRegistry = {
         transform: 'translate(1300 750)',
         previewClassName: 'max-h-[85%] max-w-[50%]',
     },
-    hoodie: {
+    'hoodie': {
         visual: Hoodie,
         layer: HoodieLayer,
         transform: 'translate(100 770)',
@@ -41,7 +41,7 @@ const itemRegistry = {
         transform: 'translate(70 850)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },
-    suit: {
+    'suit': {
         visual: Suit,
         layer: SuitLayer,
         transform: 'translate(175 730)',
