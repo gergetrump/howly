@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { CardGrid, CompletionCircle } from '@/components/common';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
@@ -13,6 +14,7 @@ export function DashboardPage() {
     const [habits, setHabits] = useState([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [habitToEdit, setHabitToEdit] = useState(null);
+    const [allHabitsOpen, setAllHabitsOpen] = useState(false);
 
     useEffect(() => {
         async function fetchHabits() {
@@ -52,8 +54,18 @@ export function DashboardPage() {
         setIsAddModalOpen(true);
     }
 
-    const completedCount = habits.filter(h => h.isCompletedToday).length;
-    const totalCount = habits.length;
+    const now = new Date();
+    const currentDay = now.getDay() || 7; // 1-7 (Mon-Sun)
+
+    const todaysHabits = habits.filter(h => {
+        if (h.frequency === 'Custom' && h.customDays && h.customDays.length > 0) {
+            return h.customDays.includes(currentDay);
+        }
+        return true;
+    });
+
+    const completedCount = todaysHabits.filter(h => h.isCompletedToday).length;
+    const totalCount = todaysHabits.length;
 
     return (
         <Page theme="forest">
@@ -77,8 +89,8 @@ export function DashboardPage() {
                     setIsAddModalOpen(true);
                 }}
             >
-                <CardGrid columns={habits.length === 1 ? 1 : 2}>
-                    {habits.map((habit) => (
+                <CardGrid columns={todaysHabits.length === 1 ? 1 : 2}>
+                    {todaysHabits.map((habit) => (
                         <HabitCard
                             key={habit.id}
                             emoji={habit.icon}
@@ -96,11 +108,46 @@ export function DashboardPage() {
                             />
                         </HabitCard>
                     ))}
-                    {habits.length === 0 && (
-                        <p className="text-sm text-slate-400 text-center py-4">No habits yet. Click "Add Habit" to start!</p>
+                    {todaysHabits.length === 0 && (
+                        <p className="text-sm text-slate-400 text-center py-4">No habits scheduled for today. Take a break!</p>
                     )}
                 </CardGrid>
             </PageSection>
+
+            <div className="px-4">
+                <button
+                    type="button"
+                    onClick={() => setAllHabitsOpen(prev => !prev)}
+                    className="flex w-full items-center justify-between rounded-xl bg-white/5 px-4 py-3 text-left transition-colors hover:bg-white/10"
+                >
+                    <span className="text-base font-semibold text-white">All Habits <span className="text-sm font-normal text-slate-400">({habits.length})</span></span>
+                    <ChevronDown
+                        size={20}
+                        className={`text-slate-400 transition-transform duration-200 ${allHabitsOpen ? 'rotate-180' : ''}`}
+                    />
+                </button>
+                {allHabitsOpen && (
+                    <div className="mt-4">
+                        <CardGrid columns={habits.length === 1 ? 1 : 2}>
+                            {habits.map((habit) => (
+                                    <HabitCard
+                                        key={habit.id}
+                                        emoji={habit.icon}
+                                        title={habit.title}
+                                        frequency={habit.frequency}
+                                        streakDays={habit.streakCount}
+                                        completed={habit.isCompletedToday}
+                                        onEdit={() => handleEdit(habit)}
+                                        onDelete={() => handleDelete(habit.id)}
+                                    />
+                            ))}
+                            {habits.length === 0 && (
+                                <p className="text-sm text-slate-400 text-center py-4">No habits yet. Click "Add Habit" to start!</p>
+                            )}
+                        </CardGrid>
+                    </div>
+                )}
+            </div>
 
             <PageSection title="My Challenges" width="sm">
             </PageSection>
@@ -109,6 +156,7 @@ export function DashboardPage() {
                 open={isAddModalOpen} 
                 onOpenChange={setIsAddModalOpen}
                 editHabit={habitToEdit}
+                existingHabits={habits}
                 onHabitAdded={(savedHabit, isEdit) => {
                     if (isEdit) {
                         setHabits(prev => prev.map(h => h.id === savedHabit.id ? savedHabit : h));
