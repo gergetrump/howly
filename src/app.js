@@ -9,6 +9,7 @@ import socialRoutes from './features/social/social.routes.js';
 import itemRoutes from './features/items/item.routes.js';
 import inventoryRoutes from './features/inventory/inventory.routes.js';
 import { errorMiddleware } from './middleware/error.middleware.js';
+import challengeRoutes from './features/challenges/challenge.routes.js';
 import { handleStripeWebhook } from './payment/payment.controller.js';
 import paymentRoutes from './payment/payment.routes.js';
 
@@ -53,6 +54,7 @@ export default function createApp() {
     app.use('/api/users', userRoutes);
     app.use('/api/dev', devRoutes);
     app.use('/api/social', socialRoutes);
+    app.use('/api/challenges', challengeRoutes);
     app.use('/api/items', itemRoutes);
     app.use('/api/inventory', inventoryRoutes);
 
