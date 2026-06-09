@@ -311,6 +311,7 @@ export function SocialPage() {
     const [busyFriendId, setBusyFriendId] = useState(null);
     const [busyPostId, setBusyPostId] = useState(null);
     const [activePanel, setActivePanel] = useState('friends');
+    const pendingFriendRequestCount = requests.incoming?.length ?? 0;
 
     async function loadSocialData() {
         setError('');
@@ -325,6 +326,7 @@ export function SocialPage() {
             setFriends(friendsData ?? []);
             setRequests(requestsData ?? { incoming: [], outgoing: [] });
             setFeed(feedData ?? []);
+            window.dispatchEvent(new Event('howly:social-requests-updated'));
         } catch (err) {
             setError(err.message);
         } finally {
@@ -348,6 +350,7 @@ export function SocialPage() {
                 setFriends(friendsData ?? []);
                 setRequests(requestsData ?? { incoming: [], outgoing: [] });
                 setFeed(feedData ?? []);
+                window.dispatchEvent(new Event('howly:social-requests-updated'));
             })
             .catch((err) => {
                 if (isMounted) {
@@ -521,10 +524,15 @@ export function SocialPage() {
                             </button>
                             <button
                                 type="button"
-                                className={`rounded-md px-3 py-2 font-medium transition ${activePanel === 'requests' ? 'bg-white text-slate-950' : 'hover:bg-white/10 hover:text-white'}`}
+                                className={`flex items-center gap-2 rounded-md px-3 py-2 font-medium transition ${activePanel === 'requests' ? 'bg-white text-slate-950' : 'hover:bg-white/10 hover:text-white'}`}
                                 onClick={() => setActivePanel('requests')}
                             >
                                 Friend Requests
+                                {pendingFriendRequestCount > 0 ? (
+                                    <span className="flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold leading-5 text-white">
+                                        {pendingFriendRequestCount}
+                                    </span>
+                                ) : null}
                             </button>
                         </div>
                         <Button
