@@ -33,8 +33,18 @@ function hashToken(token) {
     return crypto.createHash('sha256').update(token).digest('hex');
 }
 
+function createEmailVerificationToken() {
+    const token = crypto.randomBytes(32).toString('hex');
+
+    return {
+        token,
+        tokenHash: hashToken(token),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    };
+}
+
 function buildAccountVerificationLink(token) {
-    return `${config.serverBaseUrl}/api/auth/verify-email?token=${token}`;
+    return `${config.serverBaseUrl}/api/auth/verify-email?token=${token}&view=web`;
 }
 
 // Sign a new access token for the given user.
@@ -53,8 +63,8 @@ export async function registerLocalUser({ username, email, firstName, lastName, 
         return { error: 'Email is already in use' };
     }
 
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationTokenHash = hashToken(verificationToken);
+    const { token: verificationToken, tokenHash: verificationTokenHash, expiresAt } =
+        createEmailVerificationToken();
     const passwordHash = await bcrypt.hash(password, 12);
 
     const user = await User.create({
@@ -66,7 +76,7 @@ export async function registerLocalUser({ username, email, firstName, lastName, 
         authProvider: 'local',
         isEmailVerified: false,
         emailVerificationTokenHash: verificationTokenHash,
-        emailVerificationExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        emailVerificationExpiresAt: expiresAt,
     });
 
     try {
@@ -183,6 +193,29 @@ export async function verifyEmail(token) {
     await user.save();
 
     return { user };
+}
+
+export async function resendEmailVerification(email) {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({
+        email: normalizedEmail,
+        authProvider: 'local',
+        isDeleted: false,
+    });
+
+    if (!user || user.isEmailVerified) {
+        return;
+    }
+
+    const { token, tokenHash, expiresAt } = createEmailVerificationToken();
+
+    user.emailVerificationTokenHash = tokenHash;
+    user.emailVerificationExpiresAt = expiresAt;
+
+    await user.save();
+
+    await sendAccountVerificationEmail(user.email, buildAccountVerificationLink(token));
 }
 
 export async function resetPassword(token, newPassword) {

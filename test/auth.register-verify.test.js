@@ -67,3 +67,53 @@ test('registering sends a pending account that requires email confirmation', asy
     assert.ok(loginResponse.body.token);
     assert.equal(loginResponse.body.user.isEmailVerified, true);
 });
+
+test('browser verification requests receive an HTML confirmation page', async () => {
+    const { verificationToken } = await registerLocalUser({
+        username: 'browser-user',
+        email: 'browser-user@example.com',
+        firstName: 'Browser',
+        lastName: 'User',
+        password: 'password123',
+    });
+
+    const response = await request(app)
+        .get('/api/auth/verify-email')
+        .query({ token: verificationToken, view: 'web' })
+        .expect(200);
+
+    assert.match(response.headers['content-type'], /text\/html/);
+    assert.match(response.text, /Email verified successfully/);
+    assert.match(response.text, /Continue to sign in/);
+});
+
+test('expired verification tokens can be replaced with a new verification email', async () => {
+    const { user, verificationToken } = await registerLocalUser({
+        username: 'expired-user',
+        email: 'expired-user@example.com',
+        firstName: 'Expired',
+        lastName: 'User',
+        password: 'password123',
+    });
+
+    await User.findByIdAndUpdate(user._id, {
+        emailVerificationExpiresAt: new Date(Date.now() - 60 * 1000),
+    });
+
+    await request(app)
+        .get('/api/auth/verify-email')
+        .query({ token: verificationToken })
+        .expect(400);
+
+    const beforeResend = await User.findById(user._id).lean();
+
+    await request(app)
+        .post('/api/auth/resend-verification')
+        .send({ email: 'expired-user@example.com' })
+        .expect(200);
+
+    const afterResend = await User.findById(user._id).lean();
+
+    assert.notEqual(afterResend.emailVerificationTokenHash, beforeResend.emailVerificationTokenHash);
+    assert.ok(afterResend.emailVerificationExpiresAt > beforeResend.emailVerificationExpiresAt);
+});
