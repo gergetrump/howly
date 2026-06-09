@@ -113,6 +113,8 @@ test('POST /api/challenges creates a challenge for a premium user', async () => 
     assert.equal(challenge.habitTitle, 'Reading');
     assert.equal(challenge.coinReward, 150);
     assert.equal(challenge.durationDays, 30);
+    assert.equal(challenge.status, 'active');
+    assert.equal(challenge.participantCount, 1);
     assert.equal(challenge.createdBy, owner._id.toString());
     assert.ok(challenge.startsAt);
     assert.ok(challenge.endsAt);
@@ -142,6 +144,19 @@ test('free users cannot create challenges', async () => {
         .expect(400);
 });
 
+test('future challenges are displayed as not started', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const token = signAccessToken(owner);
+    const challenge = await createChallenge(token, {
+        ownerId: owner._id,
+        habit: await buildHabit(owner._id),
+        startsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+
+    assert.equal(challenge.status, 'notStarted');
+    assert.equal(challenge.participantCount, 1);
+});
+
 test('premium users can create only one active challenge at a time', async () => {
     const owner = await buildUser({ isPremium: true });
     const ownerToken = signAccessToken(owner);
@@ -165,9 +180,122 @@ test('premium users can create only one active challenge at a time', async () =>
         .expect(400);
 });
 
-test('free users can only join one active challenge at a time', async () => {
+test('GET /api/challenges supports active, friends, and public scopes', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const friend = await buildUser();
+    const stranger = await buildUser({ isPremium: true });
+    const ownerToken = signAccessToken(owner);
+    const friendToken = signAccessToken(friend);
+    const friendHabit = await buildHabit(friend._id);
+
+    await buildFriendship(owner._id, friend._id);
+
+    const publicChallenge = await createChallenge(ownerToken, {
+        ownerId: owner._id,
+        habit: await buildHabit(owner._id),
+        title: 'Public Reading',
+        visibility: 'public',
+    });
+    const friendsChallenge = await createChallenge(signAccessToken(stranger), {
+        ownerId: stranger._id,
+        habit: await buildHabit(stranger._id),
+        title: 'Hidden Friend Challenge',
+        visibility: 'friends',
+    });
+
+    await buildFriendship(stranger._id, friend._id);
+
+    await request(app)
+        .post(`/api/challenges/${publicChallenge.id}/join`)
+        .set('Authorization', `Bearer ${friendToken}`)
+        .send({ habitId: friendHabit._id.toString() })
+        .expect(201);
+
+    const activeResponse = await request(app)
+        .get('/api/challenges?scope=active')
+        .set('Authorization', `Bearer ${friendToken}`)
+        .expect(200);
+
+    assert.equal(activeResponse.body.some((challenge) => challenge.id === publicChallenge.id), true);
+
+    const friendsResponse = await request(app)
+        .get('/api/challenges?scope=friends')
+        .set('Authorization', `Bearer ${friendToken}`)
+        .expect(200);
+
+    assert.equal(friendsResponse.body.some((challenge) => challenge.id === friendsChallenge.id), true);
+
+    const publicResponse = await request(app)
+        .get('/api/challenges?scope=public')
+        .set('Authorization', `Bearer ${friendToken}`)
+        .expect(200);
+
+    assert.equal(publicResponse.body.some((challenge) => challenge.id === publicChallenge.id), true);
+    assert.equal(publicResponse.body.some((challenge) => challenge.id === friendsChallenge.id), false);
+});
+
+test('active challenge scope excludes challenges the user has not joined', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const viewer = await buildUser();
+
+    await createChallenge(signAccessToken(owner), {
+        ownerId: owner._id,
+        habit: await buildHabit(owner._id),
+        title: 'Not Joined',
+        visibility: 'public',
+    });
+
+    const activeResponse = await request(app)
+        .get('/api/challenges?scope=active')
+        .set('Authorization', `Bearer ${signAccessToken(viewer)}`)
+        .expect(200);
+
+    assert.deepEqual(activeResponse.body, []);
+});
+
+test('challenge details can be edited before start but not after start', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const ownerToken = signAccessToken(owner);
+    const firstHabit = await buildHabit(owner._id, { title: 'Reading' });
+    const secondHabit = await buildHabit(owner._id, { title: 'Running' });
+    const startsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    const challenge = await createChallenge(ownerToken, {
+        ownerId: owner._id,
+        habit: firstHabit,
+        startsAt,
+        durationDays: 10,
+    });
+
+    const updateResponse = await request(app)
+        .patch(`/api/challenges/${challenge.id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+            title: 'Future Running',
+            habitId: secondHabit._id.toString(),
+            durationDays: 14,
+        })
+        .expect(200);
+
+    assert.equal(updateResponse.body.challenge.title, 'Future Running');
+    assert.equal(updateResponse.body.challenge.habitTitle, 'Running');
+    assert.equal(updateResponse.body.challenge.durationDays, 14);
+    assert.equal(updateResponse.body.challenge.coinReward, 70);
+
+    await Challenge.findByIdAndUpdate(challenge.id, { startsAt: new Date(Date.now() - 1000) });
+
+    const lockedResponse = await request(app)
+        .patch(`/api/challenges/${challenge.id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ title: 'Too Late' })
+        .expect(400);
+
+    assert.equal(lockedResponse.body.code, 'CHALLENGE_EDIT_LOCKED');
+});
+
+test('free users can only join two active challenges at a time', async () => {
     const firstOwner = await buildUser({ isPremium: true });
     const secondOwner = await buildUser({ isPremium: true });
+    const thirdOwner = await buildUser({ isPremium: true });
     const participant = await buildUser();
     const participantToken = signAccessToken(participant);
     const firstChallenge = await createChallenge(signAccessToken(firstOwner), {
@@ -180,8 +308,14 @@ test('free users can only join one active challenge at a time', async () => {
         habit: await buildHabit(secondOwner._id),
         title: 'Second Challenge',
     });
+    const thirdChallenge = await createChallenge(signAccessToken(thirdOwner), {
+        ownerId: thirdOwner._id,
+        habit: await buildHabit(thirdOwner._id),
+        title: 'Third Challenge',
+    });
     const firstHabit = await buildHabit(participant._id, { title: 'Reading' });
     const secondHabit = await buildHabit(participant._id, { title: 'Running' });
+    const thirdHabit = await buildHabit(participant._id, { title: 'Meditation' });
 
     await request(app)
         .post(`/api/challenges/${firstChallenge.id}/join`)
@@ -193,15 +327,17 @@ test('free users can only join one active challenge at a time', async () => {
         .post(`/api/challenges/${secondChallenge.id}/join`)
         .set('Authorization', `Bearer ${participantToken}`)
         .send({ habitId: secondHabit._id.toString() })
+        .expect(201);
+
+    await request(app)
+        .post(`/api/challenges/${thirdChallenge.id}/join`)
+        .set('Authorization', `Bearer ${participantToken}`)
+        .send({ habitId: thirdHabit._id.toString() })
         .expect(400);
 });
 
-test('premium users can join two active challenges but not three', async () => {
-    const owners = await Promise.all([
-        buildUser({ isPremium: true }),
-        buildUser({ isPremium: true }),
-        buildUser({ isPremium: true }),
-    ]);
+test('premium users can join five active challenges but not six', async () => {
+    const owners = await Promise.all(Array.from({ length: 6 }, () => buildUser({ isPremium: true })));
     const participant = await buildUser({ isPremium: true });
     const participantToken = signAccessToken(participant);
     const challenges = [];
@@ -214,28 +350,23 @@ test('premium users can join two active challenges but not three', async () => {
         }));
     }
 
-    const habits = await Promise.all([
-        buildHabit(participant._id, { title: 'Reading' }),
-        buildHabit(participant._id, { title: 'Running' }),
-        buildHabit(participant._id, { title: 'Meditation' }),
-    ]);
+    const habits = await Promise.all(Array.from(
+        { length: 6 },
+        (_, index) => buildHabit(participant._id, { title: `Habit ${index + 1}` })
+    ));
+
+    for (let index = 0; index < 5; index += 1) {
+        await request(app)
+            .post(`/api/challenges/${challenges[index].id}/join`)
+            .set('Authorization', `Bearer ${participantToken}`)
+            .send({ habitId: habits[index]._id.toString() })
+            .expect(201);
+    }
 
     await request(app)
-        .post(`/api/challenges/${challenges[0].id}/join`)
+        .post(`/api/challenges/${challenges[5].id}/join`)
         .set('Authorization', `Bearer ${participantToken}`)
-        .send({ habitId: habits[0]._id.toString() })
-        .expect(201);
-
-    await request(app)
-        .post(`/api/challenges/${challenges[1].id}/join`)
-        .set('Authorization', `Bearer ${participantToken}`)
-        .send({ habitId: habits[1]._id.toString() })
-        .expect(201);
-
-    await request(app)
-        .post(`/api/challenges/${challenges[2].id}/join`)
-        .set('Authorization', `Bearer ${participantToken}`)
-        .send({ habitId: habits[2]._id.toString() })
+        .send({ habitId: habits[5]._id.toString() })
         .expect(400);
 });
 

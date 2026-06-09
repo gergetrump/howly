@@ -7,9 +7,19 @@ import { Friendship } from '../social/social.model.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const COINS_PER_CHALLENGE_DAY = 5;
-const FREE_ACTIVE_CHALLENGE_LIMIT = 1;
-const PREMIUM_ACTIVE_CHALLENGE_LIMIT = 2;
+const FREE_ACTIVE_CHALLENGE_LIMIT = 2;
+const PREMIUM_ACTIVE_CHALLENGE_LIMIT = 5;
 const MAX_ACTIVE_CREATED_CHALLENGES = 1;
+const START_LOCKED_UPDATE_FIELDS = [
+    'title',
+    'habitId',
+    'habitTitle',
+    'description',
+    'frequency',
+    'durationDays',
+    'startsAt',
+    'visibility',
+];
 
 function calculateEndDate(startsAt, durationDays) {
     return new Date(startsAt.getTime() + durationDays * DAY_IN_MS);
@@ -100,21 +110,14 @@ async function getActiveChallengeIdsForUser(userId, now = new Date()) {
 
     const participantChallengeIds = activeParticipations.map((participant) => participant.challenge);
 
-    const [createdChallenges, joinedChallenges] = await Promise.all([
-        Challenge.find({
-            createdBy: userId,
+    const joinedChallenges = participantChallengeIds.length
+        ? await Challenge.find({
+            _id: { $in: participantChallengeIds },
             ...activeChallengeConditions,
-        }).select('_id').lean(),
-        participantChallengeIds.length
-            ? Challenge.find({
-                _id: { $in: participantChallengeIds },
-                ...activeChallengeConditions,
-            }).select('_id').lean()
-            : [],
-    ]);
+        }).select('_id').lean()
+        : [];
 
     return new Set([
-        ...createdChallenges.map((challenge) => challenge._id.toString()),
         ...joinedChallenges.map((challenge) => challenge._id.toString()),
     ]);
 }
@@ -145,7 +148,10 @@ async function canCreateChallenge(user) {
     const currentUser = await getChallengeUserContext(user);
 
     if (!hasPremiumMembership(currentUser)) {
-        return { error: 'premium membership is required to create challenges' };
+        return {
+            error: 'premium membership is required to create challenges',
+            code: 'PREMIUM_REQUIRED',
+        };
     }
 
     const [activeCreatedChallengeCount, activeChallengeIds] = await Promise.all([
@@ -154,11 +160,17 @@ async function canCreateChallenge(user) {
     ]);
 
     if (activeCreatedChallengeCount >= MAX_ACTIVE_CREATED_CHALLENGES) {
-        return { error: 'premium users can only create one active challenge at a time' };
+        return {
+            error: 'you can only create one challenge at a time as premium user, finish your other challenge first',
+            code: 'PREMIUM_ACTIVE_CREATED_LIMIT',
+        };
     }
 
     if (activeChallengeIds.size >= getActiveChallengeLimit(currentUser)) {
-        return { error: 'premium users can only participate in two active challenges at a time' };
+        return {
+            error: 'you can only join 5 challenges at max',
+            code: 'PREMIUM_ACTIVE_CHALLENGE_LIMIT',
+        };
     }
 
     return { allowed: true };
@@ -179,7 +191,31 @@ function isChallengeJoinable(challenge, now = new Date()) {
     return challenge.status !== 'completed' && challenge.status !== 'failed' && challenge.endsAt > now;
 }
 
-function serializeChallenge(challenge) {
+function hasStarted(challenge, now = new Date()) {
+    return challenge.startsAt <= now;
+}
+
+function getDisplayStatus(challenge, now = new Date()) {
+    if (challenge.status === 'completed' || challenge.status === 'failed') {
+        return challenge.status;
+    }
+
+    if (challenge.endsAt <= now) {
+        return 'completed';
+    }
+
+    if (challenge.startsAt <= now) {
+        return 'active';
+    }
+
+    return 'notStarted';
+}
+
+function hasStartLockedUpdates(updates) {
+    return START_LOCKED_UPDATE_FIELDS.some((field) => updates[field] !== undefined);
+}
+
+function serializeChallenge(challenge, participantCount = 0) {
     if (!challenge) {
         return null;
     }
@@ -195,11 +231,35 @@ function serializeChallenge(challenge) {
         durationDays: challenge.durationDays,
         startsAt: challenge.startsAt,
         endsAt: challenge.endsAt,
-        status: challenge.status,
+        status: getDisplayStatus(challenge),
         visibility: challenge.visibility,
+        participantCount,
         createdAt: challenge.createdAt,
         updatedAt: challenge.updatedAt,
     };
+}
+
+async function getParticipantCounts(challengeIds) {
+    if (!challengeIds.length) {
+        return new Map();
+    }
+
+    const counts = await ChallengeParticipant.aggregate([
+        {
+            $match: {
+                challenge: { $in: challengeIds },
+                status: { $ne: 'left' },
+            },
+        },
+        {
+            $group: {
+                _id: '$challenge',
+                count: { $sum: 1 },
+            },
+        },
+    ]);
+
+    return new Map(counts.map((item) => [item._id.toString(), item.count]));
 }
 
 function serializeParticipant(participant, challenge) {
@@ -225,13 +285,13 @@ function serializeParticipant(participant, challenge) {
     };
 }
 
-function serializeInvitation(invitation) {
+function serializeInvitation(invitation, participantCount = 0) {
     if (!invitation) {
         return null;
     }
 
     const challenge = typeof invitation.challenge === 'object' && invitation.challenge?._id
-        ? serializeChallenge(invitation.challenge)
+        ? serializeChallenge(invitation.challenge, participantCount)
         : invitation.challenge.toString();
 
     return {
@@ -275,13 +335,40 @@ export async function createChallenge(input, user) {
     });
 
     return {
-        challenge: serializeChallenge(challenge),
+        challenge: serializeChallenge(challenge, 1),
         participant: serializeParticipant(participant, challenge),
     };
 }
 
 export async function listChallenges(filters = {}, user) {
     const conditions = [];
+
+    if (filters.scope === 'active') {
+        const activeChallengeIds = await getActiveChallengeIdsForUser(user.id);
+
+        if (activeChallengeIds.size === 0) {
+            return [];
+        }
+
+        conditions.push({ _id: { $in: [...activeChallengeIds] } });
+    }
+
+    if (filters.scope === 'friends') {
+        const friendIds = await getFriendIds(user.id);
+
+        if (friendIds.length === 0) {
+            return [];
+        }
+
+        conditions.push({
+            visibility: 'friends',
+            createdBy: { $in: friendIds },
+        });
+    }
+
+    if (filters.scope === 'public') {
+        conditions.push({ visibility: 'public' });
+    }
 
     if (filters.status) {
         conditions.push({ status: filters.status });
@@ -297,7 +384,7 @@ export async function listChallenges(filters = {}, user) {
 
     if (filters.mine) {
         conditions.push({ createdBy: user.id });
-    } else if (user.role !== 'admin') {
+    } else if (!filters.scope && user.role !== 'admin') {
         const friendIds = await getFriendIds(user.id);
 
         conditions.push({
@@ -311,8 +398,11 @@ export async function listChallenges(filters = {}, user) {
 
     const query = conditions.length ? { $and: conditions } : {};
     const challenges = await Challenge.find(query).sort({ createdAt: -1 });
+    const participantCounts = await getParticipantCounts(challenges.map((challenge) => challenge._id));
 
-    return challenges.map(serializeChallenge);
+    return challenges.map((challenge) => (
+        serializeChallenge(challenge, participantCounts.get(challenge._id.toString()) ?? 0)
+    ));
 }
 
 export async function getChallengeById(challengeId, user) {
@@ -326,7 +416,12 @@ export async function getChallengeById(challengeId, user) {
         return { forbidden: true };
     }
 
-    return { challenge: serializeChallenge(challenge) };
+    const participantCount = await ChallengeParticipant.countDocuments({
+        challenge: challengeId,
+        status: { $ne: 'left' },
+    });
+
+    return { challenge: serializeChallenge(challenge, participantCount) };
 }
 
 export async function updateChallenge(challengeId, updates, user) {
@@ -340,17 +435,48 @@ export async function updateChallenge(challengeId, updates, user) {
         return { forbidden: true };
     }
 
+    if (hasStarted(challenge) && hasStartLockedUpdates(updates)) {
+        return {
+            error: 'challenge details cannot be edited after the challenge has started',
+            code: 'CHALLENGE_EDIT_LOCKED',
+        };
+    }
+
+    let nextHabitTitle = updates.habitTitle;
+
+    if (updates.habitId !== undefined) {
+        const habit = await getOwnedHabit(updates.habitId, user.id);
+
+        if (!habit) {
+            return { error: 'habitId must belong to the current user' };
+        }
+
+        nextHabitTitle = habit.title;
+        await ChallengeParticipant.findOneAndUpdate(
+            { challenge: challengeId, user: user.id },
+            { habit: habit._id },
+            { returnDocument: 'after' }
+        );
+    }
+
     const nextStartsAt = updates.startsAt || challenge.startsAt;
     const nextDurationDays = updates.durationDays || challenge.durationDays;
+    const { habitId, ...challengeUpdates } = updates;
 
-    Object.assign(challenge, updates, {
+    Object.assign(challenge, challengeUpdates, {
+        ...(nextHabitTitle ? { habitTitle: nextHabitTitle } : {}),
         coinReward: getCoinReward(nextDurationDays),
         endsAt: calculateEndDate(nextStartsAt, nextDurationDays),
     });
 
     await challenge.save();
 
-    return { challenge: serializeChallenge(challenge) };
+    const participantCount = await ChallengeParticipant.countDocuments({
+        challenge: challengeId,
+        status: { $ne: 'left' },
+    });
+
+    return { challenge: serializeChallenge(challenge, participantCount) };
 }
 
 export async function deleteChallenge(challengeId, user) {
@@ -395,9 +521,14 @@ export async function joinChallenge(challengeId, user, { habitId }) {
     const joinPermission = await canAddActiveChallenge(user, challenge._id);
 
     if (!joinPermission.allowed) {
-        return { error: joinPermission.isPremium
-            ? 'premium users can only participate in two active challenges at a time'
-            : 'free users can only participate in one active challenge at a time' };
+        return {
+            error: joinPermission.isPremium
+                ? 'you can only join 5 challenges at max'
+                : 'you can only join 2 challenges with the free version, buy premium to join more challenges',
+            code: joinPermission.isPremium
+                ? 'PREMIUM_ACTIVE_CHALLENGE_LIMIT'
+                : 'FREE_ACTIVE_CHALLENGE_LIMIT',
+        };
     }
 
     const existingParticipant = await ChallengeParticipant.findOne({
@@ -419,9 +550,13 @@ export async function joinChallenge(challengeId, user, { habitId }) {
         existingParticipant.rewardClaimedAt = null;
         existingParticipant.rewardCoins = 0;
         await existingParticipant.save();
+        const participantCount = await ChallengeParticipant.countDocuments({
+            challenge: challengeId,
+            status: { $ne: 'left' },
+        });
 
         return {
-            challenge: serializeChallenge(challenge),
+            challenge: serializeChallenge(challenge, participantCount),
             participant: serializeParticipant(existingParticipant, challenge),
         };
     }
@@ -431,9 +566,13 @@ export async function joinChallenge(challengeId, user, { habitId }) {
         user: user.id,
         habit: habitId,
     });
+    const participantCount = await ChallengeParticipant.countDocuments({
+        challenge: challengeId,
+        status: { $ne: 'left' },
+    });
 
     return {
-        challenge: serializeChallenge(challenge),
+        challenge: serializeChallenge(challenge, participantCount),
         participant: serializeParticipant(participant, challenge),
     };
 }
@@ -495,7 +634,12 @@ export async function createInvitation(challengeId, inviteeId, user) {
 
     await invitation.populate('challenge');
 
-    return { invitation: serializeInvitation(invitation) };
+    const participantCount = await ChallengeParticipant.countDocuments({
+        challenge: challengeId,
+        status: { $ne: 'left' },
+    });
+
+    return { invitation: serializeInvitation(invitation, participantCount) };
 }
 
 export async function listInvitations(userId) {
@@ -507,10 +651,18 @@ export async function listInvitations(userId) {
             .populate('challenge')
             .sort({ createdAt: -1 }),
     ]);
+    const challengeIds = [...incoming, ...outgoing]
+        .map((invitation) => invitation.challenge?._id)
+        .filter(Boolean);
+    const participantCounts = await getParticipantCounts(challengeIds);
 
     return {
-        incoming: incoming.map(serializeInvitation),
-        outgoing: outgoing.map(serializeInvitation),
+        incoming: incoming.map((invitation) => (
+            serializeInvitation(invitation, participantCounts.get(invitation.challenge._id.toString()) ?? 0)
+        )),
+        outgoing: outgoing.map((invitation) => (
+            serializeInvitation(invitation, participantCounts.get(invitation.challenge._id.toString()) ?? 0)
+        )),
     };
 }
 
@@ -539,9 +691,14 @@ export async function acceptInvitation(invitationId, user, { habitId }) {
     const joinPermission = await canAddActiveChallenge(user, challenge._id);
 
     if (!joinPermission.allowed) {
-        return { error: joinPermission.isPremium
-            ? 'premium users can only participate in two active challenges at a time'
-            : 'free users can only participate in one active challenge at a time' };
+        return {
+            error: joinPermission.isPremium
+                ? 'you can only join 5 challenges at max'
+                : 'you can only join 2 challenges with the free version, buy premium to join more challenges',
+            code: joinPermission.isPremium
+                ? 'PREMIUM_ACTIVE_CHALLENGE_LIMIT'
+                : 'FREE_ACTIVE_CHALLENGE_LIMIT',
+        };
     }
 
     let participant = await ChallengeParticipant.findOne({
@@ -553,9 +710,13 @@ export async function acceptInvitation(invitationId, user, { habitId }) {
         invitation.status = 'accepted';
         invitation.respondedAt = new Date();
         await invitation.save();
+        const participantCount = await ChallengeParticipant.countDocuments({
+            challenge: challenge._id,
+            status: { $ne: 'left' },
+        });
 
         return {
-            invitation: serializeInvitation(invitation),
+            invitation: serializeInvitation(invitation, participantCount),
             participant: serializeParticipant(participant, challenge),
         };
     }
@@ -581,9 +742,13 @@ export async function acceptInvitation(invitationId, user, { habitId }) {
     invitation.status = 'accepted';
     invitation.respondedAt = new Date();
     await invitation.save();
+    const participantCount = await ChallengeParticipant.countDocuments({
+        challenge: challenge._id,
+        status: { $ne: 'left' },
+    });
 
     return {
-        invitation: serializeInvitation(invitation),
+        invitation: serializeInvitation(invitation, participantCount),
         participant: serializeParticipant(participant, challenge),
     };
 }

@@ -11,7 +11,10 @@ import {
     validateUpdateChallengeInput,
 } from './challenge.validation.js';
 
-const badRequest = (res, message) => res.status(400).json({ message });
+const badRequest = (res, message, code) => res.status(400).json({
+    message,
+    ...(code ? { code } : {}),
+});
 const forbidden = (res) => res.status(403).json({ message: 'Forbidden' });
 const notFound = (res) => res.status(404).json({ message: 'Challenge not found' });
 
@@ -25,7 +28,7 @@ function handleServiceResult(res, result, successStatus = 200) {
     }
 
     if (result?.error) {
-        return badRequest(res, result.error);
+        return badRequest(res, result.error, result.code);
     }
 
     return res.status(successStatus).json(result);

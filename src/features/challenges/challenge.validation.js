@@ -4,6 +4,8 @@ import { CHALLENGE_FREQUENCIES, CHALLENGE_STATUS, CHALLENGE_VISIBILITIES } from 
 const CHALLENGE_FREQUENCY_SET = new Set(CHALLENGE_FREQUENCIES);
 const CHALLENGE_STATUS_SET = new Set(CHALLENGE_STATUS);
 const CHALLENGE_VISIBILITY_SET = new Set(CHALLENGE_VISIBILITIES);
+const CHALLENGE_SCOPES = ['active', 'friends', 'public'];
+const CHALLENGE_SCOPE_SET = new Set(CHALLENGE_SCOPES);
 
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
 
@@ -158,6 +160,14 @@ export function validateUpdateChallengeInput(body = {}) {
         }
     }
 
+    if (body.habitId !== undefined) {
+        if (!isValidObjectId(body.habitId)) {
+            errors.push('habitId must be a valid ObjectId');
+        } else {
+            updates.habitId = body.habitId;
+        }
+    }
+
     toOptionalString(body.description, 'description', 200, errors, updates);
 
     if (body.coinReward !== undefined) {
@@ -240,6 +250,14 @@ export function validateListChallengesInput(query = {}) {
             errors.push(`visibility must be one of: ${CHALLENGE_VISIBILITIES.join(', ')}`);
         } else {
             value.visibility = query.visibility;
+        }
+    }
+
+    if (query.scope !== undefined) {
+        if (!CHALLENGE_SCOPE_SET.has(query.scope)) {
+            errors.push(`scope must be one of: ${CHALLENGE_SCOPES.join(', ')}`);
+        } else {
+            value.scope = query.scope;
         }
     }
 
