@@ -7,3 +7,11 @@ export function validateBuyItemInput(body = {}) {
 
     return { value: { itemId: body.itemId } };
 }
+
+export function validateUserItemId(id) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return { error: 'userItemId must be a valid ObjectId' };
+    }
+
+    return { value: id };
+}

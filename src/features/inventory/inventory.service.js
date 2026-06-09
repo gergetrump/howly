@@ -4,6 +4,7 @@ import UserItem from './inventory.model.js';
 
 export const INVENTORY_ERROR_CODES = {
     ITEM_NOT_FOUND: 'ITEM_NOT_FOUND',
+    USER_ITEM_NOT_FOUND: 'USER_ITEM_NOT_FOUND',
     ITEM_ALREADY_OWNED: 'ITEM_ALREADY_OWNED',
     PREMIUM_REQUIRED: 'PREMIUM_REQUIRED',
     NOT_ENOUGH_COINS: 'NOT_ENOUGH_COINS',
@@ -58,4 +59,24 @@ export async function buyItem({ userId, itemId }) {
     });
 
     return userItem.populate('item');
+}
+
+export async function setItemEquipped({ userId, userItemId, equipped }) {
+    const userItem = await UserItem.findOneAndUpdate(
+        {
+            _id: userItemId,
+            user: userId,
+        },
+        { equipped },
+        {
+            returnDocument: 'after',
+            runValidators: true,
+        },
+    ).populate('item');
+
+    if (!userItem) {
+        throw inventoryError(INVENTORY_ERROR_CODES.USER_ITEM_NOT_FOUND);
+    }
+
+    return userItem;
 }
