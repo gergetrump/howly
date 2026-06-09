@@ -90,10 +90,12 @@ export function toPublicUser(user) {
         lastName: user.lastName,
         profilePictureUrl,
         role: user.role,
+        isPremium: user.isPremium,
         authProvider: user.authProvider,
         providerId: user.providerId,
         coins: user.coins,
         streak: user.streak,
+        isPremium: user.isPremium,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
     };

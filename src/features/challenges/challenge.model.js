@@ -1,14 +1,35 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 
 const { Schema } = mongoose;
 
-const CHALLENGE_FREQUENCIES = ["daily", "weekly", "monthly"];
+export const CHALLENGE_FREQUENCIES = ["daily", "weekly", "monthly"];
 
-const CHALLENGE_STATUS = ["notStarted", "active", "completed", "failed"];
+export const CHALLENGE_STATUS = ["notStarted", "active", "completed", "failed"];
+
+export const CHALLENGE_VISIBILITIES = ["public", "friends"];
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+function calculateEndDate(startsAt, durationDays) {
+  return new Date(startsAt.getTime() + durationDays * DAY_IN_MS);
+}
 
 const challengeSchema = new Schema(
   {
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     title: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 1,
+      maxlength: 100,
+    },
+    habitTitle: {
       type: String,
       required: true,
       trim: true,
@@ -30,10 +51,31 @@ const challengeSchema = new Schema(
       enum: CHALLENGE_FREQUENCIES,
       required: true,
     },
+    durationDays: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 365,
+    },
+    startsAt: {
+      type: Date,
+      required: true,
+      default: Date.now,
+    },
+    endsAt: {
+      type: Date,
+      required: true,
+    },
     status: {
       type: String,
       enum: CHALLENGE_STATUS,
       default: "notStarted",
+    },
+    visibility: {
+      type: String,
+      enum: CHALLENGE_VISIBILITIES,
+      default: "public",
+      index: true,
     },
   },
   {
@@ -41,4 +83,10 @@ const challengeSchema = new Schema(
   }
 );
 
-module.exports = mongoose.model("Challenge", challengeSchema);
+challengeSchema.pre("validate", function setEndDate() {
+  if (!this.endsAt && this.startsAt && this.durationDays) {
+    this.endsAt = calculateEndDate(this.startsAt, this.durationDays);
+  }
+});
+
+export default mongoose.model("Challenge", challengeSchema);
