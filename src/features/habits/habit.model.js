@@ -42,9 +42,13 @@ const habitSchema = new Schema(
             enum: FREQUENCIES,
             required: true,
         },
+        customDays: [{
+            type: Number,
+            min: 1,
+            max: 7,
+        }],
         category: {
             type: String,
-            enum: CATEGORIES,
         },
         ownerId: {
             type: Schema.Types.ObjectId,
