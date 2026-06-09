@@ -41,23 +41,27 @@ async function areFriends(firstUserId, secondUserId) {
 }
 
 export async function createMilestonePostForHabit(habit) {
-  if (!habit || habit.streak < MILESTONE_INTERVAL_DAYS || habit.streak % MILESTONE_INTERVAL_DAYS !== 0) {
+  if (
+    !habit
+    || habit.streakCount < MILESTONE_INTERVAL_DAYS
+    || habit.streakCount % MILESTONE_INTERVAL_DAYS !== 0
+  ) {
     return { milestonePost: null };
   }
 
   const milestonePost = await MilestonePost.findOneAndUpdate(
     {
       habit: habit._id,
-      streakDays: habit.streak,
+      streakDays: habit.streakCount,
     },
     {
-      user: habit.user,
+      user: habit.ownerId,
       habit: habit._id,
       habitTitle: habit.title,
-      streakDays: habit.streak,
+      streakDays: habit.streakCount,
     },
     {
-      new: true,
+      returnDocument: 'after',
       upsert: true,
       runValidators: true,
       setDefaultsOnInsert: true,

@@ -118,7 +118,7 @@ export async function acceptFriendRequest({ requestId, userId }) {
       acceptedRequest: request._id,
     },
     {
-      new: true,
+      returnDocument: 'after',
       upsert: true,
       runValidators: true,
       setDefaultsOnInsert: true,
@@ -145,7 +145,7 @@ export async function rejectFriendRequest({ requestId, userId }) {
       respondedAt: new Date(),
     },
     {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     }
   ).populate(['requester', 'recipient']);

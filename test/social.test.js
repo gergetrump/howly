@@ -16,6 +16,7 @@ import {
   MilestoneLike,
   MilestonePost,
 } from '../src/features/milestones/milestone.model.js';
+import { createMilestonePostForHabit } from '../src/features/milestones/milestone.service.js';
 import User from '../src/features/users/user.model.js';
 
 let mongo;
@@ -37,6 +38,18 @@ async function buildUser(overrides = {}) {
 
 function authHeader(user) {
   return `Bearer ${signAccessToken(user)}`;
+}
+
+// Create a habit using the current habit schema fields
+async function buildHabit(owner, overrides = {}) {
+  return Habit.create({
+    title: overrides.title || 'Chess',
+    type: overrides.type || 'boolean',
+    frequency: overrides.frequency || 'Daily',
+    ownerId: owner._id,
+    streakCount: overrides.streakCount ?? 10,
+    ...overrides,
+  });
 }
 
 // Start an isolated in-memory database for the social test suite
@@ -114,12 +127,7 @@ test('social flow sends and accepts friend requests', async () => {
 test('social feed shows friends milestones and toggles likes', async () => {
   const author = await buildUser({ username: 'author', email: 'author@example.com' });
   const friend = await buildUser({ username: 'friend', email: 'friend@example.com' });
-  const habit = await Habit.create({
-    title: 'Chess',
-    type: 'boolean',
-    user: author._id,
-    streak: 10,
-  });
+  const habit = await buildHabit(author, { title: 'Chess', streakCount: 10 });
 
   await Friendship.create({
     userA: author._id,
@@ -131,7 +139,7 @@ test('social feed shows friends milestones and toggles likes', async () => {
     user: author._id,
     habit: habit._id,
     habitTitle: habit.title,
-    streakDays: habit.streak,
+    streakDays: habit.streakCount,
   });
 
   // Friends can see the milestone in their feed
@@ -163,4 +171,124 @@ test('social feed shows friends milestones and toggles likes', async () => {
 
   assert.equal(unlikeResponse.body.liked, false);
   assert.equal(unlikeResponse.body.milestonePost.likeCount, 0);
+});
+
+// Tests that milestone posts are created only for 10-day streak intervals
+test('milestone creation only creates posts at 10-day streak intervals', async () => {
+  const author = await buildUser({ username: 'milestone_author', email: 'milestone-author@example.com' });
+  const nineDayHabit = await buildHabit(author, { title: 'Reading', streakCount: 9 });
+  const tenDayHabit = await buildHabit(author, { title: 'Chess', streakCount: 10 });
+  const elevenDayHabit = await buildHabit(author, { title: 'Running', streakCount: 11 });
+  const twentyDayHabit = await buildHabit(author, { title: 'Writing', streakCount: 20 });
+
+  const nineDayResult = await createMilestonePostForHabit(nineDayHabit);
+  const tenDayResult = await createMilestonePostForHabit(tenDayHabit);
+  const elevenDayResult = await createMilestonePostForHabit(elevenDayHabit);
+  const twentyDayResult = await createMilestonePostForHabit(twentyDayHabit);
+
+  assert.equal(nineDayResult.milestonePost, null);
+  assert.equal(elevenDayResult.milestonePost, null);
+  assert.equal(tenDayResult.milestonePost.streakDays, 10);
+  assert.equal(tenDayResult.milestonePost.user.toString(), author._id.toString());
+  assert.equal(twentyDayResult.milestonePost.streakDays, 20);
+
+  const storedPosts = await MilestonePost.find({ user: author._id }).sort({ streakDays: 1 });
+  assert.deepEqual(storedPosts.map((post) => post.streakDays), [10, 20]);
+});
+
+// Tests that creating the same habit milestone twice reuses the existing post
+test('milestone creation is idempotent for the same habit and streak', async () => {
+  const author = await buildUser({ username: 'idempotent_author', email: 'idempotent-author@example.com' });
+  const habit = await buildHabit(author, { title: 'Reading', streakCount: 10 });
+
+  const firstResult = await createMilestonePostForHabit(habit);
+  const secondResult = await createMilestonePostForHabit(habit);
+
+  assert.equal(firstResult.milestonePost._id.toString(), secondResult.milestonePost._id.toString());
+  assert.equal(await MilestonePost.countDocuments({ habit: habit._id, streakDays: 10 }), 1);
+});
+
+// Tests that the friend feed hides expired milestones and non-friend milestones
+test('social feed only shows visible milestones from self and friends', async () => {
+  const currentUser = await buildUser({ username: 'feed_viewer', email: 'feed-viewer@example.com' });
+  const friend = await buildUser({ username: 'feed_friend', email: 'feed-friend@example.com' });
+  const stranger = await buildUser({ username: 'feed_stranger', email: 'feed-stranger@example.com' });
+  const friendHabit = await buildHabit(friend, { title: 'Friend habit', streakCount: 10 });
+  const expiredFriendHabit = await buildHabit(friend, { title: 'Expired habit', streakCount: 20 });
+  const strangerHabit = await buildHabit(stranger, { title: 'Stranger habit', streakCount: 10 });
+  const ownHabit = await buildHabit(currentUser, { title: 'Own habit', streakCount: 10 });
+
+  await Friendship.create({ userA: currentUser._id, userB: friend._id });
+
+  const visibleFriendPost = await MilestonePost.create({
+    user: friend._id,
+    habit: friendHabit._id,
+    habitTitle: friendHabit.title,
+    streakDays: 10,
+  });
+  const ownPost = await MilestonePost.create({
+    user: currentUser._id,
+    habit: ownHabit._id,
+    habitTitle: ownHabit.title,
+    streakDays: 10,
+  });
+  await MilestonePost.create({
+    user: friend._id,
+    habit: expiredFriendHabit._id,
+    habitTitle: expiredFriendHabit.title,
+    streakDays: 20,
+    visibleUntil: new Date(Date.now() - 60 * 1000),
+  });
+  await MilestonePost.create({
+    user: stranger._id,
+    habit: strangerHabit._id,
+    habitTitle: strangerHabit.title,
+    streakDays: 10,
+  });
+
+  const feedResponse = await request(app)
+    .get('/api/social/feed')
+    .set('Authorization', authHeader(currentUser))
+    .expect(200);
+
+  const feedPostIds = feedResponse.body.map((post) => post.id);
+
+  assert.equal(feedResponse.body.length, 2);
+  assert.ok(feedPostIds.includes(visibleFriendPost._id.toString()));
+  assert.ok(feedPostIds.includes(ownPost._id.toString()));
+  assert.ok(feedResponse.body.every((post) => post.visibleUntil));
+});
+
+// Tests that users cannot like their own milestones or a stranger's milestone
+test('milestone likes reject own milestones and non-friend milestones', async () => {
+  const currentUser = await buildUser({ username: 'like_viewer', email: 'like-viewer@example.com' });
+  const stranger = await buildUser({ username: 'like_stranger', email: 'like-stranger@example.com' });
+  const ownHabit = await buildHabit(currentUser, { title: 'Own habit', streakCount: 10 });
+  const strangerHabit = await buildHabit(stranger, { title: 'Stranger habit', streakCount: 10 });
+  const ownPost = await MilestonePost.create({
+    user: currentUser._id,
+    habit: ownHabit._id,
+    habitTitle: ownHabit.title,
+    streakDays: 10,
+  });
+  const strangerPost = await MilestonePost.create({
+    user: stranger._id,
+    habit: strangerHabit._id,
+    habitTitle: strangerHabit.title,
+    streakDays: 10,
+  });
+
+  const ownLikeResponse = await request(app)
+    .post(`/api/social/milestones/${ownPost._id}/like`)
+    .set('Authorization', authHeader(currentUser))
+    .expect(400);
+
+  assert.equal(ownLikeResponse.body.code, 'CANNOT_LIKE_OWN_MILESTONE');
+
+  const strangerLikeResponse = await request(app)
+    .post(`/api/social/milestones/${strangerPost._id}/like`)
+    .set('Authorization', authHeader(currentUser))
+    .expect(400);
+
+  assert.equal(strangerLikeResponse.body.code, 'MILESTONE_POST_NOT_FOUND');
 });
