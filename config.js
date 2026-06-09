@@ -17,6 +17,10 @@ const config = {
         pass: 'REDACTED',
         from: 'Howly <yourhowlyteam@gmail.com>',
     },
+    stripe: {
+        secretKey: 'REDACTED',
+        webhook_secret: 'REDACTED'
+    }
 };
 
 export default config;

@@ -66,7 +66,7 @@ const userSchema = new Schema(
     },
     isPremium: {
       type: Boolean,
-      default: false,
+      default: false
     },
     isEmailVerified: {
       type: Boolean,

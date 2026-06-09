@@ -10,6 +10,8 @@ import itemRoutes from './features/items/item.routes.js';
 import inventoryRoutes from './features/inventory/inventory.routes.js';
 import { errorMiddleware } from './middleware/error.middleware.js';
 import challengeRoutes from './features/challenges/challenge.routes.js';
+import { handleStripeWebhook } from './payment/payment.controller.js';
+import paymentRoutes from './payment/payment.routes.js';
 
 // Build an Express app instance for both server and tests.
 export default function createApp() {
@@ -36,6 +38,8 @@ export default function createApp() {
 
         return next();
     });
+
+    app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
     app.use(express.json());
 
