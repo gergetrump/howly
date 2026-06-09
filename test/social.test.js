@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import createApp from '../src/app.js';
 import connectDB from '../src/config/database.js';
+import Companion from '../src/features/companion/companion.model.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
 import Habit from '../src/features/habits/habit.model.js';
 import config from '../config.js';
@@ -67,6 +68,7 @@ afterEach(async () => {
     Friendship.deleteMany({}),
     MilestoneLike.deleteMany({}),
     MilestonePost.deleteMany({}),
+    Companion.deleteMany({}),
     Habit.deleteMany({}),
     User.deleteMany({}),
   ]);
@@ -124,10 +126,11 @@ test('social flow sends and accepts friend requests', async () => {
 });
 
 // Tests that friends can see milestone posts and like or unlike them
-test('social feed shows friends milestones and toggles likes', async () => {
+test('social feed shows friends milestones and toggles emoji reactions', async () => {
   const author = await buildUser({ username: 'author', email: 'author@example.com' });
   const friend = await buildUser({ username: 'friend', email: 'friend@example.com' });
   const habit = await buildHabit(author, { title: 'Chess', streakCount: 10 });
+  const companion = await Companion.create({ user: author._id, name: 'Luna' });
 
   await Friendship.create({
     userA: author._id,
@@ -151,26 +154,57 @@ test('social feed shows friends milestones and toggles likes', async () => {
   assert.equal(feedResponse.body.length, 1);
   assert.equal(feedResponse.body[0].id, milestonePost._id.toString());
   assert.equal(feedResponse.body[0].habit.title, 'Chess');
+  assert.equal(feedResponse.body[0].habit.frequency, 'Daily');
+  assert.equal(feedResponse.body[0].habit.icon, '🎯');
+  assert.equal(feedResponse.body[0].companion.id, companion._id.toString());
+  assert.equal(feedResponse.body[0].companion.name, 'Luna');
   assert.equal(feedResponse.body[0].likedByCurrentUser, false);
+  assert.equal(feedResponse.body[0].currentUserReaction, null);
+  assert.deepEqual(feedResponse.body[0].reactionCounts, []);
 
-  // First click likes the milestone
-  const likeResponse = await request(app)
+  // First reaction adds the selected emoji
+  const firstReactionResponse = await request(app)
     .post(`/api/social/milestones/${milestonePost._id}/like`)
     .set('Authorization', authHeader(friend))
+    .send({ emoji: '🎉' })
     .expect(200);
 
-  assert.equal(likeResponse.body.liked, true);
-  assert.equal(likeResponse.body.milestonePost.likeCount, 1);
-  assert.equal(likeResponse.body.milestonePost.likedByCurrentUser, true);
+  assert.equal(firstReactionResponse.body.liked, true);
+  assert.equal(firstReactionResponse.body.milestonePost.likeCount, 1);
+  assert.equal(firstReactionResponse.body.milestonePost.likedByCurrentUser, true);
+  assert.equal(firstReactionResponse.body.milestonePost.currentUserReaction, '🎉');
+  assert.deepEqual(firstReactionResponse.body.milestonePost.reactionCounts, [{ emoji: '🎉', count: 1 }]);
+  assert.equal(firstReactionResponse.body.milestonePost.habit.frequency, 'Daily');
+  assert.equal(firstReactionResponse.body.milestonePost.habit.icon, '🎯');
+  assert.equal(firstReactionResponse.body.milestonePost.companion.name, 'Luna');
 
-  // Second click removes the like
-  const unlikeResponse = await request(app)
+  // Choosing another emoji changes the user's single reaction
+  const changedReactionResponse = await request(app)
     .post(`/api/social/milestones/${milestonePost._id}/like`)
     .set('Authorization', authHeader(friend))
+    .send({ emoji: '🔥' })
     .expect(200);
 
-  assert.equal(unlikeResponse.body.liked, false);
-  assert.equal(unlikeResponse.body.milestonePost.likeCount, 0);
+  assert.equal(changedReactionResponse.body.liked, true);
+  assert.equal(changedReactionResponse.body.milestonePost.likeCount, 1);
+  assert.equal(changedReactionResponse.body.milestonePost.currentUserReaction, '🔥');
+  assert.deepEqual(changedReactionResponse.body.milestonePost.reactionCounts, [{ emoji: '🔥', count: 1 }]);
+  assert.equal(await MilestoneLike.countDocuments({ milestonePost: milestonePost._id, user: friend._id }), 1);
+
+  // Clicking the same emoji again removes the reaction
+  const removedReactionResponse = await request(app)
+    .post(`/api/social/milestones/${milestonePost._id}/like`)
+    .set('Authorization', authHeader(friend))
+    .send({ emoji: '🔥' })
+    .expect(200);
+
+  assert.equal(removedReactionResponse.body.liked, false);
+  assert.equal(removedReactionResponse.body.milestonePost.likeCount, 0);
+  assert.equal(removedReactionResponse.body.milestonePost.currentUserReaction, null);
+  assert.deepEqual(removedReactionResponse.body.milestonePost.reactionCounts, []);
+  assert.equal(removedReactionResponse.body.milestonePost.habit.frequency, 'Daily');
+  assert.equal(removedReactionResponse.body.milestonePost.habit.icon, '🎯');
+  assert.equal(removedReactionResponse.body.milestonePost.companion.name, 'Luna');
 });
 
 // Tests that milestone posts are created only for 10-day streak intervals
@@ -194,6 +228,36 @@ test('milestone creation only creates posts at 10-day streak intervals', async (
 
   const storedPosts = await MilestonePost.find({ user: author._id }).sort({ streakDays: 1 });
   assert.deepEqual(storedPosts.map((post) => post.streakDays), [10, 20]);
+});
+
+// Tests that checking in a 9-day habit creates the 10-day milestone through the real habit route
+test('habit check-in creates a milestone when streak reaches 10 days', async () => {
+  const author = await buildUser({ username: 'checkin_author', email: 'checkin-author@example.com' });
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const habit = await buildHabit(author, {
+    title: 'Reading',
+    streakCount: 9,
+    lastCompletedAt: yesterday,
+  });
+
+  const checkInResponse = await request(app)
+    .post(`/api/habits/${habit._id}/check-ins`)
+    .set('Authorization', authHeader(author))
+    .expect(200);
+
+  assert.equal(checkInResponse.body.data.streakCount, 10);
+  assert.equal(checkInResponse.body.milestonePost.habitTitle, 'Reading');
+  assert.equal(checkInResponse.body.milestonePost.streakDays, 10);
+
+  const milestonePost = await MilestonePost.findOne({
+    habit: habit._id,
+    streakDays: 10,
+  });
+
+  assert.ok(milestonePost);
+  assert.equal(milestonePost.user.toString(), author._id.toString());
+  assert.equal(milestonePost.habitTitle, 'Reading');
 });
 
 // Tests that creating the same habit milestone twice reuses the existing post
@@ -259,8 +323,8 @@ test('social feed only shows visible milestones from self and friends', async ()
   assert.ok(feedResponse.body.every((post) => post.visibleUntil));
 });
 
-// Tests that users cannot like their own milestones or a stranger's milestone
-test('milestone likes reject own milestones and non-friend milestones', async () => {
+// Tests that users can like their own milestones but cannot like a stranger's milestone
+test('milestone likes allow own milestones and reject non-friend milestones', async () => {
   const currentUser = await buildUser({ username: 'like_viewer', email: 'like-viewer@example.com' });
   const stranger = await buildUser({ username: 'like_stranger', email: 'like-stranger@example.com' });
   const ownHabit = await buildHabit(currentUser, { title: 'Own habit', streakCount: 10 });
@@ -281,13 +345,18 @@ test('milestone likes reject own milestones and non-friend milestones', async ()
   const ownLikeResponse = await request(app)
     .post(`/api/social/milestones/${ownPost._id}/like`)
     .set('Authorization', authHeader(currentUser))
-    .expect(400);
+    .send({ emoji: '💜' })
+    .expect(200);
 
-  assert.equal(ownLikeResponse.body.code, 'CANNOT_LIKE_OWN_MILESTONE');
+  assert.equal(ownLikeResponse.body.liked, true);
+  assert.equal(ownLikeResponse.body.milestonePost.likeCount, 1);
+  assert.equal(ownLikeResponse.body.milestonePost.likedByCurrentUser, true);
+  assert.equal(ownLikeResponse.body.milestonePost.currentUserReaction, '💜');
 
   const strangerLikeResponse = await request(app)
     .post(`/api/social/milestones/${strangerPost._id}/like`)
     .set('Authorization', authHeader(currentUser))
+    .send({ emoji: '💜' })
     .expect(400);
 
   assert.equal(strangerLikeResponse.body.code, 'MILESTONE_POST_NOT_FOUND');

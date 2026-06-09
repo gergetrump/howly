@@ -27,6 +27,7 @@ export async function toggleMilestoneLike(req, res) {
   const { liked, milestonePost, errorCode } = await milestoneService.toggleMilestoneLike({
     userId: req.user.id,
     milestonePostId: req.params.milestonePostId,
+    emoji: req.body?.emoji,
   });
 
   if (errorCode) {

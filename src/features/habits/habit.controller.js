@@ -64,8 +64,8 @@ export const deleteHabit = asyncHandler(async (req, res) => {
  * Marks a habit as completed for today and updates the streak.
  */
 export const completeHabit = asyncHandler(async (req, res) => {
-    const habit = await habitService.completeHabit(req.params.habitId, req.user.id);
-    res.status(200).json({ data: habit });
+    const { habit, milestonePost } = await habitService.completeHabit(req.params.habitId, req.user.id);
+    res.status(200).json({ data: habit, milestonePost });
 });
 
 /**
