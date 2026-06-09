@@ -10,3 +10,15 @@ export function buyItem(itemId) {
         body: JSON.stringify({ itemId }),
     });
 }
+
+export function equipInventoryItem(userItemId) {
+    return apiRequest(`/inventory/${userItemId}/equip`, {
+        method: 'POST',
+    });
+}
+
+export function unequipInventoryItem(userItemId) {
+    return apiRequest(`/inventory/${userItemId}/equip`, {
+        method: 'DELETE',
+    });
+}
