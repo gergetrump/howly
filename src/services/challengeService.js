@@ -15,6 +15,13 @@ export async function createChallenge(data) {
     });
 }
 
+export async function updateChallenge(challengeId, data) {
+    return apiRequest(`/challenges/${challengeId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+    });
+}
+
 export async function joinChallenge(challengeId, { habitId }) {
     return apiRequest(`/challenges/${challengeId}/join`, {
         method: 'POST',

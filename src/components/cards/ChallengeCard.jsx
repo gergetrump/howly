@@ -13,7 +13,9 @@ function toTitleCase(value) {
         return '';
     }
 
-    return value.charAt(0).toUpperCase() + value.slice(1);
+    const withSpaces = value.replace(/([a-z])([A-Z])/g, '$1 $2');
+
+    return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
 }
 
 function getElapsedDays(startsAt, totalDays) {
@@ -79,7 +81,6 @@ export function ChallengeCard({
                         <CalendarDays className="size-3" aria-hidden="true" />
                         {totalDays} days
                     </Badge>
-                    <MoonCoin amount={reward ?? 0} compact />
                 </div>
                 <div className="space-y-2">
                     <div className="flex justify-between text-sm text-slate-300">
@@ -90,7 +91,12 @@ export function ChallengeCard({
                     </div>
                     <Progress value={progressValue} className="h-2" indicatorClassName="bg-emerald-400" />
                 </div>
-                {children ? <div className="flex flex-wrap gap-2 pt-1">{children}</div> : null}
+                <div className="flex items-end justify-between gap-3 pt-1">
+                    <div className="flex flex-wrap gap-2">{children}</div>
+                    <div className="ml-auto shrink-0">
+                        <MoonCoin amount={reward ?? 0} compact />
+                    </div>
+                </div>
             </CardContent>
         </Card>
     );
