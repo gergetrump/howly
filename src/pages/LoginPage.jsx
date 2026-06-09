@@ -7,12 +7,14 @@ import { Background } from '@/components/brand/background';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName } from '@/components/cards/cardStyles';
+import { useAuth } from '@/context/authContext';
 import { cn } from '@/lib/utils';
-import { loginUser } from '@/services/authService';
+import { loginUser, resendVerificationEmail } from '@/services/authService';
 
 export function LoginPage() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { refreshUser } = useAuth();
 
     const [formData, setFormData] = useState({
         email: '',
@@ -62,19 +64,44 @@ export function LoginPage() {
 
         try {
             const response = await loginUser(formData);
+            const token = response?.token ?? response?.accessToken ?? response?.data?.token;
 
-            localStorage.setItem('howly_token', response.token);
+            if (!token) {
+                throw new Error('Login response did not include an access token');
+            }
+
+            localStorage.setItem('howly_token', token);
+            await refreshUser();
 
             navigate('/dashboard');
         } catch (error) {
-            if (error.message === 'email address has not been verified') {
-                setError(
-                    'Your email address is not verified yet. Check your inbox for the confirmation link.',
-                );
+            const errMessage = (error?.message || '').toString().toLowerCase();
+            const isNotVerified =
+                error?.code === 'EMAIL_NOT_VERIFIED' ||
+                errMessage.includes('not verified') ||
+                errMessage.includes('email address has not been verified') ||
+                errMessage.includes('verify your email') ||
+                errMessage.includes('email not verified');
+
+            if (isNotVerified) {
+                try {
+                    await resendVerificationEmail(formData.email);
+
+                    setError('');
+                    setMessage(
+                        'Your email address is not verified yet. We sent you a new confirmation link.',
+                    );
+                } catch (sendErr) {
+                    setError(
+                        sendErr?.message ||
+                        'Your email address is not verified yet, but we could not send a new confirmation email.',
+                    );
+                }
+
                 return;
             }
 
-            setError(error.message || 'Login failed');
+            setError(error?.message || 'Login failed');
         } finally {
             setIsSubmitting(false);
         }

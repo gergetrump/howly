@@ -1,11 +1,12 @@
 import { API_BASE_URL } from '../../config.js';
 
 export async function apiRequest(path, options = {}) {
+    const { redirectOnUnauthorized = true, ...requestOptions } = options;
     const token = localStorage.getItem('howly_token');
-    const isFormData = options.body instanceof FormData;
+    const isFormData = requestOptions.body instanceof FormData;
 
     const headers = {
-        ...options.headers,
+        ...requestOptions.headers,
     };
 
     if (!isFormData) {
@@ -17,15 +18,9 @@ export async function apiRequest(path, options = {}) {
     }
 
     const response = await fetch(`${API_BASE_URL}${path}`, {
-        ...options,
+        ...requestOptions,
         headers,
     });
-
-    if (response.status === 401) {
-        localStorage.removeItem('howly_token');
-        window.location.href = '/login';
-        return undefined;
-    }
 
     if (response.status === 204) {
         return undefined;
@@ -37,6 +32,12 @@ export async function apiRequest(path, options = {}) {
     const responseBody = isJsonResponse
         ? await response.json()
         : await response.text();
+
+    if (response.status === 401 && redirectOnUnauthorized) {
+        localStorage.removeItem('howly_token');
+        window.location.href = '/login';
+        return undefined;
+    }
 
     if (!response.ok) {
         const message =
