@@ -37,12 +37,17 @@ export function getSocialFeed() {
     return apiRequest('/social/feed');
 }
 
-export function likeMilestone(postId) {
+export function reactToMilestone(postId, emoji) {
     return apiRequest(`/social/milestones/${postId}/like`, {
         method: 'POST',
+        body: JSON.stringify({ emoji }),
     });
 }
 
+export function likeMilestone(postId) {
+    return reactToMilestone(postId, '💜');
+}
+
 export function unlikeMilestone(postId) {
-    return likeMilestone(postId);
+    return reactToMilestone(postId, '💜');
 }

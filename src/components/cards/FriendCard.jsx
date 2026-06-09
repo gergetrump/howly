@@ -24,7 +24,7 @@ export function FriendCard({ name, username, streakDays, avatarSrc, action }) {
                     <p className="truncate text-sm text-slate-300">@{username}</p>
                 </div>
 
-                <Badge className="border border-white/15 bg-white/10 text-slate-100">{streakDays} days</Badge>
+                <Badge className="border border-white/15 bg-white/10 text-slate-100">🔥 {streakDays} days</Badge>
                 {action}
             </CardContent>
         </Card>
