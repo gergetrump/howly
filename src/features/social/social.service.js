@@ -166,3 +166,16 @@ export async function listFriends({ userId }) {
 
   return friendships.map((friendship) => toFriendshipResponse(friendship, userId));
 }
+
+export async function deleteFriend({ friendshipId, userId }) {
+  const friendship = await Friendship.findOneAndDelete({
+    _id: friendshipId,
+    $or: [{ userA: userId }, { userB: userId }],
+  }).populate(['userA', 'userB']);
+
+  if (!friendship) {
+    return { errorCode: 'FRIENDSHIP_NOT_FOUND' };
+  }
+
+  return { friendship: toFriendshipResponse(friendship, userId) };
+}

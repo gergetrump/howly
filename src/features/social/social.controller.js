@@ -1,6 +1,7 @@
 import * as socialService from './social.service.js';
 import {
   validateFriendRequestId,
+  validateFriendshipId,
   validateSendFriendRequestInput,
 } from './social.validation.js';
 
@@ -90,4 +91,23 @@ export async function listFriends(req, res) {
   const friends = await socialService.listFriends({ userId: req.user.id });
 
   return res.status(200).json(friends);
+}
+
+export async function deleteFriend(req, res) {
+  const { error } = validateFriendshipId(req.params.friendshipId);
+
+  if (error) {
+    return badRequest(res, error);
+  }
+
+  const { errorCode } = await socialService.deleteFriend({
+    friendshipId: req.params.friendshipId,
+    userId: req.user.id,
+  });
+
+  if (errorCode) {
+    return notFound(res, 'Friendship could not be deleted', errorCode);
+  }
+
+  return res.status(204).send();
 }
