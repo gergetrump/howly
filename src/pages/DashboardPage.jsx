@@ -9,6 +9,7 @@ import { AddHabitModal } from '@/components/habits/addHabitModal';
 import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
 import { NotificationBanner } from '@/components/ui/notification-banner';
 import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
+import { getMyInventory } from '@/services/inventoryApi';
 import { getMyActiveStories } from '@/services/storyApi';
 import { useAuth } from '@/context/authContext';
 
@@ -21,6 +22,7 @@ export function DashboardPage() {
     const [milestoneNotice, setMilestoneNotice] = useState(null);
     const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
     const [storyHabit, setStoryHabit] = useState(null);
+    const [equippedItemKeys, setEquippedItemKeys] = useState([]);
     // Habit ids that already have an active (< 24h) story
     const [sharedHabitIds, setSharedHabitIds] = useState(new Set());
 
@@ -47,6 +49,19 @@ export function DashboardPage() {
             })
             .catch((error) => {
                 console.error('Failed to load active stories:', error);
+            });
+
+        getMyInventory()
+            .then((inventory) => {
+                setEquippedItemKeys(
+                    (inventory ?? [])
+                        .filter((entry) => entry.equipped)
+                        .map((entry) => entry.item?.assetKey)
+                        .filter(Boolean),
+                );
+            })
+            .catch((error) => {
+                console.error('Failed to load equipped outfit:', error);
             });
     }, []);
 
@@ -140,7 +155,7 @@ export function DashboardPage() {
                 <DailyProgressCard completed={completedCount} total={totalCount} />
             </PageSection>
 
-            <CompanionStage name="Howly" />
+            <CompanionStage name="Howly" equippedItemKeys={equippedItemKeys} />
 
             <PageSection 
                 title="Today's Habits" 

@@ -5,6 +5,7 @@ export function Companion({
     name = 'Howly',
     size = 'xl',
     showName = true,
+    equippedItemKeys = [],
     className,
 }) {
     return (
@@ -13,6 +14,7 @@ export function Companion({
             name={name}
             size={size}
             showName={showName}
+            equippedItemKeys={equippedItemKeys}
             className={className}
         />
     );

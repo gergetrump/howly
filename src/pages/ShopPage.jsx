@@ -6,16 +6,9 @@ import { renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/authContext';
+import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import { buyItem, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
-
-const shopCategories = [
-    { label: 'All', value: 'all' },
-    { label: 'Clothing', value: 'clothing' },
-    { label: 'Shoes', value: 'shoes' },
-    { label: 'Accessories', value: 'accessory' },
-    { label: 'Power Ups', value: 'powerUp' },
-];
 
 export function ShopPage() {
     const { user } = useAuth();
@@ -94,7 +87,7 @@ export function ShopPage() {
                 return currentPreviewItems.filter((previewItem) => previewItem._id !== item._id);
             }
 
-            if (item.type === 'clothing' || item.type === 'shoes') {
+            if (SINGLE_EQUIP_ITEM_TYPES.has(item.type)) {
                 return [
                     ...currentPreviewItems.filter((previewItem) => previewItem.type !== item.type),
                     item,
@@ -148,7 +141,7 @@ export function ShopPage() {
             <PageSection title="Shop Items" className="min-w-0">
                 <Tabs value={activeCategory} onValueChange={setActiveCategory}>
                     <TabsList className="h-auto flex-wrap border border-white/10 bg-white/10 p-1 text-slate-300">
-                        {shopCategories.map((category) => (
+                        {ITEM_CATEGORIES.map((category) => (
                             <TabsTrigger
                                 key={category.value}
                                 value={category.value}
