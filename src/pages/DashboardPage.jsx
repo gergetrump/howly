@@ -6,6 +6,7 @@ import { HabitCard } from '@/components/cards';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
 import { CompanionStage } from '@/components/brand';
 import { AddHabitModal } from '@/components/habits/addHabitModal';
+import { NotificationBanner } from '@/components/ui/notification-banner';
 import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
 import { useAuth } from '@/context/authContext';
 
@@ -15,6 +16,8 @@ export function DashboardPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [habitToEdit, setHabitToEdit] = useState(null);
     const [allHabitsOpen, setAllHabitsOpen] = useState(false);
+    const [milestoneNotice, setMilestoneNotice] = useState(null);
+    const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
 
     useEffect(() => {
         async function fetchHabits() {
@@ -28,12 +31,32 @@ export function DashboardPage() {
         fetchHabits();
     }, []);
 
+    useEffect(() => {
+        if (!pendingMilestoneNotice) {
+            return undefined;
+        }
+
+        const timeout = setTimeout(() => {
+            setMilestoneNotice(pendingMilestoneNotice);
+            setPendingMilestoneNotice(null);
+        }, 500);
+
+        return () => clearTimeout(timeout);
+    }, [pendingMilestoneNotice]);
+
     async function handleHabitCompletion(habit) {
         try {
             const updatedHabit = habit.isCompletedToday
                 ? await uncheckInHabit(habit.id)
                 : await checkInHabit(habit.id);
             setHabits(prev => prev.map(h => h.id === habit.id ? updatedHabit.data : h));
+
+            if (!habit.isCompletedToday && updatedHabit.milestonePost) {
+                setPendingMilestoneNotice({
+                    ...updatedHabit.milestonePost,
+                    habitTitle: `${updatedHabit.data.frequency} ${updatedHabit.milestonePost.habitTitle}`,
+                });
+            }
         } catch (error) {
             console.error('Failed to complete habit:', error);
             // Optionally show toast error here
@@ -74,6 +97,19 @@ export function DashboardPage() {
                 subtitle="Let's make today count."
                 streakDays={user?.streak ?? 0}
             />
+
+            {milestoneNotice ? (
+                <div className="fixed right-6 top-24 z-[9999] w-[min(92vw,520px)]">
+                    <NotificationBanner
+                        variant="milestone"
+                        icon="🎉"
+                        eyebrow={`Congrats! You unlocked a ${milestoneNotice.streakDays}-day milestone`}
+                        title={milestoneNotice.habitTitle}
+                        onClose={() => setMilestoneNotice(null)}
+                        autoCloseMs={10000}
+                    />
+                </div>
+            ) : null}
 
             <PageSection className="mt-6">
                 <DailyProgressCard completed={completedCount} total={totalCount} />
