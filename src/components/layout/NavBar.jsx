@@ -11,7 +11,7 @@ const defaultItems = [
     { label: 'Home', to: '/dashboard', icon: Home },
     { label: 'Social', to: '/social', icon: UsersRound },
     { label: 'Shop', to: '/shop', icon: ShoppingBag },
-    { label: 'Bag', to: '/inventory', icon: PackageOpen },
+    { label: 'Inventory', to: '/inventory', icon: PackageOpen },
     { label: 'Challenges', to: '/challenges', icon: Trophy },
     { label: 'Profile', to: '/profile', icon: UserRound },
 ];
