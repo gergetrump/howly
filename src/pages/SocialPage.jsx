@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Page, Heading } from '@/components/layout';
 import { FriendsPanel } from '@/components/social/FriendsPanel.jsx';
 import { ReactionUsersDialog } from '@/components/social/ReactionUsersDialog.jsx';
@@ -17,6 +17,8 @@ import {
 } from '@/services/socialApi';
 import { searchUsers } from '@/services/userApi';
 import { useAuth } from '@/context/authContext';
+
+const SOCIAL_REFRESH_INTERVAL_MS = 10000;
 
 export function SocialPage() {
     const { user } = useAuth();
@@ -37,6 +39,9 @@ export function SocialPage() {
     const [selectedReaction, setSelectedReaction] = useState(null);
     const [selectedProfileUser, setSelectedProfileUser] = useState(null);
     const pendingFriendRequestCount = requests.incoming?.length ?? 0;
+    const selectedReactionPost = selectedReaction?.post?.id
+        ? feed.find((post) => post.id === selectedReaction.post.id) ?? selectedReaction.post
+        : null;
 
     function getProfileRelationship(profileUser) {
         if (!profileUser) {
@@ -68,8 +73,14 @@ export function SocialPage() {
         return { status: 'none' };
     }
 
-    async function loadSocialData() {
-        setError('');
+    const refreshSocialData = useCallback(async ({ showLoading = false, silent = false } = {}) => {
+        if (showLoading) {
+            setIsLoading(true);
+        }
+
+        if (!silent) {
+            setError('');
+        }
 
         try {
             const [friendsData, requestsData, feedData] = await Promise.all([
@@ -83,43 +94,112 @@ export function SocialPage() {
             setFeed(feedData ?? []);
             window.dispatchEvent(new Event('howly:social-requests-updated'));
         } catch (err) {
-            setError(err.message);
+            if (!silent) {
+                setError(err.message);
+            }
         } finally {
             setIsLoading(false);
+        }
+    }, []);
+
+    function handleActivePanelChange(nextPanel) {
+        setActivePanel(nextPanel);
+
+        if (nextPanel === 'requests') {
+            void refreshSocialData({ silent: true });
+        }
+    }
+
+    function addOutgoingRequest(request) {
+        setRequests((currentRequests) => ({
+            incoming: currentRequests.incoming ?? [],
+            outgoing: [request, ...(currentRequests.outgoing ?? [])],
+        }));
+    }
+
+    function acceptRequestLocally(requestId, friendship) {
+        setRequests((currentRequests) => ({
+            incoming: (currentRequests.incoming ?? []).filter((request) => request.id !== requestId),
+            outgoing: currentRequests.outgoing ?? [],
+        }));
+        setFriends((currentFriends) => [friendship, ...currentFriends]);
+        setNotice('Friend request accepted');
+        setActivePanel('friends');
+        window.dispatchEvent(new Event('howly:social-requests-updated'));
+        void refreshSocialData({ silent: true });
+    }
+
+    async function sendRequestToUser(targetUser, { closeProfile = false } = {}) {
+        setIsSubmitting(true);
+        setError('');
+        setNotice('');
+
+        try {
+            const request = await sendFriendRequest(targetUser.id);
+
+            addOutgoingRequest(request);
+            setNotice(`Friend request sent to ${getDisplayName(targetUser)}`);
+            window.dispatchEvent(new Event('howly:social-requests-updated'));
+            void refreshSocialData({ silent: true });
+
+            if (closeProfile) {
+                setSelectedProfileUser(null);
+            }
+        } catch (err) {
+            setError(getSocialErrorMessage(err, targetUser));
+        } finally {
+            setIsSubmitting(false);
         }
     }
 
     useEffect(() => {
-        let isMounted = true;
-
-        Promise.all([
-            getFriends(),
-            getFriendRequests(),
-            getSocialFeed(),
-        ])
-            .then(([friendsData, requestsData, feedData]) => {
-                if (!isMounted) {
-                    return;
-                }
-
-                setFriends(friendsData ?? []);
-                setRequests(requestsData ?? { incoming: [], outgoing: [] });
-                setFeed(feedData ?? []);
-                window.dispatchEvent(new Event('howly:social-requests-updated'));
-            })
-            .catch((err) => {
-                if (isMounted) {
-                    setError(err.message);
-                }
-            })
-            .finally(() => {
-                if (isMounted) {
-                    setIsLoading(false);
-                }
-            });
+        const timeoutId = window.setTimeout(() => {
+            void refreshSocialData({ showLoading: true });
+        }, 0);
 
         return () => {
-            isMounted = false;
+            window.clearTimeout(timeoutId);
+        };
+    }, [refreshSocialData]);
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            if (!document.hidden) {
+                void refreshSocialData({ silent: true });
+            }
+        }, SOCIAL_REFRESH_INTERVAL_MS);
+
+        function handleWindowFocus() {
+            void refreshSocialData({ silent: true });
+        }
+
+        function handleVisibilityChange() {
+            if (!document.hidden) {
+                void refreshSocialData({ silent: true });
+            }
+        }
+
+        window.addEventListener('focus', handleWindowFocus);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            clearInterval(intervalId);
+            window.removeEventListener('focus', handleWindowFocus);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [refreshSocialData]);
+
+    useEffect(() => {
+        function handleFriendRequestsRefreshed(event) {
+            if (event.detail) {
+                setRequests(event.detail);
+            }
+        }
+
+        window.addEventListener('howly:social-requests-refreshed', handleFriendRequestsRefreshed);
+
+        return () => {
+            window.removeEventListener('howly:social-requests-refreshed', handleFriendRequestsRefreshed);
         };
     }, []);
 
@@ -150,38 +230,11 @@ export function SocialPage() {
     }
 
     async function handleSendFriendRequest(user) {
-        setIsSubmitting(true);
-        setError('');
-        setNotice('');
-
-        try {
-            await sendFriendRequest(user.id);
-            setUsernameQuery('');
-            setSearchResults([]);
-            setNotice(`Friend request sent to ${getDisplayName(user)}`);
-            await loadSocialData();
-        } catch (err) {
-            setError(getSocialErrorMessage(err, user));
-        } finally {
-            setIsSubmitting(false);
-        }
+        await sendRequestToUser(user);
     }
 
     async function handleSendProfileFriendRequest(profileUser) {
-        setIsSubmitting(true);
-        setError('');
-        setNotice('');
-
-        try {
-            await sendFriendRequest(profileUser.id);
-            setNotice(`Friend request sent to ${getDisplayName(profileUser)}`);
-            await loadSocialData();
-            setSelectedProfileUser(null);
-        } catch (err) {
-            setError(getSocialErrorMessage(err, profileUser));
-        } finally {
-            setIsSubmitting(false);
-        }
+        await sendRequestToUser(profileUser, { closeProfile: true });
     }
 
     async function handleAcceptProfileFriendRequest(requestId) {
@@ -190,9 +243,9 @@ export function SocialPage() {
         setNotice('');
 
         try {
-            await acceptFriendRequest(requestId);
-            setNotice('Friend request accepted');
-            await loadSocialData();
+            const response = await acceptFriendRequest(requestId);
+
+            acceptRequestLocally(requestId, response.friendship);
             setSelectedProfileUser(null);
         } catch (err) {
             setError(getSocialErrorMessage(err));
@@ -207,9 +260,9 @@ export function SocialPage() {
         setNotice('');
 
         try {
-            await acceptFriendRequest(requestId);
-            setNotice('Friend request accepted');
-            await loadSocialData();
+            const response = await acceptFriendRequest(requestId);
+
+            acceptRequestLocally(requestId, response.friendship);
         } catch (err) {
             setError(getSocialErrorMessage(err));
         } finally {
@@ -224,8 +277,13 @@ export function SocialPage() {
 
         try {
             await rejectFriendRequest(requestId);
+            setRequests((currentRequests) => ({
+                incoming: (currentRequests.incoming ?? []).filter((request) => request.id !== requestId),
+                outgoing: currentRequests.outgoing ?? [],
+            }));
             setNotice('Friend request rejected');
-            await loadSocialData();
+            window.dispatchEvent(new Event('howly:social-requests-updated'));
+            void refreshSocialData({ silent: true });
         } catch (err) {
             setError(getSocialErrorMessage(err));
         } finally {
@@ -240,8 +298,10 @@ export function SocialPage() {
 
         try {
             await deleteFriend(friendshipId);
+            setFriends((currentFriends) => currentFriends.filter((friendship) => friendship.id !== friendshipId));
+            setFeed((currentFeed) => currentFeed.filter((post) => !sameId(post.user?.id, friend?.id)));
             setNotice(`${getDisplayName(friend)} removed from your friends`);
-            await loadSocialData();
+            void refreshSocialData({ silent: true });
         } catch (err) {
             setError(getSocialErrorMessage(err));
         } finally {
@@ -295,7 +355,7 @@ export function SocialPage() {
                     isSubmitting={isSubmitting}
                     busyRequestId={busyRequestId}
                     busyFriendId={busyFriendId}
-                    onActivePanelChange={setActivePanel}
+                    onActivePanelChange={handleActivePanelChange}
                     onUsernameQueryChange={setUsernameQuery}
                     onSearchUsers={handleSearchUsers}
                     onSendFriendRequest={handleSendFriendRequest}
@@ -308,7 +368,7 @@ export function SocialPage() {
             </div>
 
             <ReactionUsersDialog
-                reaction={selectedReaction}
+                reaction={selectedReactionPost ? { post: selectedReactionPost } : null}
                 busy={isSubmitting}
                 onClose={() => setSelectedReaction(null)}
                 onSelectUser={(reactionUser) => {

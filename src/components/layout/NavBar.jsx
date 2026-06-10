@@ -43,10 +43,10 @@ export function NavBar({
     const navigationItems = items.filter((item) => item.to !== '/profile');
     const coinAmount = user?.coins ?? 0;
     const navProfilePictureUrl = user?.profilePictureUrl;
+    const displayedPendingFriendRequestCount = user ? pendingFriendRequestCount : 0;
 
     useEffect(() => {
         if (!user) {
-            setPendingFriendRequestCount(0);
             return undefined;
         }
 
@@ -58,6 +58,9 @@ export function NavBar({
 
                 if (isMounted) {
                     setPendingFriendRequestCount(requests?.incoming?.length ?? 0);
+                    window.dispatchEvent(new CustomEvent('howly:social-requests-refreshed', {
+                        detail: requests,
+                    }));
                 }
             } catch {
                 if (isMounted) {
@@ -115,9 +118,9 @@ export function NavBar({
                                 >
                                     <span className="relative">
                                         <Icon className="size-5" aria-hidden="true" />
-                                        {item.to === '/social' && pendingFriendRequestCount > 0 ? (
+                                        {item.to === '/social' && displayedPendingFriendRequestCount > 0 ? (
                                             <span className="absolute -right-2 -top-2 flex min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-4 text-white">
-                                                {pendingFriendRequestCount}
+                                                {displayedPendingFriendRequestCount}
                                             </span>
                                         ) : null}
                                     </span>
