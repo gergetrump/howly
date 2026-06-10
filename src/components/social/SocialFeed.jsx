@@ -1,5 +1,5 @@
-import { CardGrid } from '@/components/common';
-import { FeedPostCard } from '@/components/cards';
+import { CardGrid, ReactionButton } from '@/components/common';
+import { FeedPostCard, StoryFeedCard } from '@/components/cards';
 import { PageSection } from '@/components/layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { MilestoneReactionPicker } from '@/components/social/MilestoneReactionPicker.jsx';
@@ -24,8 +24,11 @@ export function SocialFeed({
     feed,
     isLoading,
     busyPostId,
+    currentUserId,
     onReact,
     onOpenReactions,
+    onToggleStoryLike,
+    onDeleteStory,
 }) {
     return (
         <PageSection title="Feed" className="min-w-0">
@@ -33,27 +36,47 @@ export function SocialFeed({
                 <EmptyState>Loading feed</EmptyState>
             ) : feed.length ? (
                 <CardGrid columns={1}>
-                    {feed.map((post) => (
-                        <FeedPostCard
-                            key={post.id}
-                            authorName={getDisplayName(post.user)}
-                            authorUsername={getUsername(post.user)}
-                            authorAvatarSrc={post.user?.profilePictureUrl}
-                            meta={formatRelativeTime(post.createdAt)}
-                            companionName={post.companion?.name || 'Howly'}
-                            milestoneTitle={buildMilestoneTitle(post)}
-                        >
-                            <MilestoneReactionPicker
-                                post={post}
-                                busy={busyPostId === post.id}
-                                onReact={onReact}
-                                onOpenReactions={onOpenReactions}
-                            />
-                        </FeedPostCard>
-                    ))}
+                    {feed.map((post) =>
+                        post.type === 'story' ? (
+                            <StoryFeedCard
+                                key={`story-${post.id}`}
+                                authorName={getDisplayName(post.user)}
+                                story={post}
+                                isOwn={post.user?.id === currentUserId}
+                                onDelete={onDeleteStory}
+                            >
+                                {post.user?.id !== currentUserId ? (
+                                    <ReactionButton
+                                        liked={post.likedByCurrentUser}
+                                        count={post.likeCount}
+                                        label="Like story"
+                                        disabled={busyPostId === post.id}
+                                        onClick={() => onToggleStoryLike?.(post)}
+                                    />
+                                ) : null}
+                            </StoryFeedCard>
+                        ) : (
+                            <FeedPostCard
+                                key={`milestone-${post.id}`}
+                                authorName={getDisplayName(post.user)}
+                                authorUsername={getUsername(post.user)}
+                                authorAvatarSrc={post.user?.profilePictureUrl}
+                                meta={formatRelativeTime(post.createdAt)}
+                                companionName={post.companion?.name || 'Howly'}
+                                milestoneTitle={buildMilestoneTitle(post)}
+                            >
+                                <MilestoneReactionPicker
+                                    post={post}
+                                    busy={busyPostId === post.id}
+                                    onReact={onReact}
+                                    onOpenReactions={onOpenReactions}
+                                />
+                            </FeedPostCard>
+                        ),
+                    )}
                 </CardGrid>
             ) : (
-                <EmptyState>No milestones today</EmptyState>
+                <EmptyState>Nothing new today</EmptyState>
             )}
         </PageSection>
     );

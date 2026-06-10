@@ -6,8 +6,10 @@ import { HabitCard } from '@/components/cards';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
 import { CompanionStage } from '@/components/brand';
 import { AddHabitModal } from '@/components/habits/addHabitModal';
+import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
 import { NotificationBanner } from '@/components/ui/notification-banner';
 import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
+import { getMyActiveStories } from '@/services/storyApi';
 import { useAuth } from '@/context/authContext';
 
 export function DashboardPage() {
@@ -18,6 +20,9 @@ export function DashboardPage() {
     const [allHabitsOpen, setAllHabitsOpen] = useState(false);
     const [milestoneNotice, setMilestoneNotice] = useState(null);
     const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
+    const [storyHabit, setStoryHabit] = useState(null);
+    // Habit ids that already have an active (< 24h) story
+    const [sharedHabitIds, setSharedHabitIds] = useState(new Set());
 
     useEffect(() => {
         async function fetchHabits() {
@@ -29,6 +34,20 @@ export function DashboardPage() {
             }
         }
         fetchHabits();
+
+        getMyActiveStories()
+            .then((stories) => {
+                setSharedHabitIds(
+                    new Set(
+                        (stories ?? [])
+                            .filter((story) => story.sourceType === 'habit')
+                            .map((story) => story.sourceId),
+                    ),
+                );
+            })
+            .catch((error) => {
+                console.error('Failed to load active stories:', error);
+            });
     }, []);
 
     useEffect(() => {
@@ -46,10 +65,16 @@ export function DashboardPage() {
 
     async function handleHabitCompletion(habit) {
         try {
-            const updatedHabit = habit.isCompletedToday
+            const wasCompleted = habit.isCompletedToday;
+            const updatedHabit = wasCompleted
                 ? await uncheckInHabit(habit.id)
                 : await checkInHabit(habit.id);
             setHabits(prev => prev.map(h => h.id === habit.id ? updatedHabit.data : h));
+
+            // Offer to share a story moment after checking off a habit (if none posted yet)
+            if (!wasCompleted && !sharedHabitIds.has(habit.id)) {
+                setStoryHabit(habit);
+            }
 
             if (!habit.isCompletedToday && updatedHabit.milestonePost) {
                 setPendingMilestoneNotice({
@@ -136,6 +161,11 @@ export function DashboardPage() {
                             completed={habit.isCompletedToday}
                             onEdit={() => handleEdit(habit)}
                             onDelete={() => handleDelete(habit.id)}
+                            onShareStory={
+                                habit.isCompletedToday && !sharedHabitIds.has(habit.id)
+                                    ? () => setStoryHabit(habit)
+                                    : undefined
+                            }
                         >
                             <CompletionCircle
                                 completed={habit.isCompletedToday}
@@ -175,6 +205,11 @@ export function DashboardPage() {
                                         completed={habit.isCompletedToday}
                                         onEdit={() => handleEdit(habit)}
                                         onDelete={() => handleDelete(habit.id)}
+                                        onShareStory={
+                                            habit.isCompletedToday && !sharedHabitIds.has(habit.id)
+                                                ? () => setStoryHabit(habit)
+                                                : undefined
+                                        }
                                     />
                             ))}
                             {habits.length === 0 && (
@@ -198,6 +233,24 @@ export function DashboardPage() {
                         setHabits(prev => prev.map(h => h.id === savedHabit.id ? savedHabit : h));
                     } else {
                         setHabits(prev => [savedHabit, ...prev]);
+                    }
+                }}
+            />
+
+            <ShareMomentModal
+                open={Boolean(storyHabit)}
+                onOpenChange={(isOpen) => {
+                    if (!isOpen) {
+                        setStoryHabit(null);
+                    }
+                }}
+                sourceType="habit"
+                sourceId={storyHabit?.id}
+                sourceTitle={storyHabit?.title}
+                sourceEmoji={storyHabit?.icon}
+                onPosted={(story) => {
+                    if (story?.sourceId) {
+                        setSharedHabitIds((prev) => new Set(prev).add(story.sourceId));
                     }
                 }}
             />
