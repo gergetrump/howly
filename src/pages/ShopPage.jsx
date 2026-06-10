@@ -1,50 +1,32 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActionButton, ActionStack, CardGrid } from '@/components/common';
-import { ShopItemCard } from '@/components/cards';
+import { ActionButton, CardGrid } from '@/components/common';
+import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
-import { Hoodie, HoodieNew } from '@/components/brand/items';
+import { renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/authContext';
 import { buyItem, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
 
-const itemVisuals = {
-    hoodie: Hoodie,
-    cozyHoodie: Hoodie,
-    'cozy-hoodie': Hoodie,
-    pullover_01: Hoodie,
-    hoodieNew: HoodieNew,
-    'hoodie-new': HoodieNew,
-    pullover_02: HoodieNew,
-};
-
-const typeLabels = {
-    accessory: 'Accessory',
-    powerUp: 'Power-up',
-    clothing: 'Clothing',
-    skin: 'Skin',
-    streakShield: 'Streak shield',
-};
-
-function getItemTypeLabel(type) {
-    return typeLabels[type] ?? type;
-}
-
-function renderItemVisual(item, className = 'max-h-full max-w-full') {
-    const Visual = itemVisuals[item.assetKey?.trim()];
-
-    return Visual ? <Visual className={className} aria-hidden="true" /> : null;
-}
+const shopCategories = [
+    { label: 'All', value: 'all' },
+    { label: 'Clothing', value: 'clothing' },
+    { label: 'Shoes', value: 'shoes' },
+    { label: 'Accessories', value: 'accessory' },
+    { label: 'Power Ups', value: 'powerUp' },
+];
 
 export function ShopPage() {
     const { user } = useAuth();
     const [items, setItems] = useState([]);
     const [ownedItemIds, setOwnedItemIds] = useState(new Set());
-    const [previewItemId, setPreviewItemId] = useState(null);
+    const [previewItems, setPreviewItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [buyingItemId, setBuyingItemId] = useState(null);
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
+    const [activeCategory, setActiveCategory] = useState('all');
 
     useEffect(() => {
         let isCurrent = true;
@@ -80,15 +62,47 @@ export function ShopPage() {
         };
     }, []);
 
-    const previewItem = useMemo(
-        () => items.find((item) => item._id === previewItemId),
-        [items, previewItemId],
+    const previewItemKeys = useMemo(
+        () => previewItems.map((item) => item.assetKey).filter(Boolean),
+        [previewItems],
     );
 
+    const filteredItems = useMemo(
+        () => activeCategory === 'all'
+            ? items
+            : items.filter((item) => item.type === activeCategory),
+        [activeCategory, items],
+    );
+
+    function isItemPreviewed(itemId) {
+        return previewItems.some((item) => item._id === itemId);
+    }
+
     function handleTryOnItem(itemId) {
+        const item = items.find((shopItem) => shopItem._id === itemId);
+
+        if (!item) {
+            return;
+        }
+
         setNotice('');
         setError('');
-        setPreviewItemId(itemId);
+        setPreviewItems((currentPreviewItems) => {
+            const isAlreadyPreviewed = currentPreviewItems.some((previewItem) => previewItem._id === item._id);
+
+            if (isAlreadyPreviewed) {
+                return currentPreviewItems.filter((previewItem) => previewItem._id !== item._id);
+            }
+
+            if (item.type === 'clothing' || item.type === 'shoes') {
+                return [
+                    ...currentPreviewItems.filter((previewItem) => previewItem.type !== item.type),
+                    item,
+                ];
+            }
+
+            return [...currentPreviewItems, item];
+        });
     }
 
     async function handleBuyItem(item) {
@@ -120,56 +134,77 @@ export function ShopPage() {
     }
 
     return (
-        <Page theme="forest">
+        <Page theme="forest" className="h-screen overflow-hidden">
             <Heading title="Shop" subtitle="Unlock items for your companion." streakDays={user?.streak ?? 0} />
-            <section className="flex min-h-72 flex-col items-center justify-end gap-3 text-center">
+            <section className="sticky top-24 z-20 flex min-h-72 flex-col items-center justify-end gap-3 text-center">
                 <CompanionAvatar
                     name="Howly"
                     size="xl"
                     showName
-                    previewItemKey={previewItem?.assetKey}
+                    previewItemKeys={previewItemKeys}
                 />
             </section>
 
-            <PageSection title="Accessories">
+            <PageSection title="Shop Items" className="min-w-0">
+                <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+                    <TabsList className="h-auto flex-wrap border border-theme-text/10 bg-theme-text/10 p-1 text-theme-text-soft">
+                        {shopCategories.map((category) => (
+                            <TabsTrigger
+                                key={category.value}
+                                value={category.value}
+                                className="px-3 py-1.5 text-theme-text-soft data-active:bg-theme-invert data-active:text-theme-invert-text"
+                            >
+                                {category.label}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                </Tabs>
+
                 {isLoading ? <p className="text-sm text-theme-text-soft">Loading shop items...</p> : null}
                 {notice ? <p className="text-sm text-theme-success">{notice}</p> : null}
                 {error ? <p className="text-sm text-theme-danger">{error}</p> : null}
                 {!isLoading && !error && items.length === 0 ? (
                     <p className="text-sm text-theme-text-soft">No shop items yet</p>
                 ) : null}
+                {!isLoading && !error && items.length > 0 && filteredItems.length === 0 ? (
+                    <p className="text-sm text-slate-300">No items in this category yet</p>
+                ) : null}
 
-                <CardGrid columns={3}>
-                    {items.map((item) => (
-                        <ActionStack key={item._id}>
-                            <ShopItemCard
-                                name={item.name}
-                                category={getItemTypeLabel(item.type)}
-                                price={item.price}
-                                premiumOnly={item.premiumOnly}
-                                owned={ownedItemIds.has(item._id)}
-                                visual={renderItemVisual(item)}
-                            />
-                            <div className="grid grid-cols-2 gap-2">
-                                <ActionButton
-                                    type="button"
-                                    fullWidth
-                                    onClick={() => handleTryOnItem(item._id)}
+                <div className="relative rounded-2xl border border-white/10 bg-white/5 p-3 shadow-xl shadow-slate-950/20">
+                    <div className="max-h-[25rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
+                        <CardGrid columns={3} className="pb-8">
+                            {filteredItems.map((item) => (
+                                <ItemCard
+                                    key={item._id}
+                                    name={item.name}
+                                    price={item.price}
+                                    premiumOnly={item.premiumOnly}
+                                    owned={ownedItemIds.has(item._id)}
+                                    visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
                                 >
-                                    Try on
-                                </ActionButton>
-                                <ActionButton
-                                    type="button"
-                                    fullWidth
-                                    disabled={ownedItemIds.has(item._id) || buyingItemId === item._id}
-                                    onClick={() => handleBuyItem(item)}
-                                >
-                                    {ownedItemIds.has(item._id) ? 'Owned' : 'Buy'}
-                                </ActionButton>
-                            </div>
-                        </ActionStack>
-                    ))}
-                </CardGrid>
+                                    <ActionButton
+                                        type="button"
+                                        fullWidth
+                                        className="h-9 px-3 text-sm"
+                                        onClick={() => handleTryOnItem(item._id)}
+                                    >
+                                        {isItemPreviewed(item._id) ? 'Remove' : 'Try on'}
+                                    </ActionButton>
+                                    <ActionButton
+                                        type="button"
+                                        fullWidth
+                                        className="h-9 px-3 text-sm"
+                                        disabled={ownedItemIds.has(item._id) || buyingItemId === item._id}
+                                        onClick={() => handleBuyItem(item)}
+                                    >
+                                        {ownedItemIds.has(item._id) ? 'Owned' : 'Buy'}
+                                    </ActionButton>
+                                </ItemCard>
+                            ))}
+                        </CardGrid>
+                    </div>
+                    <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
+                </div>
             </PageSection>
         </Page>
     );
