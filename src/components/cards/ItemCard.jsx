@@ -12,11 +12,17 @@ export function ItemCard({
     premiumOnly = false,
     owned = false,
     equipped = false,
+    showPrice = true,
+    showOwnedBadge = true,
+    compact = false,
+    dense = false,
     interactive = false,
     disabled = false,
     children,
     onClick,
 }) {
+    const hasBadges = premiumOnly || (showOwnedBadge && owned);
+
     function handleKeyDown(event) {
         if (!interactive || disabled || !onClick) {
             return;
@@ -32,8 +38,9 @@ export function ItemCard({
         <Card
             className={cn(
                 appCardClassName,
+                'gap-0 py-0',
                 interactive && 'cursor-pointer transition hover:border-violet-300/40 hover:ring-violet-300/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/70',
-                equipped && 'border-violet-300/80 ring-4 ring-violet-300/55 shadow-violet-950/30',
+                equipped && 'border-violet-300/90 ring-2 ring-inset ring-violet-300/45 shadow-lg shadow-violet-950/25',
                 disabled && 'cursor-wait opacity-80',
             )}
             role={interactive ? 'button' : undefined}
@@ -43,8 +50,12 @@ export function ItemCard({
             onClick={interactive && !disabled ? onClick : undefined}
             onKeyDown={handleKeyDown}
         >
-            <CardContent className="space-y-3 p-4">
-                <div className="mx-auto flex h-28 w-full items-center justify-center rounded-xl sm:h-32">
+            <CardContent className={cn('space-y-2', compact || dense ? 'p-3' : 'p-4')}>
+                <div className={cn(
+                    'mx-auto flex w-full items-center justify-center rounded-xl',
+                    compact ? 'h-16 sm:h-20' : 'h-24 sm:h-28',
+                    dense && 'h-20 sm:h-24',
+                )}>
                     {visual ? (
                         visual
                     ) : imageSrc ? (
@@ -53,17 +64,27 @@ export function ItemCard({
                         <span className="text-sm text-slate-400">Item image</span>
                     )}
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                     <div className="flex items-start justify-between gap-2">
                         <h3 className="text-sm font-semibold">{name}</h3>
                     </div>
-                    <MoonCoin amount={price} compact />
-                    <div className="flex min-h-5 flex-wrap gap-1">
-                        {premiumOnly ? <Badge className="bg-amber-300 text-slate-950">Premium</Badge> : null}
-                        {owned ? <Badge className="bg-emerald-400 text-slate-950">Owned</Badge> : null}
-                    </div>
+                    {showPrice || children ? (
+                        <div className="flex items-center justify-between gap-3">
+                            {showPrice ? <MoonCoin amount={price} compact /> : <span />}
+                            {children ? (
+                                <div className="ml-auto grid w-full max-w-40 grid-cols-2 gap-2">
+                                    {children}
+                                </div>
+                            ) : null}
+                        </div>
+                    ) : null}
+                    {hasBadges ? (
+                        <div className="flex flex-wrap gap-1">
+                            {premiumOnly ? <Badge className="bg-amber-300 text-slate-950">Premium</Badge> : null}
+                            {showOwnedBadge && owned ? <Badge className="bg-emerald-400 text-slate-950">Owned</Badge> : null}
+                        </div>
+                    ) : null}
                 </div>
-                {children ? <div className="ml-auto grid w-full max-w-40 grid-cols-2 gap-2 pt-1">{children}</div> : null}
             </CardContent>
         </Card>
     );

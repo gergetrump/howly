@@ -159,6 +159,18 @@ export function InventoryPage() {
                     showName
                     equippedItemKeys={equippedItemKeys}
                 />
+                <ActionButton
+                    type="button"
+                    className="h-9 bg-white/10 px-4 text-sm text-white hover:bg-white/20 disabled:text-slate-500"
+                    disabled={draftEquippedItemIds.size === 0 || isSavingOutfit}
+                    onClick={() => {
+                        setNotice('');
+                        setError('');
+                        setDraftEquippedItemIds(new Set());
+                    }}
+                >
+                    Unequip all
+                </ActionButton>
             </section>
 
             <PageSection title="Owned Items" className="min-w-0">
@@ -197,9 +209,9 @@ export function InventoryPage() {
                     <p className="text-sm text-slate-300">No owned items in this category yet</p>
                 ) : null}
 
-                <div className="relative rounded-2xl border border-white/10 bg-white/5 p-3 shadow-xl shadow-slate-950/20">
-                    <div className="max-h-[25rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
-                        <CardGrid columns={3} className="pb-8">
+                <div className="relative rounded-2xl border border-white/10 bg-white/5 p-4 shadow-xl shadow-slate-950/20">
+                    <div className="max-h-[25rem] overflow-y-scroll pr-3 [scrollbar-gutter:stable]">
+                        <CardGrid columns={4} className="gap-4 pb-8">
                             {filteredItems.map((item) => (
                                 <ItemCard
                                     key={item.userItemId}
@@ -207,6 +219,8 @@ export function InventoryPage() {
                                     price={item.price}
                                     premiumOnly={item.premiumOnly}
                                     equipped={item.equipped}
+                                    showPrice={false}
+                                    dense
                                     interactive
                                     disabled={isSavingOutfit}
                                     visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}

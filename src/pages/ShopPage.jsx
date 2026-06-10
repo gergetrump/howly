@@ -1,10 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AlertDialog as AlertDialogPrimitive } from 'radix-ui';
 import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
+import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import { renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import {
+    ConfirmationDialog,
+    ConfirmationDialogContent,
+    ConfirmationDialogDescription,
+    ConfirmationDialogFooter,
+    ConfirmationDialogHeader,
+    ConfirmationDialogTitle,
+} from '@/components/ui/confirmation-dialog';
 import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import { buyItem, getMyInventory } from '@/services/inventoryApi';
@@ -17,6 +28,7 @@ export function ShopPage() {
     const [previewItems, setPreviewItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [buyingItemId, setBuyingItemId] = useState(null);
+    const [itemToBuy, setItemToBuy] = useState(null);
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
@@ -123,6 +135,7 @@ export function ShopPage() {
             }
         } finally {
             setBuyingItemId(null);
+            setItemToBuy(null);
         }
     }
 
@@ -136,6 +149,14 @@ export function ShopPage() {
                     showName
                     previewItemKeys={previewItemKeys}
                 />
+                <ActionButton
+                    type="button"
+                    className="h-9 bg-white/10 px-4 text-sm text-white hover:bg-white/20 disabled:text-slate-500"
+                    disabled={previewItems.length === 0}
+                    onClick={() => setPreviewItems([])}
+                >
+                    Unequip all
+                </ActionButton>
             </section>
 
             <PageSection title="Shop Items" className="min-w-0">
@@ -165,7 +186,7 @@ export function ShopPage() {
 
                 <div className="relative rounded-2xl border border-white/10 bg-white/5 p-3 shadow-xl shadow-slate-950/20">
                     <div className="max-h-[25rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
-                        <CardGrid columns={3} className="pb-8">
+                        <CardGrid columns={4} className="pb-8">
                             {filteredItems.map((item) => (
                                 <ItemCard
                                     key={item._id}
@@ -173,12 +194,14 @@ export function ShopPage() {
                                     price={item.price}
                                     premiumOnly={item.premiumOnly}
                                     owned={ownedItemIds.has(item._id)}
+                                    showOwnedBadge={false}
+                                    dense
                                     visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
                                 >
                                     <ActionButton
                                         type="button"
                                         fullWidth
-                                        className="h-9 px-3 text-sm"
+                                        className="h-8 px-3 text-xs"
                                         onClick={() => handleTryOnItem(item._id)}
                                     >
                                         {isItemPreviewed(item._id) ? 'Remove' : 'Try on'}
@@ -186,9 +209,9 @@ export function ShopPage() {
                                     <ActionButton
                                         type="button"
                                         fullWidth
-                                        className="h-9 px-3 text-sm"
+                                        className="h-8 px-3 text-xs"
                                         disabled={ownedItemIds.has(item._id) || buyingItemId === item._id}
-                                        onClick={() => handleBuyItem(item)}
+                                        onClick={() => setItemToBuy(item)}
                                     >
                                         {ownedItemIds.has(item._id) ? 'Owned' : 'Buy'}
                                     </ActionButton>
@@ -199,6 +222,50 @@ export function ShopPage() {
                     <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
                 </div>
             </PageSection>
+
+            <ConfirmationDialog open={Boolean(itemToBuy)} onOpenChange={(open) => !open && setItemToBuy(null)}>
+                <ConfirmationDialogContent className="overflow-hidden border border-violet-300/20 bg-[#1e1b3a] p-0 text-white shadow-2xl shadow-violet-950/40 sm:max-w-md">
+                    <div className="bg-gradient-to-br from-violet-500/25 via-transparent to-fuchsia-500/15 px-8 pb-6 pt-8">
+                        <div className="mx-auto mb-5 flex h-32 w-full max-w-64 items-center justify-center rounded-2xl bg-white/8 ring-1 ring-white/10">
+                            {itemToBuy ? renderShopItemVisual(itemToBuy, 'max-h-[82%] max-w-[82%]') : null}
+                        </div>
+                        <ConfirmationDialogHeader className="space-y-3 text-center">
+                            <ConfirmationDialogTitle className="text-2xl font-bold">
+                                Buy {itemToBuy?.name}?
+                            </ConfirmationDialogTitle>
+                            <ConfirmationDialogDescription className="space-y-4 text-sm text-slate-300">
+                                <span className="block">This item will be added to your inventory.</span>
+                                {itemToBuy ? (
+                                    <span className="flex justify-center">
+                                        <MoonCoin amount={itemToBuy.price} compact />
+                                    </span>
+                                ) : null}
+                            </ConfirmationDialogDescription>
+                        </ConfirmationDialogHeader>
+                    </div>
+                    <ConfirmationDialogFooter className="gap-3 bg-black/10 px-8 pb-8 pt-5 sm:justify-center">
+                        <AlertDialogPrimitive.Cancel asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="h-11 min-w-28 rounded-xl border-white/15 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                            >
+                                Cancel
+                            </Button>
+                        </AlertDialogPrimitive.Cancel>
+                        <AlertDialogPrimitive.Action asChild>
+                            <Button
+                                type="button"
+                                className="h-11 min-w-28 rounded-xl bg-violet-500 text-white shadow-lg shadow-violet-950/30 hover:bg-violet-400"
+                                disabled={!itemToBuy || buyingItemId === itemToBuy?._id}
+                                onClick={() => itemToBuy && handleBuyItem(itemToBuy)}
+                            >
+                                {buyingItemId === itemToBuy?._id ? 'Buying...' : 'Buy'}
+                            </Button>
+                        </AlertDialogPrimitive.Action>
+                    </ConfirmationDialogFooter>
+                </ConfirmationDialogContent>
+            </ConfirmationDialog>
         </Page>
     );
 }
