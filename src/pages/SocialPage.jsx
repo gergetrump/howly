@@ -20,6 +20,13 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
     acceptFriendRequest,
@@ -40,6 +47,10 @@ function getDisplayName(user) {
 
 function getUsername(user) {
     return user?.username || 'friend';
+}
+
+function sameId(firstId, secondId) {
+    return firstId?.toString?.() === secondId?.toString?.();
 }
 
 function buildMilestoneTitle(post) {
@@ -255,7 +266,7 @@ function FriendActions({ friend, friendshipId, busy, onDelete }) {
     );
 }
 
-function MilestoneReactionPicker({ post, busy, onReact }) {
+function MilestoneReactionPicker({ post, busy, onReact, onOpenReactions }) {
     return (
         <div className="flex flex-wrap items-center gap-2">
             <div className="flex rounded-full border border-white/10 bg-white/5 p-1">
@@ -281,17 +292,175 @@ function MilestoneReactionPicker({ post, busy, onReact }) {
             {post.reactionCounts?.length ? (
                 <div className="flex flex-wrap gap-2">
                     {post.reactionCounts.map((reaction) => (
-                        <span
+                        <button
                             key={reaction.emoji}
-                            className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-sm font-medium text-slate-100"
+                            type="button"
+                            className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-sm font-medium text-slate-100 transition hover:bg-white/20"
+                            onClick={() => onOpenReactions(post)}
                         >
                             <span>{reaction.emoji}</span>
                             <span>{reaction.count}</span>
-                        </span>
+                        </button>
                     ))}
                 </div>
             ) : null}
         </div>
+    );
+}
+
+function ReactionUsersDialog({
+    reaction,
+    busy,
+    onClose,
+    onSelectUser,
+    onAddFriend,
+    getRelationship,
+}) {
+    const users = reaction?.post?.reactions ?? [];
+
+    return (
+        <Dialog open={Boolean(reaction)} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="border-white/10 bg-[#24213d] text-white shadow-2xl sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-bold">
+                        Reactions
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-300">
+                        People who reacted to this milestone
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="grid max-h-[23rem] gap-2 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
+                    {users.length ? users.map((reactionUser) => {
+                        const relationship = getRelationship(reactionUser.user);
+                        const canAddFriend = relationship.status === 'none';
+                        const isSelf = relationship.status === 'self';
+
+                        return (
+                            <div
+                                key={`${reactionUser.emoji}-${reactionUser.user?.id}`}
+                                className="flex items-center gap-3 rounded-xl bg-white/8 p-3 text-left"
+                            >
+                                <button
+                                    type="button"
+                                    className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left transition hover:bg-white/8"
+                                    onClick={() => onSelectUser(reactionUser.user)}
+                                >
+                                    <UserAvatar user={reactionUser.user} className="size-11" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate font-semibold">{getDisplayName(reactionUser.user)}</p>
+                                        <p className="truncate text-sm text-slate-300">@{getUsername(reactionUser.user)}</p>
+                                    </div>
+                                    <span className="text-xl" aria-hidden="true">{reactionUser.emoji || '💜'}</span>
+                                </button>
+
+                                {!isSelf ? (
+                                    <Button
+                                        type="button"
+                                        size="icon"
+                                        className={canAddFriend
+                                            ? 'size-9 shrink-0 rounded-full bg-violet-500 text-white hover:bg-violet-400'
+                                            : 'size-9 shrink-0 rounded-full bg-white/10 text-slate-400 hover:bg-white/10'}
+                                        aria-label={`Add ${getDisplayName(reactionUser.user)} as friend`}
+                                        disabled={!canAddFriend || busy}
+                                        onClick={() => onAddFriend(reactionUser.user)}
+                                    >
+                                        <Plus aria-hidden="true" />
+                                    </Button>
+                                ) : null}
+                            </div>
+                        );
+                    }) : (
+                        <p className="text-sm text-slate-300">No reactions yet</p>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function UserPreviewDialog({
+    user,
+    relationship,
+    busy,
+    onClose,
+    onAddFriend,
+    onAcceptRequest,
+}) {
+    const isOpen = Boolean(user);
+
+    function renderAction() {
+        if (!user || relationship.status === 'self') {
+            return null;
+        }
+
+        if (relationship.status === 'friends') {
+            return (
+                <Button type="button" disabled className="bg-white/10 text-slate-200">
+                    Friends
+                </Button>
+            );
+        }
+
+        if (relationship.status === 'outgoing') {
+            return (
+                <Button type="button" disabled className="bg-white/10 text-slate-200">
+                    Request sent
+                </Button>
+            );
+        }
+
+        if (relationship.status === 'incoming') {
+            return (
+                <Button
+                    type="button"
+                    className="bg-emerald-700 text-white hover:bg-emerald-600"
+                    disabled={busy}
+                    onClick={() => onAcceptRequest(relationship.requestId)}
+                >
+                    Accept request
+                </Button>
+            );
+        }
+
+        return (
+            <Button
+                type="button"
+                className="bg-violet-500 text-white hover:bg-violet-400"
+                disabled={busy}
+                onClick={() => onAddFriend(user)}
+            >
+                <Plus aria-hidden="true" />
+                Add friend
+            </Button>
+        );
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="border-white/10 bg-[#24213d] text-white shadow-2xl sm:max-w-sm">
+                <DialogHeader>
+                    <DialogTitle className="sr-only">User profile</DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Small profile preview with friend action
+                    </DialogDescription>
+                </DialogHeader>
+
+                {user ? (
+                    <div className="flex flex-col items-center gap-4 text-center">
+                        <UserAvatar user={user} className="size-20" />
+                        <div>
+                            <h3 className="text-2xl font-bold">{getDisplayName(user)}</h3>
+                            <p className="text-slate-300">@{getUsername(user)}</p>
+                            <p className="mt-2 text-sm font-medium text-slate-200">🔥 {user?.streak ?? 0} days</p>
+                        </div>
+                        {relationship.status === 'self' ? (
+                            <p className="rounded-full bg-white/10 px-4 py-2 text-sm text-slate-200">This is you</p>
+                        ) : renderAction()}
+                    </div>
+                ) : null}
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -311,7 +480,39 @@ export function SocialPage() {
     const [busyFriendId, setBusyFriendId] = useState(null);
     const [busyPostId, setBusyPostId] = useState(null);
     const [activePanel, setActivePanel] = useState('friends');
+    const [selectedReaction, setSelectedReaction] = useState(null);
+    const [selectedProfileUser, setSelectedProfileUser] = useState(null);
     const pendingFriendRequestCount = requests.incoming?.length ?? 0;
+
+    function getProfileRelationship(profileUser) {
+        if (!profileUser) {
+            return { status: 'unknown' };
+        }
+
+        if (sameId(profileUser.id, user?.id) || sameId(profileUser.id, user?._id)) {
+            return { status: 'self' };
+        }
+
+        const friendship = friends.find(({ friend }) => sameId(friend?.id, profileUser.id));
+
+        if (friendship) {
+            return { status: 'friends', friendshipId: friendship.id };
+        }
+
+        const incomingRequest = requests.incoming?.find((request) => sameId(request.requester?.id, profileUser.id));
+
+        if (incomingRequest) {
+            return { status: 'incoming', requestId: incomingRequest.id };
+        }
+
+        const outgoingRequest = requests.outgoing?.find((request) => sameId(request.recipient?.id, profileUser.id));
+
+        if (outgoingRequest) {
+            return { status: 'outgoing', requestId: outgoingRequest.id };
+        }
+
+        return { status: 'none' };
+    }
 
     async function loadSocialData() {
         setError('');
@@ -412,6 +613,40 @@ export function SocialPage() {
         }
     }
 
+    async function handleSendProfileFriendRequest(profileUser) {
+        setIsSubmitting(true);
+        setError('');
+        setNotice('');
+
+        try {
+            await sendFriendRequest(profileUser.id);
+            setNotice(`Friend request sent to ${getDisplayName(profileUser)}`);
+            await loadSocialData();
+            setSelectedProfileUser(null);
+        } catch (err) {
+            setError(getSocialErrorMessage(err, profileUser));
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    async function handleAcceptProfileFriendRequest(requestId) {
+        setBusyRequestId(requestId);
+        setError('');
+        setNotice('');
+
+        try {
+            await acceptFriendRequest(requestId);
+            setNotice('Friend request accepted');
+            await loadSocialData();
+            setSelectedProfileUser(null);
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setBusyRequestId(null);
+        }
+    }
+
     async function handleAcceptRequest(requestId) {
         setBusyRequestId(requestId);
         setError('');
@@ -503,6 +738,7 @@ export function SocialPage() {
                                         post={post}
                                         busy={busyPostId === post.id}
                                         onReact={handleReactToMilestone}
+                                        onOpenReactions={(feedPost) => setSelectedReaction({ post: feedPost })}
                                     />
                                 </FeedPostCard>
                             ))}
@@ -650,6 +886,26 @@ export function SocialPage() {
                     {error ? <p className="text-sm text-red-300">{error}</p> : null}
                 </aside>
             </div>
+
+            <ReactionUsersDialog
+                reaction={selectedReaction}
+                busy={isSubmitting}
+                onClose={() => setSelectedReaction(null)}
+                onSelectUser={(reactionUser) => {
+                    setSelectedReaction(null);
+                    setSelectedProfileUser(reactionUser);
+                }}
+                onAddFriend={handleSendProfileFriendRequest}
+                getRelationship={getProfileRelationship}
+            />
+            <UserPreviewDialog
+                user={selectedProfileUser}
+                relationship={getProfileRelationship(selectedProfileUser)}
+                busy={isSubmitting || busyRequestId !== null}
+                onClose={() => setSelectedProfileUser(null)}
+                onAddFriend={handleSendProfileFriendRequest}
+                onAcceptRequest={handleAcceptProfileFriendRequest}
+            />
         </Page>
     );
 }
