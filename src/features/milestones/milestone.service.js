@@ -2,11 +2,14 @@ import mongoose from 'mongoose';
 import { toPublicUser } from '../users/user.service.js';
 import { Friendship } from '../social/social.model.js';
 import Companion from '../companion/companion.model.js';
+import config from '../../../config.js';
 import {
   MilestoneLike,
   MilestonePost,
   MILESTONE_INTERVAL_DAYS,
 } from './milestone.model.js';
+
+const SERVER_BASE_URL = config.serverBaseUrl ?? 'http://localhost:3000';
 
 const ALLOWED_REACTION_EMOJIS = ['🎉', '🔥', '👏', '💜', '✨'];
 
@@ -30,11 +33,31 @@ function toCompanionResponse(companion) {
   };
 }
 
+function toReactionUserResponse(user) {
+  if (!user) {
+    return null;
+  }
+
+  const profilePictureUrl = user.profilePictureUrl
+    ? user.profilePictureUrl
+    : `${SERVER_BASE_URL}/uploads/profile-pictures/default.png`;
+
+  return {
+    id: user._id.toString(),
+    username: user.username,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    profilePictureUrl,
+    streak: user.streak,
+  };
+}
+
 function toMilestonePostResponse(
   post,
   userReactionsByPostId = new Map(),
   companionsByUserId = new Map(),
-  reactionCountsByPostId = new Map()
+  reactionCountsByPostId = new Map(),
+  reactionsByPostId = new Map()
 ) {
   const populatedHabit = post.habit && typeof post.habit === 'object' ? post.habit : null;
   const habitId = populatedHabit?._id?.toString?.() ?? post.habit?.toString?.() ?? post.habit;
@@ -58,6 +81,7 @@ function toMilestonePostResponse(
     likedByCurrentUser: Boolean(currentUserReaction),
     currentUserReaction,
     reactionCounts: reactionCountsByPostId.get(postId) ?? [],
+    reactions: reactionsByPostId.get(postId) ?? [],
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
   };
@@ -85,6 +109,32 @@ async function getReactionCountsByPostId(postIds) {
   return reactionCountsByPostId;
 }
 
+async function getReactionsByPostId(postIds) {
+  if (!postIds.length) {
+    return new Map();
+  }
+
+  const reactions = await MilestoneLike.find({ milestonePost: { $in: postIds } })
+    .populate('user')
+    .sort({ createdAt: -1 })
+    .lean();
+  const reactionsByPostId = new Map();
+
+  reactions.forEach((reaction) => {
+    const postId = reaction.milestonePost.toString();
+    const postReactions = reactionsByPostId.get(postId) ?? [];
+
+    postReactions.push({
+      emoji: reaction.emoji,
+      user: toReactionUserResponse(reaction.user),
+      createdAt: reaction.createdAt,
+    });
+    reactionsByPostId.set(postId, postReactions);
+  });
+
+  return reactionsByPostId;
+}
+
 async function enrichMilestonePost(post, currentUserReaction = null) {
   await post.populate(['user', 'habit']);
 
@@ -98,8 +148,15 @@ async function enrichMilestonePost(post, currentUserReaction = null) {
     ? new Map([[postId, currentUserReaction]])
     : new Map();
   const reactionCountsByPostId = await getReactionCountsByPostId([post._id]);
+  const reactionsByPostId = await getReactionsByPostId([post._id]);
 
-  return toMilestonePostResponse(post, userReactionsByPostId, companionsByUserId, reactionCountsByPostId);
+  return toMilestonePostResponse(
+    post,
+    userReactionsByPostId,
+    companionsByUserId,
+    reactionCountsByPostId,
+    reactionsByPostId
+  );
 }
 
 async function areFriends(firstUserId, secondUserId) {
@@ -169,6 +226,7 @@ export async function getFriendFeed({ userId }) {
     reactions.map((reaction) => [reaction.milestonePost.toString(), reaction.emoji])
   );
   const reactionCountsByPostId = await getReactionCountsByPostId(posts.map((post) => post._id));
+  const reactionsByPostId = await getReactionsByPostId(posts.map((post) => post._id));
   const companions = await Companion.find({
     user: { $in: posts.map((post) => post.user._id ?? post.user) },
   }).lean();
@@ -177,7 +235,13 @@ export async function getFriendFeed({ userId }) {
   );
 
   return posts.map((post) =>
-    toMilestonePostResponse(post, userReactionsByPostId, companionsByUserId, reactionCountsByPostId)
+    toMilestonePostResponse(
+      post,
+      userReactionsByPostId,
+      companionsByUserId,
+      reactionCountsByPostId,
+      reactionsByPostId
+    )
   );
 }
 
