@@ -1,28 +1,24 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName } from '@/components/cards/cardStyles';
+import { UserProfileTrigger } from '@/components/social/UserProfileTrigger.jsx';
 
-export function FriendCard({ name, username, streakDays, avatarSrc, action }) {
-    const initials = name
-        .split(' ')
-        .map((part) => part[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase();
+export function FriendCard({ name, username, streakDays, avatarSrc, action, onClick, user }) {
+    const profileUser = user ?? {
+        firstName: name,
+        username,
+        profilePictureUrl: avatarSrc,
+        streak: streakDays,
+    };
 
     return (
         <Card className={appCardClassName}>
             <CardContent className="flex items-center gap-3">
-                <Avatar size="lg">
-                    <AvatarImage src={avatarSrc} alt={name} />
-                    <AvatarFallback>{initials}</AvatarFallback>
-                </Avatar>
-
-                <div className="min-w-0 flex-1">
-                    <h3 className="truncate font-semibold">{name}</h3>
-                    <p className="truncate text-sm text-slate-300">@{username}</p>
-                </div>
+                <UserProfileTrigger
+                    user={profileUser}
+                    avatarClassName="size-12"
+                    onOpen={onClick}
+                />
 
                 <Badge className="border border-white/15 bg-white/10 text-slate-100">🔥 {streakDays} days</Badge>
                 {action}

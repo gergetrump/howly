@@ -6,6 +6,7 @@ import { FeedPostCard, FriendCard } from '@/components/cards';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { UserAvatar, UserProfileTrigger } from '@/components/social/UserProfileTrigger.jsx';
 import {
     ConfirmationDialog,
     ConfirmationDialogContent,
@@ -138,21 +139,6 @@ function EmptyState({ children }) {
                 <p className="text-sm text-slate-300">{children}</p>
             </CardContent>
         </Card>
-    );
-}
-
-function UserAvatar({ user, className = 'size-12' }) {
-    const name = getDisplayName(user);
-    const initial = name.trim().charAt(0).toUpperCase() || '?';
-
-    return (
-        <div className={`flex ${className} shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-300 text-lg font-bold text-slate-950`}>
-            {user?.profilePictureUrl ? (
-                <img src={user.profilePictureUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-                initial
-            )}
-        </div>
     );
 }
 
@@ -341,18 +327,13 @@ function ReactionUsersDialog({
                                 key={`${reactionUser.emoji}-${reactionUser.user?.id}`}
                                 className="flex items-center gap-3 rounded-xl bg-white/8 p-3 text-left"
                             >
-                                <button
-                                    type="button"
-                                    className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left transition hover:bg-white/8"
-                                    onClick={() => onSelectUser(reactionUser.user)}
+                                <UserProfileTrigger
+                                    user={reactionUser.user}
+                                    avatarClassName="size-11"
+                                    onOpen={onSelectUser}
                                 >
-                                    <UserAvatar user={reactionUser.user} className="size-11" />
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate font-semibold">{getDisplayName(reactionUser.user)}</p>
-                                        <p className="truncate text-sm text-slate-300">@{getUsername(reactionUser.user)}</p>
-                                    </div>
                                     <span className="text-xl" aria-hidden="true">{reactionUser.emoji || '💜'}</span>
-                                </button>
+                                </UserProfileTrigger>
 
                                 {!isSelf ? (
                                     <Button
@@ -795,6 +776,8 @@ export function SocialPage() {
                                                 username={getUsername(friend)}
                                                 streakDays={friend?.streak ?? 0}
                                                 avatarSrc={friend?.profilePictureUrl}
+                                                user={friend}
+                                                onClick={() => setSelectedProfileUser(friend)}
                                                 action={(
                                                     <FriendActions
                                                         friend={friend}
@@ -858,11 +841,11 @@ export function SocialPage() {
                                                     className="border-white/10 bg-white/8 text-slate-100 shadow-xl shadow-slate-950/20 backdrop-blur"
                                                 >
                                                     <CardContent className="flex flex-wrap items-center gap-3">
-                                                        <UserAvatar user={user} className="size-10" />
-                                                        <div className="min-w-0 flex-1">
-                                                            <h3 className="truncate font-semibold">{getDisplayName(user)}</h3>
-                                                            <p className="truncate text-sm text-slate-300">@{getUsername(user)}</p>
-                                                        </div>
+                                                        <UserProfileTrigger
+                                                            user={user}
+                                                            avatarClassName="size-10"
+                                                            onOpen={setSelectedProfileUser}
+                                                        />
                                                         <Button
                                                             type="button"
                                                             className="bg-white text-slate-950 hover:bg-slate-200"

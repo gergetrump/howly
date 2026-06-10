@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActionButton, CardGrid } from '@/components/common';
-import { ShopItemCard } from '@/components/cards';
+import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
 import { renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
@@ -148,7 +148,7 @@ export function ShopPage() {
                     <div className="max-h-[25rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
                         <CardGrid columns={3} className="pb-8">
                             {filteredItems.map((item) => (
-                                <ShopItemCard
+                                <ItemCard
                                     key={item._id}
                                     name={item.name}
                                     price={item.price}
@@ -173,7 +173,7 @@ export function ShopPage() {
                                     >
                                         {ownedItemIds.has(item._id) ? 'Owned' : 'Buy'}
                                     </ActionButton>
-                                </ShopItemCard>
+                                </ItemCard>
                             ))}
                         </CardGrid>
                     </div>
