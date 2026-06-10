@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, Edit2, Trash2 } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Camera } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -32,6 +32,7 @@ export function HabitCard({
     completed = false,
     onEdit,
     onDelete,
+    onShareStory,
     children,
 }) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -65,6 +66,12 @@ export function HabitCard({
                                 <Edit2 className="mr-2 h-4 w-4" />
                                 Edit Habit
                             </DropdownMenuItem>
+                            {onShareStory ? (
+                                <DropdownMenuItem onClick={onShareStory} className="cursor-pointer focus:bg-slate-800 focus:text-white">
+                                    <Camera className="mr-2 h-4 w-4" />
+                                    Share Story
+                                </DropdownMenuItem>
+                            ) : null}
                             <DropdownMenuItem 
                                 onClick={() => setIsDeleteDialogOpen(true)} 
                                 className="cursor-pointer text-red-400 focus:bg-red-400/10 focus:text-red-400"

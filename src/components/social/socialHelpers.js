@@ -83,6 +83,10 @@ export function getSocialErrorMessage(error, user) {
             return 'Choose one of the available milestone reactions';
         case 'CANNOT_LIKE_OWN_MILESTONE':
             return 'You cannot like your own milestone';
+        case 'CANNOT_LIKE_OWN_STORY':
+            return 'You cannot like your own story';
+        case 'STORY_NOT_FOUND':
+            return 'That story is no longer available';
         default:
             return error.message;
     }

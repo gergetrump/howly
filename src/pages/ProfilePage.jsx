@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
+import { StoryArchive } from '@/components/stories/StoryArchive.jsx';
 // import { ThemeToggle } from '@/components/brand/ThemeToggle.jsx';
 import { logoutUser } from '@/services/authService';
 import {
@@ -263,6 +264,10 @@ export function ProfilePage() {
                     </div>
                 </div>
             </section>
+
+            <PageSection title="My Stories">
+                <StoryArchive />
+            </PageSection>
 
             <PageSection title="Privacy">
                 <GhostModeRow />

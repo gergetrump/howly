@@ -16,6 +16,7 @@ import {
     sendFriendRequest,
 } from '@/services/socialApi';
 import { searchUsers } from '@/services/userApi';
+import { toggleStoryLike, deleteStory } from '@/services/storyApi';
 import { useAuth } from '@/context/authContext';
 
 const SOCIAL_REFRESH_INTERVAL_MS = 10000;
@@ -309,6 +310,34 @@ export function SocialPage() {
         }
     }
 
+    async function handleToggleStoryLike(post) {
+        setBusyPostId(post.id);
+        setError('');
+
+        try {
+            const response = await toggleStoryLike(post.id);
+
+            setFeed((currentFeed) =>
+                currentFeed.map((feedPost) =>
+                    feedPost.id === post.id ? { type: 'story', ...response.story } : feedPost,
+                ),
+            );
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setBusyPostId(null);
+        }
+    }
+
+    async function handleDeleteStory(post) {
+        await deleteStory(post.id);
+        setFeed((currentFeed) =>
+            currentFeed.filter(
+                (feedPost) => !(feedPost.type === 'story' && feedPost.id === post.id),
+            ),
+        );
+    }
+
     async function handleReactToMilestone(post, emoji) {
         setBusyPostId(post.id);
         setError('');
@@ -337,8 +366,11 @@ export function SocialPage() {
                     feed={feed}
                     isLoading={isLoading}
                     busyPostId={busyPostId}
+                    currentUserId={user?.id}
                     onReact={handleReactToMilestone}
                     onOpenReactions={(feedPost) => setSelectedReaction({ post: feedPost })}
+                    onToggleStoryLike={handleToggleStoryLike}
+                    onDeleteStory={handleDeleteStory}
                 />
 
                 <FriendsPanel
