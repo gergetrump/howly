@@ -89,7 +89,7 @@ export function NavBar({
             )}
             aria-label="Primary navigation"
         >
-            <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-4 md:px-6">
+            <div className="flex w-full items-center justify-between gap-6 px-4 md:px-8">
                 <div className="flex min-w-0 items-center gap-3 sm:gap-6">
                     <Link to="/dashboard" className="flex shrink-0 items-center gap-2">
                         <img
