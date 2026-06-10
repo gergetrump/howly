@@ -8,9 +8,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import {
-    equipInventoryItem,
     getMyInventory,
-    unequipInventoryItem,
+    saveOutfit,
 } from '@/services/inventoryApi';
 
 export function InventoryPage() {
@@ -133,19 +132,14 @@ export function InventoryPage() {
         setError('');
 
         try {
-            const itemsToUnequip = inventory.filter((entry) => entry.equipped && !draftEquippedItemIds.has(entry._id));
-            const itemsToEquip = inventory.filter((entry) => !entry.equipped && draftEquippedItemIds.has(entry._id));
-            const inventoryUpdates = [
-                ...await Promise.all(itemsToUnequip.map((entry) => unequipInventoryItem(entry._id))),
-                ...await Promise.all(itemsToEquip.map((entry) => equipInventoryItem(entry._id))),
-            ];
-            const updatedById = new Map(inventoryUpdates.map((entry) => [entry._id, entry]));
+            const savedInventory = await saveOutfit([...draftEquippedItemIds]);
 
-            setInventory((currentInventory) =>
-                currentInventory.map((entry) =>
-                    updatedById.get(entry._id) ?? entry,
-                ),
-            );
+            setInventory(savedInventory);
+            setDraftEquippedItemIds(new Set(
+                savedInventory
+                    .filter((entry) => entry.equipped)
+                    .map((entry) => entry._id),
+            ));
             setNotice('Outfit saved');
             window.dispatchEvent(new Event('howly:outfit-updated'));
         } catch {

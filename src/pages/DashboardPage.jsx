@@ -94,7 +94,7 @@ export function DashboardPage() {
             if (!habit.isCompletedToday && updatedHabit.milestonePost) {
                 setPendingMilestoneNotice({
                     ...updatedHabit.milestonePost,
-                    habitTitle: `${updatedHabit.data.frequency} ${updatedHabit.milestonePost.habitTitle}`,
+                    habitTitle: `${updatedHabit.data.frequency} ${updatedHabit.milestonePost.habit?.title ?? updatedHabit.milestonePost.habitTitle}`,
                 });
             }
         } catch (error) {

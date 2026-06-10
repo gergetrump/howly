@@ -11,6 +11,13 @@ export function buyItem(itemId) {
     });
 }
 
+export function saveOutfit(equippedUserItemIds) {
+    return apiRequest('/inventory/outfit', {
+        method: 'PUT',
+        body: JSON.stringify({ equippedUserItemIds }),
+    });
+}
+
 export function equipInventoryItem(userItemId) {
     return apiRequest(`/inventory/${userItemId}/equip`, {
         method: 'POST',

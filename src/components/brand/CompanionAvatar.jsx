@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 
 const sizeClasses = {
     sm: 'w-24 h-24',
+    feed: 'w-40 h-40',
     md: 'w-36 h-36',
     lg: 'w-48 h-48',
     xl: 'w-64 h-64',
