@@ -21,7 +21,7 @@ export function FeedPostCard({
                 <div className="p-4">
                     <CompanionAvatar src={resolvedCompanionSrc} name={companionName} size="lg" showName />
                 </div>
-                {message ? <p className="text-sm text-slate-200">{message}</p> : null}
+                {message ? <p className="text-sm text-theme-text">{message}</p> : null}
                 {children}
             </CardContent>
         </Card>

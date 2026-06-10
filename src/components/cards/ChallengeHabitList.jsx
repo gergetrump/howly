@@ -10,7 +10,7 @@ export function ChallengeHabitList({
 }) {
     if (habits.length === 0) {
         return (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+            <div className="rounded-xl border border-theme-text/10 bg-theme-text/5 p-4 text-sm text-theme-text-soft">
                 No habits available yet.
             </div>
         );
@@ -19,7 +19,7 @@ export function ChallengeHabitList({
     return (
         <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
             {allowEmptySelection && currentHabitTitle ? (
-                <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-300">
+                <div className="rounded-xl border border-theme-text/10 bg-theme-text/5 p-3 text-sm text-theme-text-soft">
                     Current habit: {currentHabitTitle}
                 </div>
             ) : null}
@@ -34,22 +34,22 @@ export function ChallengeHabitList({
                         className={cn(
                             'flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors',
                             isSelected
-                                ? 'border-emerald-300 bg-emerald-400/15'
-                                : 'border-white/10 bg-white/5 hover:bg-white/10',
+                                ? 'border-theme-success bg-theme-success/15'
+                                : 'border-theme-text/10 bg-theme-text/5 hover:bg-theme-text/10',
                         )}
                     >
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-lg">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-theme-text/10 text-lg">
                             {habit.icon || habit.title?.charAt(0) || 'H'}
                         </span>
                         <span className="min-w-0 flex-1">
-                            <span className="block truncate font-medium text-white">
+                            <span className="block truncate font-medium text-theme-text">
                                 {habit.title}
                             </span>
-                            <span className="mt-1 block text-sm text-slate-300">
+                            <span className="mt-1 block text-sm text-theme-text-soft">
                                 {habit.frequency || 'Frequency'} / {habit.streakCount ?? 0} streak
                             </span>
                         </span>
-                        {isSelected ? <Check className="size-5 text-emerald-300" aria-hidden="true" /> : null}
+                        {isSelected ? <Check className="size-5 text-theme-success" aria-hidden="true" /> : null}
                     </button>
                 );
             })}

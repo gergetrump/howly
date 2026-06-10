@@ -22,7 +22,7 @@ export function ShopItemCard({
                     ) : imageSrc ? (
                         <img src={imageSrc} alt={name} className="max-h-full max-w-full object-contain" />
                     ) : (
-                        <span className="text-sm text-slate-400">Item image</span>
+                        <span className="text-sm text-theme-text-muted">Item image</span>
                     )}
                 </div>
                 <div className="space-y-2">
@@ -32,7 +32,7 @@ export function ShopItemCard({
                     </div>
                     <MoonCoin amount={price} compact />
                     {premiumOnly ? <Badge className="bg-amber-300 text-slate-950">Premium</Badge> : null}
-                    {owned ? <Badge className="bg-emerald-400 text-slate-950">Owned</Badge> : null}
+                    {owned ? <Badge className="bg-theme-success text-theme-on-success">Owned</Badge> : null}
                 </div>
             </CardContent>
         </Card>

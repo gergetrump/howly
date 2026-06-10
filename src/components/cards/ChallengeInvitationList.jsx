@@ -18,7 +18,7 @@ export function ChallengeInvitationList({ invitations, busyAction, onAccept, onR
 
     return (
         <div className="space-y-3">
-            <h2 className="text-lg font-semibold text-white">Invitations</h2>
+            <h2 className="text-lg font-semibold text-theme-text">Invitations</h2>
             <CardGrid columns={2}>
                 {invitations.map((invitation) => {
                     const challenge = getChallengeFromInvitation(invitation);
@@ -49,7 +49,7 @@ export function ChallengeInvitationList({ invitations, busyAction, onAccept, onR
                                 variant="outline"
                                 onClick={() => onReject(invitation.id)}
                                 disabled={busyAction === `reject-${invitation.id}`}
-                                className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+                                className="border-theme-text/20 bg-theme-text/10 text-theme-text hover:bg-theme-text/20"
                             >
                                 {busyAction === `reject-${invitation.id}` ? (
                                     <Loader2 className="size-4 animate-spin" aria-hidden="true" />

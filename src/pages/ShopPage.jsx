@@ -132,11 +132,11 @@ export function ShopPage() {
             </section>
 
             <PageSection title="Accessories">
-                {isLoading ? <p className="text-sm text-slate-300">Loading shop items...</p> : null}
-                {notice ? <p className="text-sm text-emerald-300">{notice}</p> : null}
-                {error ? <p className="text-sm text-red-300">{error}</p> : null}
+                {isLoading ? <p className="text-sm text-theme-text-soft">Loading shop items...</p> : null}
+                {notice ? <p className="text-sm text-theme-success">{notice}</p> : null}
+                {error ? <p className="text-sm text-theme-danger">{error}</p> : null}
                 {!isLoading && !error && items.length === 0 ? (
-                    <p className="text-sm text-slate-300">No shop items yet</p>
+                    <p className="text-sm text-theme-text-soft">No shop items yet</p>
                 ) : null}
 
                 <CardGrid columns={3}>

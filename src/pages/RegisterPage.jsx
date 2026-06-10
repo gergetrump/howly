@@ -64,7 +64,7 @@ export function RegisterPage() {
             <nav className="relative z-20 flex items-center justify-between px-6 py-4 md:px-12 lg:px-20">
                 <Link
                     to="/"
-                    className="flex items-center gap-2 text-xl font-bold text-white transition-opacity hover:opacity-80"
+                    className="flex items-center gap-2 text-xl font-bold text-theme-text transition-opacity hover:opacity-80"
                 >
                     <img src={howlyIcon} alt="" className="size-8 object-contain" />
                     <span className="font-heading tracking-tight">Howly</span>
@@ -72,7 +72,7 @@ export function RegisterPage() {
 
                 <Button
                     variant="ghost"
-                    className="text-slate-300 hover:text-white"
+                    className="text-theme-text-soft hover:text-theme-text"
                     asChild
                 >
                     <Link to="/login">Log in</Link>
@@ -83,7 +83,7 @@ export function RegisterPage() {
                 <Card
                     className={cn(
                         appCardClassName,
-                        'w-full max-w-md border-slate-700/50 shadow-xl shadow-black/20',
+                        'w-full max-w-md border-theme-text/10 shadow-xl shadow-black/20',
                     )}
                 >
                     <CardContent className="p-8">
@@ -99,11 +99,11 @@ export function RegisterPage() {
                                 Join the pack
                             </p>
 
-                            <h1 className="text-3xl font-bold tracking-tight text-white">
+                            <h1 className="text-3xl font-bold tracking-tight text-theme-text">
                                 Create your account
                             </h1>
 
-                            <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                            <p className="mt-2 text-sm leading-relaxed text-theme-text-muted">
                                 Start tracking your habits with your cosmic companion.
                             </p>
                         </div>
@@ -112,7 +112,7 @@ export function RegisterPage() {
                             <div className="space-y-2">
                                 <label
                                     htmlFor="username"
-                                    className="text-sm font-medium text-slate-200"
+                                    className="text-sm font-medium text-theme-text"
                                 >
                                     Username
                                 </label>
@@ -126,7 +126,7 @@ export function RegisterPage() {
                                     required
                                     autoComplete="username"
                                     placeholder="howlyuser"
-                                    className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-howly-primary"
+                                    className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
                                 />
                             </div>
 
@@ -134,7 +134,7 @@ export function RegisterPage() {
                                 <div className="space-y-2">
                                     <label
                                         htmlFor="firstName"
-                                        className="text-sm font-medium text-slate-200"
+                                        className="text-sm font-medium text-theme-text"
                                     >
                                         First name
                                     </label>
@@ -148,14 +148,14 @@ export function RegisterPage() {
                                         required
                                         autoComplete="given-name"
                                         placeholder="Alex"
-                                        className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-howly-primary"
+                                        className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
                                     <label
                                         htmlFor="lastName"
-                                        className="text-sm font-medium text-slate-200"
+                                        className="text-sm font-medium text-theme-text"
                                     >
                                         Last name
                                     </label>
@@ -169,7 +169,7 @@ export function RegisterPage() {
                                         required
                                         autoComplete="family-name"
                                         placeholder="Wolf"
-                                        className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-howly-primary"
+                                        className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
                                     />
                                 </div>
                             </div>
@@ -177,7 +177,7 @@ export function RegisterPage() {
                             <div className="space-y-2">
                                 <label
                                     htmlFor="email"
-                                    className="text-sm font-medium text-slate-200"
+                                    className="text-sm font-medium text-theme-text"
                                 >
                                     Email
                                 </label>
@@ -191,14 +191,14 @@ export function RegisterPage() {
                                     required
                                     autoComplete="email"
                                     placeholder="you@example.com"
-                                    className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-howly-primary"
+                                    className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
                                 />
                             </div>
 
                             <div className="space-y-2">
                                 <label
                                     htmlFor="password"
-                                    className="text-sm font-medium text-slate-200"
+                                    className="text-sm font-medium text-theme-text"
                                 >
                                     Password
                                 </label>
@@ -213,12 +213,12 @@ export function RegisterPage() {
                                     minLength={8}
                                     autoComplete="new-password"
                                     placeholder="At least 8 characters"
-                                    className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-howly-primary"
+                                    className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
                                 />
                             </div>
 
                             {error && (
-                                <p className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                                <p className="rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                                     {error}
                                 </p>
                             )}
@@ -226,13 +226,13 @@ export function RegisterPage() {
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="h-12 w-full rounded-full bg-howly-primary text-base font-semibold text-white shadow-lg shadow-howly-primary/25 transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="h-12 w-full rounded-full bg-howly-primary text-base font-semibold text-theme-text shadow-lg shadow-howly-primary/25 transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {isSubmitting ? 'Creating account...' : 'Create account'}
                             </Button>
                         </form>
 
-                        <p className="mt-6 text-center text-sm text-slate-400">
+                        <p className="mt-6 text-center text-sm text-theme-text-muted">
                             Already have an account?{' '}
                             <Link
                                 to="/login"

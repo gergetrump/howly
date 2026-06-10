@@ -55,19 +55,19 @@ export function HabitCard({
                     {children}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-slate-400 hover:text-white hover:bg-slate-800">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-theme-text-muted hover:text-theme-text hover:bg-theme-surface">
                                 <span className="sr-only">Open menu</span>
                                 <MoreVertical className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40 border-slate-800 bg-slate-950 text-slate-300">
-                            <DropdownMenuItem onClick={onEdit} className="cursor-pointer focus:bg-slate-800 focus:text-white">
+                        <DropdownMenuContent align="end" className="w-40 border-theme-text/20 bg-theme-bg text-theme-text-soft">
+                            <DropdownMenuItem onClick={onEdit} className="cursor-pointer focus:bg-theme-surface focus:text-theme-text">
                                 <Edit2 className="mr-2 h-4 w-4" />
                                 Edit Habit
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                                 onClick={() => setIsDeleteDialogOpen(true)} 
-                                className="cursor-pointer text-red-400 focus:bg-red-400/10 focus:text-red-400"
+                                className="cursor-pointer text-theme-danger focus:bg-theme-danger/10 focus:text-theme-danger"
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete Habit
@@ -76,21 +76,21 @@ export function HabitCard({
                     </DropdownMenu>
 
                     <ConfirmationDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                        <ConfirmationDialogContent className="bg-[#1e1b3a] border-0 text-white rounded-3xl p-8 sm:max-w-md flex flex-col items-center text-center shadow-2xl">
-                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10 mb-2 border border-red-500/20">
-                                <Trash2 className="h-8 w-8 text-red-400" />
+                        <ConfirmationDialogContent className="bg-theme-surface border-0 text-theme-text rounded-3xl p-8 sm:max-w-md flex flex-col items-center text-center shadow-2xl">
+                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-theme-danger/10 mb-2 border border-theme-danger/20">
+                                <Trash2 className="h-8 w-8 text-theme-danger" />
                             </div>
                             <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-4 text-center">
                                 <ConfirmationDialogTitle className="text-2xl font-bold tracking-tight text-center">Delete this habit?</ConfirmationDialogTitle>
-                                <ConfirmationDialogDescription className="text-base text-slate-300 text-center">
-                                    Your streak and all progress for <strong className="text-white font-semibold">{title}</strong> will be lost forever. This can't be undone.
+                                <ConfirmationDialogDescription className="text-base text-theme-text-soft text-center">
+                                    Your streak and all progress for <strong className="text-theme-text font-semibold">{title}</strong> will be lost forever. This can't be undone.
                                 </ConfirmationDialogDescription>
                             </ConfirmationDialogHeader>
                             <ConfirmationDialogFooter className="flex-col w-full gap-3 mt-8 sm:flex-col sm:space-x-0">
                                 <AlertDialogPrimitive.Cancel asChild>
                                     <Button 
                                         variant="outline"
-                                        className="w-full h-14 rounded-full bg-[#2a2746] border border-slate-700/50 text-white hover:bg-[#343155] hover:text-white mt-0 text-lg font-semibold"
+                                        className="w-full h-14 rounded-full bg-theme-surface-2 border border-theme-text/10 text-theme-text hover:bg-theme-surface-2/80 hover:text-theme-text mt-0 text-lg font-semibold"
                                     >
                                         Keep it
                                     </Button>
@@ -98,7 +98,7 @@ export function HabitCard({
                                 <AlertDialogPrimitive.Action asChild>
                                     <Button 
                                         onClick={onDelete}
-                                        className="w-full h-14 rounded-full bg-[#d65d53] hover:bg-[#c2534a] text-white text-lg font-semibold shadow-lg shadow-red-900/20"
+                                        className="w-full h-14 rounded-full bg-theme-danger hover:bg-theme-danger/85 text-white text-lg font-semibold shadow-lg shadow-red-900/20"
                                     >
                                         <Trash2 className="mr-2 h-5 w-5" /> Yes, delete habit
                                     </Button>

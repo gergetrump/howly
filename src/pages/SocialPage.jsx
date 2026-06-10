@@ -73,9 +73,9 @@ function getSocialErrorMessage(error, user) {
 
 function EmptyState({ children }) {
     return (
-        <Card className="border-white/10 bg-white/8 text-slate-200 shadow-xl shadow-slate-950/20 backdrop-blur">
+        <Card className="border-theme-text/10 bg-theme-text/8 text-theme-text shadow-xl shadow-black/20 backdrop-blur">
             <CardContent>
-                <p className="text-sm text-slate-300">{children}</p>
+                <p className="text-sm text-theme-text-soft">{children}</p>
             </CardContent>
         </Card>
     );
@@ -83,18 +83,18 @@ function EmptyState({ children }) {
 
 function FriendRequestCard({ request, busy, onAccept, onReject }) {
     return (
-        <Card className="border-white/10 bg-white/8 text-slate-100 shadow-xl shadow-slate-950/20 backdrop-blur">
+        <Card className="border-theme-text/10 bg-theme-text/8 text-theme-text shadow-xl shadow-black/20 backdrop-blur">
             <CardContent className="flex flex-wrap items-center gap-3">
                 <div className="min-w-0 flex-1">
                     <h3 className="truncate font-semibold">{getDisplayName(request.requester)}</h3>
-                    <p className="truncate text-sm text-slate-300">@{getUsername(request.requester)}</p>
+                    <p className="truncate text-sm text-theme-text-soft">@{getUsername(request.requester)}</p>
                 </div>
 
                 <div className="flex gap-2">
                     <Button
                         type="button"
                         size="icon"
-                        className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
+                        className="bg-theme-success text-theme-on-success hover:bg-theme-success/85"
                         aria-label="Accept friend request"
                         disabled={busy}
                         onClick={() => onAccept(request.id)}
@@ -104,7 +104,7 @@ function FriendRequestCard({ request, busy, onAccept, onReject }) {
                     <Button
                         type="button"
                         size="icon"
-                        className="border border-white/15 bg-white/10 text-slate-100 hover:bg-white/20"
+                        className="border border-theme-text/15 bg-theme-text/10 text-theme-text hover:bg-theme-text/20"
                         aria-label="Reject friend request"
                         disabled={busy}
                         onClick={() => onReject(request.id)}
@@ -129,16 +129,16 @@ function FriendActions({ friend, friendshipId, busy, onDelete }) {
                         type="button"
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 rounded-full text-slate-300 hover:bg-white/10 hover:text-white"
+                        className="h-8 w-8 rounded-full text-theme-text-soft hover:bg-theme-text/10 hover:text-theme-text"
                         aria-label={`Open actions for ${friendName}`}
                         disabled={busy}
                     >
                         <MoreVertical aria-hidden="true" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44 border-slate-800 bg-slate-950 text-slate-300">
+                <DropdownMenuContent align="end" className="w-44 border-theme-text/20 bg-theme-bg text-theme-text-soft">
                     <DropdownMenuItem
-                        className="cursor-pointer focus:bg-slate-800 focus:text-white"
+                        className="cursor-pointer focus:bg-theme-surface focus:text-theme-text"
                         onClick={() => setIsDeleteDialogOpen(true)}
                     >
                         <Trash2 className="mr-2 h-4 w-4" />
@@ -148,12 +148,12 @@ function FriendActions({ friend, friendshipId, busy, onDelete }) {
             </DropdownMenu>
 
             <ConfirmationDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <ConfirmationDialogContent className="border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl sm:max-w-md">
+                <ConfirmationDialogContent className="border-0 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
                     <ConfirmationDialogHeader className="space-y-3 text-center">
                         <ConfirmationDialogTitle className="text-xl font-bold">
                             Remove this friend?
                         </ConfirmationDialogTitle>
-                        <ConfirmationDialogDescription className="text-sm text-slate-300">
+                        <ConfirmationDialogDescription className="text-sm text-theme-text-soft">
                             Are you sure you want to remove this friend?
                         </ConfirmationDialogDescription>
                     </ConfirmationDialogHeader>
@@ -162,7 +162,7 @@ function FriendActions({ friend, friendshipId, busy, onDelete }) {
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="border-white/15 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                                className="border-theme-text/15 bg-theme-text/10 text-theme-text hover:bg-theme-text/20 hover:text-theme-text"
                             >
                                 Cancel
                             </Button>
@@ -170,7 +170,7 @@ function FriendActions({ friend, friendshipId, busy, onDelete }) {
                         <AlertDialogPrimitive.Action asChild>
                             <Button
                                 type="button"
-                                className="bg-red-500 text-white hover:bg-red-400"
+                                className="bg-theme-danger text-white hover:bg-theme-danger/85"
                                 disabled={busy}
                                 onClick={() => onDelete(friendshipId, friend)}
                             >
@@ -375,13 +375,13 @@ export function SocialPage() {
                     <Input
                         value={usernameQuery}
                         placeholder="Search username"
-                        className="border-white/20 bg-white/10 text-slate-50 placeholder:text-slate-300"
+                        className="border-theme-text/20 bg-theme-text/10 text-theme-text placeholder:text-theme-text-soft"
                         disabled={isSearching}
                         onChange={(event) => setUsernameQuery(event.target.value)}
                     />
                     <Button
                         type="submit"
-                        className="bg-white text-slate-950 hover:bg-slate-200"
+                        className="bg-theme-invert text-theme-invert-text hover:bg-theme-invert/85"
                         disabled={isSearching}
                     >
                         <Send aria-hidden="true" />
@@ -393,16 +393,16 @@ export function SocialPage() {
                         {searchResults.map((user) => (
                             <Card
                                 key={user.id}
-                                className="border-white/10 bg-white/8 text-slate-100 shadow-xl shadow-slate-950/20 backdrop-blur"
+                                className="border-theme-text/10 bg-theme-text/8 text-theme-text shadow-xl shadow-black/20 backdrop-blur"
                             >
                                 <CardContent className="flex flex-wrap items-center gap-3">
                                     <div className="min-w-0 flex-1">
                                         <h3 className="truncate font-semibold">{getDisplayName(user)}</h3>
-                                        <p className="truncate text-sm text-slate-300">@{getUsername(user)}</p>
+                                        <p className="truncate text-sm text-theme-text-soft">@{getUsername(user)}</p>
                                     </div>
                                     <Button
                                         type="button"
-                                        className="bg-white text-slate-950 hover:bg-slate-200"
+                                        className="bg-theme-invert text-theme-invert-text hover:bg-theme-invert/85"
                                         disabled={isSubmitting}
                                         onClick={() => handleSendFriendRequest(user)}
                                     >
@@ -414,7 +414,7 @@ export function SocialPage() {
                         ))}
                     </div>
                 ) : null}
-                {notice ? <p className="text-sm text-emerald-800">{notice}</p> : null}
+                {notice ? <p className="text-sm text-theme-success">{notice}</p> : null}
                 {error ? <p className="text-sm text-red-900">{error}</p> : null}
             </PageSection>
 

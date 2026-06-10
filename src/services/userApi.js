@@ -5,3 +5,10 @@ export function searchUsers(query) {
 
     return apiRequest(`/users/search?${params.toString()}`);
 }
+
+export function updateUserPreferences(preferences) {
+    return apiRequest('/users/me/preferences', {
+        method: 'PATCH',
+        body: JSON.stringify(preferences),
+    });
+}

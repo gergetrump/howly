@@ -25,10 +25,10 @@ export function ChallengeHabitPickerDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg rounded-2xl border-white/10 bg-[#1e1b3a] text-white">
+            <DialogContent className="sm:max-w-lg rounded-2xl border-theme-text/10 bg-theme-surface text-theme-text">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription className="text-slate-300">
+                    <DialogDescription className="text-theme-text-soft">
                         Habit for this challenge
                     </DialogDescription>
                 </DialogHeader>
@@ -39,13 +39,13 @@ export function ChallengeHabitPickerDialog({
                     onSelectHabitId={onSelectedHabitIdChange}
                 />
 
-                <DialogFooter className="border-white/10 bg-white/5">
+                <DialogFooter className="border-theme-text/10 bg-theme-text/5">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                         disabled={isSubmitting}
-                        className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+                        className="border-theme-text/20 bg-theme-text/10 text-theme-text hover:bg-theme-text/20"
                     >
                         Cancel
                     </Button>

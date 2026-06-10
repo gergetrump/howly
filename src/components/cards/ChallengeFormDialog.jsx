@@ -111,10 +111,10 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="sm:max-w-xl rounded-2xl border-white/10 bg-[#1e1b3a] text-white">
+            <DialogContent className="sm:max-w-xl rounded-2xl border-theme-text/10 bg-theme-surface text-theme-text">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Edit challenge' : 'Create challenge'}</DialogTitle>
-                    <DialogDescription className="text-slate-300">
+                    <DialogDescription className="text-theme-text-soft">
                         Challenge details
                     </DialogDescription>
                 </DialogHeader>
@@ -129,7 +129,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 onChange={(event) => updateField('title', event.target.value)}
                                 required
                                 maxLength={120}
-                                className="border-white/10 bg-white/10 text-white placeholder:text-slate-400"
+                                className="border-theme-text/10 bg-theme-text/10 text-theme-text placeholder:text-theme-text-muted"
                             />
                         </div>
 
@@ -152,7 +152,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 onChange={(event) => updateField('description', event.target.value)}
                                 rows={3}
                                 maxLength={500}
-                                className="w-full resize-none rounded-lg border border-white/10 bg-white/10 px-2.5 py-2 text-sm text-white outline-none placeholder:text-slate-400 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                                className="w-full resize-none rounded-lg border border-theme-text/10 bg-theme-text/10 px-2.5 py-2 text-sm text-theme-text outline-none placeholder:text-theme-text-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                             />
                         </div>
 
@@ -164,7 +164,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 value={form.startsAt}
                                 onChange={(event) => updateField('startsAt', event.target.value)}
                                 required
-                                className="border-white/10 bg-white/10 text-white [color-scheme:dark]"
+                                className="border-theme-text/10 bg-theme-text/10 text-theme-text [color-scheme:dark]"
                             />
                         </div>
 
@@ -177,13 +177,13 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 value={form.durationDays}
                                 onChange={(event) => updateField('durationDays', event.target.value)}
                                 required
-                                className="border-white/10 bg-white/10 text-white [color-scheme:dark]"
+                                className="border-theme-text/10 bg-theme-text/10 text-theme-text [color-scheme:dark]"
                             />
                         </div>
 
                         <div className="space-y-2">
                             <Label>Reward</Label>
-                            <div className="flex h-8 items-center rounded-lg border border-white/10 bg-white/10 px-2.5 text-sm text-white">
+                            <div className="flex h-8 items-center rounded-lg border border-theme-text/10 bg-theme-text/10 px-2.5 text-sm text-theme-text">
                                 {calculatedReward} coins
                             </div>
                         </div>
@@ -191,10 +191,10 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                         <div className="space-y-2">
                             <Label>Frequency</Label>
                             <Select value={form.frequency} onValueChange={(value) => updateField('frequency', value)}>
-                                <SelectTrigger className="h-9 w-full border-white/10 bg-white/10 text-white">
+                                <SelectTrigger className="h-9 w-full border-theme-text/10 bg-theme-text/10 text-theme-text">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="border-white/10 bg-[#1e1b3a] text-white">
+                                <SelectContent className="border-theme-text/10 bg-theme-surface text-theme-text">
                                     <SelectItem value="daily">Daily</SelectItem>
                                     <SelectItem value="weekly">Weekly</SelectItem>
                                     <SelectItem value="monthly">Monthly</SelectItem>
@@ -205,10 +205,10 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                         <div className="space-y-2">
                             <Label>Visibility</Label>
                             <Select value={form.visibility} onValueChange={(value) => updateField('visibility', value)}>
-                                <SelectTrigger className="h-9 w-full border-white/10 bg-white/10 text-white">
+                                <SelectTrigger className="h-9 w-full border-theme-text/10 bg-theme-text/10 text-theme-text">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="border-white/10 bg-[#1e1b3a] text-white">
+                                <SelectContent className="border-theme-text/10 bg-theme-surface text-theme-text">
                                     <SelectItem value="public">Public</SelectItem>
                                     <SelectItem value="friends">Friends</SelectItem>
                                 </SelectContent>
@@ -216,13 +216,13 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                         </div>
                     </div>
 
-                    <DialogFooter className="border-white/10 bg-white/5">
+                    <DialogFooter className="border-theme-text/10 bg-theme-text/5">
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => handleOpenChange(false)}
                             disabled={isSubmitting}
-                            className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+                            className="border-theme-text/20 bg-theme-text/10 text-theme-text hover:bg-theme-text/20"
                         >
                             Cancel
                         </Button>

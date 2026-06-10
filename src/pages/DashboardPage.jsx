@@ -109,7 +109,7 @@ export function DashboardPage() {
                         </HabitCard>
                     ))}
                     {todaysHabits.length === 0 && (
-                        <p className="text-sm text-slate-400 text-center py-4">No habits scheduled for today. Take a break!</p>
+                        <p className="text-sm text-theme-text-muted text-center py-4">No habits scheduled for today. Take a break!</p>
                     )}
                 </CardGrid>
             </PageSection>
@@ -118,12 +118,12 @@ export function DashboardPage() {
                 <button
                     type="button"
                     onClick={() => setAllHabitsOpen(prev => !prev)}
-                    className="flex w-full items-center justify-between rounded-xl bg-white/5 px-4 py-3 text-left transition-colors hover:bg-white/10"
+                    className="flex w-full items-center justify-between rounded-xl bg-theme-text/5 px-4 py-3 text-left transition-colors hover:bg-theme-text/10"
                 >
-                    <span className="text-base font-semibold text-white">All Habits <span className="text-sm font-normal text-slate-400">({habits.length})</span></span>
+                    <span className="text-base font-semibold text-theme-text">All Habits <span className="text-sm font-normal text-theme-text-muted">({habits.length})</span></span>
                     <ChevronDown
                         size={20}
-                        className={`text-slate-400 transition-transform duration-200 ${allHabitsOpen ? 'rotate-180' : ''}`}
+                        className={`text-theme-text-muted transition-transform duration-200 ${allHabitsOpen ? 'rotate-180' : ''}`}
                     />
                 </button>
                 {allHabitsOpen && (
@@ -142,7 +142,7 @@ export function DashboardPage() {
                                     />
                             ))}
                             {habits.length === 0 && (
-                                <p className="text-sm text-slate-400 text-center py-4">No habits yet. Click "Add Habit" to start!</p>
+                                <p className="text-sm text-theme-text-muted text-center py-4">No habits yet. Click "Add Habit" to start!</p>
                             )}
                         </CardGrid>
                     </div>

@@ -21,10 +21,10 @@ export function FriendCard({ name, username, streakDays, avatarSrc, action }) {
 
                 <div className="min-w-0 flex-1">
                     <h3 className="truncate font-semibold">{name}</h3>
-                    <p className="truncate text-sm text-slate-300">@{username}</p>
+                    <p className="truncate text-sm text-theme-text-soft">@{username}</p>
                 </div>
 
-                <Badge className="border border-white/15 bg-white/10 text-slate-100">{streakDays} days</Badge>
+                <Badge className="border border-theme-text/15 bg-theme-text/10 text-theme-text">{streakDays} days</Badge>
                 {action}
             </CardContent>
         </Card>

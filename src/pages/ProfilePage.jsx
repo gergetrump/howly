@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
-// import { ThemeToggle } from '@/components/brand/ThemeToggle.jsx';
+import { ThemePicker } from '@/components/common/ThemePicker.jsx';
 import { logoutUser } from '@/services/authService';
 import {
     uploadCurrentUserProfilePicture,
@@ -26,7 +26,7 @@ import { createCheckoutSession } from '@/services/paymentService';
 
 function SettingsRow({
     icon: Icon,
-    iconColor = 'text-slate-400',
+    iconColor = 'text-theme-text-muted',
     title,
     subtitle,
     onClick,
@@ -37,31 +37,31 @@ function SettingsRow({
             type="button"
             onClick={onClick}
             disabled={disabled}
-            className="flex w-full items-center justify-between border-b border-slate-700/50 bg-slate-800/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-slate-700/70 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-between border-b border-theme-text/10 bg-theme-surface/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-theme-surface-2/70 disabled:cursor-not-allowed disabled:opacity-60"
         >
             <div className="flex items-center gap-4">
                 <Icon className={`size-5 ${iconColor}`} />
                 <div>
-                    <p className="font-semibold text-white">{title}</p>
+                    <p className="font-semibold text-theme-text">{title}</p>
                     {subtitle && (
-                        <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
+                        <p className="mt-1 text-sm text-theme-text-muted">{subtitle}</p>
                     )}
                 </div>
             </div>
 
-            <ChevronRight className="size-5 text-slate-400" />
+            <ChevronRight className="size-5 text-theme-text-muted" />
         </button>
     );
 }
 
 function GhostModeRow() {
     return (
-        <div className="flex items-center justify-between rounded-2xl bg-slate-800/80 px-5 py-4">
+        <div className="flex items-center justify-between rounded-2xl bg-theme-surface/80 px-5 py-4">
             <div className="flex items-center gap-4">
-                <EyeOff className="size-5 text-slate-400" />
+                <EyeOff className="size-5 text-theme-text-muted" />
                 <div>
-                    <p className="font-semibold text-white">Ghost Mode</p>
-                    <p className="mt-1 text-sm text-slate-400">
+                    <p className="font-semibold text-theme-text">Ghost Mode</p>
+                    <p className="mt-1 text-sm text-theme-text-muted">
                         Hide your metrics from friends
                     </p>
                 </div>
@@ -69,10 +69,10 @@ function GhostModeRow() {
 
             <button
                 type="button"
-                className="flex h-7 w-12 items-center rounded-full bg-slate-600 px-1"
+                className="flex h-7 w-12 items-center rounded-full bg-theme-surface-2 px-1"
                 aria-label="Toggle ghost mode"
             >
-                <span className="size-5 rounded-full bg-white" />
+                <span className="size-5 rounded-full bg-theme-invert" />
             </button>
         </div>
     );
@@ -169,7 +169,7 @@ export function ProfilePage() {
                     subtitle="Manage your Howly account."
                     streakDays={0}
                 />
-                <p className="text-sm text-slate-300">Loading profile...</p>
+                <p className="text-sm text-theme-text-soft">Loading profile...</p>
             </Page>
         );
     }
@@ -182,7 +182,7 @@ export function ProfilePage() {
                     subtitle="Manage your Howly account."
                     streakDays={0}
                 />
-                <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                <p className="rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                     {error}
                 </p>
             </Page>
@@ -201,9 +201,9 @@ export function ProfilePage() {
                 streakDays={streak}
             />
 
-            <section className="rounded-2xl bg-slate-800/80 px-6 py-8 text-center shadow-lg">
+            <section className="rounded-2xl bg-theme-surface/80 px-6 py-8 text-center shadow-lg">
                 <div className="mx-auto flex flex-col items-center gap-3">
-                    <div className="flex size-24 items-center justify-center overflow-hidden rounded-full bg-slate-700">
+                    <div className="flex size-24 items-center justify-center overflow-hidden rounded-full bg-theme-surface-2">
                         {user?.profilePictureUrl ? (
                             <img
                                 src={user.profilePictureUrl}
@@ -216,7 +216,7 @@ export function ProfilePage() {
                     </div>
 
                     <div className="flex items-center justify-center gap-3">
-                        <label className="cursor-pointer rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">
+                        <label className="cursor-pointer rounded-xl bg-theme-success px-4 py-2 text-sm font-semibold text-theme-on-success hover:bg-theme-success/85">
                             {isUploadingPicture ? 'Uploading...' : 'Change picture'}
                             <input
                                 type="file"
@@ -231,38 +231,42 @@ export function ProfilePage() {
                             type="button"
                             onClick={handleDeleteProfilePicture}
                             disabled={isUploadingPicture || isDeletingPicture}
-                            className="rounded-xl bg-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-600 disabled:opacity-50"
+                            className="rounded-xl bg-theme-surface-2 px-4 py-2 text-sm font-semibold text-theme-text hover:bg-theme-surface-2 disabled:opacity-50"
                         >
                             {isDeletingPicture ? 'Removing...' : 'Remove'}
                         </button>
                     </div>
 
                     {pictureError && (
-                        <p className="text-sm text-red-300">{pictureError}</p>
+                        <p className="text-sm text-theme-danger">{pictureError}</p>
                     )}
                 </div>
 
-                <h2 className="mt-5 text-2xl font-bold text-white">{fullName}</h2>
-                <p className="mt-1 text-sm text-slate-400">@{username}</p>
+                <h2 className="mt-5 text-2xl font-bold text-theme-text">{fullName}</h2>
+                <p className="mt-1 text-sm text-theme-text-muted">@{username}</p>
 
                 <div className="mt-6 flex items-center justify-center gap-10">
                     <div>
-                        <div className="flex items-center justify-center gap-2 text-lg font-semibold text-white">
-                            <Flame className="size-5 text-yellow-300" />
+                        <div className="flex items-center justify-center gap-2 text-lg font-semibold text-theme-text">
+                            <Flame className="size-5 text-theme-gold" />
                             <span>{streak}</span>
                         </div>
-                        <p className="mt-1 text-sm text-slate-400">Day Streak</p>
+                        <p className="mt-1 text-sm text-theme-text-muted">Day Streak</p>
                     </div>
 
                     <div>
-                        <div className="flex items-center justify-center gap-2 text-lg font-semibold text-white">
-                            <Target className="size-5 text-emerald-400" />
+                        <div className="flex items-center justify-center gap-2 text-lg font-semibold text-theme-text">
+                            <Target className="size-5 text-theme-success" />
                             <span>{completed}</span>
                         </div>
-                        <p className="mt-1 text-sm text-slate-400">Completed</p>
+                        <p className="mt-1 text-sm text-theme-text-muted">Completed</p>
                     </div>
                 </div>
             </section>
+
+            <PageSection title="Appearance">
+                <ThemePicker />
+            </PageSection>
 
             <PageSection title="Privacy">
                 <GhostModeRow />
@@ -272,7 +276,7 @@ export function ProfilePage() {
                 <div className="overflow-hidden rounded-2xl">
                     <SettingsRow
                         icon={Crown}
-                        iconColor="text-yellow-400"
+                        iconColor="text-theme-gold"
                         title={isStartingCheckout ? 'Starting checkout...' : 'Upgrade to Premium'}
                         onClick={handleUpgradeToPremium}
                         disabled={isStartingCheckout}
@@ -281,7 +285,7 @@ export function ProfilePage() {
                     <SettingsRow icon={Lock} title="Privacy & Security" />
                 </div>
                 {premiumError && (
-                    <p className="mt-3 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                    <p className="mt-3 rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                         {premiumError}
                     </p>
                 )}
@@ -299,7 +303,7 @@ export function ProfilePage() {
                 <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-full rounded-2xl bg-red-500/90 px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-red-600"
+                    className="w-full rounded-2xl bg-theme-danger/90 px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-theme-danger"
                 >
                     Log out
                 </button>

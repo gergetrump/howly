@@ -57,13 +57,13 @@ function isUpgradeError(code) {
 function ChallengeAlert({ error, notice, onUpgrade }) {
     if (error) {
         return (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-300/30 bg-red-500/10 p-4 text-sm text-red-100">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-theme-danger/30 bg-theme-danger/10 p-4 text-sm text-theme-danger">
                 <span>{error.message}</span>
                 {isUpgradeError(error.code) ? (
                     <Button
                         type="button"
                         onClick={onUpgrade}
-                        className="bg-white text-slate-950 hover:bg-slate-200"
+                        className="bg-theme-invert text-theme-invert-text hover:bg-theme-invert/85"
                     >
                         Upgrade
                     </Button>
@@ -74,7 +74,7 @@ function ChallengeAlert({ error, notice, onUpgrade }) {
 
     if (notice) {
         return (
-            <div className="rounded-xl border border-emerald-300/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+            <div className="rounded-xl border border-theme-success/30 bg-theme-success/10 p-4 text-sm text-theme-success">
                 {notice}
             </div>
         );
@@ -264,12 +264,12 @@ export function ChallengesPage() {
                 onAction={openCreateDialog}
             >
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="w-full border border-white/10 bg-white/10 text-white">
+                    <TabsList className="w-full border border-theme-text/10 bg-theme-text/10 text-theme-text">
                         {CHALLENGE_TABS.map((tab) => (
                             <TabsTrigger
                                 key={tab.value}
                                 value={tab.value}
-                                className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                                className="text-theme-text/70 data-active:!bg-theme-text/20 data-active:!text-theme-text"
                             >
                                 {tab.label}
                             </TabsTrigger>
@@ -280,7 +280,7 @@ export function ChallengesPage() {
                 <ChallengeAlert error={error} notice={notice} onUpgrade={handleUpgradeClick} />
 
                 {isLoading ? (
-                    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+                    <div className="flex items-center gap-2 rounded-xl border border-theme-text/10 bg-theme-text/5 p-4 text-sm text-theme-text">
                         <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                         Loading challenges
                     </div>
@@ -321,7 +321,7 @@ export function ChallengesPage() {
                                                 type="button"
                                                 variant="outline"
                                                 disabled
-                                                className="border-white/20 bg-white/10 text-white"
+                                                className="border-theme-text/20 bg-theme-text/10 text-theme-text"
                                             >
                                                 Your challenge
                                             </Button>
@@ -330,7 +330,7 @@ export function ChallengesPage() {
                                                 variant="outline"
                                                 onClick={() => openEditDialog(challenge)}
                                                 disabled={!canEditChallenge(challenge)}
-                                                className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+                                                className="border-theme-text/20 bg-theme-text/10 text-theme-text hover:bg-theme-text/20"
                                             >
                                                 <Pencil className="size-4" aria-hidden="true" />
                                                 Edit
@@ -342,7 +342,7 @@ export function ChallengesPage() {
                                             type="button"
                                             variant="outline"
                                             disabled
-                                            className="border-white/20 bg-white/10 text-white"
+                                            className="border-theme-text/20 bg-theme-text/10 text-theme-text"
                                         >
                                             Active
                                         </Button>
@@ -363,7 +363,7 @@ export function ChallengesPage() {
                 ) : null}
 
                 {!isLoading && visibleChallenges.length === 0 && (activeTab !== 'active' || incomingInvitations.length === 0) ? (
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-sm text-slate-300">
+                    <div className="rounded-xl border border-theme-text/10 bg-theme-text/5 p-6 text-center text-sm text-theme-text-soft">
                         No challenges available.
                     </div>
                 ) : null}

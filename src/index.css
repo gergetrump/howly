@@ -7,8 +7,8 @@
 
 :root {
     font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-    color: #f5f5f5;
-    background: #1a1a2e;
+    color: var(--t-text, #f5f5f5);
+    background: var(--t-bg, #1a1a2e);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -69,17 +69,37 @@ body {
     --breakpoint-xl: 1280px;
     --breakpoint-2xl: 1536px;
     
-    /* Howly Environment Colors */
-    --color-howly-sky-top: #161623;
-    --color-howly-sky-bottom: #202033;
-    --color-howly-moon: #f5ecd8;
-    --color-howly-forest-back: #282842;
-    --color-howly-forest-front: #3b3b62;
-    --color-howly-trunk: #6b5c4d;
-    --color-howly-ground: #11111a;
-    --color-howly-ground-ridge: #1a1a2a;
-    --color-howly-card: #252538;
-    --color-howly-primary: #c084fc;
+    /* Howly Environment Colors (theme-driven, see [data-theme] blocks below) */
+    --color-howly-sky-top: var(--howly-sky-top);
+    --color-howly-sky-bottom: var(--howly-sky-bottom);
+    --color-howly-moon: var(--howly-moon);
+    --color-howly-forest-back: var(--howly-forest-back);
+    --color-howly-forest-front: var(--howly-forest-front);
+    --color-howly-trunk: var(--howly-trunk);
+    --color-howly-ground: var(--howly-ground);
+    --color-howly-ground-ridge: var(--howly-ground-ridge);
+    --color-howly-card: var(--howly-card);
+    --color-howly-primary: var(--howly-primary);
+    --color-howly-blossom: var(--howly-blossom);
+
+    /* Semantic Theme Tokens (theme-driven, see [data-theme] blocks below) */
+    --color-theme-bg: var(--t-bg);
+    --color-theme-surface: var(--t-surface);
+    --color-theme-surface-2: var(--t-surface-2);
+    --color-theme-text: var(--t-text);
+    --color-theme-text-soft: var(--t-text-soft);
+    --color-theme-text-muted: var(--t-text-muted);
+    --color-theme-accent: var(--t-accent);
+    --color-theme-accent-strong: var(--t-accent-strong);
+    --color-theme-accent-soft: var(--t-accent-soft);
+    --color-theme-on-accent: var(--t-on-accent);
+    --color-theme-success: var(--t-success);
+    --color-theme-on-success: var(--t-on-success);
+    --color-theme-danger: var(--t-danger);
+    --color-theme-love: var(--t-love);
+    --color-theme-gold: var(--t-gold);
+    --color-theme-invert: var(--t-invert);
+    --color-theme-invert-text: var(--t-invert-text);
 
     /* Howly Wolf Companion Colors */
     --color-wolf-body: #9eaac0;
@@ -175,4 +195,170 @@ body {
   html {
     @apply font-sans;
     }
+}
+
+/* Falling sakura petals (Sakura Light theme) */
+.howly-petal {
+    top: -20px;
+    background: var(--howly-blossom, #fff0f6);
+    border-radius: 60% 40% 60% 40%;
+    box-shadow: 0 0 4px rgb(244 143 184 / 0.35);
+    animation-name: howly-petal-fall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+@keyframes howly-petal-fall {
+    0% {
+        transform: translate3d(0, -5vh, 0) rotate(0deg);
+    }
+    50% {
+        transform: translate3d(var(--petal-drift, 20px), 50vh, 0) rotate(180deg);
+    }
+    100% {
+        transform: translate3d(calc(var(--petal-drift, 20px) * -0.5), 105vh, 0) rotate(360deg);
+    }
+}
+
+/* ============================================================
+   Howly Themes
+   Each theme overrides the raw variables consumed by the
+   @theme tokens above. Default: Forest Dark.
+   ============================================================ */
+
+:root,
+[data-theme='forest-dark'] {
+    /* Scene */
+    --howly-sky-top: #161623;
+    --howly-sky-bottom: #202033;
+    --howly-moon: #f5ecd8;
+    --howly-forest-back: #282842;
+    --howly-forest-front: #3b3b62;
+    --howly-trunk: #6b5c4d;
+    --howly-ground: #11111a;
+    --howly-ground-ridge: #1a1a2a;
+    --howly-card: #252538;
+    --howly-primary: #c084fc;
+    --howly-blossom: transparent;
+
+    /* Semantic */
+    --t-bg: #161623;
+    --t-surface: #252538;
+    --t-surface-2: #334155;
+    --t-text: #f8fafc;
+    --t-text-soft: #cbd5e1;
+    --t-text-muted: #94a3b8;
+    --t-accent: #a855f7;
+    --t-accent-strong: #7e22ce;
+    --t-accent-soft: #d8b4fe;
+    --t-on-accent: #ffffff;
+    --t-success: #34d399;
+    --t-on-success: #022c22;
+    --t-danger: #f87171;
+    --t-love: #f9a8d4;
+    --t-gold: #facc15;
+    --t-invert: #ffffff;
+    --t-invert-text: #020617;
+}
+
+[data-theme='sakura-light'] {
+    /* Scene — spring morning */
+    --howly-sky-top: #ffe3ee;
+    --howly-sky-bottom: #fff8f0;
+    --howly-moon: #ffd36b; /* the sun */
+    --howly-forest-back: #f3b9cf;
+    --howly-forest-front: #f48fb8;
+    --howly-trunk: #8d6e63;
+    --howly-ground: #dff0d4;
+    --howly-ground-ridge: #c8e3b8;
+    --howly-card: #ffffff;
+    --howly-primary: #ec4899;
+    --howly-blossom: #fff0f6;
+
+    /* Semantic */
+    --t-bg: #fdf3f7;
+    --t-surface: #ffffff;
+    --t-surface-2: #fce7f1;
+    --t-text: #432a3a;
+    --t-text-soft: #6d4a5e;
+    --t-text-muted: #a07b8e;
+    --t-accent: #ec4899;
+    --t-accent-strong: #be185d;
+    --t-accent-soft: #d1568f;
+    --t-on-accent: #ffffff;
+    --t-success: #16a34a;
+    --t-on-success: #ffffff;
+    --t-danger: #dc2626;
+    --t-love: #be185d;
+    --t-gold: #d97706;
+    --t-invert: #432a3a;
+    --t-invert-text: #ffffff;
+}
+
+[data-theme='sunset-warm'] {
+    /* Scene — golden hour */
+    --howly-sky-top: #2a1a30;
+    --howly-sky-bottom: #5a2c3c;
+    --howly-moon: #ffce8a;
+    --howly-forest-back: #4a2b40;
+    --howly-forest-front: #67384e;
+    --howly-trunk: #7a4a3a;
+    --howly-ground: #1d1320;
+    --howly-ground-ridge: #2e1c30;
+    --howly-card: #3a2433;
+    --howly-primary: #fb923c;
+    --howly-blossom: transparent;
+
+    /* Semantic */
+    --t-bg: #2a1a30;
+    --t-surface: #3a2433;
+    --t-surface-2: #4d3142;
+    --t-text: #fdf6ec;
+    --t-text-soft: #ecd5c0;
+    --t-text-muted: #c4a08a;
+    --t-accent: #fb923c;
+    --t-accent-strong: #ea580c;
+    --t-accent-soft: #fdba74;
+    --t-on-accent: #2a1207;
+    --t-success: #4ade80;
+    --t-on-success: #052e16;
+    --t-danger: #f87171;
+    --t-love: #f9a8d4;
+    --t-gold: #fde047;
+    --t-invert: #fdf6ec;
+    --t-invert-text: #2a1a30;
+}
+
+[data-theme='ocean-dark'] {
+    /* Scene — calm midnight ocean */
+    --howly-sky-top: #0a1628;
+    --howly-sky-bottom: #11263e;
+    --howly-moon: #e8f4ff;
+    --howly-forest-back: #16324a;
+    --howly-forest-front: #1f4866;
+    --howly-trunk: #4a5a6b;
+    --howly-ground: #060d18;
+    --howly-ground-ridge: #0f1d30;
+    --howly-card: #14283d;
+    --howly-primary: #38bdf8;
+    --howly-blossom: transparent;
+
+    /* Semantic */
+    --t-bg: #0a1628;
+    --t-surface: #14283d;
+    --t-surface-2: #1f3a54;
+    --t-text: #f0f7ff;
+    --t-text-soft: #bcd3e8;
+    --t-text-muted: #7e9cb8;
+    --t-accent: #38bdf8;
+    --t-accent-strong: #0284c7;
+    --t-accent-soft: #7dd3fc;
+    --t-on-accent: #04222e;
+    --t-success: #2dd4bf;
+    --t-on-success: #042f2e;
+    --t-danger: #f87171;
+    --t-love: #f9a8d4;
+    --t-gold: #facc15;
+    --t-invert: #f0f7ff;
+    --t-invert-text: #0a1628;
 }

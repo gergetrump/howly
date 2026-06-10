@@ -44,7 +44,7 @@ export function NavBar({
     return (
         <nav
             className={cn(
-                'fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-slate-950/95 px-4 py-4 text-white backdrop-blur',
+                'fixed inset-x-0 top-0 z-40 border-b border-theme-text/10 bg-theme-bg/95 px-4 py-4 text-theme-text backdrop-blur',
                 className,
             )}
             aria-label="Primary navigation"
@@ -57,7 +57,7 @@ export function NavBar({
                             alt=""
                             className={cn('object-contain', brandSizeClasses.image)}
                         />
-                        <span className={cn('font-bold tracking-normal text-white', brandSizeClasses.text)}>
+                        <span className={cn('font-bold tracking-normal text-theme-text', brandSizeClasses.text)}>
                             Howly
                         </span>
                     </Link>
@@ -72,8 +72,8 @@ export function NavBar({
                                     to={item.to}
                                     className={({ isActive }) =>
                                         cn(
-                                    'flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm font-medium text-slate-400 transition hover:bg-white/10 hover:text-white sm:px-4 sm:text-base',
-                                            isActive && 'bg-pink-500/15 text-pink-100 ring-1 ring-pink-300/20',
+                                    'flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm font-medium text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text sm:px-4 sm:text-base',
+                                            isActive && 'bg-theme-love/15 text-theme-love ring-1 ring-theme-love/20',
                                         )
                                     }
                                 >
@@ -92,8 +92,8 @@ export function NavBar({
                             to={profileItem.to}
                             className={({ isActive }) =>
                                 cn(
-                                    'flex size-12 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white',
-                                    isActive && 'bg-pink-500/15 text-pink-100 ring-1 ring-pink-300/20',
+                                    'flex size-12 items-center justify-center rounded-full text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text',
+                                    isActive && 'bg-theme-love/15 text-theme-love ring-1 ring-theme-love/20',
                                 )
                             }
                             aria-label="Profile"

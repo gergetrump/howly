@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 const FEATURES = [
     {
         icon: CircleCheckBig,
-        iconColor: 'text-orange-400',
+        iconColor: 'text-theme-gold',
         iconBg: 'bg-orange-400/15',
         title: 'Set your habits',
         description:
@@ -23,7 +23,7 @@ const FEATURES = [
     },
     {
         icon: Image,
-        iconColor: 'text-indigo-400',
+        iconColor: 'text-theme-accent',
         iconBg: 'bg-indigo-400/15',
         title: 'Log & share',
         description:
@@ -31,8 +31,8 @@ const FEATURES = [
     },
     {
         icon: Users,
-        iconColor: 'text-yellow-400',
-        iconBg: 'bg-yellow-400/15',
+        iconColor: 'text-theme-gold',
+        iconBg: 'bg-theme-gold/15',
         title: 'Connect',
         description:
             'Stay accountable through friendly challenges, or toggle Ghost Mode to go solo for the day.',
@@ -56,7 +56,7 @@ function FeatureCard({ icon: Icon, iconColor, iconBg, title, description }) {
         <Card
             className={cn(
                 appCardClassName,
-                'group relative border-slate-700/50 transition-all duration-300 hover:border-howly-primary/40 hover:shadow-howly-primary/10 hover:shadow-lg',
+                'group relative border-theme-text/10 transition-all duration-300 hover:border-howly-primary/40 hover:shadow-howly-primary/10 hover:shadow-lg',
             )}
         >
             <CardContent className="flex flex-col gap-4 pt-2">
@@ -69,8 +69,8 @@ function FeatureCard({ icon: Icon, iconColor, iconBg, title, description }) {
                     <Icon className={cn('size-6', iconColor)} aria-hidden="true" />
                 </div>
                 <div className="space-y-2">
-                    <h3 className="text-lg font-semibold text-white">{title}</h3>
-                    <p className="text-sm leading-relaxed text-slate-400">{description}</p>
+                    <h3 className="text-lg font-semibold text-theme-text">{title}</h3>
+                    <p className="text-sm leading-relaxed text-theme-text-muted">{description}</p>
                 </div>
             </CardContent>
         </Card>
@@ -92,7 +92,7 @@ export function LandingPage() {
                 {/* Logo */}
                 <Link
                     to="/"
-                    className="flex items-center gap-2 text-xl font-bold text-white transition-opacity hover:opacity-80"
+                    className="flex items-center gap-2 text-xl font-bold text-theme-text transition-opacity hover:opacity-80"
                 >
                     <img src={howlyIcon} alt="" className="size-8 object-contain" />
                     <span className="font-heading tracking-tight">Howly</span>
@@ -102,13 +102,13 @@ export function LandingPage() {
                 <div className="flex items-center gap-3">
                     <Button
                         variant="ghost"
-                        className="text-slate-300 hover:text-white"
+                        className="text-theme-text-soft hover:text-theme-text"
                         asChild
                     >
                         <Link to="/login">Log in</Link>
                     </Button>
                     <Button
-                        className="bg-howly-primary text-white hover:opacity-90 transition-opacity"
+                        className="bg-howly-primary text-theme-text hover:opacity-90 transition-opacity"
                         asChild
                     >
                         <Link to="/register">Sign up</Link>
@@ -122,23 +122,23 @@ export function LandingPage() {
             >
                 {/* Left: Copy */}
                 <div className="flex flex-col gap-6">
-                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-theme-text-muted">
                         Habits, but with a friend who howls back
                     </p>
-                    <h1 className="text-4xl font-bold leading-tight tracking-tight text-white xs:text-5xl md:text-5xl lg:text-6xl">
+                    <h1 className="text-4xl font-bold leading-tight tracking-tight text-theme-text xs:text-5xl md:text-5xl lg:text-6xl">
                         Build the routine.{' '}
                         <span className="bg-gradient-to-r from-howly-primary to-pink-400 bg-clip-text text-transparent">
                             with your pack.
                         </span>
                     </h1>
-                    <p className="max-w-md text-sm xs:text-base leading-relaxed text-slate-400 md:text-lg">
+                    <p className="max-w-md text-sm xs:text-base leading-relaxed text-theme-text-muted md:text-lg">
                         Howly is a gamified, social habit tracker — right in your browser. Open a
                         tab, log your day with one click, run challenges with friends, and your
                         cosmic wolf companion motivates you.
                     </p>
                     <div className="flex items-center gap-4">
                         <Button
-                            className="h-12 rounded-full bg-howly-primary px-8 text-base font-semibold text-white shadow-lg shadow-howly-primary/25 transition-all hover:opacity-90 hover:shadow-xl hover:-translate-y-0.5"
+                            className="h-12 rounded-full bg-howly-primary px-8 text-base font-semibold text-theme-text shadow-lg shadow-howly-primary/25 transition-all hover:opacity-90 hover:shadow-xl hover:-translate-y-0.5"
                             asChild
                         >
                             <Link to="/register">Let&apos;s get started</Link>
@@ -165,7 +165,7 @@ export function LandingPage() {
                     <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-howly-primary">
                         How Howly works
                     </p>
-                    <h2 className="text-2xl xs:text-3xl font-bold tracking-tight text-white md:text-4xl">
+                    <h2 className="text-2xl xs:text-3xl font-bold tracking-tight text-theme-text md:text-4xl">
                         Four steps, one good habit.
                     </h2>
                 </div>

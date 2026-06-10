@@ -36,11 +36,11 @@ export function Heading({
     const sizeClasses = topBarSizes[size] ?? topBarSizes.md;
 
     return (
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-theme-text/10 pb-5">
             <div className="min-w-0">
-                <h1 className={cn('truncate font-bold text-white', sizeClasses.title)}>{title}</h1>
+                <h1 className={cn('truncate font-bold text-theme-text', sizeClasses.title)}>{title}</h1>
                 {subtitle ? (
-                    <p className={cn('text-slate-300', sizeClasses.subtitleSpacing, sizeClasses.subtitle)}>
+                    <p className={cn('text-theme-text-soft', sizeClasses.subtitleSpacing, sizeClasses.subtitle)}>
                         {subtitle}
                     </p>
                 ) : null}

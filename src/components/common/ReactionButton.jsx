@@ -6,8 +6,8 @@ export function ReactionButton({ liked = false, count = 0, label = 'Like post', 
         <button
             type="button"
             className={cn(
-                'inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium text-slate-100 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-200',
-                liked && 'bg-pink-500/15 text-pink-100',
+                'inline-flex items-center gap-2 rounded-lg bg-theme-text/10 px-3 py-2 text-sm font-medium text-theme-text transition hover:bg-theme-text/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-200',
+                liked && 'bg-theme-love/15 text-theme-love',
                 className,
             )}
             aria-label={label}
