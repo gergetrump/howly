@@ -12,6 +12,7 @@ import { getItems } from '@/services/itemApi';
 const shopCategories = [
     { label: 'All', value: 'all' },
     { label: 'Clothing', value: 'clothing' },
+    { label: 'Shoes', value: 'shoes' },
     { label: 'Accessories', value: 'accessory' },
     { label: 'Power Ups', value: 'powerUp' },
 ];
@@ -20,7 +21,7 @@ export function ShopPage() {
     const { user } = useAuth();
     const [items, setItems] = useState([]);
     const [ownedItemIds, setOwnedItemIds] = useState(new Set());
-    const [previewItemId, setPreviewItemId] = useState(null);
+    const [previewItems, setPreviewItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [buyingItemId, setBuyingItemId] = useState(null);
     const [notice, setNotice] = useState('');
@@ -61,9 +62,9 @@ export function ShopPage() {
         };
     }, []);
 
-    const previewItem = useMemo(
-        () => items.find((item) => item._id === previewItemId),
-        [items, previewItemId],
+    const previewItemKeys = useMemo(
+        () => previewItems.map((item) => item.assetKey).filter(Boolean),
+        [previewItems],
     );
 
     const filteredItems = useMemo(
@@ -73,10 +74,35 @@ export function ShopPage() {
         [activeCategory, items],
     );
 
+    function isItemPreviewed(itemId) {
+        return previewItems.some((item) => item._id === itemId);
+    }
+
     function handleTryOnItem(itemId) {
+        const item = items.find((shopItem) => shopItem._id === itemId);
+
+        if (!item) {
+            return;
+        }
+
         setNotice('');
         setError('');
-        setPreviewItemId(itemId);
+        setPreviewItems((currentPreviewItems) => {
+            const isAlreadyPreviewed = currentPreviewItems.some((previewItem) => previewItem._id === item._id);
+
+            if (isAlreadyPreviewed) {
+                return currentPreviewItems.filter((previewItem) => previewItem._id !== item._id);
+            }
+
+            if (item.type === 'clothing' || item.type === 'shoes') {
+                return [
+                    ...currentPreviewItems.filter((previewItem) => previewItem.type !== item.type),
+                    item,
+                ];
+            }
+
+            return [...currentPreviewItems, item];
+        });
     }
 
     async function handleBuyItem(item) {
@@ -115,7 +141,7 @@ export function ShopPage() {
                     name="Howly"
                     size="xl"
                     showName
-                    previewItemKey={previewItem?.assetKey}
+                    previewItemKeys={previewItemKeys}
                 />
             </section>
 
@@ -162,7 +188,7 @@ export function ShopPage() {
                                         className="h-9 px-3 text-sm"
                                         onClick={() => handleTryOnItem(item._id)}
                                     >
-                                        Try on
+                                        {isItemPreviewed(item._id) ? 'Remove' : 'Try on'}
                                     </ActionButton>
                                     <ActionButton
                                         type="button"

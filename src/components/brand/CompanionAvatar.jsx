@@ -1,4 +1,4 @@
-import { renderCompanionItemLayer } from '@/components/brand/items/itemRegistry';
+import { orderCompanionItemKeys, renderCompanionItemLayer } from '@/components/brand/items/itemRegistry';
 import { cn } from '@/lib/utils';
 
 const sizeClasses = {
@@ -18,10 +18,11 @@ export function CompanionAvatar({
                                     size = 'lg',
                                     showName = false,
                                     previewItemKey,
+                                    previewItemKeys = [],
                                     equippedItemKeys = [],
                                     className,
                                 }) {
-    const itemKeys = [...equippedItemKeys, previewItemKey].filter(Boolean);
+    const itemKeys = orderCompanionItemKeys([...equippedItemKeys, ...previewItemKeys, previewItemKey].filter(Boolean));
 
     return (
         <figure className={cn('flex flex-col items-center gap-2 overflow-visible', className)}>
