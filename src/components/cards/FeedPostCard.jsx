@@ -10,7 +10,6 @@ export function FeedPostCard({
     companionName,
     companionAvatarSrc,
     companionSrc,
-    milestoneEyebrow,
     milestoneTitle,
     children,
 }) {
