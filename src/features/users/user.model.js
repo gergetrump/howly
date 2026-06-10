@@ -72,7 +72,14 @@ const userSchema = new Schema(
     stripeSubscriptionId: String,
     premiumStatus: String, // active, canceled, past_due, unpaid
     premiumUntil: Date,
-    
+    // User preferences (extensible for future settings)
+    preferences: {
+      theme: {
+        type: String,
+        enum: ["forest-dark", "sakura-light", "sunset-warm", "ocean-dark"],
+        default: "forest-dark",
+      },
+    },
     isEmailVerified: {
       type: Boolean,
       default: false,

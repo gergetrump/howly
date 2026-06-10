@@ -2,9 +2,10 @@ import { Router } from 'express';
 import {
     getCurrentUser, 
     getCurrentUserPlan,
-    updateCurrentUser, 
+    updateCurrentUser,
     updateCurrentUserNotificationPreferences,
-    deleteCurrentUser, 
+    updateCurrentUserPreferences,
+    deleteCurrentUser,
     completeOnboarding,
     uploadCurrentUserProfilePicture,
     deleteCurrentUserProfilePicture,
@@ -25,6 +26,7 @@ router.get('/me/plan', getCurrentUserPlan);
 router.get('/me', getCurrentUser);
 router.patch('/me', updateCurrentUser);
 router.patch('/me/notification-preferences', updateCurrentUserNotificationPreferences);
+router.patch('/me/preferences', updateCurrentUserPreferences);
 router.post('/me/complete-onboarding', completeOnboarding);
 router.delete('/me', deleteCurrentUser);
 

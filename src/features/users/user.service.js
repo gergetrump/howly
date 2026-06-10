@@ -125,6 +125,16 @@ export async function updateUserById(userId, updates) {
     return { user };
 }
 
+// Update user preferences (e.g. theme) using dot-notation updates
+export async function updateUserPreferences(userId, updates) {
+    const user = await User.findByIdAndUpdate(userId, { $set: updates }, {
+        returnDocument: 'after',
+        runValidators: true,
+    });
+
+    return { user };
+}
+
 // Strip sensitive fields before sending user data to clients
 export function toPublicUser(user) {
     if (!user) {
@@ -156,6 +166,9 @@ export function toPublicUser(user) {
         ghostMode: user.ghostMode ?? false,
         premiumStatus: user.premiumStatus,
         premiumUntil: user.premiumUntil,
+        preferences: {
+            theme: user.preferences?.theme ?? 'forest-dark',
+        },
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
     };
