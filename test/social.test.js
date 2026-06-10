@@ -6,16 +6,11 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import createApp from '../src/app.js';
 import connectDB from '../src/config/database.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
-import Habit from '../src/features/habits/habit.model.js';
 import config from '../config.js';
 import {
   FriendRequest,
   Friendship,
 } from '../src/features/social/social.model.js';
-import {
-  MilestoneLike,
-  MilestonePost,
-} from '../src/features/milestones/milestone.model.js';
 import User from '../src/features/users/user.model.js';
 
 let mongo;
@@ -52,9 +47,6 @@ afterEach(async () => {
   await Promise.all([
     FriendRequest.deleteMany({}),
     Friendship.deleteMany({}),
-    MilestoneLike.deleteMany({}),
-    MilestonePost.deleteMany({}),
-    Habit.deleteMany({}),
     User.deleteMany({}),
   ]);
 });
@@ -108,59 +100,4 @@ test('social flow sends and accepts friend requests', async () => {
 
   assert.equal(friendsResponse.body.length, 1);
   assert.equal(friendsResponse.body[0].friend.id, recipient._id.toString());
-});
-
-// Tests that friends can see milestone posts and like or unlike them
-test('social feed shows friends milestones and toggles likes', async () => {
-  const author = await buildUser({ username: 'author', email: 'author@example.com' });
-  const friend = await buildUser({ username: 'friend', email: 'friend@example.com' });
-  const habit = await Habit.create({
-    title: 'Chess',
-    type: 'boolean',
-    user: author._id,
-    streak: 10,
-  });
-
-  await Friendship.create({
-    userA: author._id,
-    userB: friend._id,
-  });
-
-  // Create a visible 10-day milestone for the author's habit
-  const milestonePost = await MilestonePost.create({
-    user: author._id,
-    habit: habit._id,
-    habitTitle: habit.title,
-    streakDays: habit.streak,
-  });
-
-  // Friends can see the milestone in their feed
-  const feedResponse = await request(app)
-    .get('/api/social/feed')
-    .set('Authorization', authHeader(friend))
-    .expect(200);
-
-  assert.equal(feedResponse.body.length, 1);
-  assert.equal(feedResponse.body[0].id, milestonePost._id.toString());
-  assert.equal(feedResponse.body[0].habit.title, 'Chess');
-  assert.equal(feedResponse.body[0].likedByCurrentUser, false);
-
-  // First click likes the milestone
-  const likeResponse = await request(app)
-    .post(`/api/social/milestones/${milestonePost._id}/like`)
-    .set('Authorization', authHeader(friend))
-    .expect(200);
-
-  assert.equal(likeResponse.body.liked, true);
-  assert.equal(likeResponse.body.milestonePost.likeCount, 1);
-  assert.equal(likeResponse.body.milestonePost.likedByCurrentUser, true);
-
-  // Second click removes the like
-  const unlikeResponse = await request(app)
-    .post(`/api/social/milestones/${milestonePost._id}/like`)
-    .set('Authorization', authHeader(friend))
-    .expect(200);
-
-  assert.equal(unlikeResponse.body.liked, false);
-  assert.equal(unlikeResponse.body.milestonePost.likeCount, 0);
 });

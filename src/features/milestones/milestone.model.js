@@ -71,6 +71,13 @@ const milestoneLikeSchema = new Schema(
       required: true,
       index: true,
     },
+    emoji: {
+      type: String,
+      required: true,
+      default: '❤️',
+      trim: true,
+      maxlength: 8,
+    },
   },
   {
     timestamps: true,

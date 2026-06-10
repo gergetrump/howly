@@ -1,5 +1,6 @@
 import Habit from './habit.model.js';
 import { ApiError } from '../../errors/ApiError.js';
+import { createMilestonePostForHabit } from '../milestones/milestone.service.js';
 import { recordProgressForHabit } from '../challenges/challenge.service.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -138,6 +139,19 @@ function toHabitDto(habit) {
     };
 }
 
+function toMilestoneDto(milestonePost) {
+    if (!milestonePost) {
+        return null;
+    }
+
+    return {
+        id: milestonePost._id.toString(),
+        habitTitle: milestonePost.habitTitle,
+        streakDays: milestonePost.streakDays,
+        visibleUntil: milestonePost.visibleUntil,
+    };
+}
+
 // ─── Service Functions ──────────────────────────────────────────────
 
 /**
@@ -258,9 +272,13 @@ export async function completeHabit(habitId, userId) {
 
     habit.lastCompletedAt = new Date();
     await habit.save();
+    const { milestonePost } = await createMilestonePostForHabit(habit);
     await recordProgressForHabit({ userId, habitId: habit._id });
 
-    return toHabitDto(habit);
+    return {
+        habit: toHabitDto(habit),
+        milestonePost: toMilestoneDto(milestonePost),
+    };
 }
 
 /**
