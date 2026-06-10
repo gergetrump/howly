@@ -1,4 +1,5 @@
 import * as milestoneService from './milestone.service.js';
+import { getFriendFeedStories } from '../stories/story.service.js';
 import { validateMilestonePostId } from './milestone.validation.js';
 
 const badRequest = (res, message, code) => {
@@ -11,8 +12,17 @@ const badRequest = (res, message, code) => {
   return res.status(400).json(body);
 };
 
+// Mixed feed: milestones + stories from the user and their friends, newest first
 export async function getFriendFeed(req, res) {
-  const feed = await milestoneService.getFriendFeed({ userId: req.user.id });
+  const [milestones, stories] = await Promise.all([
+    milestoneService.getFriendFeed({ userId: req.user.id }),
+    getFriendFeedStories({ userId: req.user.id }),
+  ]);
+
+  const feed = [
+    ...milestones.map((post) => ({ type: 'milestone', ...post })),
+    ...stories.map((story) => ({ type: 'story', ...story })),
+  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return res.status(200).json(feed);
 }

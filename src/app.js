@@ -10,6 +10,7 @@ import itemRoutes from './features/items/item.routes.js';
 import inventoryRoutes from './features/inventory/inventory.routes.js';
 import { errorMiddleware } from './middleware/error.middleware.js';
 import challengeRoutes from './features/challenges/challenge.routes.js';
+import storyRoutes from './features/stories/story.routes.js';
 import { handleStripeWebhook } from './payment/payment.controller.js';
 import paymentRoutes from './payment/payment.routes.js';
 
@@ -57,6 +58,7 @@ export default function createApp() {
     app.use('/api/challenges', challengeRoutes);
     app.use('/api/items', itemRoutes);
     app.use('/api/inventory', inventoryRoutes);
+    app.use('/api/stories', storyRoutes);
 
     // Central error handling
     app.use(errorMiddleware);
