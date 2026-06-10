@@ -15,3 +15,18 @@ export function validateUserItemId(id) {
 
     return { value: id };
 }
+
+export function validateSaveOutfitInput(body = {}) {
+    if (!Array.isArray(body.equippedUserItemIds)) {
+        return { error: 'equippedUserItemIds must be an array' };
+    }
+
+    const uniqueUserItemIds = [...new Set(body.equippedUserItemIds)];
+    const invalidId = uniqueUserItemIds.find((userItemId) => !mongoose.Types.ObjectId.isValid(userItemId));
+
+    if (invalidId) {
+        return { error: 'equippedUserItemIds must contain only valid ObjectIds' };
+    }
+
+    return { value: { equippedUserItemIds: uniqueUserItemIds } };
+}

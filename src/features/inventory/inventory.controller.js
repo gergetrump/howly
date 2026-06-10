@@ -1,6 +1,10 @@
 import * as inventoryService from './inventory.service.js';
 import { INVENTORY_ERROR_CODES } from './inventory.service.js';
-import { validateBuyItemInput, validateUserItemId } from './inventory.validation.js';
+import {
+    validateBuyItemInput,
+    validateSaveOutfitInput,
+    validateUserItemId,
+} from './inventory.validation.js';
 
 const statusByErrorCode = {
     [INVENTORY_ERROR_CODES.ITEM_NOT_FOUND]: 404,
@@ -9,6 +13,8 @@ const statusByErrorCode = {
     [INVENTORY_ERROR_CODES.ITEM_ALREADY_OWNED]: 409,
     [INVENTORY_ERROR_CODES.PREMIUM_REQUIRED]: 403,
     [INVENTORY_ERROR_CODES.NOT_ENOUGH_COINS]: 400,
+    [INVENTORY_ERROR_CODES.OUTFIT_ITEM_NOT_OWNED]: 400,
+    [INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT]: 400,
 };
 
 export async function listMyInventory(req, res) {
@@ -50,6 +56,32 @@ export async function equipItem(req, res) {
 
 export async function unequipItem(req, res) {
     return setEquipped(req, res, false);
+}
+
+export async function saveOutfit(req, res) {
+    const { error, value } = validateSaveOutfitInput(req.body);
+
+    if (error) {
+        return res.status(400).json({ message: error });
+    }
+
+    try {
+        const inventory = await inventoryService.saveOutfit({
+            userId: req.user.id,
+            equippedUserItemIds: value.equippedUserItemIds,
+        });
+
+        return res.status(200).json(inventory);
+    } catch (serviceError) {
+        if (serviceError.code && statusByErrorCode[serviceError.code]) {
+            return res.status(statusByErrorCode[serviceError.code]).json({
+                message: 'Inventory action failed',
+                code: serviceError.code,
+            });
+        }
+
+        throw serviceError;
+    }
 }
 
 export async function buyItem(req, res) {

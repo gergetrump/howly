@@ -6,6 +6,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import createApp from '../src/app.js';
 import connectDB from '../src/config/database.js';
 import Companion from '../src/features/companion/companion.model.js';
+import Item from '../src/features/items/item.model.js';
+import UserItem from '../src/features/inventory/inventory.model.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
 import Habit from '../src/features/habits/habit.model.js';
 import config from '../config.js';
@@ -65,6 +67,8 @@ afterEach(async () => {
     MilestoneLike.deleteMany({}),
     MilestonePost.deleteMany({}),
     Companion.deleteMany({}),
+    Item.deleteMany({}),
+    UserItem.deleteMany({}),
     Habit.deleteMany({}),
     User.deleteMany({}),
   ]);
@@ -84,6 +88,30 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   const friend = await buildUser({ username: 'friend', email: 'friend@example.com' });
   const habit = await buildHabit(author, { title: 'Chess', streakCount: 10 });
   const companion = await Companion.create({ user: author._id, name: 'Luna' });
+  const hoodie = await Item.create({
+    name: 'Cozy Hoodie',
+    type: 'clothing',
+    price: 300,
+    assetKey: 'hoodie',
+  });
+  const glasses = await Item.create({
+    name: 'Glasses',
+    type: 'accessory',
+    price: 180,
+    assetKey: 'glasses',
+  });
+  const cup = await Item.create({
+    name: 'Cup',
+    type: 'accessory',
+    price: 120,
+    assetKey: 'cup',
+  });
+
+  await UserItem.create([
+    { user: author._id, item: hoodie._id, equipped: true },
+    { user: author._id, item: glasses._id, equipped: true },
+    { user: author._id, item: cup._id, equipped: false },
+  ]);
 
   await Friendship.create({
     userA: author._id,
@@ -111,6 +139,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(feedResponse.body[0].habit.icon, '🎯');
   assert.equal(feedResponse.body[0].companion.id, companion._id.toString());
   assert.equal(feedResponse.body[0].companion.name, 'Luna');
+  assert.deepEqual(feedResponse.body[0].companion.equippedItemKeys.sort(), ['glasses', 'hoodie']);
   assert.equal(feedResponse.body[0].likedByCurrentUser, false);
   assert.equal(feedResponse.body[0].currentUserReaction, null);
   assert.deepEqual(feedResponse.body[0].reactionCounts, []);
@@ -136,6 +165,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(firstReactionResponse.body.milestonePost.habit.frequency, 'Daily');
   assert.equal(firstReactionResponse.body.milestonePost.habit.icon, '🎯');
   assert.equal(firstReactionResponse.body.milestonePost.companion.name, 'Luna');
+  assert.deepEqual(firstReactionResponse.body.milestonePost.companion.equippedItemKeys.sort(), ['glasses', 'hoodie']);
 
   // Choosing another emoji changes the user's single reaction
   const changedReactionResponse = await request(app)
@@ -166,6 +196,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(removedReactionResponse.body.milestonePost.habit.frequency, 'Daily');
   assert.equal(removedReactionResponse.body.milestonePost.habit.icon, '🎯');
   assert.equal(removedReactionResponse.body.milestonePost.companion.name, 'Luna');
+  assert.deepEqual(removedReactionResponse.body.milestonePost.companion.equippedItemKeys.sort(), ['glasses', 'hoodie']);
 });
 
 // Tests that milestone posts are created only for 10-day streak intervals
@@ -194,6 +225,14 @@ test('milestone creation only creates posts at 10-day streak intervals', async (
 // Tests that checking in a 9-day habit creates the 10-day milestone through the real habit route
 test('habit check-in creates a milestone when streak reaches 10 days', async () => {
   const author = await buildUser({ username: 'checkin_author', email: 'checkin-author@example.com' });
+  await Companion.create({ user: author._id, name: 'Howly' });
+  const hoodie = await Item.create({
+    name: 'Check-in Hoodie',
+    type: 'clothing',
+    price: 300,
+    assetKey: 'checkin-hoodie',
+  });
+  await UserItem.create({ user: author._id, item: hoodie._id, equipped: true });
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const habit = await buildHabit(author, {
@@ -208,8 +247,9 @@ test('habit check-in creates a milestone when streak reaches 10 days', async () 
     .expect(200);
 
   assert.equal(checkInResponse.body.data.streakCount, 10);
-  assert.equal(checkInResponse.body.milestonePost.habitTitle, 'Reading');
+  assert.equal(checkInResponse.body.milestonePost.habit.title, 'Reading');
   assert.equal(checkInResponse.body.milestonePost.streakDays, 10);
+  assert.deepEqual(checkInResponse.body.milestonePost.companion.equippedItemKeys, ['checkin-hoodie']);
 
   const milestonePost = await MilestonePost.findOne({
     habit: habit._id,
@@ -282,6 +322,38 @@ test('social feed only shows visible milestones from self and friends', async ()
   assert.ok(feedPostIds.includes(visibleFriendPost._id.toString()));
   assert.ok(feedPostIds.includes(ownPost._id.toString()));
   assert.ok(feedResponse.body.every((post) => post.visibleUntil));
+});
+
+// Tests that outfit keys are returned even when the user has no companion document yet
+test('social feed includes equipped outfit with default companion data', async () => {
+  const currentUser = await buildUser({ username: 'default_companion_viewer', email: 'default-viewer@example.com' });
+  const friend = await buildUser({ username: 'default_companion_friend', email: 'default-friend@example.com' });
+  const habit = await buildHabit(friend, { title: 'Reading', streakCount: 10 });
+  const glasses = await Item.create({
+    name: 'Default Glasses',
+    type: 'accessory',
+    price: 180,
+    assetKey: 'default-glasses',
+  });
+
+  await Friendship.create({ userA: currentUser._id, userB: friend._id });
+  await UserItem.create({ user: friend._id, item: glasses._id, equipped: true });
+  await MilestonePost.create({
+    user: friend._id,
+    habit: habit._id,
+    habitTitle: habit.title,
+    streakDays: 10,
+  });
+
+  const feedResponse = await request(app)
+    .get('/api/social/feed')
+    .set('Authorization', authHeader(currentUser))
+    .expect(200);
+
+  assert.equal(feedResponse.body.length, 1);
+  assert.equal(feedResponse.body[0].companion.id, null);
+  assert.equal(feedResponse.body[0].companion.name, 'Howly');
+  assert.deepEqual(feedResponse.body[0].companion.equippedItemKeys, ['default-glasses']);
 });
 
 // Tests that users can like their own milestones but cannot like a stranger's milestone
