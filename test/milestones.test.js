@@ -114,6 +114,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(feedResponse.body[0].likedByCurrentUser, false);
   assert.equal(feedResponse.body[0].currentUserReaction, null);
   assert.deepEqual(feedResponse.body[0].reactionCounts, []);
+  assert.deepEqual(feedResponse.body[0].reactions, []);
 
   // First reaction adds the selected emoji
   const firstReactionResponse = await request(app)
@@ -127,6 +128,11 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(firstReactionResponse.body.milestonePost.likedByCurrentUser, true);
   assert.equal(firstReactionResponse.body.milestonePost.currentUserReaction, '🎉');
   assert.deepEqual(firstReactionResponse.body.milestonePost.reactionCounts, [{ emoji: '🎉', count: 1 }]);
+  assert.equal(firstReactionResponse.body.milestonePost.reactions.length, 1);
+  assert.equal(firstReactionResponse.body.milestonePost.reactions[0].emoji, '🎉');
+  assert.equal(firstReactionResponse.body.milestonePost.reactions[0].user.id, friend._id.toString());
+  assert.equal(firstReactionResponse.body.milestonePost.reactions[0].user.username, 'friend');
+  assert.equal(firstReactionResponse.body.milestonePost.reactions[0].user.email, undefined);
   assert.equal(firstReactionResponse.body.milestonePost.habit.frequency, 'Daily');
   assert.equal(firstReactionResponse.body.milestonePost.habit.icon, '🎯');
   assert.equal(firstReactionResponse.body.milestonePost.companion.name, 'Luna');
@@ -142,6 +148,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(changedReactionResponse.body.milestonePost.likeCount, 1);
   assert.equal(changedReactionResponse.body.milestonePost.currentUserReaction, '🔥');
   assert.deepEqual(changedReactionResponse.body.milestonePost.reactionCounts, [{ emoji: '🔥', count: 1 }]);
+  assert.equal(changedReactionResponse.body.milestonePost.reactions[0].emoji, '🔥');
   assert.equal(await MilestoneLike.countDocuments({ milestonePost: milestonePost._id, user: friend._id }), 1);
 
   // Clicking the same emoji again removes the reaction
@@ -155,6 +162,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(removedReactionResponse.body.milestonePost.likeCount, 0);
   assert.equal(removedReactionResponse.body.milestonePost.currentUserReaction, null);
   assert.deepEqual(removedReactionResponse.body.milestonePost.reactionCounts, []);
+  assert.deepEqual(removedReactionResponse.body.milestonePost.reactions, []);
   assert.equal(removedReactionResponse.body.milestonePost.habit.frequency, 'Daily');
   assert.equal(removedReactionResponse.body.milestonePost.habit.icon, '🎯');
   assert.equal(removedReactionResponse.body.milestonePost.companion.name, 'Luna');
