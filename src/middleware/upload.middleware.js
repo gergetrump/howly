@@ -27,3 +27,11 @@ export const uploadProfilePicture = multer({
         fileSize: 2 * 1024 * 1024, // 2 MB
     },
 });
+
+export const uploadStoryImage = multer({
+    storage: multer.memoryStorage(),
+    fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5 MB — photos can be larger
+    },
+});
