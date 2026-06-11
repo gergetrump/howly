@@ -15,6 +15,7 @@ import {
 
 import { Page, PageSection, Heading } from '@/components/layout';
 import { StoryArchive } from '@/components/stories/StoryArchive.jsx';
+import { PremiumUpgradeDialog } from '@/components/common';
 // import { ThemeToggle } from '@/components/brand/ThemeToggle.jsx';
 import { logoutUser } from '@/services/authService';
 import {
@@ -25,20 +26,11 @@ import { useAuth } from '@/context/authContext';
 import { createCheckoutSession } from '@/services/paymentService';
 
 
-function SettingsRow({
-    icon: Icon,
-    iconColor = 'text-slate-400',
-    title,
-    subtitle,
-    onClick,
-    disabled = false,
-}) {
+function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle }) {
     return (
         <button
             type="button"
-            onClick={onClick}
-            disabled={disabled}
-            className="flex w-full items-center justify-between border-b border-slate-700/50 bg-slate-800/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-slate-700/70 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-between border-b border-slate-700/50 bg-slate-800/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-slate-700/70"
         >
             <div className="flex items-center gap-4">
                 <Icon className={`size-5 ${iconColor}`} />
@@ -114,6 +106,7 @@ export function ProfilePage() {
             setIsStartingCheckout(false);
         }
     }
+    const [premiumPrompt, setPremiumPrompt] = useState('');
 
     async function handleLogout() {
         try {
@@ -193,6 +186,7 @@ export function ProfilePage() {
     const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Howly User'; const username = user?.username || 'unknown';
     const streak = user?.streak ?? 0;
     const completed = user?.completedHabits ?? 0;
+    const isPremium = user?.isPremium === true || user?.role === 'admin';
 
     return (
         <Page theme="forest">
@@ -278,9 +272,10 @@ export function ProfilePage() {
                     <SettingsRow
                         icon={Crown}
                         iconColor="text-yellow-400"
-                        title={isStartingCheckout ? 'Starting checkout...' : 'Upgrade to Premium'}
-                        onClick={handleUpgradeToPremium}
-                        disabled={isStartingCheckout}
+                        title={isPremium ? 'Premium active' : 'Upgrade to Premium'}
+                        subtitle={isPremium ? 'Your premium benefits are enabled' : undefined}
+                        disabled={isPremium}
+                        onClick={() => setPremiumPrompt('Upgrade to Premium to unlock more habits, challenges, monthly coins, streak shields, and premium shop items.')}
                     />
                     <SettingsRow icon={Bell} title="Notifications" />
                     <SettingsRow icon={Lock} title="Privacy & Security" />
@@ -309,6 +304,16 @@ export function ProfilePage() {
                     Log out
                 </button>
             </PageSection>
+
+            <PremiumUpgradeDialog
+                open={Boolean(premiumPrompt)}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setPremiumPrompt('');
+                    }
+                }}
+                message={premiumPrompt}
+            />
         </Page>
     );
 }

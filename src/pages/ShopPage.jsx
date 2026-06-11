@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ActionButton, CardGrid } from '@/components/common';
-import { ItemCard } from '@/components/cards';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { ActionButton, ActionStack, CardGrid, PremiumUpgradeDialog } from '@/components/common';
+import { ShopItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
 import { renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
@@ -8,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/authContext';
 import { buyItem, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
+import { getCurrentUser } from '@/services/userService';
 
 const shopCategories = [
     { label: 'All', value: 'all' },
@@ -18,7 +20,8 @@ const shopCategories = [
 ];
 
 export function ShopPage() {
-    const { user } = useAuth();
+    const { user, setUser } = useAuth();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [items, setItems] = useState([]);
     const [ownedItemIds, setOwnedItemIds] = useState(new Set());
     const [previewItems, setPreviewItems] = useState([]);
@@ -27,6 +30,89 @@ export function ShopPage() {
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
+    const [premiumPrompt, setPremiumPrompt] = useState('');
+    const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
+
+    const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
+
+    const restorePremiumReturnItem = useCallback(() => {
+        const returnItemId = window.sessionStorage.getItem(PREMIUM_RETURN_ITEM_STORAGE_KEY);
+
+        if (returnItemId) {
+            setPreviewItemId(returnItemId);
+            window.sessionStorage.removeItem(PREMIUM_RETURN_ITEM_STORAGE_KEY);
+        }
+    }, []);
+
+    const refreshCurrentUser = useCallback(async () => {
+        const currentUser = await getCurrentUser();
+        const refreshedUser = currentUser.user ?? currentUser;
+        setUser(refreshedUser);
+
+        return refreshedUser;
+    }, [setUser]);
+
+    useEffect(() => {
+        const paymentStatus = searchParams.get('payment');
+
+        if (!paymentStatus) {
+            return undefined;
+        }
+
+        let isCurrent = true;
+        let retryTimerId;
+
+        async function refreshPremiumStatus() {
+            if (paymentStatus === 'cancelled') {
+                restorePremiumReturnItem();
+                setError('Premium checkout was cancelled.');
+                setSearchParams({}, { replace: true });
+                return;
+            }
+
+            if (paymentStatus !== 'success') {
+                return;
+            }
+
+            setNotice('Payment received. Updating your premium status...');
+            setError('');
+            restorePremiumReturnItem();
+
+            const refreshedUser = await refreshCurrentUser();
+
+            if (!isCurrent) {
+                return;
+            }
+
+            if (refreshedUser?.isPremium) {
+                setNotice('Premium is active. Welcome to Howly Premium.');
+                setSearchParams({}, { replace: true });
+                return;
+            }
+
+            retryTimerId = window.setTimeout(async () => {
+                const retryUser = await refreshCurrentUser();
+
+                if (!isCurrent) {
+                    return;
+                }
+
+                setNotice(
+                    retryUser?.isPremium
+                        ? 'Premium is active. Welcome to Howly Premium.'
+                        : 'Payment received. Premium status is still being confirmed.',
+                );
+                setSearchParams({}, { replace: true });
+            }, 1500);
+        }
+
+        refreshPremiumStatus();
+
+        return () => {
+            isCurrent = false;
+            window.clearTimeout(retryTimerId);
+        };
+    }, [refreshCurrentUser, restorePremiumReturnItem, searchParams, setSearchParams]);
 
     useEffect(() => {
         let isCurrent = true;
@@ -122,9 +208,21 @@ export function ShopPage() {
             if (buyError.code === 'ITEM_ALREADY_OWNED') {
                 setError(`${item.name} is already in your inventory`);
             } else if (buyError.code === 'PREMIUM_REQUIRED') {
-                setError(`${item.name} is premium only`);
+                if (isFreeUser) {
+                    setPreviewItemId(item._id);
+                    setPremiumReturnItemId(item._id);
+                    setPremiumPrompt(`${item.name} is a premium item. Upgrade to buy premium shop items and get monthly bonus coins.`);
+                } else {
+                    setError(`${item.name} is premium only`);
+                }
             } else if (buyError.code === 'NOT_ENOUGH_COINS') {
-                setError(`You do not have enough moon coins for ${item.name}`);
+                if (isFreeUser) {
+                    setPreviewItemId(item._id);
+                    setPremiumReturnItemId(item._id);
+                    setPremiumPrompt(`You do not have enough moon coins for ${item.name}. Premium gives you 300 moon coins every month.`);
+                } else {
+                    setError(`You do not have enough moon coins for ${item.name}`);
+                }
             } else {
                 setError('Buying this item did not work');
             }
@@ -206,6 +304,21 @@ export function ShopPage() {
                     <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
                 </div>
             </PageSection>
+
+            <PremiumUpgradeDialog
+                open={Boolean(premiumPrompt)}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setPremiumPrompt('');
+                    }
+                }}
+                message={premiumPrompt}
+                onBeforeCheckout={() => {
+                    if (premiumReturnItemId) {
+                        window.sessionStorage.setItem(PREMIUM_RETURN_ITEM_STORAGE_KEY, premiumReturnItemId);
+                    }
+                }}
+            />
         </Page>
     );
 }
