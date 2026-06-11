@@ -21,7 +21,7 @@ import {
     deleteCurrentUserProfilePicture,
 } from '@/services/userService';
 import { useAuth } from '@/context/authContext';
-import { createCheckoutSession } from '@/services/paymentService';
+import { createCheckoutSession, createManagePremiumSession } from '@/services/paymentService';
 
 
 function SettingsRow({
@@ -161,6 +161,19 @@ export function ProfilePage() {
         }
     }
 
+    async function handleManagePremium() {
+        try {
+            const response = await createManagePremiumSession();
+            
+            if (!response?.url) {
+                throw new Error('Manage premium session did not include a URL');
+            }
+
+            window.location.href = response.url;
+        } catch {
+            console.error('Could not start checkout:', error);
+    }
+
     if (isLoadingUser) {
         return (
             <Page theme="forest">
@@ -270,13 +283,24 @@ export function ProfilePage() {
 
             <PageSection title="Account">
                 <div className="overflow-hidden rounded-2xl">
-                    <SettingsRow
-                        icon={Crown}
-                        iconColor="text-yellow-400"
-                        title={isStartingCheckout ? 'Starting checkout...' : 'Upgrade to Premium'}
-                        onClick={handleUpgradeToPremium}
-                        disabled={isStartingCheckout}
-                    />
+
+                    {user?.isPremium ? (
+                        <SettingsRow
+                            icon={Crown}
+                            iconColor="text-yellow-400"
+                            title='Manage your Premium Subscription'
+                            onClick={handleManagePremium}
+                            />  
+                    ) : (
+                        <SettingsRow
+                            icon={Crown}
+                            iconColor="text-yellow-400"
+                            title={isStartingCheckout ? 'Starting checkout...' : 'Upgrade to Premium'}
+                            onClick={handleUpgradeToPremium}
+                            disabled={isStartingCheckout}
+                        />  
+                    )};
+
                     <SettingsRow icon={Bell} title="Notifications" />
                     <SettingsRow icon={Lock} title="Privacy & Security" />
                 </div>
@@ -306,4 +330,5 @@ export function ProfilePage() {
             </PageSection>
         </Page>
     );
+}
 }
