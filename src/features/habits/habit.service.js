@@ -169,31 +169,6 @@ async function assertCanCreateHabits(userId, requestedHabitCount = 1) {
     throw new ApiError(403, 'HABIT_LIMIT_REACHED', message);
 }
 
-async function assertCanCreateHabits(userId, requestedHabitCount = 1) {
-    const user = await User.findOne({ _id: userId, isDeleted: false })
-        .select('role isPremium')
-        .lean();
-
-    if (!user) {
-        throw ApiError.notFound('User not found.');
-    }
-
-    const plan = getPlanForUser(user);
-    const currentHabitCount = await Habit.countDocuments({ ownerId: userId });
-    const nextHabitCount = currentHabitCount + requestedHabitCount;
-
-    if (nextHabitCount <= plan.limits.maxHabits) {
-        return;
-    }
-
-    const premiumHabitLimit = getPlanForUser({ isPremium: true }).limits.maxHabits;
-    const message = plan.key === PLAN_KEYS.PREMIUM
-        ? `Premium plan can create up to ${plan.limits.maxHabits} habits.`
-        : `Free plan can create up to ${plan.limits.maxHabits} habits. Upgrade to premium for up to ${premiumHabitLimit} habits.`;
-
-    throw new ApiError(403, 'HABIT_LIMIT_REACHED', message);
-}
-
 // ─── Service Functions ──────────────────────────────────────────────
 
 /**
