@@ -8,8 +8,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
     ConfirmationDialog,
-    ConfirmationDialogAction,
-    ConfirmationDialogCancel,
     ConfirmationDialogContent,
     ConfirmationDialogDescription,
     ConfirmationDialogFooter,

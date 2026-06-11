@@ -3,7 +3,7 @@
  *
  * Public pages such as landing, login, and registration are rendered inside
  * the AuthLayout. Application pages such as dashboard, social, shop,
- * challenges, and profile are grouped under ProtectedRoute and PageLayout.
+ * inventory, challenges, and profile are grouped under ProtectedRoute and PageLayout.
  *
  * The actual page implementations are intentionally kept separate in
  * src/pages so routing, layout, and page content stay clearly separated.
@@ -20,6 +20,7 @@ import { VerifyEmailPage } from '@/pages/VerifyEmailPage.jsx';
 import { DashboardPage } from '@/pages/dashboardPage';
 import { SocialPage } from '@/pages/SocialPage.jsx';
 import { ShopPage } from '@/pages/shopPage';
+import { InventoryPage } from '@/pages/InventoryPage.jsx';
 import { ChallengesPage } from '@/pages/ChallengesPage.jsx';
 import { ProfilePage } from '@/pages/profilePage';
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
@@ -42,6 +43,7 @@ export function AppRoutes() {
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/social" element={<SocialPage />} />
                     <Route path="/shop" element={<ShopPage />} />
+                    <Route path="/inventory" element={<InventoryPage />} />
                     <Route path="/challenges" element={<ChallengesPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                 </Route>

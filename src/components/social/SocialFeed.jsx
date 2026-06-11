@@ -60,11 +60,12 @@ export function SocialFeed({
                                 key={`milestone-${post.id}`}
                                 authorName={getDisplayName(post.user)}
                                 authorUsername={getUsername(post.user)}
-                                authorAvatarSrc={post.user?.profilePictureUrl}
-                                meta={formatRelativeTime(post.createdAt)}
-                                companionName={post.companion?.name || 'Howly'}
-                                milestoneTitle={buildMilestoneTitle(post)}
-                            >
+                            authorAvatarSrc={post.user?.profilePictureUrl}
+                            meta={formatRelativeTime(post.createdAt)}
+                            companionName={post.companion?.name || 'Howly'}
+                            companionEquippedItemKeys={post.companion?.equippedItemKeys ?? []}
+                            milestoneTitle={buildMilestoneTitle(post)}
+                        >
                                 <MilestoneReactionPicker
                                     post={post}
                                     busy={busyPostId === post.id}
