@@ -1,8 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Minus, ShoppingCart, X } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
-import { ActionButton, ActionStack, CardGrid, PremiumUpgradeDialog } from '@/components/common';
-import { ShopItemCard } from '@/components/cards';
+import { useEffect, useMemo, useState } from 'react';
+import { ActionButton, CardGrid } from '@/components/common';
+import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import { renderShopItemVisual } from '@/components/brand/items/itemRegistry';
@@ -30,7 +28,14 @@ import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import { buyItem, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
-import { getCurrentUser } from '@/services/userService';
+
+const shopCategories = [
+    { label: 'All', value: 'all' },
+    { label: 'Clothing', value: 'clothing' },
+    { label: 'Shoes', value: 'shoes' },
+    { label: 'Accessories', value: 'accessory' },
+    { label: 'Power Ups', value: 'powerUp' },
+];
 
 export function ShopPage() {
     const { user, setUser } = useAuth();
@@ -302,10 +307,16 @@ export function ShopPage() {
                     setPremiumReturnItemId(item._id);
                     setPremiumPrompt(`${item.name} is a premium item. Upgrade to buy premium shop items and get monthly bonus coins.`);
                 } else {
-                    setError('One of these items is premium only');
+                    setError(`${item.name} is premium only`);
                 }
             } else if (buyError.code === 'NOT_ENOUGH_COINS') {
-                setError(`You do not have enough moon coins for ${item.name}`);
+                if (isFreeUser) {
+                    setPreviewItemId(item._id);
+                    setPremiumReturnItemId(item._id);
+                    setPremiumPrompt(`You do not have enough moon coins for ${item.name}. Premium gives you 300 moon coins every month.`);
+                } else {
+                    setError(`You do not have enough moon coins for ${item.name}`);
+                }
             } else {
                 setError('Buying these items did not work');
             }
