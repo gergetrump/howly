@@ -128,7 +128,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
 
   // Friends can see the milestone in their feed
   const feedResponse = await request(app)
-    .get('/api/social/feed')
+    .get('/api/milestones/feed')
     .set('Authorization', authHeader(friend))
     .expect(200);
 
@@ -147,7 +147,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
 
   // First reaction adds the selected emoji
   const firstReactionResponse = await request(app)
-    .post(`/api/social/milestones/${milestonePost._id}/like`)
+    .post(`/api/milestones/${milestonePost._id}/like`)
     .set('Authorization', authHeader(friend))
     .send({ emoji: '🎉' })
     .expect(200);
@@ -169,7 +169,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
 
   // Choosing another emoji changes the user's single reaction
   const changedReactionResponse = await request(app)
-    .post(`/api/social/milestones/${milestonePost._id}/like`)
+    .post(`/api/milestones/${milestonePost._id}/like`)
     .set('Authorization', authHeader(friend))
     .send({ emoji: '🔥' })
     .expect(200);
@@ -183,7 +183,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
 
   // Clicking the same emoji again removes the reaction
   const removedReactionResponse = await request(app)
-    .post(`/api/social/milestones/${milestonePost._id}/like`)
+    .post(`/api/milestones/${milestonePost._id}/like`)
     .set('Authorization', authHeader(friend))
     .send({ emoji: '🔥' })
     .expect(200);
@@ -312,7 +312,7 @@ test('social feed only shows visible milestones from self and friends', async ()
   });
 
   const feedResponse = await request(app)
-    .get('/api/social/feed')
+    .get('/api/milestones/feed')
     .set('Authorization', authHeader(currentUser))
     .expect(200);
 
@@ -346,7 +346,7 @@ test('social feed includes equipped outfit with default companion data', async (
   });
 
   const feedResponse = await request(app)
-    .get('/api/social/feed')
+    .get('/api/milestones/feed')
     .set('Authorization', authHeader(currentUser))
     .expect(200);
 
@@ -376,7 +376,7 @@ test('milestone likes allow own milestones and reject non-friend milestones', as
   });
 
   const ownLikeResponse = await request(app)
-    .post(`/api/social/milestones/${ownPost._id}/like`)
+    .post(`/api/milestones/${ownPost._id}/like`)
     .set('Authorization', authHeader(currentUser))
     .send({ emoji: '💜' })
     .expect(200);
@@ -387,7 +387,7 @@ test('milestone likes allow own milestones and reject non-friend milestones', as
   assert.equal(ownLikeResponse.body.milestonePost.currentUserReaction, '💜');
 
   const strangerLikeResponse = await request(app)
-    .post(`/api/social/milestones/${strangerPost._id}/like`)
+    .post(`/api/milestones/${strangerPost._id}/like`)
     .set('Authorization', authHeader(currentUser))
     .send({ emoji: '💜' })
     .expect(400);
