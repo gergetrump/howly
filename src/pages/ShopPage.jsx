@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ActionButton, CardGrid } from '@/components/common';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Minus, ShoppingCart, X } from 'lucide-react';
+import { ActionButton, CardGrid, PremiumUpgradeDialog } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
@@ -28,14 +30,9 @@ import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import { buyItem, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
+import { getCurrentUser } from '@/services/userService';
 
-const shopCategories = [
-    { label: 'All', value: 'all' },
-    { label: 'Clothing', value: 'clothing' },
-    { label: 'Shoes', value: 'shoes' },
-    { label: 'Accessories', value: 'accessory' },
-    { label: 'Power Ups', value: 'powerUp' },
-];
+const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
 
 export function ShopPage() {
     const { user, setUser } = useAuth();
@@ -60,7 +57,7 @@ export function ShopPage() {
         const returnItemId = window.sessionStorage.getItem(PREMIUM_RETURN_ITEM_STORAGE_KEY);
 
         if (returnItemId) {
-            setPreviewItemId(returnItemId);
+            setPremiumReturnItemId(returnItemId);
             window.sessionStorage.removeItem(PREMIUM_RETURN_ITEM_STORAGE_KEY);
         }
     }, []);
@@ -196,6 +193,33 @@ export function ShopPage() {
         [activeCategory, items],
     );
 
+    useEffect(() => {
+        if (!premiumReturnItemId || items.length === 0) {
+            return undefined;
+        }
+
+        const returnItem = items.find((item) => item._id === premiumReturnItemId);
+
+        if (!returnItem) {
+            return undefined;
+        }
+
+        const restoreTimerId = window.setTimeout(() => {
+            setActiveCategory(returnItem.type ?? 'all');
+            setPreviewItems((currentPreviewItems) => (
+                currentPreviewItems.some((item) => item._id === returnItem._id)
+                    ? currentPreviewItems
+                    : addSelectedItem(currentPreviewItems, returnItem)
+            ));
+            document
+                .querySelector(`[data-shop-item-id="${returnItem._id}"]`)
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setPremiumReturnItemId('');
+        }, 0);
+
+        return () => window.clearTimeout(restoreTimerId);
+    }, [items, premiumReturnItemId]);
+
     function isItemInCart(itemId) {
         return cartItems.some((item) => item._id === itemId);
     }
@@ -269,9 +293,11 @@ export function ShopPage() {
         setNotice('');
         setError('');
         const purchasedItems = [];
+        let failedItem = null;
 
         try {
             for (const item of itemsForPurchase) {
+                failedItem = item;
                 await buyItem(item._id);
                 purchasedItems.push(item);
             }
@@ -303,19 +329,17 @@ export function ShopPage() {
                 setError('One of these items is already in your inventory');
             } else if (buyError.code === 'PREMIUM_REQUIRED') {
                 if (isFreeUser) {
-                    setPreviewItemId(item._id);
-                    setPremiumReturnItemId(item._id);
-                    setPremiumPrompt(`${item.name} is a premium item. Upgrade to buy premium shop items and get monthly bonus coins.`);
+                    setPremiumReturnItemId(failedItem?._id ?? '');
+                    setPremiumPrompt(`${failedItem?.name ?? 'This item'} is a premium item. Upgrade to buy premium shop items and get monthly bonus coins.`);
                 } else {
-                    setError(`${item.name} is premium only`);
+                    setError(`${failedItem?.name ?? 'This item'} is premium only`);
                 }
             } else if (buyError.code === 'NOT_ENOUGH_COINS') {
                 if (isFreeUser) {
-                    setPreviewItemId(item._id);
-                    setPremiumReturnItemId(item._id);
-                    setPremiumPrompt(`You do not have enough moon coins for ${item.name}. Premium gives you 300 moon coins every month.`);
+                    setPremiumReturnItemId(failedItem?._id ?? '');
+                    setPremiumPrompt(`You do not have enough moon coins for ${failedItem?.name ?? 'this item'}. Premium gives you 300 moon coins every month.`);
                 } else {
-                    setError(`You do not have enough moon coins for ${item.name}`);
+                    setError(`You do not have enough moon coins for ${failedItem?.name ?? 'this item'}`);
                 }
             } else {
                 setError('Buying these items did not work');
@@ -391,34 +415,35 @@ export function ShopPage() {
                     <div className="max-h-[25rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
                         <CardGrid columns={4} className="pb-8">
                             {filteredItems.map((item) => (
-                                <ItemCard
-                                    key={item._id}
-                                    name={item.name}
-                                    price={item.price}
-                                    premiumOnly={item.premiumOnly}
-                                    owned={ownedItemIds.has(item._id)}
-                                    showOwnedBadge={false}
-                                    dense
-                                    visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
-                                >
-                                    <ActionButton
-                                        type="button"
-                                        fullWidth
-                                        className="h-8 px-3 text-xs"
-                                        onClick={() => handleTryOnItem(item._id)}
+                                <div key={item._id} data-shop-item-id={item._id}>
+                                    <ItemCard
+                                        name={item.name}
+                                        price={item.price}
+                                        premiumOnly={item.premiumOnly}
+                                        owned={ownedItemIds.has(item._id)}
+                                        showOwnedBadge={false}
+                                        dense
+                                        visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
                                     >
-                                        {isItemPreviewed(item._id) || isItemInCart(item._id) ? 'Remove' : 'Try on'}
-                                    </ActionButton>
-                                    <ActionButton
-                                        type="button"
-                                        fullWidth
-                                        className="h-8 px-3 text-xs"
-                                        disabled={ownedItemIds.has(item._id) || buyingItemId === item._id}
-                                        onClick={() => openBuyConfirmation([item])}
-                                    >
-                                        {ownedItemIds.has(item._id) ? 'Owned' : 'Buy'}
-                                    </ActionButton>
-                                </ItemCard>
+                                        <ActionButton
+                                            type="button"
+                                            fullWidth
+                                            className="h-8 px-3 text-xs"
+                                            onClick={() => handleTryOnItem(item._id)}
+                                        >
+                                            {isItemPreviewed(item._id) || isItemInCart(item._id) ? 'Remove' : 'Try on'}
+                                        </ActionButton>
+                                        <ActionButton
+                                            type="button"
+                                            fullWidth
+                                            className="h-8 px-3 text-xs"
+                                            disabled={ownedItemIds.has(item._id) || buyingItemId === item._id}
+                                            onClick={() => openBuyConfirmation([item])}
+                                        >
+                                            {ownedItemIds.has(item._id) ? 'Owned' : 'Buy'}
+                                        </ActionButton>
+                                    </ItemCard>
+                                </div>
                             ))}
                         </CardGrid>
                     </div>

@@ -46,6 +46,7 @@ const DAYS_OF_WEEK = [
 ];
 
 export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, existingHabits = [] }) {
+    const { user } = useAuth();
     const [name, setName] = useState('');
     const [icon, setIcon] = useState('🎯');
     const [target, setTarget] = useState(1);
@@ -56,6 +57,15 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
     const [category, setCategory] = useState('');
     const [customCategory, setCustomCategory] = useState('');
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
+    const [formError, setFormError] = useState('');
+    const [premiumPrompt, setPremiumPrompt] = useState('');
+    const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
+    const dynamicCategories = [...new Set([
+        ...(existingHabits?.map(h => h.category).filter(Boolean) || []),
+        editHabit?.category
+    ].filter(Boolean))];
+    const ALL_CATEGORIES = [...new Set([...CATEGORIES, ...dynamicCategories])];
+    const SELECTABLE_CATEGORIES = [...ALL_CATEGORIES, 'Custom'];
 
     // Effect to pre-fill form when editHabit is passed
     useEffect(() => {
@@ -64,7 +74,17 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             setTarget(editHabit.target || 1);
             setIcon(editHabit.icon || '🎯');
             setFrequency(editHabit.frequency || '');
-            setCategory(editHabit.category || '');
+            if (ALL_CATEGORIES.includes(editHabit.category)) {
+                setCategory(editHabit.category);
+                setCustomCategory('');
+            } else if (editHabit.category) {
+                setCategory('Custom');
+                setCustomCategory(editHabit.category);
+            } else {
+                setCategory('');
+            }
+            setCustomDays(editHabit.customDays || []);
+            setFormError('');
             
             if (UNITS.includes(editHabit.unit)) {
                 setUnit(editHabit.unit);
