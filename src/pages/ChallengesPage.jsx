@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader2, Pencil } from 'lucide-react';
-import { ActionButton, CardGrid } from '@/components/common';
+import { ActionButton, CardGrid, PremiumUpgradeDialog } from '@/components/common';
 import { ChallengeCard } from '@/components/cards/ChallengeCard.jsx';
 import { ChallengeFormDialog } from '@/components/cards/ChallengeFormDialog.jsx';
 import { ChallengeHabitPickerDialog } from '@/components/cards/ChallengeHabitPickerDialog.jsx';
@@ -54,6 +54,14 @@ function isUpgradeError(code) {
     return code === 'FREE_ACTIVE_CHALLENGE_LIMIT' || code === 'PREMIUM_REQUIRED';
 }
 
+function getChallengePremiumPrompt(code) {
+    if (code === 'FREE_ACTIVE_CHALLENGE_LIMIT') {
+        return 'You reached the free active challenge limit. Upgrade to Premium to join up to 5 active challenges.';
+    }
+
+    return 'Creating your own challenges is a Premium feature. Upgrade to create challenges and invite friends.';
+}
+
 function ChallengeAlert({ error, notice, onUpgrade }) {
     if (error) {
         return (
@@ -97,11 +105,13 @@ export function ChallengesPage() {
     const [busyAction, setBusyAction] = useState('');
     const [error, setError] = useState(null);
     const [notice, setNotice] = useState('');
+    const [premiumPrompt, setPremiumPrompt] = useState('');
 
     const userId = getUserId(user);
     const incomingInvitations = invitations.incoming ?? [];
     const hasHabits = habits.length > 0;
     const canCreateChallenges = hasPremiumMembership(user);
+    const isFreeUser = !canCreateChallenges;
     const currentTabLabel = CHALLENGE_TABS.find((tab) => tab.value === activeTab)?.label ?? 'Challenges';
     const habitPickerTitle = habitPickerAction?.type === 'accept'
         ? 'Accept invitation'
@@ -139,15 +149,26 @@ export function ChallengesPage() {
     }, [activeTab, loadChallengeData]);
 
     function showActionError(actionError, fallbackMessage) {
+        if (isFreeUser && isUpgradeError(actionError.code)) {
+            setPremiumPrompt(getChallengePremiumPrompt(actionError.code));
+            return;
+        }
+
         setError({ message: actionError.message || fallbackMessage, code: actionError.code });
     }
 
     function handleUpgradeClick() {
         setError(null);
-        setNotice('Premium checkout will be connected later.');
+        setNotice('');
+        setPremiumPrompt(getChallengePremiumPrompt(error?.code));
     }
 
     function openCreateDialog() {
+        if (isFreeUser) {
+            setPremiumPrompt(getChallengePremiumPrompt('PREMIUM_REQUIRED'));
+            return;
+        }
+
         setEditingChallenge(null);
         setIsFormOpen(true);
     }
@@ -260,7 +281,7 @@ export function ChallengesPage() {
                 width="lg"
                 align="center"
                 title={currentTabLabel}
-                actionLabel={canCreateChallenges ? 'Create challenge' : undefined}
+                actionLabel="Create challenge"
                 onAction={openCreateDialog}
             >
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -388,6 +409,16 @@ export function ChallengesPage() {
                 onConfirm={handleConfirmHabitPicker}
                 isSubmitting={busyAction === 'join' || busyAction === 'accept'}
                 title={habitPickerTitle}
+            />
+
+            <PremiumUpgradeDialog
+                open={Boolean(premiumPrompt)}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setPremiumPrompt('');
+                    }
+                }}
+                message={premiumPrompt}
             />
         </Page>
     );

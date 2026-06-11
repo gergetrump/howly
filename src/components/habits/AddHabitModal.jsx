@@ -19,6 +19,8 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { PremiumUpgradeDialog } from '@/components/common';
+import { useAuth } from '@/context/authContext';
 import { createHabit, updateHabit } from '@/services/habitService';
 
 const ICONS = [
@@ -44,6 +46,7 @@ const DAYS_OF_WEEK = [
 ];
 
 export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, existingHabits = [] }) {
+    const { user } = useAuth();
     const [name, setName] = useState('');
     const [icon, setIcon] = useState('🎯');
     const [target, setTarget] = useState(1);
@@ -54,7 +57,9 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
     const [category, setCategory] = useState('');
     const [customCategory, setCustomCategory] = useState('');
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
-
+    const [formError, setFormError] = useState('');
+    const [premiumPrompt, setPremiumPrompt] = useState('');
+    const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
     const dynamicCategories = [...new Set([
         ...(existingHabits?.map(h => h.category).filter(Boolean) || []),
         editHabit?.category
@@ -69,8 +74,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             setTarget(editHabit.target || 1);
             setIcon(editHabit.icon || '🎯');
             setFrequency(editHabit.frequency || '');
-            setCustomDays(editHabit.customDays || []);
-            
             if (ALL_CATEGORIES.includes(editHabit.category)) {
                 setCategory(editHabit.category);
                 setCustomCategory('');
@@ -80,6 +83,8 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             } else {
                 setCategory('');
             }
+            setCustomDays(editHabit.customDays || []);
+            setFormError('');
             
             if (UNITS.includes(editHabit.unit)) {
                 setUnit(editHabit.unit);
@@ -101,6 +106,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             setCategory('');
             setCustomCategory('');
             setIcon('🎯');
+            setFormError('');
         }
     }, [open, editHabit, ALL_CATEGORIES.join(',')]);
 
@@ -125,6 +131,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
         };
 
         try {
+            setFormError('');
             let result;
             if (editHabit) {
                 result = await updateHabit(editHabit.id, data);
@@ -134,16 +141,28 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             if (onHabitAdded) onHabitAdded(result.data, !!editHabit);
             onOpenChange(false);
         } catch (error) {
+            if (!editHabit && isFreeUser && error.code === 'HABIT_LIMIT_REACHED') {
+                setPremiumPrompt('You already reached the free habit limit. Upgrade to Premium to create up to 6 habits.');
+                return;
+            }
+
+            setFormError(error.message || (editHabit ? 'Failed to update habit' : 'Failed to create habit'));
             console.error(editHabit ? 'Failed to update habit' : 'Failed to create habit', error);
         }
     }
 
     return (
+        <>
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-xl rounded-2xl bg-[#1e1b3a] p-10 border-0 text-white shadow-2xl">
                 <h2 className="mb-8 text-center text-2xl font-bold tracking-tight text-white">
                     {editHabit ? 'Edit Habit' : 'Add Habit'}
                 </h2>
+                {formError ? (
+                    <p className="mb-4 rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                        {formError}
+                    </p>
+                ) : null}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Icon picker + Habit name — side by side */}
@@ -364,5 +383,15 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
                 </form>
             </DialogContent>
         </Dialog>
+        <PremiumUpgradeDialog
+            open={Boolean(premiumPrompt)}
+            onOpenChange={(nextOpen) => {
+                if (!nextOpen) {
+                    setPremiumPrompt('');
+                }
+            }}
+            message={premiumPrompt}
+        />
+        </>
     );
 }
