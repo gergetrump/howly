@@ -4,11 +4,16 @@ import UserItem from './inventory.model.js';
 
 export const INVENTORY_ERROR_CODES = {
     ITEM_NOT_FOUND: 'ITEM_NOT_FOUND',
+    USER_ITEM_NOT_FOUND: 'USER_ITEM_NOT_FOUND',
     ITEM_ALREADY_OWNED: 'ITEM_ALREADY_OWNED',
     PREMIUM_REQUIRED: 'PREMIUM_REQUIRED',
     NOT_ENOUGH_COINS: 'NOT_ENOUGH_COINS',
     USER_NOT_FOUND: 'USER_NOT_FOUND',
+    OUTFIT_ITEM_NOT_OWNED: 'OUTFIT_ITEM_NOT_OWNED',
+    OUTFIT_ITEM_TYPE_CONFLICT: 'OUTFIT_ITEM_TYPE_CONFLICT',
 };
+
+const SINGLE_EQUIP_ITEM_TYPES = new Set(['clothing', 'shoes']);
 
 function inventoryError(code) {
     const error = new Error(code);
@@ -58,4 +63,62 @@ export async function buyItem({ userId, itemId }) {
     });
 
     return userItem.populate('item');
+}
+
+export async function setItemEquipped({ userId, userItemId, equipped }) {
+    const userItem = await UserItem.findOneAndUpdate(
+        {
+            _id: userItemId,
+            user: userId,
+        },
+        { equipped },
+        {
+            returnDocument: 'after',
+            runValidators: true,
+        },
+    ).populate('item');
+
+    if (!userItem) {
+        throw inventoryError(INVENTORY_ERROR_CODES.USER_ITEM_NOT_FOUND);
+    }
+
+    return userItem;
+}
+
+export async function saveOutfit({ userId, equippedUserItemIds }) {
+    const selectedUserItems = await UserItem.find({
+        _id: { $in: equippedUserItemIds },
+        user: userId,
+    }).populate('item');
+
+    if (selectedUserItems.length !== equippedUserItemIds.length) {
+        throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_NOT_OWNED);
+    }
+
+    const selectedSingleTypes = new Set();
+
+    selectedUserItems.forEach((userItem) => {
+        const itemType = userItem.item?.type;
+
+        if (!SINGLE_EQUIP_ITEM_TYPES.has(itemType)) {
+            return;
+        }
+
+        if (selectedSingleTypes.has(itemType)) {
+            throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT);
+        }
+
+        selectedSingleTypes.add(itemType);
+    });
+
+    await UserItem.updateMany({ user: userId, equipped: true }, { equipped: false });
+
+    if (equippedUserItemIds.length) {
+        await UserItem.updateMany(
+            { _id: { $in: equippedUserItemIds }, user: userId },
+            { equipped: true },
+        );
+    }
+
+    return listUserItems({ userId });
 }

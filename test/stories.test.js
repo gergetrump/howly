@@ -181,9 +181,9 @@ test('GET /api/stories/me/archive also includes feed-expired stories', async () 
   assert.equal(response.body.length, 2);
 });
 
-// --- Mixed feed (GET /api/social/feed) ---
+// --- Mixed feed (GET /api/milestones/feed) ---
 
-test('GET /api/social/feed contains friend stories with type "story"', async () => {
+test('GET /api/milestones/feed contains friend stories with type "story"', async () => {
   const user = await buildUser();
   const friend = await buildUser();
   const stranger = await buildUser();
@@ -199,7 +199,7 @@ test('GET /api/social/feed contains friend stories with type "story"', async () 
   });
 
   const response = await request(app)
-    .get('/api/social/feed')
+    .get('/api/milestones/feed')
     .set('Authorization', authHeader(user))
     .expect(200);
 
@@ -212,13 +212,13 @@ test('GET /api/social/feed contains friend stories with type "story"', async () 
   assert.equal(stories[0].user.id, friend._id.toString());
 });
 
-test('GET /api/social/feed includes the user\'s own active stories', async () => {
+test('GET /api/milestones/feed includes the user\'s own active stories', async () => {
   const user = await buildUser();
   const habit = await buildHabit(user);
   await buildStory(user, habit);
 
   const response = await request(app)
-    .get('/api/social/feed')
+    .get('/api/milestones/feed')
     .set('Authorization', authHeader(user))
     .expect(200);
 

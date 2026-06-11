@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { toPublicUser } from '../users/user.service.js';
 import { Friendship } from '../social/social.model.js';
 import Companion from '../companion/companion.model.js';
+import UserItem from '../inventory/inventory.model.js';
 import config from '../../../config.js';
 import {
   MilestoneLike,
@@ -22,14 +23,12 @@ function buildFriendshipPair(firstUserId, secondUserId) {
   return { userA, userB };
 }
 
-function toCompanionResponse(companion) {
-  if (!companion) {
-    return null;
-  }
-
+function toCompanionResponse(companion, equippedItemKeys = []) {
+  // Fallback for users who do not have a companion document yet
   return {
-    id: companion._id.toString(),
-    name: companion.name,
+    id: companion?._id?.toString?.() ?? null,
+    name: companion?.name ?? 'Howly',
+    equippedItemKeys,
   };
 }
 
@@ -56,6 +55,7 @@ function toMilestonePostResponse(
   post,
   userReactionsByPostId = new Map(),
   companionsByUserId = new Map(),
+  equippedItemKeysByUserId = new Map(),
   reactionCountsByPostId = new Map(),
   reactionsByPostId = new Map()
 ) {
@@ -68,7 +68,10 @@ function toMilestonePostResponse(
   return {
     id: postId,
     user: toPublicUser(post.user),
-    companion: toCompanionResponse(companionsByUserId.get(userId)),
+    companion: toCompanionResponse(
+      companionsByUserId.get(userId),
+      equippedItemKeysByUserId.get(userId) ?? []
+    ),
     habit: {
       id: habitId,
       title: post.habitTitle,
@@ -135,7 +138,38 @@ async function getReactionsByPostId(postIds) {
   return reactionsByPostId;
 }
 
-async function enrichMilestonePost(post, currentUserReaction = null) {
+async function getEquippedItemKeysByUserId(userIds) {
+  const uniqueUserIds = [...new Set(userIds.map((userId) => userId?.toString()).filter(Boolean))];
+
+  if (!uniqueUserIds.length) {
+    return new Map();
+  }
+
+  const userItems = await UserItem.find({
+    user: { $in: uniqueUserIds },
+    equipped: true,
+  })
+    .populate('item')
+    .lean();
+  const equippedItemKeysByUserId = new Map();
+
+  userItems.forEach((userItem) => {
+    const userId = userItem.user.toString();
+    const assetKey = userItem.item?.assetKey;
+
+    if (!assetKey) {
+      return;
+    }
+
+    const equippedItemKeys = equippedItemKeysByUserId.get(userId) ?? [];
+    equippedItemKeys.push(assetKey);
+    equippedItemKeysByUserId.set(userId, equippedItemKeys);
+  });
+
+  return equippedItemKeysByUserId;
+}
+
+export async function enrichMilestonePost(post, currentUserReaction = null) {
   await post.populate(['user', 'habit']);
 
   const companion = await Companion.findOne({ user: post.user._id ?? post.user }).lean();
@@ -143,6 +177,7 @@ async function enrichMilestonePost(post, currentUserReaction = null) {
   const companionsByUserId = companionUserId
     ? new Map([[companionUserId, companion]])
     : new Map();
+  const equippedItemKeysByUserId = await getEquippedItemKeysByUserId([post.user._id ?? post.user]);
   const postId = post._id.toString();
   const userReactionsByPostId = currentUserReaction
     ? new Map([[postId, currentUserReaction]])
@@ -154,6 +189,7 @@ async function enrichMilestonePost(post, currentUserReaction = null) {
     post,
     userReactionsByPostId,
     companionsByUserId,
+    equippedItemKeysByUserId,
     reactionCountsByPostId,
     reactionsByPostId
   );
@@ -233,12 +269,16 @@ export async function getFriendFeed({ userId }) {
   const companionsByUserId = new Map(
     companions.map((companion) => [companion.user.toString(), companion])
   );
+  const equippedItemKeysByUserId = await getEquippedItemKeysByUserId(
+    posts.map((post) => post.user._id ?? post.user)
+  );
 
   return posts.map((post) =>
     toMilestonePostResponse(
       post,
       userReactionsByPostId,
       companionsByUserId,
+      equippedItemKeysByUserId,
       reactionCountsByPostId,
       reactionsByPostId
     )
