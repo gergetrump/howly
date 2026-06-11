@@ -4,12 +4,10 @@ import ChallengeParticipant from './challengeParticipant.model.js';
 import Habit from '../habits/habit.model.js';
 import User from '../users/user.model.js';
 import { Friendship } from '../social/social.model.js';
+import { getPlanForUser, hasPremiumAccess } from '../../config/plans.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const COINS_PER_CHALLENGE_DAY = 5;
-const FREE_ACTIVE_CHALLENGE_LIMIT = 2;
-const PREMIUM_ACTIVE_CHALLENGE_LIMIT = 5;
-const MAX_ACTIVE_CREATED_CHALLENGES = 1;
 const START_LOCKED_UPDATE_FIELDS = [
     'title',
     'habitId',
@@ -87,11 +85,11 @@ async function getChallengeUserContext(user) {
 }
 
 function hasPremiumMembership(user) {
-    return user.role === 'admin' || user.isPremium === true;
+    return hasPremiumAccess(user);
 }
 
 function getActiveChallengeLimit(user) {
-    return hasPremiumMembership(user) ? PREMIUM_ACTIVE_CHALLENGE_LIMIT : FREE_ACTIVE_CHALLENGE_LIMIT;
+    return getPlanForUser(user).limits.maxActiveChallenges;
 }
 
 function getActiveChallengeConditions(now = new Date()) {
@@ -146,8 +144,9 @@ async function canAddActiveChallenge(user, challengeId) {
 
 async function canCreateChallenge(user) {
     const currentUser = await getChallengeUserContext(user);
+    const plan = getPlanForUser(currentUser);
 
-    if (!hasPremiumMembership(currentUser)) {
+    if (!plan.permissions.canCreateChallenges) {
         return {
             error: 'premium membership is required to create challenges',
             code: 'PREMIUM_REQUIRED',
@@ -159,7 +158,7 @@ async function canCreateChallenge(user) {
         getActiveChallengeIdsForUser(currentUser.id),
     ]);
 
-    if (activeCreatedChallengeCount >= MAX_ACTIVE_CREATED_CHALLENGES) {
+    if (activeCreatedChallengeCount >= plan.limits.maxActiveCreatedChallenges) {
         return {
             error: 'you can only create one challenge at a time as premium user, finish your other challenge first',
             code: 'PREMIUM_ACTIVE_CREATED_LIMIT',
