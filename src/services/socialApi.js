@@ -34,11 +34,11 @@ export function rejectFriendRequest(requestId) {
 }
 
 export function getSocialFeed() {
-    return apiRequest('/social/feed');
+    return apiRequest('/milestones/feed');
 }
 
 export function reactToMilestone(postId, emoji) {
-    return apiRequest(`/social/milestones/${postId}/like`, {
+    return apiRequest(`/milestones/${postId}/like`, {
         method: 'POST',
         body: JSON.stringify({ emoji }),
     });
