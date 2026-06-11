@@ -60,6 +60,7 @@ export default function createApp() {
     app.use('/api/challenges', challengeRoutes);
     app.use('/api/items', itemRoutes);
     app.use('/api/inventory', inventoryRoutes);
+    app.use('/api/payments', paymentRoutes);
     app.use('/api/stories', storyRoutes);
 
     // Central error handling
