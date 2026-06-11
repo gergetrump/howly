@@ -4,9 +4,11 @@ import {
     constructStripeWebhookEvent,
     createPremiumCheckoutSession,
     markPremiumFromCheckoutSession,
+    markPremiumFromSubscription,
+    createManagePremiumSession,
 } from './payment.service.js';
 
-export async function createCheckoutSession(req, res) {
+export async function handleCreateCheckoutSession(req, res) {
     try {
         const userId = req.user.id;
         const session = await createPremiumCheckoutSession(userId);
@@ -19,6 +21,21 @@ export async function createCheckoutSession(req, res) {
     }
 }
 
+
+export async function handleCreateManagePremiumSession(req, res) {
+    try {
+        const userId = req.user.id;
+        const session = await createManagePremiumSession(userId);
+        res.status(200).json({ url: session.url });
+    } catch (error) {
+        console.error('Stripe session error: ', error);
+        return res.status(500).json({
+            message: 'Could not create manage premium session',
+        });
+    }
+}
+
+
 export async function handleStripeWebhook(req, res) {
     try {
         const signature = req.headers['stripe-signature'];
@@ -27,6 +44,13 @@ export async function handleStripeWebhook(req, res) {
 
         if (event.type === 'checkout.session.completed') {
             await markPremiumFromCheckoutSession(event.data.object);
+        }
+
+        if (
+            event.type === 'customer.subscription.updated' ||
+            event.type === 'customer.subscription.deleted'
+        ) {
+            await markPremiumFromSubscription(event.data.object);
         }
 
         return res.status(200).json({ received: true });

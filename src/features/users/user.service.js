@@ -96,6 +96,8 @@ export function toPublicUser(user) {
         providerId: user.providerId,
         coins: user.coins,
         streak: user.streak,
+        premiumStatus: user.premiumStatus,
+        premiumUntil: user.premiumUntil,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
     };
