@@ -1,17 +1,28 @@
 import Stripe from 'stripe';
 import config from '../../config.js';
 import User from '../features/users/user.model.js';
+import { PLANS, PLAN_KEYS } from '../config/plans.js';
 
 
 const stripe = new Stripe(config.stripe.secretKey)
 const frontendBaseUrl = config.frontendBaseUrl || config.clientBaseUrl;
+const premiumPlan = PLANS[PLAN_KEYS.PREMIUM];
 
 async function setUserPremium(userId) {
-    return User.findByIdAndUpdate(
-        userId,
-        { isPremium: true },
+    const upgradedUser = await User.findOneAndUpdate(
+        { _id: userId, isPremium: { $ne: true } },
+        {
+            $set: { isPremium: true },
+            $inc: { coins: premiumPlan.monthlyBenefits.coins },
+        },
         { returnDocument: 'after', runValidators: true }
     );
+
+    if (upgradedUser) {
+        return upgradedUser;
+    }
+
+    return User.findById(userId);
 }
 
 export async function createPremiumCheckoutSession(userId) {
@@ -21,12 +32,12 @@ export async function createPremiumCheckoutSession(userId) {
         line_items: [
             {
                 price_data: {
-                    currency: 'eur',
+                    currency: premiumPlan.billing.currency,
                     product_data: {
                         name: 'Howly Premium',
                         description: 'Premium upgrade for your Howly account',
                     },
-                    unit_amount: 499, // 4.99€
+                    unit_amount: premiumPlan.billing.priceInCents,
                 },
                 quantity: 1,
             },

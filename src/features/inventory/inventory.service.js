@@ -1,6 +1,7 @@
 import User from '../users/user.model.js';
 import Item from '../items/item.model.js';
 import UserItem from './inventory.model.js';
+import { getPlanForUser } from '../../config/plans.js';
 
 export const INVENTORY_ERROR_CODES = {
     ITEM_NOT_FOUND: 'ITEM_NOT_FOUND',
@@ -41,7 +42,9 @@ export async function buyItem({ userId, itemId }) {
         throw inventoryError(INVENTORY_ERROR_CODES.ITEM_ALREADY_OWNED);
     }
 
-    if (item.premiumOnly) {
+    const plan = getPlanForUser(user);
+
+    if (item.premiumOnly && !plan.permissions.canBuyPremiumItems) {
         throw inventoryError(INVENTORY_ERROR_CODES.PREMIUM_REQUIRED);
     }
 

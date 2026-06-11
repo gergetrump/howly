@@ -183,3 +183,65 @@ test('habit custom frequency stores customDays properly', async () => {
   assert.equal(createResponse.body.data.frequency, 'Custom');
   assert.deepEqual(createResponse.body.data.customDays, [1, 3, 5]);
 });
+
+test('free users can create only two habits', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+
+  for (let index = 1; index <= 2; index += 1) {
+    await request(app)
+      .post('/api/habits')
+      .set('Authorization', token)
+      .send({
+        title: `Free Habit ${index}`,
+        type: 'boolean',
+        frequency: 'Daily',
+        category: 'Movement',
+      })
+      .expect(201);
+  }
+
+  const response = await request(app)
+    .post('/api/habits')
+    .set('Authorization', token)
+    .send({
+      title: 'Third Free Habit',
+      type: 'boolean',
+      frequency: 'Daily',
+      category: 'Movement',
+    })
+    .expect(403);
+
+  assert.equal(response.body.errorCode, 'HABIT_LIMIT_REACHED');
+});
+
+test('premium users can create six habits but not seven', async () => {
+  const user = await buildUser({ isPremium: true });
+  const token = authHeader(user);
+
+  for (let index = 1; index <= 6; index += 1) {
+    await request(app)
+      .post('/api/habits')
+      .set('Authorization', token)
+      .send({
+        title: `Premium Habit ${index}`,
+        type: 'boolean',
+        frequency: 'Daily',
+        category: 'Movement',
+      })
+      .expect(201);
+  }
+
+  const response = await request(app)
+    .post('/api/habits')
+    .set('Authorization', token)
+    .send({
+      title: 'Seventh Premium Habit',
+      type: 'boolean',
+      frequency: 'Daily',
+      category: 'Movement',
+    })
+    .expect(403);
+
+  assert.equal(response.body.errorCode, 'HABIT_LIMIT_REACHED');
+});
