@@ -13,7 +13,7 @@ import {
 } from '@/services/inventoryApi';
 
 export function InventoryPage() {
-    const { user } = useAuth();
+    const { user, companion } = useAuth();
     const [inventory, setInventory] = useState([]);
     const [draftEquippedItemIds, setDraftEquippedItemIds] = useState(new Set());
     const [isLoading, setIsLoading] = useState(true);
@@ -154,7 +154,8 @@ export function InventoryPage() {
             <Heading title="Inventory" subtitle="Equip items for your companion." streakDays={user?.streak ?? 0} />
             <section className="sticky top-24 z-20 flex min-h-72 flex-col items-center justify-end gap-3 text-center">
                 <CompanionAvatar
-                    name="Howly"
+                    type={companion?.type}
+                    name={companion?.name}
                     size="xl"
                     showName
                     equippedItemKeys={equippedItemKeys}

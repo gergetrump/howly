@@ -1,10 +1,12 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { getCurrentUser } from '@/services/userService';
+import { getMyCompanion } from '@/services/companionService';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
+    const [companion, setCompanion] = useState(null);
     const [isLoadingUser, setIsLoadingUser] = useState(true);
 
     async function refreshUser() {
@@ -12,6 +14,7 @@ export function AuthProvider({ children }) {
 
         if (!token) {
             setUser(null);
+            setCompanion(null);
             setIsLoadingUser(false);
             return;
         }
@@ -20,9 +23,20 @@ export function AuthProvider({ children }) {
             setIsLoadingUser(true);
             const currentUser = await getCurrentUser();
             setUser(currentUser.user ?? currentUser);
+
+            // Best-effort: load the chosen companion so it can be shown across the
+            // app. A missing or failed companion must never block sign-in.
+            try {
+                const companionResponse = await getMyCompanion();
+                setCompanion(companionResponse?.data ?? null);
+            } catch (companionError) {
+                console.error('Failed to fetch companion:', companionError);
+                setCompanion(null);
+            }
         } catch (error) {
             console.error('Failed to fetch current user:', error);
             setUser(null);
+            setCompanion(null);
         } finally {
             setIsLoadingUser(false);
         }
@@ -37,6 +51,8 @@ export function AuthProvider({ children }) {
             value={{
                 user,
                 setUser,
+                companion,
+                setCompanion,
                 isLoadingUser,
                 refreshUser,
             }}

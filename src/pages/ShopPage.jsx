@@ -35,7 +35,7 @@ import { getCurrentUser } from '@/services/userService';
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
 
 export function ShopPage() {
-    const { user, setUser } = useAuth();
+    const { user, setUser, companion } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const [items, setItems] = useState([]);
     const [ownedItemIds, setOwnedItemIds] = useState(new Set());
@@ -355,7 +355,8 @@ export function ShopPage() {
             <Heading title="Shop" subtitle="Unlock items for your companion." streakDays={user?.streak ?? 0} />
             <section className="sticky top-24 z-20 flex min-h-72 flex-col items-center justify-end gap-3 text-center">
                 <CompanionAvatar
-                    name="Howly"
+                    type={companion?.type}
+                    name={companion?.name}
                     size="xl"
                     showName
                     previewItemKeys={previewItemKeys}

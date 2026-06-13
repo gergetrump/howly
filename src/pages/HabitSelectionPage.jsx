@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { STARTER_HABITS, FREE_TIER_HABIT_LIMIT } from '@/constants/starterHabits';
 import { createHabitsFromTemplates } from '@/services/habitService';
 import { completeOnboarding } from '@/services/userService';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/authContext';
 
 export function HabitSelectionPage() {
     const navigate = useNavigate();
