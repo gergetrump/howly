@@ -1,16 +1,31 @@
 /**
- * Placeholder route guard for pages that should only be accessible
- * to authenticated users.
+ * Route guard for the authenticated app pages (dashboard, social, shop, ...).
  *
- * For the initial frontend setup, this component only renders the nested
- * route content via Outlet so protected pages can still be developed and
- * reviewed without a finished authentication flow.
+ * - Not logged in: redirect to /login.
+ * - Logged in but onboarding not finished: redirect into the onboarding flow.
+ * - Otherwise the nested route renders via <Outlet />.
  *
- * Real token validation and redirects to the login page will be added in
- * the dedicated authentication implementation.
+ * The onboarding pages themselves live in the public route group, so they stay
+ * viewable without an account; their save actions still require a token.
  */
-import {Outlet} from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 export function ProtectedRoute() {
-    return <Outlet/>;
+    const { user, isLoadingUser } = useAuth();
+
+    // Wait for the initial /users/me fetch before deciding where to send the user.
+    if (isLoadingUser) {
+        return null;
+    }
+
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
+
+    if (!user.onboardingCompleted) {
+        return <Navigate to="/onboarding/companion" replace />;
+    }
+
+    return <Outlet />;
 }

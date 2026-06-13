@@ -61,95 +61,106 @@ export function CompanionSelectionPage() {
                 <Card
                     className={cn(
                         appCardClassName,
-                        'w-full max-w-md border-slate-700/50 shadow-xl shadow-black/20',
+                        'w-full max-w-4xl border-slate-700/50 shadow-xl shadow-black/20',
                     )}
                 >
-                    <CardContent className="p-8">
-                        <div className="flex flex-col items-center text-center">
-                            <CompanionAvatar type={selectedType} size="lg" />
-
-                            <p className="mb-1 mt-4 text-xs font-semibold uppercase tracking-[0.25em] text-howly-primary">
+                    <CardContent className="p-8 md:p-10">
+                        {/* Full-width header */}
+                        <div className="mb-8">
+                            <p className="mb-1 text-center text-xs font-semibold uppercase tracking-[0.25em] text-howly-primary">
                                 Step 1 of 2
                             </p>
-                            <h1 className="text-3xl font-bold tracking-tight text-white">
+                            <h1 className="text-left text-3xl font-bold tracking-tight text-white">
                                 Meet your companion
                             </h1>
-                            <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                                Pick the buddy who will cheer you on. You can rename it anytime.
+                            <p className="mt-2 text-left text-sm leading-relaxed text-slate-400">
+                                Pick the buddy who will cheer you on.
+                                <br />
+                                You can rename it anytime.
                             </p>
                         </div>
 
-                        <div className="mt-6 grid grid-cols-3 gap-3">
-                            {COMPANIONS.map((companion) => (
-                                <button
-                                    key={companion.type}
-                                    type="button"
-                                    onClick={() => handleSelectType(companion.type)}
-                                    aria-pressed={selectedType === companion.type}
-                                    className={cn(
-                                        'flex flex-col items-center gap-1 rounded-2xl border p-2 transition-all',
-                                        selectedType === companion.type
-                                            ? 'border-howly-primary bg-howly-primary/10 ring-2 ring-howly-primary/40'
-                                            : 'border-slate-700 bg-slate-900/50 hover:border-slate-500',
-                                    )}
-                                >
-                                    <CompanionAvatar type={companion.type} size="sm" />
-                                    <span className="text-xs font-medium text-slate-200">
-                                        {companion.label}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
+                        <div className="grid items-center gap-8 md:grid-cols-2 md:gap-12">
+                            {/* Companion preview */}
+                            <div className="flex justify-center">
+                                <CompanionAvatar type={selectedType} size="2xl" />
+                            </div>
 
-                        <div className="mt-6 space-y-2">
-                            <label
-                                htmlFor="companion-name"
-                                className="text-sm font-medium text-slate-200"
-                            >
-                                Name your companion
-                            </label>
-                            <input
-                                id="companion-name"
-                                name="companion-name"
-                                type="text"
-                                value={name}
-                                onChange={(event) => setName(event.target.value)}
-                                maxLength={30}
-                                placeholder="Howly"
-                                className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-howly-primary"
-                            />
-                        </div>
+                            {/* Controls */}
+                            <div>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {COMPANIONS.map((companion) => (
+                                        <button
+                                            key={companion.type}
+                                            type="button"
+                                            onClick={() => handleSelectType(companion.type)}
+                                            aria-pressed={selectedType === companion.type}
+                                            className={cn(
+                                                'flex flex-col items-center gap-1 rounded-2xl border p-2 transition-all',
+                                                selectedType === companion.type
+                                                    ? 'border-howly-primary bg-howly-primary/10 ring-2 ring-howly-primary/40'
+                                                    : 'border-slate-600 bg-slate-800/60 hover:border-slate-500',
+                                            )}
+                                        >
+                                            <CompanionAvatar type={companion.type} size="sm" />
+                                            <span className="text-xs font-medium text-slate-200">
+                                                {companion.label}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
 
-                        <div className="mt-6 rounded-xl border border-slate-700 bg-slate-900/70 p-4">
-                            <p className="mb-2 text-sm font-semibold text-white">
-                                Your companion will:
-                            </p>
-                            <ul className="space-y-1.5">
-                                {COMPANION_PERKS.map((perk) => (
-                                    <li
-                                        key={perk.label}
-                                        className="flex items-center gap-2 text-sm text-slate-300"
+                                <div className="mt-6 space-y-2 text-left">
+                                    <label
+                                        htmlFor="companion-name"
+                                        className="text-sm font-medium text-slate-200"
                                     >
-                                        <span aria-hidden="true">{perk.icon}</span>
-                                        {perk.label}
-                                    </li>
-                                ))}
-                            </ul>
+                                        Name your companion
+                                    </label>
+                                    <input
+                                        id="companion-name"
+                                        name="companion-name"
+                                        type="text"
+                                        value={name}
+                                        onChange={(event) => setName(event.target.value)}
+                                        maxLength={30}
+                                        placeholder="Howly"
+                                        className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-howly-primary"
+                                    />
+                                </div>
+
+                                <div className="mt-6 rounded-xl border border-slate-700 bg-slate-900/70 p-4 text-left">
+                                    <p className="mb-2 text-sm font-semibold text-white">
+                                        Your companion will:
+                                    </p>
+                                    <ul className="space-y-1.5">
+                                        {COMPANION_PERKS.map((perk) => (
+                                            <li
+                                                key={perk.label}
+                                                className="flex items-center gap-2 text-sm text-slate-300"
+                                            >
+                                                <span aria-hidden="true">{perk.icon}</span>
+                                                {perk.label}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                {error && (
+                                    <p className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                                        {error}
+                                    </p>
+                                )}
+
+                                <Button
+                                    onClick={handleSubmit}
+                                    disabled={isSubmitting}
+                                    className="mt-6 h-12 w-full rounded-full bg-howly-primary text-base font-semibold text-white shadow-lg shadow-howly-primary/25 transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {isSubmitting ? 'Saving...' : 'Continue'}
+                                </Button>
+                            </div>
                         </div>
-
-                        {error && (
-                            <p className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                                {error}
-                            </p>
-                        )}
-
-                        <Button
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                            className="mt-6 h-12 w-full rounded-full bg-howly-primary text-base font-semibold text-white shadow-lg shadow-howly-primary/25 transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            {isSubmitting ? 'Saving...' : 'Continue'}
-                        </Button>
                     </CardContent>
                 </Card>
             </main>

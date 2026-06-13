@@ -21,6 +21,16 @@ const SKINS = {
     bear: BearSkin,
 };
 
+// Panda/bear bodies sit left-of-center in the shared viewBox (the wolf balances
+// the right side with its tail). Nudge the tail-less companions right so they
+// center in their frame. The item layer shifts with the skin (both live inside
+// the same <g> below), so item alignment is preserved.
+const X_OFFSET = {
+    wolf: 0,
+    panda: 48,
+    bear: 48,
+};
+
 function CompanionItemLayer({ itemKey }) {
     return renderCompanionItemLayer(itemKey);
 }
@@ -37,6 +47,7 @@ export function CompanionAvatar({
                                 }) {
     const itemKeys = orderCompanionItemKeys([...equippedItemKeys, ...previewItemKeys, previewItemKey].filter(Boolean));
     const Skin = SKINS[type] ?? WolfSkin;
+    const offsetX = X_OFFSET[type] ?? 0;
 
     return (
         <figure className={cn('flex flex-col items-center gap-2 overflow-visible', className)}>
@@ -46,16 +57,18 @@ export function CompanionAvatar({
                 xmlns="http://www.w3.org/2000/svg"
                 className={cn(sizeClasses[size], 'overflow-visible drop-shadow-2xl')}
             >
-                {/* Animal body + face, behind the equipped items */}
-                <Skin part="back" />
+                <g transform={`translate(${offsetX} 0)`}>
+                    {/* Animal body + face, behind the equipped items */}
+                    <Skin part="back" />
 
-                {/* Equipped items (shared across all companion types) */}
-                {itemKeys.map((itemKey) => (
-                    <CompanionItemLayer key={itemKey} itemKey={itemKey} />
-                ))}
+                    {/* Equipped items (shared across all companion types) */}
+                    {itemKeys.map((itemKey) => (
+                        <CompanionItemLayer key={itemKey} itemKey={itemKey} />
+                    ))}
 
-                {/* Nose, drawn on top of the items */}
-                <Skin part="front" />
+                    {/* Nose, drawn on top of the items */}
+                    <Skin part="front" />
+                </g>
             </svg>
 
             {showName ? (
