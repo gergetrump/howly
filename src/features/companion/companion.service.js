@@ -56,7 +56,7 @@ export async function selectCompanion(userId, { type, name } = {}) {
         { user: userId },
         { $set: { type, name: trimmedName } },
         {
-            new: true,
+            returnDocument: 'after',
             upsert: true,
             setDefaultsOnInsert: true,
             runValidators: true,
