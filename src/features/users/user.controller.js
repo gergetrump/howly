@@ -71,6 +71,23 @@ export async function updateCurrentUser(req, res) {
     return res.status(200).json(userService.toPublicUser(user));
 }
 
+// Mark the authenticated user's onboarding flow as completed.
+export async function completeOnboarding(req, res) {
+    const { error } = validateUserId(req.user?.id);
+
+    if (error) {
+        return badRequest(res, error);
+    }
+
+    const user = await userService.completeOnboarding(req.user.id);
+
+    if (!user) {
+        return notFound(res);
+    }
+
+    return res.status(200).json(userService.toPublicUser(user));
+}
+
 export async function deleteCurrentUser(req, res) {
     const { error } = validateUserId(req.user?.id);
 

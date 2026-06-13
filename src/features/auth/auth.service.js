@@ -136,6 +136,7 @@ export function toPublicUser(user) {
         lastName: user.lastName,
         role: user.role,
         isPremium: user.isPremium,
+        onboardingCompleted: user.onboardingCompleted,
         authProvider: user.authProvider,
         providerId: user.providerId,
         isEmailVerified: user.isEmailVerified,
