@@ -76,6 +76,12 @@ const userSchema = new Schema(
       type: Date,
       default: null,
     },
+    // Tracks whether the user has finished the post-signup onboarding flow
+    // (companion selection + starter habits). Gates the onboarding screens.
+    onboardingCompleted: {
+      type: Boolean,
+      default: false,
+    },
     coins: {
       type: Number,
       default: 0,
