@@ -25,6 +25,8 @@ import { ChallengesPage } from '@/pages/ChallengesPage.jsx';
 import { ProfilePage } from '@/pages/profilePage';
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
+import { CompanionSelectionPage } from '@/pages/CompanionSelectionPage.jsx';
+import { HabitSelectionPage } from '@/pages/HabitSelectionPage.jsx';
 
 export function AppRoutes() {
     return (
@@ -36,10 +38,15 @@ export function AppRoutes() {
                 <Route path="/verify-email" element={<VerifyEmailPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/onboarding/habits" element={<HabitSelectionPage />} />
             </Route>
 
             <Route element={<ProtectedRoute />}>
+                <Route path="/onboarding/companion" element={<CompanionSelectionPage />} />
+
+
                 <Route element={<PageLayout />}>
+
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/social" element={<SocialPage />} />
                     <Route path="/shop" element={<ShopPage />} />
