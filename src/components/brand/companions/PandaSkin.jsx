@@ -1,67 +1,92 @@
-// Panda companion skin, drawn on the shared companion skeleton (viewBox 0 0 1522 1564).
-// The body rect, the eye anchors (387,680)/(1005,680) and the leg positions match
-// WolfSkin so equipped items (hats, glasses, shoes, clothing) line up across types.
-// `part="front"` = the nose, drawn on top of the equipped-item layer.
+import { useId } from 'react';
+
+// Panda companion skin — the user's original Group96 artwork, mapped onto the
+// shared wolf body rect (x196 y178 w1000 h1150) via BODY_TO_WOLF so the body
+// matches Howly 1:1 and equipped items line up. The whole character (incl. nose
+// and mouth) is part of the face art, so it lives in the "back" layer and
+// part="front" renders nothing.
+const BODY_TO_WOLF = 'translate(0.1544 -13.7806) scale(0.9926445 1.1415511)';
+
 export function PandaSkin({ part = 'back' }) {
+    const maskId = useId();
+
     if (part === 'front') {
-        // Nose (front layer, sits above equipped items).
-        return <ellipse cx="696" cy="778" rx="52" ry="40" fill="#2C2A27" />;
+        return null;
     }
 
     return (
-        <>
-            {/* Ears (behind the body) */}
-            <circle cx="360" cy="175" r="128" fill="#2C2A27" />
-            <circle cx="1032" cy="175" r="128" fill="#2C2A27" />
+        <g transform={BODY_TO_WOLF}>
+            {/* Ohren */}
+            <ellipse cx="239.5" cy="166.5" rx="174.5" ry="166.5" fill="black" />
+            <ellipse cx="1192.5" cy="166.5" rx="174.5" ry="166.5" transform="rotate(-180 1192.5 166.5)" fill="black" />
 
-            {/* Paws (behind the body) — same anchors as the wolf so shoes line up */}
+            {/* Pfoten / Füße */}
             <g>
-                {/* Front left leg */}
-                <circle cx="486.999" cy="1228" r="100" transform="rotate(-90 486.999 1228)" fill="#2C2A27" />
-                <circle cx="486.999" cy="1428" r="100" transform="rotate(-90 486.999 1428)" fill="#2C2A27" />
-                <rect x="386.999" y="1428" width="200" height="200" transform="rotate(-90 386.999 1428)" fill="#2C2A27" />
-
-                {/* Front right leg */}
-                <circle cx="904.997" cy="1229" r="100" transform="rotate(-90 904.997 1229)" fill="#2C2A27" />
-                <circle cx="904.997" cy="1429" r="100" transform="rotate(-90 904.997 1429)" fill="#2C2A27" />
-                <rect x="804.997" y="1429" width="200" height="200" transform="rotate(-90 804.997 1429)" fill="#2C2A27" />
-
-                {/* Back right leg */}
-                <ellipse cx="1165.45" cy="969.455" rx="75" ry="75" transform="rotate(-145 1165.45 969.455)" fill="#2C2A27" />
-                <ellipse cx="1288.33" cy="1055.49" rx="75" ry="75" transform="rotate(-145 1288.33 1055.49)" fill="#2C2A27" />
-                <rect x="1245.31" y="1116.93" width="150" height="150" transform="rotate(-145 1245.31 1116.93)" fill="#2C2A27" />
-
-                {/* Back left leg */}
-                <ellipse cx="75" cy="75" rx="75" ry="75" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 208.909 1073.91)" fill="#2C2A27" />
-                <ellipse cx="75" cy="75" rx="75" ry="75" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 86.0364 1159.95)" fill="#2C2A27" />
-                <rect width="150" height="150" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 147.473 1116.93)" fill="#2C2A27" />
+                <ellipse cx="75.5559" cy="75.5556" rx="75.5559" ry="75.5556" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 210.457 961.082)" fill="black" />
+                <ellipse cx="75.5559" cy="75.5556" rx="75.5559" ry="75.5556" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 86.6738 1047.76)" fill="black" />
+                <rect width="151.112" height="151.111" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 148.565 1004.42)" fill="black" />
+            </g>
+            <g>
+                <circle cx="492.001" cy="1092.28" r="100.741" transform="rotate(-90 492.001 1092.28)" fill="black" />
+                <circle cx="492.001" cy="1293.77" r="100.741" transform="rotate(-90 492.001 1293.77)" fill="black" />
+                <rect x="391.26" y="1293.77" width="201.482" height="201.482" transform="rotate(-90 391.26 1293.77)" fill="black" />
+            </g>
+            <g>
+                <circle cx="910" cy="1093.78" r="100.741" transform="rotate(-90 910 1093.78)" fill="black" />
+                <circle cx="910" cy="1295.26" r="100.741" transform="rotate(-90 910 1295.26)" fill="black" />
+                <rect x="809.259" y="1295.26" width="201.482" height="201.482" transform="rotate(-90 809.259 1295.26)" fill="black" />
+            </g>
+            <g>
+                <ellipse cx="1174" cy="837.585" rx="75.5559" ry="75.5556" transform="rotate(-145 1174 837.585)" fill="black" />
+                <ellipse cx="1297.78" cy="924.26" rx="75.5559" ry="75.5556" transform="rotate(-145 1297.78 924.26)" fill="black" />
+                <rect x="1254.45" y="986.151" width="151.112" height="151.111" transform="rotate(-145 1254.45 986.151)" fill="black" />
             </g>
 
-            {/* Body */}
-            <rect x="195.998" y="178" width="1000" height="1150" rx="100" fill="#F7F3EB" />
+            {/* Gesicht / Körper */}
+            <rect x="197.295" y="168" width="1007.41" height="1007.41" rx="100" fill="#F7F3EB" />
 
-            {/* Eye patches + eyes (centered on the shared eye anchors) */}
-            {/* Left */}
-            <ellipse cx="387" cy="692" rx="116" ry="146" transform="rotate(-25 387 692)" fill="#2C2A27" />
-            <ellipse cx="387" cy="692" rx="56" ry="74" transform="rotate(-25 387 692)" fill="#F4EFE5" />
-            <circle cx="387" cy="680" r="40" fill="#161514" />
-            <circle cx="372" cy="666" r="12" fill="#5F5D5A" />
-            {/* Right */}
-            <ellipse cx="1005" cy="692" rx="116" ry="146" transform="rotate(25 1005 692)" fill="#2C2A27" />
-            <ellipse cx="1005" cy="692" rx="56" ry="74" transform="rotate(25 1005 692)" fill="#F4EFE5" />
-            <circle cx="1005" cy="680" r="40" fill="#161514" />
-            <circle cx="990" cy="666" r="12" fill="#5F5D5A" />
+            {/* Mund (Außenform) */}
+            <path d="M701 819.999C734.382 819.999 761.445 847.06 761.445 880.443C761.445 913.826 734.382 940.888 701 940.888C667.617 940.888 640.555 913.825 640.555 880.443C640.555 847.06 667.617 819.999 701 819.999Z" fill="#A45050" />
 
-            {/* Muzzle (subtle white patch on the cream body) */}
+            {/* Schnauze */}
             <g>
-                <circle cx="780" cy="808" r="90" fill="#FFFFFF" />
-                <circle cx="612" cy="808" r="90" fill="#FFFFFF" />
-                <rect x="612" y="725" width="168" height="166" fill="#FFFFFF" />
+                <ellipse cx="801" cy="778.955" rx="100" ry="101.488" fill="white" />
+                <ellipse cx="601" cy="778.955" rx="100" ry="101.488" fill="white" />
+                <rect x="601" y="677.468" width="200" height="202.975" fill="white" />
             </g>
 
-            {/* Mouth (on the muzzle) */}
-            <path d="M696 800V842" stroke="#2C2A27" strokeWidth="9" strokeLinecap="round" />
-            <path d="M646 846Q696 888 746 846" stroke="#2C2A27" strokeWidth="9" fill="none" strokeLinecap="round" />
-        </>
+            {/* Nase */}
+            <ellipse cx="701" cy="766.777" rx="60" ry="35.5207" fill="black" />
+
+            {/* Zunge (über den Mund maskiert) */}
+            <g>
+                <mask id={maskId} style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="640" y="819" width="122" height="122">
+                    <path d="M701 819.999C734.382 819.999 761.445 847.06 761.445 880.443C761.445 913.826 734.382 940.888 701 940.888C667.617 940.888 640.555 913.825 640.555 880.443C640.555 847.06 667.617 819.999 701 819.999Z" fill="#A45050" />
+                </mask>
+                <g mask={`url(#${maskId})`}>
+                    <path d="M701 903.613C734.382 903.613 761.445 930.675 761.445 964.058C761.445 997.44 734.382 1024.5 701 1024.5C667.617 1024.5 640.555 997.44 640.555 964.058C640.555 930.675 667.617 903.613 701 903.613Z" fill="#E88A8A" />
+                </g>
+            </g>
+
+            {/* Rechtes Auge */}
+            <g>
+                <path d="M1165.49 565.955C1202.85 649.786 1204.52 751.607 1109.49 793.955C1014.47 836.302 937.849 784.284 900.49 700.453C863.131 616.622 846.465 518.802 941.49 476.454C1036.52 434.107 1128.13 482.124 1165.49 565.955Z" fill="black" />
+                <ellipse cx="1031.88" cy="638.875" rx="96.8751" ry="96.8749" fill="#F4EFE5" />
+                <path d="M1115.83 639.413C1115.83 685.485 1078.48 722.833 1032.41 722.833C986.341 722.833 948.992 685.485 948.992 639.413C948.992 593.342 986.341 555.993 1032.41 555.993C1078.48 555.993 1115.83 593.342 1115.83 639.413Z" fill="#2C2A27" />
+                <path d="M1089.58 640.777C1089.58 672.739 1063.67 698.65 1031.71 698.65C999.744 698.65 973.834 672.739 973.834 640.777C973.834 608.815 999.744 582.904 1031.71 582.904C1063.67 582.904 1089.58 608.815 1089.58 640.777Z" fill="#161514" />
+                <path d="M1013.17 602.571C1013.17 613.432 1004.36 622.237 993.5 622.237C982.639 622.237 973.834 613.432 973.834 602.571C973.834 591.709 982.639 582.904 993.5 582.904C1004.36 582.904 1013.17 591.709 1013.17 602.571Z" fill="#5F5D5A" />
+                <path d="M1079.41 693.658C1079.41 698.803 1075.24 702.974 1070.1 702.974C1064.95 702.974 1060.78 698.803 1060.78 693.658C1060.78 688.514 1064.95 684.343 1070.1 684.343C1075.24 684.343 1079.41 688.514 1079.41 693.658Z" fill="#5F5D5A" />
+            </g>
+
+            {/* Linkes Auge */}
+            <g>
+                <path d="M242.492 565.955C205.133 649.786 203.467 751.607 298.492 793.955C393.517 836.302 470.133 784.284 507.492 700.453C544.851 616.622 561.517 518.802 466.492 476.454C371.467 434.107 279.851 482.124 242.492 565.955Z" fill="black" />
+                <ellipse cx="96.8751" cy="96.8749" rx="96.8751" ry="96.8749" transform="matrix(-1 0 0 1 472.982 542)" fill="#F4EFE5" />
+                <path d="M292.15 639.413C292.15 685.485 329.499 722.833 375.57 722.833C421.642 722.833 458.99 685.485 458.99 639.413C458.99 593.342 421.642 555.993 375.57 555.993C329.499 555.993 292.15 593.342 292.15 639.413Z" fill="#2C2A27" />
+                <path d="M318.403 640.777C318.403 672.739 344.314 698.65 376.276 698.65C408.238 698.65 434.149 672.739 434.149 640.777C434.149 608.815 408.238 582.904 376.276 582.904C344.314 582.904 318.403 608.815 318.403 640.777Z" fill="#161514" />
+                <path d="M394.815 602.571C394.815 613.432 403.62 622.237 414.482 622.237C425.343 622.237 434.148 613.432 434.148 602.571C434.148 591.709 425.343 582.904 414.482 582.904C403.62 582.904 394.815 591.709 394.815 602.571Z" fill="#5F5D5A" />
+                <path d="M328.57 693.658C328.57 698.803 332.741 702.974 337.885 702.974C343.03 702.974 347.201 698.803 347.201 693.658C347.201 688.514 343.03 684.343 337.885 684.343C332.741 684.343 328.57 688.514 328.57 693.658Z" fill="#5F5D5A" />
+            </g>
+        </g>
     );
 }

@@ -1,63 +1,86 @@
-// Brown bear companion skin, drawn on the shared companion skeleton (viewBox 0 0 1522 1564).
-// The body rect, the eye anchors (387,680)/(1005,680) and the leg positions match
-// WolfSkin so equipped items line up across companion types.
-// `part="front"` = the nose, drawn on top of the equipped-item layer.
+// Brown bear companion skin — the user's original Group105 artwork, mapped onto
+// the shared wolf body rect (x196 y178 w1000 h1150) via BODY_TO_WOLF so the body
+// matches Howly 1:1 and equipped items line up. The whole character is part of
+// the face art, so it lives in the "back" layer and part="front" renders nothing.
+const BODY_TO_WOLF = 'translate(0.1544 -13.7806) scale(0.9926445 1.1415511)';
+
 export function BearSkin({ part = 'back' }) {
     if (part === 'front') {
-        // Nose (front layer, sits above equipped items).
-        return <ellipse cx="696" cy="772" rx="58" ry="44" fill="#341F13" />;
+        return null;
     }
 
     return (
-        <>
-            {/* Ears (behind the body) */}
-            <circle cx="360" cy="185" r="120" fill="#341F13" />
-            <circle cx="1032" cy="185" r="120" fill="#341F13" />
+        <g transform={BODY_TO_WOLF}>
+            {/* Ohren */}
+            <ellipse cx="239.5" cy="166.5" rx="174.5" ry="166.5" fill="#341F13" />
+            <ellipse cx="1192.5" cy="166.5" rx="174.5" ry="166.5" transform="rotate(-180 1192.5 166.5)" fill="#341F13" />
 
-            {/* Paws (behind the body) — same anchors as the wolf so shoes line up */}
+            {/* Pfoten / Füße */}
             <g>
-                {/* Front left leg */}
-                <circle cx="486.999" cy="1228" r="100" transform="rotate(-90 486.999 1228)" fill="#341F13" />
-                <circle cx="486.999" cy="1428" r="100" transform="rotate(-90 486.999 1428)" fill="#341F13" />
-                <rect x="386.999" y="1428" width="200" height="200" transform="rotate(-90 386.999 1428)" fill="#341F13" />
-
-                {/* Front right leg */}
-                <circle cx="904.997" cy="1229" r="100" transform="rotate(-90 904.997 1229)" fill="#341F13" />
-                <circle cx="904.997" cy="1429" r="100" transform="rotate(-90 904.997 1429)" fill="#341F13" />
-                <rect x="804.997" y="1429" width="200" height="200" transform="rotate(-90 804.997 1429)" fill="#341F13" />
-
-                {/* Back right leg */}
-                <ellipse cx="1165.45" cy="969.455" rx="75" ry="75" transform="rotate(-145 1165.45 969.455)" fill="#341F13" />
-                <ellipse cx="1288.33" cy="1055.49" rx="75" ry="75" transform="rotate(-145 1288.33 1055.49)" fill="#341F13" />
-                <rect x="1245.31" y="1116.93" width="150" height="150" transform="rotate(-145 1245.31 1116.93)" fill="#341F13" />
-
-                {/* Back left leg */}
-                <ellipse cx="75" cy="75" rx="75" ry="75" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 208.909 1073.91)" fill="#341F13" />
-                <ellipse cx="75" cy="75" rx="75" ry="75" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 86.0364 1159.95)" fill="#341F13" />
-                <rect width="150" height="150" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 147.473 1116.93)" fill="#341F13" />
+                <ellipse cx="75.5559" cy="75.5556" rx="75.5559" ry="75.5556" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 210.457 961.082)" fill="#341F13" />
+                <ellipse cx="75.5559" cy="75.5556" rx="75.5559" ry="75.5556" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 86.6738 1047.76)" fill="#341F13" />
+                <rect width="151.112" height="151.111" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 148.565 1004.42)" fill="#341F13" />
+            </g>
+            <g>
+                <circle cx="492.001" cy="1092.28" r="100.741" transform="rotate(-90 492.001 1092.28)" fill="#341F13" />
+                <circle cx="492.001" cy="1293.77" r="100.741" transform="rotate(-90 492.001 1293.77)" fill="#341F13" />
+                <rect x="391.26" y="1293.77" width="201.482" height="201.482" transform="rotate(-90 391.26 1293.77)" fill="#341F13" />
+            </g>
+            <g>
+                <circle cx="910" cy="1093.78" r="100.741" transform="rotate(-90 910 1093.78)" fill="#341F13" />
+                <circle cx="910" cy="1295.26" r="100.741" transform="rotate(-90 910 1295.26)" fill="#341F13" />
+                <rect x="809.259" y="1295.26" width="201.482" height="201.482" transform="rotate(-90 809.259 1295.26)" fill="#341F13" />
+            </g>
+            <g>
+                <ellipse cx="1174" cy="837.585" rx="75.5559" ry="75.5556" transform="rotate(-145 1174 837.585)" fill="#341F13" />
+                <ellipse cx="1297.78" cy="924.26" rx="75.5559" ry="75.5556" transform="rotate(-145 1297.78 924.26)" fill="#341F13" />
+                <rect x="1254.45" y="986.151" width="151.112" height="151.111" transform="rotate(-145 1254.45 986.151)" fill="#341F13" />
             </g>
 
-            {/* Body */}
-            <rect x="195.998" y="178" width="1000" height="1150" rx="100" fill="#75503C" />
+            {/* Gesicht / Körper */}
+            <rect x="197.295" y="168" width="1007.41" height="1007.41" rx="100" fill="#75503C" />
 
-            {/* Eyes (subtle dark-brown sockets + dark pupils) */}
-            {/* Left */}
-            <ellipse cx="387" cy="688" rx="82" ry="100" transform="rotate(-18 387 688)" fill="#341F13" />
-            <ellipse cx="387" cy="688" rx="46" ry="60" transform="rotate(-18 387 688)" fill="#F4EFE5" />
-            <circle cx="387" cy="682" r="33" fill="#161514" />
-            <circle cx="375" cy="670" r="10" fill="#5F5D5A" />
-            {/* Right */}
-            <ellipse cx="1005" cy="688" rx="82" ry="100" transform="rotate(18 1005 688)" fill="#341F13" />
-            <ellipse cx="1005" cy="688" rx="46" ry="60" transform="rotate(18 1005 688)" fill="#F4EFE5" />
-            <circle cx="1005" cy="682" r="33" fill="#161514" />
-            <circle cx="993" cy="670" r="10" fill="#5F5D5A" />
+            {/* Schnauze (weiße Unterlage) */}
+            <g>
+                <ellipse cx="777.5" cy="778.955" rx="72.5" ry="101.488" fill="white" />
+                <ellipse cx="632.5" cy="778.955" rx="72.5" ry="101.488" fill="white" />
+                <rect x="632.5" y="677.468" width="145" height="202.975" fill="white" />
+            </g>
 
-            {/* Muzzle (prominent cream snout) */}
-            <rect x="556" y="726" width="280" height="186" rx="92" fill="#F4EFE5" />
+            {/* Schnauze (creme Maulpartie) */}
+            <g>
+                <ellipse cx="777.5" cy="778.955" rx="72.5" ry="101.488" fill="#F4EFE5" />
+                <ellipse cx="705.242" cy="827.91" rx="72.5" ry="120.398" transform="rotate(89.3264 705.242 827.91)" fill="#F4EFE5" />
+                <ellipse cx="632.5" cy="778.955" rx="72.5" ry="101.488" fill="#F4EFE5" />
+                <rect x="632.5" y="677.468" width="145" height="202.975" fill="#F4EFE5" />
+            </g>
 
-            {/* Mouth (on the muzzle) */}
-            <path d="M696 812V856" stroke="#341F13" strokeWidth="10" strokeLinecap="round" />
-            <path d="M634 850Q696 900 758 850" stroke="#341F13" strokeWidth="10" fill="none" strokeLinecap="round" />
-        </>
+            {/* Nase */}
+            <ellipse cx="700" cy="750.521" rx="60" ry="35.5207" fill="#341F13" />
+
+            {/* Rechtes Auge */}
+            <g>
+                <path d="M1165.49 565.955C1202.85 649.786 1204.52 751.607 1109.49 793.955C1014.47 836.302 937.849 784.284 900.49 700.453C863.131 616.622 846.465 518.802 941.49 476.454C1036.52 434.107 1128.13 482.124 1165.49 565.955Z" fill="#341F13" />
+                <ellipse cx="1031.88" cy="638.875" rx="96.8751" ry="96.8749" fill="#F4EFE5" />
+                <path d="M1115.83 639.413C1115.83 685.485 1078.48 722.833 1032.41 722.833C986.34 722.833 948.992 685.485 948.992 639.413C948.992 593.342 986.34 555.993 1032.41 555.993C1078.48 555.993 1115.83 593.342 1115.83 639.413Z" fill="#2C2A27" />
+                <path d="M1089.58 640.777C1089.58 672.739 1063.67 698.65 1031.71 698.65C999.744 698.65 973.834 672.739 973.834 640.777C973.834 608.815 999.744 582.904 1031.71 582.904C1063.67 582.904 1089.58 608.815 1089.58 640.777Z" fill="#161514" />
+                <path d="M1013.17 602.571C1013.17 613.432 1004.36 622.237 993.5 622.237C982.639 622.237 973.834 613.432 973.834 602.571C973.834 591.709 982.639 582.904 993.5 582.904C1004.36 582.904 1013.17 591.709 1013.17 602.571Z" fill="#5F5D5A" />
+                <path d="M1079.41 693.658C1079.41 698.803 1075.24 702.974 1070.1 702.974C1064.95 702.974 1060.78 698.803 1060.78 693.658C1060.78 688.514 1064.95 684.343 1070.1 684.343C1075.24 684.343 1079.41 688.514 1079.41 693.658Z" fill="#5F5D5A" />
+            </g>
+
+            {/* Linkes Auge */}
+            <g>
+                <path d="M242.492 565.955C205.133 649.786 203.467 751.607 298.492 793.955C393.517 836.302 470.133 784.284 507.492 700.453C544.851 616.622 561.517 518.802 466.492 476.454C371.467 434.107 279.851 482.124 242.492 565.955Z" fill="#341F13" />
+                <ellipse cx="96.8751" cy="96.8749" rx="96.8751" ry="96.8749" transform="matrix(-1 0 0 1 472.982 542)" fill="#F4EFE5" />
+                <path d="M292.15 639.413C292.15 685.485 329.499 722.833 375.57 722.833C421.642 722.833 458.99 685.485 458.99 639.413C458.99 593.342 421.642 555.993 375.57 555.993C329.499 555.993 292.15 593.342 292.15 639.413Z" fill="#2C2A27" />
+                <path d="M318.403 640.777C318.403 672.739 344.314 698.65 376.276 698.65C408.238 698.65 434.149 672.739 434.149 640.777C434.149 608.815 408.238 582.904 376.276 582.904C344.314 582.904 318.403 608.815 318.403 640.777Z" fill="#161514" />
+                <path d="M394.815 602.571C394.815 613.432 403.62 622.237 414.482 622.237C425.343 622.237 434.148 613.432 434.148 602.571C434.148 591.709 425.343 582.904 414.482 582.904C403.62 582.904 394.815 591.709 394.815 602.571Z" fill="#5F5D5A" />
+                <path d="M328.57 693.658C328.57 698.803 332.741 702.974 337.885 702.974C343.03 702.974 347.201 698.803 347.201 693.658C347.201 688.514 343.03 684.343 337.885 684.343C332.741 684.343 328.57 688.514 328.57 693.658Z" fill="#5F5D5A" />
+            </g>
+
+            {/* Mund: senkrechte Mittellinie + Lächeln */}
+            <line x1="704" y1="856" x2="704" y2="749" stroke="#341F13" strokeWidth="10" />
+            <path d="M640 820C693.377 870.773 720.234 865.145 765 820" stroke="#341F13" strokeWidth="10" fill="none" />
+        </g>
     );
 }
