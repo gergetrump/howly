@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { 
     getCurrentUser, 
+    getCurrentUserPlan,
     updateCurrentUser, 
     deleteCurrentUser, 
     completeOnboarding,
@@ -16,6 +17,7 @@ const router = Router();
 router.use(requireAuth);
 
 router.get('/search', searchUsers);
+router.get('/me/plan', getCurrentUserPlan);
 router.get('/me', getCurrentUser);
 router.patch('/me', updateCurrentUser);
 router.post('/me/complete-onboarding', completeOnboarding);

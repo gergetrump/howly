@@ -1,5 +1,6 @@
 import * as userService from './user.service.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cloudinary.service.js';
+import { PLANS, getPlanForUser, getPlanKeyForUser } from '../../config/plans.js';
 import {
     validateSearchUsersInput,
     validateUpdateUserInput,
@@ -8,6 +9,23 @@ import {
 
 const badRequest = (res, message) => res.status(400).json({ message });
 const notFound = (res) => res.status(404).json({ message: 'User not found' });
+
+function toPublicPlan(plan) {
+    return {
+        key: plan.key,
+        label: plan.label,
+        limits: plan.limits,
+        permissions: plan.permissions,
+        monthlyBenefits: plan.monthlyBenefits,
+        billing: plan.billing,
+    };
+}
+
+function toPublicPlans() {
+    return Object.fromEntries(
+        Object.entries(PLANS).map(([key, plan]) => [key, toPublicPlan(plan)]),
+    );
+}
 
 // Return the authenticated user's public profile.
 export async function getCurrentUser(req, res) {
@@ -24,6 +42,26 @@ export async function getCurrentUser(req, res) {
     }
 
     return res.status(200).json(userService.toPublicUser(user));
+}
+
+export async function getCurrentUserPlan(req, res) {
+    const { error } = validateUserId(req.user?.id);
+
+    if (error) {
+        return badRequest(res, error);
+    }
+
+    const user = await userService.getUserById(req.user.id);
+
+    if (!user) {
+        return notFound(res);
+    }
+
+    return res.status(200).json({
+        currentPlanKey: getPlanKeyForUser(user),
+        currentPlan: toPublicPlan(getPlanForUser(user)),
+        plans: toPublicPlans(),
+    });
 }
 
 export async function searchUsers(req, res) {
