@@ -2,6 +2,7 @@ import { CompanionAvatar } from '@/components/brand/companionAvatar';
 
 export function Companion({
     src,
+    type = 'wolf',
     name = 'Howly',
     size = 'xl',
     showName = true,
@@ -11,6 +12,7 @@ export function Companion({
     return (
         <CompanionAvatar
             src={src}
+            type={type}
             name={name}
             size={size}
             showName={showName}

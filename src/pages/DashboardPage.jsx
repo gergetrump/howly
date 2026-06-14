@@ -14,7 +14,7 @@ import { getMyActiveStories } from '@/services/storyApi';
 import { useAuth } from '@/context/authContext';
 
 export function DashboardPage() {
-    const { user } = useAuth();
+    const { user, companion } = useAuth();
     const [habits, setHabits] = useState([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [habitToEdit, setHabitToEdit] = useState(null);
@@ -155,7 +155,11 @@ export function DashboardPage() {
                 <DailyProgressCard completed={completedCount} total={totalCount} />
             </PageSection>
 
-            <CompanionStage name="Howly" equippedItemKeys={equippedItemKeys} />
+            <CompanionStage
+                type={companion?.type}
+                name={companion?.name}
+                equippedItemKeys={equippedItemKeys}
+            />
 
             <PageSection 
                 title="Today's Habits" 

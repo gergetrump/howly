@@ -17,6 +17,12 @@ export function deleteCurrentUser() {
     });
 }
 
+export function completeOnboarding() {
+    return apiRequest('/users/me/complete-onboarding', {
+        method: 'POST',
+    });
+}
+
 export async function uploadCurrentUserProfilePicture(file) {
     const formData = new FormData();
     formData.append('profilePicture', file);
