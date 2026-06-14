@@ -163,6 +163,7 @@ export function ProfilePage() {
 
     async function handleManagePremium() {
         try {
+            setPremiumError('');
             const response = await createManagePremiumSession();
             
             if (!response?.url) {
@@ -170,8 +171,14 @@ export function ProfilePage() {
             }
 
             window.location.href = response.url;
-        } catch {
+        } catch (error) {
             console.error('Could not start checkout:', error);
+            setPremiumError(
+                error.message === 'Request failed'
+                    ? 'Premium management is unavailable right now.'
+                    : error.message || 'Could not manage premium'
+            );
+        }
     }
 
     if (isLoadingUser) {
@@ -299,7 +306,7 @@ export function ProfilePage() {
                             onClick={handleUpgradeToPremium}
                             disabled={isStartingCheckout}
                         />  
-                    )};
+                    )}
 
                     <SettingsRow icon={Bell} title="Notifications" />
                     <SettingsRow icon={Lock} title="Privacy & Security" />
@@ -330,5 +337,4 @@ export function ProfilePage() {
             </PageSection>
         </Page>
     );
-}
 }
