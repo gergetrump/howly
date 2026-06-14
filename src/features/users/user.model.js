@@ -72,6 +72,7 @@ const userSchema = new Schema(
     stripeSubscriptionId: String,
     premiumStatus: String, // active, canceled, past_due, unpaid
     premiumUntil: Date,
+    
     isEmailVerified: {
       type: Boolean,
       default: false,

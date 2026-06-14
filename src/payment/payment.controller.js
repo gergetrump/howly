@@ -1,5 +1,6 @@
 
 import config from '../../config.js';
+import { ApiError } from '../errors/ApiError.js';
 import {
     constructStripeWebhookEvent,
     createPremiumCheckoutSession,
@@ -22,16 +23,26 @@ export async function handleCreateCheckoutSession(req, res) {
 }
 
 
-export async function handleCreateManagePremiumSession(req, res) {
+export async function handleCreateManagePremiumSession(req, res, next) {
     try {
         const userId = req.user.id;
         const session = await createManagePremiumSession(userId);
         res.status(200).json({ url: session.url });
     } catch (error) {
         console.error('Stripe session error: ', error);
-        return res.status(500).json({
-            message: 'Could not create manage premium session',
-        });
+
+        if (error instanceof ApiError) {
+            return next(error);
+        }
+
+        if (error?.type?.startsWith('Stripe')) {
+            return next(ApiError.internal(`Stripe could not create manage premium session: ${error.message}`));
+        }
+
+        return next(error);
+        
+
+
     }
 }
 

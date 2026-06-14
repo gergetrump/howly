@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import config from '../../config.js';
+import { ApiError } from '../errors/ApiError.js';
 import User from '../features/users/user.model.js';
 import { PLANS, PLAN_KEYS } from '../config/plans.js';
 
@@ -125,11 +126,11 @@ export async function createManagePremiumSession(userId) {
     const user = await User.findById(userId);
 
     if (!user) {
-        throw new Error('User not found');
+        throw ApiError.notFound('User not found');
     }
 
     if (!user.stripeCustomerId) {
-        throw new Error('No Stripe customer found');
+        throw ApiError.badRequest('No Stripe customer found for this user. Create a checkout session before opening the billing portal.');
     }
 
     return stripe.billingPortal.sessions.create({
