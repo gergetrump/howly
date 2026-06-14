@@ -30,7 +30,7 @@ import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import { buyItem, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
-import { getCurrentUser } from '@/services/userService';
+import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
 
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
 
@@ -50,8 +50,10 @@ export function ShopPage() {
     const [activeCategory, setActiveCategory] = useState('all');
     const [premiumPrompt, setPremiumPrompt] = useState('');
     const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
+    const [planInfo, setPlanInfo] = useState(null);
 
     const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
+    const premiumMonthlyCoins = planInfo?.plans?.premium?.monthlyBenefits?.coins;
 
     const restorePremiumReturnItem = useCallback(() => {
         const returnItemId = window.sessionStorage.getItem(PREMIUM_RETURN_ITEM_STORAGE_KEY);
@@ -69,6 +71,14 @@ export function ShopPage() {
 
         return refreshedUser;
     }, [setUser]);
+
+    useEffect(() => {
+        getCurrentUserPlan()
+            .then(setPlanInfo)
+            .catch((planError) => {
+                console.error('Failed to load user plan:', planError);
+            });
+    }, []);
 
     useEffect(() => {
         const paymentStatus = searchParams.get('payment');
@@ -337,7 +347,9 @@ export function ShopPage() {
             } else if (buyError.code === 'NOT_ENOUGH_COINS') {
                 if (isFreeUser) {
                     setPremiumReturnItemId(failedItem?._id ?? '');
-                    setPremiumPrompt(`You do not have enough moon coins for ${failedItem?.name ?? 'this item'}. Premium gives you 300 moon coins every month.`);
+                    setPremiumPrompt(
+                        `You do not have enough moon coins for ${failedItem?.name ?? 'this item'}. Premium gives you monthly bonus coins${premiumMonthlyCoins ? ` (${premiumMonthlyCoins} coins)` : ''}.`,
+                    );
                 } else {
                     setError(`You do not have enough moon coins for ${failedItem?.name ?? 'this item'}`);
                 }

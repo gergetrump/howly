@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import {
     Dialog,
@@ -19,7 +19,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
-import { PremiumUpgradeDialog } from '@/components/common';
+import { PlanLimitDialog, PremiumUpgradeDialog } from '@/components/common';
 import { useAuth } from '@/context/authContext';
 import { createHabit, updateHabit } from '@/services/habitService';
 
@@ -59,13 +59,14 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
     const [formError, setFormError] = useState('');
     const [premiumPrompt, setPremiumPrompt] = useState('');
+    const [limitPrompt, setLimitPrompt] = useState(null);
     const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
-    const dynamicCategories = [...new Set([
+    const dynamicCategories = useMemo(() => [...new Set([
         ...(existingHabits?.map(h => h.category).filter(Boolean) || []),
         editHabit?.category
-    ].filter(Boolean))];
-    const ALL_CATEGORIES = [...new Set([...CATEGORIES, ...dynamicCategories])];
-    const SELECTABLE_CATEGORIES = [...ALL_CATEGORIES, 'Custom'];
+    ].filter(Boolean))], [existingHabits, editHabit?.category]);
+    const ALL_CATEGORIES = useMemo(() => [...new Set([...CATEGORIES, ...dynamicCategories])], [dynamicCategories]);
+    const SELECTABLE_CATEGORIES = useMemo(() => [...ALL_CATEGORIES, 'Custom'], [ALL_CATEGORIES]);
 
     // Effect to pre-fill form when editHabit is passed
     useEffect(() => {
@@ -108,7 +109,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             setIcon('🎯');
             setFormError('');
         }
-    }, [open, editHabit, ALL_CATEGORIES.join(',')]);
+    }, [open, editHabit, ALL_CATEGORIES]);
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -141,8 +142,18 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             if (onHabitAdded) onHabitAdded(result.data, !!editHabit);
             onOpenChange(false);
         } catch (error) {
-            if (!editHabit && isFreeUser && error.code === 'HABIT_LIMIT_REACHED') {
-                setPremiumPrompt('You already reached the free habit limit. Upgrade to Premium to create up to 6 habits.');
+            if (!editHabit && error.code === 'HABIT_LIMIT_REACHED') {
+                onOpenChange(false);
+                window.setTimeout(() => {
+                    if (isFreeUser) {
+                        setPremiumPrompt(error.message || 'You already reached the free habit limit. Upgrade to Premium to create more habits.');
+                    } else {
+                        setLimitPrompt({
+                            title: 'Habit limit reached',
+                            message: error.message || 'You reached the habit limit for your current plan.',
+                        });
+                    }
+                }, 0);
                 return;
             }
 
@@ -391,6 +402,16 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
                 }
             }}
             message={premiumPrompt}
+        />
+        <PlanLimitDialog
+            open={Boolean(limitPrompt)}
+            onOpenChange={(nextOpen) => {
+                if (!nextOpen) {
+                    setLimitPrompt(null);
+                }
+            }}
+            title={limitPrompt?.title}
+            message={limitPrompt?.message}
         />
         </>
     );

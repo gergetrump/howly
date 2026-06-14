@@ -4,6 +4,10 @@ export function getCurrentUser() {
     return apiRequest('/users/me');
 }
 
+export function getCurrentUserPlan() {
+    return apiRequest('/users/me/plan');
+}
+
 export function updateCurrentUser(userData) {
     return apiRequest('/users/me', {
         method: 'PATCH',
