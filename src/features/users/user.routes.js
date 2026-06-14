@@ -3,6 +3,7 @@ import {
     getCurrentUser, 
     updateCurrentUser, 
     deleteCurrentUser, 
+    completeOnboarding,
     uploadCurrentUserProfilePicture,
     deleteCurrentUserProfilePicture,
     searchUsers
@@ -17,6 +18,7 @@ router.use(requireAuth);
 router.get('/search', searchUsers);
 router.get('/me', getCurrentUser);
 router.patch('/me', updateCurrentUser);
+router.post('/me/complete-onboarding', completeOnboarding);
 router.delete('/me', deleteCurrentUser);
 
 router.patch(

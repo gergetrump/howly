@@ -50,6 +50,16 @@ const habitSchema = new Schema(
         category: {
             type: String,
         },
+        // Origin metadata for cross-user analytics of onboarding starter habits.
+        source: {
+            type: String,
+            enum: ['manual', 'onboarding'],
+            default: 'manual',
+        },
+        templateKey: {
+            type: String,
+            default: null,
+        },
         ownerId: {
             type: Schema.Types.ObjectId,
             ref: 'User',

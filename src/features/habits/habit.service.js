@@ -232,6 +232,8 @@ export async function createHabitsFromTemplates(userId, templates) {
         customDays: t.customDays || [],
         category: t.category,
         ownerId: userId,
+        source: 'onboarding',
+        templateKey: t.templateKey ?? null,
     }));
 
     const habits = await Habit.insertMany(docs);
