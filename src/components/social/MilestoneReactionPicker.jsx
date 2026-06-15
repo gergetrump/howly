@@ -94,12 +94,13 @@ export function MilestoneReactionPicker({ post, busy, onReact, onOpenReactions }
     const reactionCounts = post.reactionCounts ?? [];
     const visibleReactionCounts = reactionCounts.slice(0, MAX_VISIBLE_REACTION_COUNTS);
     const hasMoreReactionCounts = reactionCounts.length > MAX_VISIBLE_REACTION_COUNTS;
+    const currentUserReactions = post.currentUserReactions ?? [post.currentUserReaction].filter(Boolean);
 
     return (
         <div className="flex flex-wrap items-center gap-2">
             <div ref={pickerRef} className="relative flex rounded-full border border-white/10 bg-white/5 p-1">
                 {MILESTONE_REACTION_EMOJIS.map((emoji) => {
-                    const isSelected = post.currentUserReaction === emoji;
+                    const isSelected = currentUserReactions.includes(emoji);
 
                     return (
                         <button
