@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Heart, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { appCardClassName } from '@/components/cards/cardStyles';
 import { getStoryLikes } from '@/services/storyApi';
 
@@ -50,12 +51,14 @@ function buildLikeSummary(likers, likeCount) {
     return `Liked by ${firstName} and ${likeCount - 1} ${likeCount === 2 ? 'other' : 'others'}`;
 }
 
-export function StoryFeedCard({ authorName, story, isOwn = false, onDelete, children }) {
+export function StoryFeedCard({ authorName, authorAvatarSrc, story, isOwn = false, onDelete, children }) {
     const [likers, setLikers] = useState(null);
     const [isLikesModalOpen, setIsLikesModalOpen] = useState(false);
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState('');
+    const displayName = isOwn ? 'You' : authorName;
+    const authorInitial = displayName?.trim()?.charAt(0)?.toUpperCase() || '?';
 
     // Own story with likes: load the likers so the summary can show names
     useEffect(() => {
@@ -96,11 +99,19 @@ export function StoryFeedCard({ authorName, story, isOwn = false, onDelete, chil
         <Card className={appCardClassName}>
             <CardHeader>
                 <div className="flex items-start justify-between gap-2">
-                    <div>
-                        <CardTitle>{isOwn ? 'You' : authorName}</CardTitle>
-                        <p className={`mt-1 text-sm ${SOURCE_TYPE_COLORS[story.sourceType] ?? 'text-slate-300'}`}>
-                            {buildContextLine(story)}
-                        </p>
+                    <div className="flex min-w-0 items-start gap-3">
+                        <Avatar size="lg" className="bg-slate-300 text-slate-950">
+                            {authorAvatarSrc ? <AvatarImage src={authorAvatarSrc} alt="" /> : null}
+                            <AvatarFallback className="bg-slate-300 font-bold text-slate-950">
+                                {authorInitial}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                            <CardTitle className="truncate">{displayName}</CardTitle>
+                            <p className={`mt-1 truncate text-sm ${SOURCE_TYPE_COLORS[story.sourceType] ?? 'text-slate-300'}`}>
+                                {buildContextLine(story)}
+                            </p>
+                        </div>
                     </div>
 
                     {isOwn && onDelete ? (
