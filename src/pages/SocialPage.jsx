@@ -350,6 +350,11 @@ export function SocialPage() {
                     feedPost.id === post.id ? response.milestonePost : feedPost,
                 ),
             );
+            setSelectedReaction((currentReaction) =>
+                currentReaction?.post?.id === post.id
+                    ? { post: response.milestonePost }
+                    : currentReaction,
+            );
         } catch (err) {
             setError(getSocialErrorMessage(err));
         } finally {
@@ -401,13 +406,15 @@ export function SocialPage() {
 
             <ReactionUsersDialog
                 reaction={selectedReactionPost ? { post: selectedReactionPost } : null}
-                busy={isSubmitting}
+                busy={isSubmitting || busyPostId === selectedReactionPost?.id}
+                currentUserId={user?.id}
                 onClose={() => setSelectedReaction(null)}
                 onSelectUser={(reactionUser) => {
                     setSelectedReaction(null);
                     setSelectedProfileUser(reactionUser);
                 }}
                 onAddFriend={handleSendProfileFriendRequest}
+                onReact={handleReactToMilestone}
                 getRelationship={getProfileRelationship}
             />
             <UserPreviewDialog

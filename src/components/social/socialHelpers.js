@@ -81,6 +81,8 @@ export function getSocialErrorMessage(error, user) {
             return 'That milestone is no longer available';
         case 'MILESTONE_REACTION_INVALID':
             return 'Choose one of the available milestone reactions';
+        case 'MILESTONE_REACTION_LIMIT_REACHED':
+            return 'Premium users can react with up to 5 emojis';
         case 'CANNOT_LIKE_OWN_MILESTONE':
             return 'You cannot like your own milestone';
         case 'CANNOT_LIKE_OWN_STORY':

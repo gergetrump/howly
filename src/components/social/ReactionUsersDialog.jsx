@@ -6,16 +6,29 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { UserPanelRow } from '@/components/social/UserPanelRow.jsx';
+import { sameId } from '@/components/social/socialHelpers.js';
 
 export function ReactionUsersDialog({
     reaction,
     busy,
+    currentUserId,
     onClose,
     onSelectUser,
     onAddFriend,
+    onReact,
     getRelationship,
 }) {
     const users = reaction?.post?.reactions ?? [];
+    const sortedUsers = [...users].sort((firstReaction, secondReaction) => {
+        const firstIsCurrentUser = sameId(firstReaction.user?.id, currentUserId);
+        const secondIsCurrentUser = sameId(secondReaction.user?.id, currentUserId);
+
+        if (firstIsCurrentUser === secondIsCurrentUser) {
+            return 0;
+        }
+
+        return firstIsCurrentUser ? -1 : 1;
+    });
 
     return (
         <Dialog open={Boolean(reaction)} onOpenChange={(open) => !open && onClose()}>
@@ -30,17 +43,34 @@ export function ReactionUsersDialog({
                 </DialogHeader>
 
                 <div className="grid max-h-[23rem] gap-2 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
-                    {users.length ? users.map((reactionUser) => {
+                    {sortedUsers.length ? sortedUsers.map((reactionUser) => {
                         const relationship = getRelationship(reactionUser.user);
+                        const isCurrentUserReaction = sameId(reactionUser.user?.id, currentUserId);
+                        const emoji = reactionUser.emoji || '💜';
+
                         return (
                             <UserPanelRow
                                 key={`${reactionUser.emoji}-${reactionUser.user?.id}`}
                                 user={reactionUser.user}
-                                emoji={reactionUser.emoji || '💜'}
                                 busy={busy}
                                 relationship={relationship}
                                 onOpenProfile={onSelectUser}
                                 onAddFriend={onAddFriend}
+                                trailingContent={isCurrentUserReaction ? (
+                                    <button
+                                        type="button"
+                                        className="rounded-full px-2 py-1 text-xl transition hover:bg-white/10 disabled:opacity-60"
+                                        aria-label={`Remove your ${emoji} reaction`}
+                                        disabled={busy}
+                                        onClick={() => onReact(reaction.post, emoji)}
+                                    >
+                                        {emoji}
+                                    </button>
+                                ) : (
+                                    <span className="px-2 py-1 text-xl" aria-hidden="true">
+                                        {emoji}
+                                    </span>
+                                )}
                             />
                         );
                     }) : (
