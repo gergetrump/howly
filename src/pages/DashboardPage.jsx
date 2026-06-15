@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
-import { CardGrid, CompletionCircle, PlanLimitDialog, PremiumUpgradeDialog } from '@/components/common';
+import { CardGrid, CompletionCircle, PlanLimitDialog } from '@/components/common';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
@@ -15,6 +16,7 @@ import { getCurrentUserPlan } from '@/services/userService';
 import { useAuth } from '@/context/authContext';
 
 export function DashboardPage() {
+    const navigate = useNavigate();
     const { user, companion } = useAuth();
     const [habits, setHabits] = useState([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -24,7 +26,6 @@ export function DashboardPage() {
     const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
     const [storyHabit, setStoryHabit] = useState(null);
     const [equippedItemKeys, setEquippedItemKeys] = useState([]);
-    const [premiumPrompt, setPremiumPrompt] = useState('');
     const [limitPrompt, setLimitPrompt] = useState(null);
     const [planInfo, setPlanInfo] = useState(null);
     // Habit ids that already have an active (< 24h) story
@@ -142,9 +143,12 @@ export function DashboardPage() {
             }
 
             const premiumHabitLimit = planInfo?.plans?.premium?.limits?.maxHabits;
-            setPremiumPrompt(
-                `Free users can create up to ${maxHabits} habits. Upgrade to Premium${premiumHabitLimit ? ` to create up to ${premiumHabitLimit} habits` : ''}.`,
-            );
+            navigate('/premium', {
+                state: {
+                    message: `Free users can create up to ${maxHabits} habits. Upgrade to Premium${premiumHabitLimit ? ` to create up to ${premiumHabitLimit} habits` : ''}.`,
+                    returnTo: '/dashboard',
+                },
+            });
             return;
         }
 
@@ -304,16 +308,6 @@ export function DashboardPage() {
                         setSharedHabitIds((prev) => new Set(prev).add(story.sourceId));
                     }
                 }}
-            />
-
-            <PremiumUpgradeDialog
-                open={Boolean(premiumPrompt)}
-                onOpenChange={(nextOpen) => {
-                    if (!nextOpen) {
-                        setPremiumPrompt('');
-                    }
-                }}
-                message={premiumPrompt}
             />
 
             <PlanLimitDialog

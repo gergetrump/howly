@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Minus, ShoppingCart, X } from 'lucide-react';
-import { ActionButton, CardGrid, PremiumUpgradeDialog } from '@/components/common';
+import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
@@ -36,6 +36,7 @@ import { confirmCheckoutSession } from '@/services/paymentService';
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
 
 export function ShopPage() {
+    const navigate = useNavigate();
     const { user, setUser, companion } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const [items, setItems] = useState([]);
@@ -49,7 +50,6 @@ export function ShopPage() {
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
-    const [premiumPrompt, setPremiumPrompt] = useState('');
     const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
     const [planInfo, setPlanInfo] = useState(null);
 
@@ -64,6 +64,20 @@ export function ShopPage() {
             window.sessionStorage.removeItem(PREMIUM_RETURN_ITEM_STORAGE_KEY);
         }
     }, []);
+
+    const openPremiumPage = useCallback((message, returnItemId = '') => {
+        if (returnItemId) {
+            window.sessionStorage.setItem(PREMIUM_RETURN_ITEM_STORAGE_KEY, returnItemId);
+            setPremiumReturnItemId(returnItemId);
+        }
+
+        navigate('/premium', {
+            state: {
+                message,
+                returnTo: '/shop',
+            },
+        });
+    }, [navigate]);
 
     const refreshCurrentUser = useCallback(async () => {
         const currentUser = await getCurrentUser();
@@ -363,16 +377,18 @@ export function ShopPage() {
                 setError('One of these items is already in your inventory');
             } else if (buyError.code === 'PREMIUM_REQUIRED') {
                 if (isFreeUser) {
-                    setPremiumReturnItemId(failedItem?._id ?? '');
-                    setPremiumPrompt(`${failedItem?.name ?? 'This item'} is a premium item. Upgrade to buy premium shop items and get monthly bonus coins.`);
+                    openPremiumPage(
+                        `${failedItem?.name ?? 'This item'} is a premium item. Upgrade to buy premium shop items and get monthly bonus coins.`,
+                        failedItem?._id ?? '',
+                    );
                 } else {
                     setError(`${failedItem?.name ?? 'This item'} is premium only`);
                 }
             } else if (buyError.code === 'NOT_ENOUGH_COINS') {
                 if (isFreeUser) {
-                    setPremiumReturnItemId(failedItem?._id ?? '');
-                    setPremiumPrompt(
+                    openPremiumPage(
                         `You do not have enough moon coins for ${failedItem?.name ?? 'this item'}. Premium gives you monthly bonus coins${premiumMonthlyCoins ? ` (${premiumMonthlyCoins} coins)` : ''}.`,
+                        failedItem?._id ?? '',
                     );
                 } else {
                     setError(`You do not have enough moon coins for ${failedItem?.name ?? 'this item'}`);
@@ -487,21 +503,6 @@ export function ShopPage() {
                     <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
                 </div>
             </PageSection>
-
-            <PremiumUpgradeDialog
-                open={Boolean(premiumPrompt)}
-                onOpenChange={(nextOpen) => {
-                    if (!nextOpen) {
-                        setPremiumPrompt('');
-                    }
-                }}
-                message={premiumPrompt}
-                onBeforeCheckout={() => {
-                    if (premiumReturnItemId) {
-                        window.sessionStorage.setItem(PREMIUM_RETURN_ITEM_STORAGE_KEY, premiumReturnItemId);
-                    }
-                }}
-            />
 
             <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
                 <DialogContent className="border-white/10 bg-[#1e1b3a] p-0 text-white shadow-2xl sm:max-w-lg">

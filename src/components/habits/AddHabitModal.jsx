@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import {
     Dialog,
@@ -19,7 +20,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
-import { PlanLimitDialog, PremiumUpgradeDialog } from '@/components/common';
+import { PlanLimitDialog } from '@/components/common';
 import { useAuth } from '@/context/authContext';
 import { createHabit, updateHabit } from '@/services/habitService';
 
@@ -46,6 +47,7 @@ const DAYS_OF_WEEK = [
 ];
 
 export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, existingHabits = [] }) {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [name, setName] = useState('');
     const [icon, setIcon] = useState('🎯');
@@ -58,7 +60,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
     const [customCategory, setCustomCategory] = useState('');
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
     const [formError, setFormError] = useState('');
-    const [premiumPrompt, setPremiumPrompt] = useState('');
     const [limitPrompt, setLimitPrompt] = useState(null);
     const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
     const dynamicCategories = useMemo(() => [...new Set([
@@ -146,7 +147,12 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
                 onOpenChange(false);
                 window.setTimeout(() => {
                     if (isFreeUser) {
-                        setPremiumPrompt(error.message || 'You already reached the free habit limit. Upgrade to Premium to create more habits.');
+                        navigate('/premium', {
+                            state: {
+                                message: error.message || 'You already reached the free habit limit. Upgrade to Premium to create more habits.',
+                                returnTo: '/dashboard',
+                            },
+                        });
                     } else {
                         setLimitPrompt({
                             title: 'Habit limit reached',
@@ -394,15 +400,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
                 </form>
             </DialogContent>
         </Dialog>
-        <PremiumUpgradeDialog
-            open={Boolean(premiumPrompt)}
-            onOpenChange={(nextOpen) => {
-                if (!nextOpen) {
-                    setPremiumPrompt('');
-                }
-            }}
-            message={premiumPrompt}
-        />
         <PlanLimitDialog
             open={Boolean(limitPrompt)}
             onOpenChange={(nextOpen) => {
