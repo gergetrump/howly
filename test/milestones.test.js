@@ -156,6 +156,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(firstReactionResponse.body.milestonePost.likeCount, 1);
   assert.equal(firstReactionResponse.body.milestonePost.likedByCurrentUser, true);
   assert.equal(firstReactionResponse.body.milestonePost.currentUserReaction, '🎉');
+  assert.deepEqual(firstReactionResponse.body.milestonePost.currentUserReactions, ['🎉']);
   assert.deepEqual(firstReactionResponse.body.milestonePost.reactionCounts, [{ emoji: '🎉', count: 1 }]);
   assert.equal(firstReactionResponse.body.milestonePost.reactions.length, 1);
   assert.equal(firstReactionResponse.body.milestonePost.reactions[0].emoji, '🎉');
@@ -177,6 +178,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(changedReactionResponse.body.liked, true);
   assert.equal(changedReactionResponse.body.milestonePost.likeCount, 1);
   assert.equal(changedReactionResponse.body.milestonePost.currentUserReaction, '🔥');
+  assert.deepEqual(changedReactionResponse.body.milestonePost.currentUserReactions, ['🔥']);
   assert.deepEqual(changedReactionResponse.body.milestonePost.reactionCounts, [{ emoji: '🔥', count: 1 }]);
   assert.equal(changedReactionResponse.body.milestonePost.reactions[0].emoji, '🔥');
   assert.equal(await MilestoneLike.countDocuments({ milestonePost: milestonePost._id, user: friend._id }), 1);
@@ -191,6 +193,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(removedReactionResponse.body.liked, false);
   assert.equal(removedReactionResponse.body.milestonePost.likeCount, 0);
   assert.equal(removedReactionResponse.body.milestonePost.currentUserReaction, null);
+  assert.deepEqual(removedReactionResponse.body.milestonePost.currentUserReactions, []);
   assert.deepEqual(removedReactionResponse.body.milestonePost.reactionCounts, []);
   assert.deepEqual(removedReactionResponse.body.milestonePost.reactions, []);
   assert.equal(removedReactionResponse.body.milestonePost.habit.frequency, 'Daily');
@@ -230,6 +233,131 @@ test('milestone reactions accept custom picker emojis and reject non-emojis', as
     .expect(400);
 
   assert.equal(invalidReactionResponse.body.code, 'MILESTONE_REACTION_INVALID');
+});
+
+// Tests that premium users can add up to 5 reactions to the same milestone
+test('premium users can react with up to five emojis on one milestone', async () => {
+  const author = await buildUser({ username: 'premium_reaction_author', email: 'premium-reaction-author@example.com' });
+  const premiumFriend = await buildUser({
+    username: 'premium_reaction_friend',
+    email: 'premium-reaction-friend@example.com',
+    isPremium: true,
+  });
+  const habit = await buildHabit(author, { title: 'Reading', streakCount: 10 });
+
+  await Friendship.create({ userA: author._id, userB: premiumFriend._id });
+  const milestonePost = await MilestonePost.create({
+    user: author._id,
+    habit: habit._id,
+    habitTitle: habit.title,
+    streakDays: habit.streakCount,
+  });
+  let reactionResponse;
+
+  for (const emoji of ['🎉', '🔥', '👏', '💜', '✨']) {
+    reactionResponse = await request(app)
+      .post(`/api/milestones/${milestonePost._id}/like`)
+      .set('Authorization', authHeader(premiumFriend))
+      .send({ emoji })
+      .expect(200);
+  }
+
+  const storedReactions = await MilestoneLike.find({
+    milestonePost: milestonePost._id,
+    user: premiumFriend._id,
+  }).sort({ createdAt: 1 });
+
+  assert.deepEqual(storedReactions.map((reaction) => reaction.emoji), ['🎉', '🔥', '👏', '💜', '✨']);
+  assert.deepEqual(
+    reactionResponse.body.milestonePost.reactionCounts.map((reaction) => reaction.emoji),
+    ['🎉', '🔥', '👏', '💜', '✨'],
+  );
+
+  const limitResponse = await request(app)
+    .post(`/api/milestones/${milestonePost._id}/like`)
+    .set('Authorization', authHeader(premiumFriend))
+    .send({ emoji: '😂' })
+    .expect(400);
+
+  assert.equal(limitResponse.body.code, 'MILESTONE_REACTION_LIMIT_REACHED');
+});
+
+// Tests that many users can react to the same post without mixing up counts or selected reactions
+test('milestone reactions aggregate correctly across multiple users', async () => {
+  const author = await buildUser({ username: 'multi_reaction_author', email: 'multi-reaction-author@example.com' });
+  const premiumFriend = await buildUser({
+    username: 'multi_reaction_premium',
+    email: 'multi-reaction-premium@example.com',
+    isPremium: true,
+  });
+  const freeFriend = await buildUser({ username: 'multi_reaction_free', email: 'multi-reaction-free@example.com' });
+  const anotherFriend = await buildUser({ username: 'multi_reaction_other', email: 'multi-reaction-other@example.com' });
+  const habit = await buildHabit(author, { title: 'Reading', streakCount: 10 });
+
+  await Friendship.create([
+    { userA: author._id, userB: premiumFriend._id },
+    { userA: author._id, userB: freeFriend._id },
+    { userA: author._id, userB: anotherFriend._id },
+  ]);
+
+  const milestonePost = await MilestonePost.create({
+    user: author._id,
+    habit: habit._id,
+    habitTitle: habit.title,
+    streakDays: habit.streakCount,
+  });
+
+  await request(app)
+    .post(`/api/milestones/${milestonePost._id}/like`)
+    .set('Authorization', authHeader(premiumFriend))
+    .send({ emoji: '💜' })
+    .expect(200);
+  await request(app)
+    .post(`/api/milestones/${milestonePost._id}/like`)
+    .set('Authorization', authHeader(premiumFriend))
+    .send({ emoji: '🎉' })
+    .expect(200);
+  await request(app)
+    .post(`/api/milestones/${milestonePost._id}/like`)
+    .set('Authorization', authHeader(freeFriend))
+    .send({ emoji: '💜' })
+    .expect(200);
+  await request(app)
+    .post(`/api/milestones/${milestonePost._id}/like`)
+    .set('Authorization', authHeader(anotherFriend))
+    .send({ emoji: '😂' })
+    .expect(200);
+  await request(app)
+    .post(`/api/milestones/${milestonePost._id}/like`)
+    .set('Authorization', authHeader(freeFriend))
+    .send({ emoji: '🎉' })
+    .expect(200);
+
+  const premiumFeedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(premiumFriend))
+    .expect(200);
+  const premiumFeedPost = premiumFeedResponse.body.find((post) => post.id === milestonePost._id.toString());
+
+  assert.ok(premiumFeedPost);
+  assert.equal(premiumFeedPost.likeCount, 4);
+  assert.deepEqual(premiumFeedPost.currentUserReactions, ['💜', '🎉']);
+  assert.deepEqual(premiumFeedPost.reactionCounts, [
+    { emoji: '💜', count: 1 },
+    { emoji: '🎉', count: 2 },
+    { emoji: '😂', count: 1 },
+  ]);
+  assert.equal(premiumFeedPost.reactions.length, 4);
+
+  const freeFeedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(freeFriend))
+    .expect(200);
+  const freeFeedPost = freeFeedResponse.body.find((post) => post.id === milestonePost._id.toString());
+
+  assert.ok(freeFeedPost);
+  assert.deepEqual(freeFeedPost.currentUserReactions, ['🎉']);
+  assert.equal(await MilestoneLike.countDocuments({ milestonePost: milestonePost._id, user: freeFriend._id }), 1);
 });
 
 // Tests that milestone posts are created only for 10-day streak intervals

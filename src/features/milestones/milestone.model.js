@@ -84,7 +84,7 @@ const milestoneLikeSchema = new Schema(
   }
 );
 
-milestoneLikeSchema.index({ milestonePost: 1, user: 1 }, { unique: true });
+milestoneLikeSchema.index({ milestonePost: 1, user: 1, emoji: 1 }, { unique: true });
 
 export const MilestonePost = mongoose.model('MilestonePost', milestonePostSchema);
 export const MilestoneLike = mongoose.model('MilestoneLike', milestoneLikeSchema);

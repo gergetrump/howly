@@ -1,8 +1,10 @@
 import mongoose from 'mongoose';
 import { toPublicUser } from '../users/user.service.js';
+import User from '../users/user.model.js';
 import { Friendship } from '../social/social.model.js';
 import Companion from '../companion/companion.model.js';
 import UserItem from '../inventory/inventory.model.js';
+import { hasPremiumAccess } from '../../config/plans.js';
 import config from '../../../config.js';
 import {
   MilestoneLike,
@@ -14,6 +16,9 @@ import {
 const SERVER_BASE_URL = config.serverBaseUrl ?? 'http://localhost:3000';
 
 const SINGLE_EMOJI_REACTION_PATTERN = /^(?:\p{Regional_Indicator}{2}|(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\p{Emoji_Modifier})?(?:\u200D(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\p{Emoji_Modifier})?)*)$/u;
+const FREE_REACTION_LIMIT = 1;
+const PREMIUM_REACTION_LIMIT = 5;
+let legacyReactionIndexDropPromise = null;
 
 function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
@@ -26,6 +31,72 @@ function buildFriendshipPair(firstUserId, secondUserId) {
 
 function isValidReactionEmoji(emoji) {
   return typeof emoji === 'string' && SINGLE_EMOJI_REACTION_PATTERN.test(emoji.trim());
+}
+
+function normalizeReactionList(reactions) {
+  if (!reactions) {
+    return [];
+  }
+
+  return Array.isArray(reactions) ? reactions : [reactions];
+}
+
+function isDuplicateKeyError(error) {
+  return error?.code === 11000;
+}
+
+async function dropLegacyReactionUniqueIndex() {
+  if (!legacyReactionIndexDropPromise) {
+    legacyReactionIndexDropPromise = (async () => {
+      const indexes = await MilestoneLike.collection.indexes();
+      const legacyIndex = indexes.find((index) =>
+        index.unique
+        && index.key?.milestonePost === 1
+        && index.key?.user === 1
+        && index.key?.emoji === undefined
+      );
+
+      if (!legacyIndex) {
+        return false;
+      }
+
+      await MilestoneLike.collection.dropIndex(legacyIndex.name);
+      await MilestoneLike.collection.createIndex(
+        { milestonePost: 1, user: 1, emoji: 1 },
+        { unique: true }
+      );
+
+      return true;
+    })();
+  }
+
+  return legacyReactionIndexDropPromise;
+}
+
+async function createMilestoneReaction({ milestonePostId, userId, emoji }) {
+  try {
+    return await MilestoneLike.create({
+      milestonePost: milestonePostId,
+      user: userId,
+      emoji,
+    });
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) {
+      throw error;
+    }
+
+    const droppedLegacyIndex = await dropLegacyReactionUniqueIndex();
+
+    if (!droppedLegacyIndex) {
+      throw error;
+    }
+
+    return MilestoneLike.create({
+      milestonePost: milestonePostId,
+      user: userId,
+      emoji,
+    });
+  }
 }
 
 function toCompanionResponse(companion, equippedItemKeys = []) {
@@ -68,7 +139,8 @@ function toMilestonePostResponse(
   const habitId = populatedHabit?._id?.toString?.() ?? post.habit?.toString?.() ?? post.habit;
   const userId = post.user?._id?.toString?.() ?? post.user?.toString?.() ?? post.user;
   const postId = post._id.toString();
-  const currentUserReaction = userReactionsByPostId.get(postId) ?? null;
+  const currentUserReactions = normalizeReactionList(userReactionsByPostId.get(postId));
+  const currentUserReaction = currentUserReactions[0] ?? null;
 
   return {
     id: postId,
@@ -86,8 +158,9 @@ function toMilestonePostResponse(
     streakDays: post.streakDays,
     visibleUntil: post.visibleUntil,
     likeCount: post.likeCount,
-    likedByCurrentUser: Boolean(currentUserReaction),
+    likedByCurrentUser: currentUserReactions.length > 0,
     currentUserReaction,
+    currentUserReactions,
     reactionCounts: reactionCountsByPostId.get(postId) ?? [],
     reactions: reactionsByPostId.get(postId) ?? [],
     createdAt: post.createdAt,
@@ -102,8 +175,14 @@ async function getReactionCountsByPostId(postIds) {
 
   const groupedReactions = await MilestoneLike.aggregate([
     { $match: { milestonePost: { $in: postIds } } },
-    { $group: { _id: { milestonePost: '$milestonePost', emoji: '$emoji' }, count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
+    {
+      $group: {
+        _id: { milestonePost: '$milestonePost', emoji: '$emoji' },
+        count: { $sum: 1 },
+        firstReactedAt: { $min: '$createdAt' },
+      },
+    },
+    { $sort: { firstReactedAt: 1, count: -1, '_id.emoji': 1 } },
   ]);
   const reactionCountsByPostId = new Map();
 
@@ -184,8 +263,9 @@ export async function enrichMilestonePost(post, currentUserReaction = null) {
     : new Map();
   const equippedItemKeysByUserId = await getEquippedItemKeysByUserId([post.user._id ?? post.user]);
   const postId = post._id.toString();
-  const userReactionsByPostId = currentUserReaction
-    ? new Map([[postId, currentUserReaction]])
+  const currentUserReactions = normalizeReactionList(currentUserReaction);
+  const userReactionsByPostId = currentUserReactions.length
+    ? new Map([[postId, currentUserReactions]])
     : new Map();
   const reactionCountsByPostId = await getReactionCountsByPostId([post._id]);
   const reactionsByPostId = await getReactionsByPostId([post._id]);
@@ -265,10 +345,18 @@ export async function getFriendFeed({ userId }) {
   const reactions = await MilestoneLike.find({
     user: userId,
     milestonePost: { $in: posts.map((post) => post._id) },
-  }).lean();
-  const userReactionsByPostId = new Map(
-    reactions.map((reaction) => [reaction.milestonePost.toString(), reaction.emoji])
-  );
+  })
+    .sort({ createdAt: 1 })
+    .lean();
+  const userReactionsByPostId = new Map();
+
+  reactions.forEach((reaction) => {
+    const postId = reaction.milestonePost.toString();
+    const postReactions = userReactionsByPostId.get(postId) ?? [];
+
+    postReactions.push(reaction.emoji);
+    userReactionsByPostId.set(postId, postReactions);
+  });
   const reactionCountsByPostId = await getReactionCountsByPostId(posts.map((post) => post._id));
   const reactionsByPostId = await getReactionsByPostId(posts.map((post) => post._id));
   const companions = await Companion.find({
@@ -300,9 +388,12 @@ export async function toggleMilestoneLike({ userId, milestonePostId, emoji = 'ðŸ
     return { errorCode: 'MILESTONE_REACTION_INVALID' };
   }
 
-  const post = await MilestonePost.findById(milestonePostId);
+  const [post, currentUser] = await Promise.all([
+    MilestonePost.findById(milestonePostId),
+    User.findById(userId).select('role isPremium').lean(),
+  ]);
 
-  if (!post || post.visibleUntil <= new Date()) {
+  if (!post || !currentUser || post.visibleUntil <= new Date()) {
     return { errorCode: 'MILESTONE_POST_NOT_FOUND' };
   }
 
@@ -310,44 +401,75 @@ export async function toggleMilestoneLike({ userId, milestonePostId, emoji = 'ðŸ
     return { errorCode: 'MILESTONE_POST_NOT_FOUND' };
   }
 
+  const reactionLimit = hasPremiumAccess(currentUser)
+    ? PREMIUM_REACTION_LIMIT
+    : FREE_REACTION_LIMIT;
   const existingLike = await MilestoneLike.findOne({
     milestonePost: milestonePostId,
     user: userId,
+    emoji: reactionEmoji,
   });
 
-  if (existingLike?.emoji === reactionEmoji) {
+  if (existingLike) {
     await existingLike.deleteOne();
     post.likeCount = await MilestoneLike.countDocuments({ milestonePost: milestonePostId });
     await post.save();
+    const remainingUserReactions = await MilestoneLike.find({
+      milestonePost: milestonePostId,
+      user: userId,
+    })
+      .sort({ createdAt: 1 })
+      .lean();
 
     return {
-      liked: false,
-      milestonePost: await enrichMilestonePost(post),
+      liked: remainingUserReactions.length > 0,
+      milestonePost: await enrichMilestonePost(
+        post,
+        remainingUserReactions.map((reaction) => reaction.emoji)
+      ),
     };
   }
 
-  if (existingLike) {
-    existingLike.emoji = reactionEmoji;
-    await existingLike.save();
+  const currentUserReactions = await MilestoneLike.find({
+    milestonePost: milestonePostId,
+    user: userId,
+  }).sort({ createdAt: 1 });
+
+  if (reactionLimit === FREE_REACTION_LIMIT && currentUserReactions.length) {
+    currentUserReactions[0].emoji = reactionEmoji;
+    await currentUserReactions[0].save();
+  } else if (currentUserReactions.length >= reactionLimit) {
+    return { errorCode: 'MILESTONE_REACTION_LIMIT_REACHED' };
   } else {
     try {
-      await MilestoneLike.create({
-        milestonePost: milestonePostId,
-        user: userId,
+      await createMilestoneReaction({
+        milestonePostId,
+        userId,
         emoji: reactionEmoji,
       });
     } catch (err) {
-      if (err instanceof mongoose.Error.ValidationError || err.code !== 11000) {
-        throw err;
+      if (err instanceof mongoose.Error.ValidationError) {
+        return { errorCode: 'MILESTONE_REACTION_INVALID' };
       }
+
+      throw err;
     }
   }
 
   post.likeCount = await MilestoneLike.countDocuments({ milestonePost: milestonePostId });
   await post.save();
+  const updatedUserReactions = await MilestoneLike.find({
+    milestonePost: milestonePostId,
+    user: userId,
+  })
+    .sort({ createdAt: 1 })
+    .lean();
 
   return {
     liked: true,
-    milestonePost: await enrichMilestonePost(post, reactionEmoji),
+    milestonePost: await enrichMilestonePost(
+      post,
+      updatedUserReactions.map((reaction) => reaction.emoji)
+    ),
   };
 }
