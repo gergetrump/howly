@@ -199,6 +199,39 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.deepEqual(removedReactionResponse.body.milestonePost.companion.equippedItemKeys.sort(), ['glasses', 'hoodie']);
 });
 
+// Tests that picker emojis outside the preset list are accepted, while text is rejected
+test('milestone reactions accept custom picker emojis and reject non-emojis', async () => {
+  const author = await buildUser({ username: 'custom_emoji_author', email: 'custom-emoji-author@example.com' });
+  const friend = await buildUser({ username: 'custom_emoji_friend', email: 'custom-emoji-friend@example.com' });
+  const habit = await buildHabit(author, { title: 'Reading', streakCount: 10 });
+
+  await Friendship.create({ userA: author._id, userB: friend._id });
+  const milestonePost = await MilestonePost.create({
+    user: author._id,
+    habit: habit._id,
+    habitTitle: habit.title,
+    streakDays: habit.streakCount,
+  });
+
+  const customReactionResponse = await request(app)
+    .post(`/api/milestones/${milestonePost._id}/like`)
+    .set('Authorization', authHeader(friend))
+    .send({ emoji: '😂' })
+    .expect(200);
+
+  assert.equal(customReactionResponse.body.liked, true);
+  assert.equal(customReactionResponse.body.milestonePost.currentUserReaction, '😂');
+  assert.deepEqual(customReactionResponse.body.milestonePost.reactionCounts, [{ emoji: '😂', count: 1 }]);
+
+  const invalidReactionResponse = await request(app)
+    .post(`/api/milestones/${milestonePost._id}/like`)
+    .set('Authorization', authHeader(friend))
+    .send({ emoji: 'not an emoji' })
+    .expect(400);
+
+  assert.equal(invalidReactionResponse.body.code, 'MILESTONE_REACTION_INVALID');
+});
+
 // Tests that milestone posts are created only for 10-day streak intervals
 test('milestone creation only creates posts at 10-day streak intervals', async () => {
   const author = await buildUser({ username: 'milestone_author', email: 'milestone-author@example.com' });
@@ -220,6 +253,35 @@ test('milestone creation only creates posts at 10-day streak intervals', async (
 
   const storedPosts = await MilestonePost.find({ user: author._id }).sort({ streakDays: 1 });
   assert.deepEqual(storedPosts.map((post) => post.streakDays), [10, 20]);
+});
+
+// Tests that reusing an old milestone refreshes its 24-hour feed visibility
+test('milestone creation refreshes visibility for an existing milestone post', async () => {
+  const viewer = await buildUser({ username: 'refresh_viewer', email: 'refresh-viewer@example.com' });
+  const author = await buildUser({ username: 'refresh_author', email: 'refresh-author@example.com' });
+  const habit = await buildHabit(author, { title: 'Reading', streakCount: 10 });
+  const expiredMilestonePost = await MilestonePost.create({
+    user: author._id,
+    habit: habit._id,
+    habitTitle: habit.title,
+    streakDays: habit.streakCount,
+    visibleUntil: new Date(Date.now() - 60 * 1000),
+  });
+
+  await Friendship.create({ userA: viewer._id, userB: author._id });
+
+  const refreshedResult = await createMilestonePostForHabit(habit);
+
+  assert.equal(refreshedResult.milestonePost._id.toString(), expiredMilestonePost._id.toString());
+  assert.ok(refreshedResult.milestonePost.visibleUntil > new Date());
+
+  const feedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(viewer))
+    .expect(200);
+
+  assert.equal(feedResponse.body.length, 1);
+  assert.equal(feedResponse.body[0].id, expiredMilestonePost._id.toString());
 });
 
 // Tests that checking in a 9-day habit creates the 10-day milestone through the real habit route

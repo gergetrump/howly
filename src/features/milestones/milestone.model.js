@@ -76,7 +76,7 @@ const milestoneLikeSchema = new Schema(
       required: true,
       default: '❤️',
       trim: true,
-      maxlength: 8,
+      maxlength: 32,
     },
   },
   {

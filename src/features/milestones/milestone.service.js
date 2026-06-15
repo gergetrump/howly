@@ -8,11 +8,12 @@ import {
   MilestoneLike,
   MilestonePost,
   MILESTONE_INTERVAL_DAYS,
+  MILESTONE_VISIBLE_HOURS,
 } from './milestone.model.js';
 
 const SERVER_BASE_URL = config.serverBaseUrl ?? 'http://localhost:3000';
 
-const ALLOWED_REACTION_EMOJIS = ['🎉', '🔥', '👏', '💜', '✨'];
+const SINGLE_EMOJI_REACTION_PATTERN = /^(?:\p{Regional_Indicator}{2}|(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\p{Emoji_Modifier})?(?:\u200D(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\p{Emoji_Modifier})?)*)$/u;
 
 function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
@@ -21,6 +22,10 @@ function sameId(firstId, secondId) {
 function buildFriendshipPair(firstUserId, secondUserId) {
   const [userA, userB] = [firstUserId.toString(), secondUserId.toString()].sort();
   return { userA, userB };
+}
+
+function isValidReactionEmoji(emoji) {
+  return typeof emoji === 'string' && SINGLE_EMOJI_REACTION_PATTERN.test(emoji.trim());
 }
 
 function toCompanionResponse(companion, equippedItemKeys = []) {
@@ -211,6 +216,8 @@ export async function createMilestonePostForHabit(habit) {
     return { milestonePost: null };
   }
 
+  const visibleUntil = new Date(Date.now() + MILESTONE_VISIBLE_HOURS * 60 * 60 * 1000);
+
   const milestonePost = await MilestonePost.findOneAndUpdate(
     {
       habit: habit._id,
@@ -221,6 +228,7 @@ export async function createMilestonePostForHabit(habit) {
       habit: habit._id,
       habitTitle: habit.title,
       streakDays: habit.streakCount,
+      visibleUntil,
     },
     {
       returnDocument: 'after',
@@ -286,7 +294,9 @@ export async function getFriendFeed({ userId }) {
 }
 
 export async function toggleMilestoneLike({ userId, milestonePostId, emoji = '💜' }) {
-  if (!ALLOWED_REACTION_EMOJIS.includes(emoji)) {
+  const reactionEmoji = typeof emoji === 'string' ? emoji.trim() : emoji;
+
+  if (!isValidReactionEmoji(reactionEmoji)) {
     return { errorCode: 'MILESTONE_REACTION_INVALID' };
   }
 
@@ -305,7 +315,7 @@ export async function toggleMilestoneLike({ userId, milestonePostId, emoji = '�
     user: userId,
   });
 
-  if (existingLike?.emoji === emoji) {
+  if (existingLike?.emoji === reactionEmoji) {
     await existingLike.deleteOne();
     post.likeCount = await MilestoneLike.countDocuments({ milestonePost: milestonePostId });
     await post.save();
@@ -317,14 +327,14 @@ export async function toggleMilestoneLike({ userId, milestonePostId, emoji = '�
   }
 
   if (existingLike) {
-    existingLike.emoji = emoji;
+    existingLike.emoji = reactionEmoji;
     await existingLike.save();
   } else {
     try {
       await MilestoneLike.create({
         milestonePost: milestonePostId,
         user: userId,
-        emoji,
+        emoji: reactionEmoji,
       });
     } catch (err) {
       if (err instanceof mongoose.Error.ValidationError || err.code !== 11000) {
@@ -338,6 +348,6 @@ export async function toggleMilestoneLike({ userId, milestonePostId, emoji = '�
 
   return {
     liked: true,
-    milestonePost: await enrichMilestonePost(post, emoji),
+    milestonePost: await enrichMilestonePost(post, reactionEmoji),
   };
 }
