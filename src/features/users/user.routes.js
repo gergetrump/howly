@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { 
     getCurrentUser, 
+    getCurrentUserPlan,
     updateCurrentUser, 
     deleteCurrentUser, 
     completeOnboarding,

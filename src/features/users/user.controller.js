@@ -1,6 +1,6 @@
 import * as userService from './user.service.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cloudinary.service.js';
-import { getPlanForUser, PLANS } from '../../config/plans.js';
+import { PLANS, getPlanForUser, getPlanKeyForUser } from '../../config/plans.js';
 import {
     validateSearchUsersInput,
     validateUpdateUserInput,
@@ -9,6 +9,23 @@ import {
 
 const badRequest = (res, message) => res.status(400).json({ message });
 const notFound = (res) => res.status(404).json({ message: 'User not found' });
+
+function toPublicPlan(plan) {
+    return {
+        key: plan.key,
+        label: plan.label,
+        limits: plan.limits,
+        permissions: plan.permissions,
+        monthlyBenefits: plan.monthlyBenefits,
+        billing: plan.billing,
+    };
+}
+
+function toPublicPlans() {
+    return Object.fromEntries(
+        Object.entries(PLANS).map(([key, plan]) => [key, toPublicPlan(plan)]),
+    );
+}
 
 // Return the authenticated user's public profile.
 export async function getCurrentUser(req, res) {
@@ -40,12 +57,10 @@ export async function getCurrentUserPlan(req, res) {
         return notFound(res);
     }
 
-    const currentPlan = getPlanForUser(user);
-
     return res.status(200).json({
-        currentPlanKey: currentPlan.key,
-        currentPlan,
-        plans: PLANS,
+        currentPlanKey: getPlanKeyForUser(user),
+        currentPlan: toPublicPlan(getPlanForUser(user)),
+        plans: toPublicPlans(),
     });
 }
 
