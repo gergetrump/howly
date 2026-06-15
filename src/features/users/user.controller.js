@@ -1,5 +1,6 @@
 import * as userService from './user.service.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cloudinary.service.js';
+import { getPlanForUser, PLANS } from '../../config/plans.js';
 import {
     validateSearchUsersInput,
     validateUpdateUserInput,
@@ -24,6 +25,28 @@ export async function getCurrentUser(req, res) {
     }
 
     return res.status(200).json(userService.toPublicUser(user));
+}
+
+export async function getCurrentUserPlan(req, res) {
+    const { error } = validateUserId(req.user?.id);
+
+    if (error) {
+        return badRequest(res, error);
+    }
+
+    const user = await userService.getUserById(req.user.id);
+
+    if (!user) {
+        return notFound(res);
+    }
+
+    const currentPlan = getPlanForUser(user);
+
+    return res.status(200).json({
+        currentPlanKey: currentPlan.key,
+        currentPlan,
+        plans: PLANS,
+    });
 }
 
 export async function searchUsers(req, res) {
