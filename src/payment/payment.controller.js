@@ -1,7 +1,9 @@
 
 import config from '../../config.js';
 import { ApiError } from '../errors/ApiError.js';
+import { toPublicUser } from '../features/users/user.service.js';
 import {
+    confirmPremiumCheckoutSession,
     constructStripeWebhookEvent,
     createPremiumCheckoutSession,
     markPremiumFromCheckoutSession,
@@ -16,9 +18,36 @@ export async function handleCreateCheckoutSession(req, res) {
         res.status(200).json({ url: session.url });
     } catch (error) {
         console.error('Stripe checkout error: ', error);
+
+        if (error instanceof ApiError) {
+            return res.status(error.statusCode).json({
+                message: error.message,
+                errorCode: error.errorCode,
+            });
+        }
+
         return res.status(500).json({
             message: 'Could not create checkout session',
         });
+    }
+}
+
+export async function handleConfirmCheckoutSession(req, res, next) {
+    try {
+        const user = await confirmPremiumCheckoutSession(req.user.id, req.body?.sessionId);
+        return res.status(200).json({ user: toPublicUser(user) });
+    } catch (error) {
+        console.error('Stripe checkout confirmation error: ', error);
+
+        if (error instanceof ApiError) {
+            return next(error);
+        }
+
+        if (error?.type?.startsWith('Stripe')) {
+            return next(ApiError.internal(`Stripe could not confirm checkout session: ${error.message}`));
+        }
+
+        return next(error);
     }
 }
 
