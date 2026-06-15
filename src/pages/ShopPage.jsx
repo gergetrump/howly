@@ -31,6 +31,7 @@ import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCatego
 import { buyItem, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
 import { getCurrentUser } from '@/services/userService';
+import { confirmCheckoutSession } from '@/services/paymentService';
 
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
 
@@ -72,6 +73,7 @@ export function ShopPage() {
 
     useEffect(() => {
         const paymentStatus = searchParams.get('payment');
+        const checkoutSessionId = searchParams.get('checkout_session_id');
 
         if (!paymentStatus) {
             return undefined;
@@ -95,6 +97,28 @@ export function ShopPage() {
             setNotice('Payment received. Updating your premium status...');
             setError('');
             restorePremiumReturnItem();
+
+            if (checkoutSessionId) {
+                try {
+                    const confirmation = await confirmCheckoutSession(checkoutSessionId);
+
+                    if (!isCurrent) {
+                        return;
+                    }
+
+                    if (confirmation?.user) {
+                        setUser(confirmation.user);
+                    }
+
+                    if (confirmation?.user?.isPremium) {
+                        setNotice('Premium is active. Welcome to Howly Premium.');
+                        setSearchParams({}, { replace: true });
+                        return;
+                    }
+                } catch (confirmationError) {
+                    console.error('Could not confirm checkout session:', confirmationError);
+                }
+            }
 
             const refreshedUser = await refreshCurrentUser();
 
@@ -130,7 +154,7 @@ export function ShopPage() {
             isCurrent = false;
             window.clearTimeout(retryTimerId);
         };
-    }, [refreshCurrentUser, restorePremiumReturnItem, searchParams, setSearchParams]);
+    }, [refreshCurrentUser, restorePremiumReturnItem, searchParams, setSearchParams, setUser]);
 
     useEffect(() => {
         let isCurrent = true;
