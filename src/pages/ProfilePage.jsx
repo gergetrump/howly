@@ -15,6 +15,7 @@ import {
 
 import { Page, PageSection, Heading } from '@/components/layout';
 import { StoryArchive } from '@/components/stories/StoryArchive.jsx';
+import { Button } from '@/components/ui/button';
 // import { ThemeToggle } from '@/components/brand/ThemeToggle.jsx';
 import { logoutUser } from '@/services/authService';
 import {
@@ -249,25 +250,32 @@ export function ProfilePage() {
                     </div>
 
                     <div className="flex items-center justify-center gap-3">
-                        <label className="cursor-pointer rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">
-                            {isUploadingPicture ? 'Uploading...' : 'Change picture'}
-                            <input
-                                type="file"
-                                accept="image/png,image/jpeg,image/jpg"
-                                onChange={handleProfilePictureChange}
-                                disabled={isUploadingPicture}
-                                className="hidden"
-                            />
-                        </label>
+                        <Button
+                            asChild
+                            disabled={isUploadingPicture}
+                            className="h-9 rounded-xl bg-white px-4 text-slate-950 hover:bg-slate-200"
+                        >
+                            <label className="cursor-pointer">
+                                {isUploadingPicture ? 'Uploading...' : 'Change picture'}
+                                <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/jpg"
+                                    onChange={handleProfilePictureChange}
+                                    disabled={isUploadingPicture}
+                                    className="hidden"
+                                />
+                            </label>
+                        </Button>
 
-                        <button
+                        <Button
                             type="button"
+                            variant="outline"
                             onClick={handleDeleteProfilePicture}
                             disabled={isUploadingPicture || isDeletingPicture}
-                            className="rounded-xl bg-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-600 disabled:opacity-50"
+                            className="h-9 rounded-xl border-white/20 bg-white/10 px-4 text-white hover:bg-white/20"
                         >
                             {isDeletingPicture ? 'Removing...' : 'Remove'}
-                        </button>
+                        </Button>
                     </div>
 
                     {pictureError && (
