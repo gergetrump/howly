@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { CardGrid, CompletionCircle } from '@/components/common';
+import { CardGrid, CompletionCircle, PlanLimitDialog, PremiumUpgradeDialog } from '@/components/common';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
@@ -11,6 +11,7 @@ import { NotificationBanner } from '@/components/ui/notification-banner';
 import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
 import { getMyInventory } from '@/services/inventoryApi';
 import { getMyActiveStories } from '@/services/storyApi';
+import { getCurrentUserPlan } from '@/services/userService';
 import { useAuth } from '@/context/authContext';
 
 export function DashboardPage() {
@@ -23,8 +24,13 @@ export function DashboardPage() {
     const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
     const [storyHabit, setStoryHabit] = useState(null);
     const [equippedItemKeys, setEquippedItemKeys] = useState([]);
+    const [premiumPrompt, setPremiumPrompt] = useState('');
+    const [limitPrompt, setLimitPrompt] = useState(null);
+    const [planInfo, setPlanInfo] = useState(null);
     // Habit ids that already have an active (< 24h) story
     const [sharedHabitIds, setSharedHabitIds] = useState(new Set());
+    const planLimits = planInfo?.currentPlan?.limits;
+    const isPremiumUser = planInfo?.currentPlanKey === 'premium' || user?.role === 'admin' || user?.isPremium === true;
 
     useEffect(() => {
         async function fetchHabits() {
@@ -62,6 +68,12 @@ export function DashboardPage() {
             })
             .catch((error) => {
                 console.error('Failed to load equipped outfit:', error);
+            });
+
+        getCurrentUserPlan()
+            .then(setPlanInfo)
+            .catch((error) => {
+                console.error('Failed to load user plan:', error);
             });
     }, []);
 
@@ -117,6 +129,29 @@ export function DashboardPage() {
         setIsAddModalOpen(true);
     }
 
+    function openAddHabitDialog() {
+        const maxHabits = planLimits?.maxHabits;
+
+        if (maxHabits && habits.length >= maxHabits) {
+            if (isPremiumUser) {
+                setLimitPrompt({
+                    title: 'Habit limit reached',
+                    message: `Premium users can create up to ${maxHabits} habits. Delete an existing habit before creating a new one.`,
+                });
+                return;
+            }
+
+            const premiumHabitLimit = planInfo?.plans?.premium?.limits?.maxHabits;
+            setPremiumPrompt(
+                `Free users can create up to ${maxHabits} habits. Upgrade to Premium${premiumHabitLimit ? ` to create up to ${premiumHabitLimit} habits` : ''}.`,
+            );
+            return;
+        }
+
+        setHabitToEdit(null);
+        setIsAddModalOpen(true);
+    }
+
     const now = new Date();
     const currentDay = now.getDay() || 7; // 1-7 (Mon-Sun)
 
@@ -164,10 +199,7 @@ export function DashboardPage() {
             <PageSection 
                 title="Today's Habits" 
                 actionLabel="Add Habit"
-                onAction={() => {
-                    setHabitToEdit(null);
-                    setIsAddModalOpen(true);
-                }}
+                onAction={openAddHabitDialog}
             >
                 <CardGrid columns={todaysHabits.length === 1 ? 1 : 2}>
                     {todaysHabits.map((habit) => (
@@ -272,6 +304,27 @@ export function DashboardPage() {
                         setSharedHabitIds((prev) => new Set(prev).add(story.sourceId));
                     }
                 }}
+            />
+
+            <PremiumUpgradeDialog
+                open={Boolean(premiumPrompt)}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setPremiumPrompt('');
+                    }
+                }}
+                message={premiumPrompt}
+            />
+
+            <PlanLimitDialog
+                open={Boolean(limitPrompt)}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setLimitPrompt(null);
+                    }
+                }}
+                title={limitPrompt?.title}
+                message={limitPrompt?.message}
             />
         </Page>
     );

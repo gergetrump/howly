@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader2, Pencil } from 'lucide-react';
-import { ActionButton, CardGrid, PremiumUpgradeDialog } from '@/components/common';
+import { ActionButton, CardGrid, PlanLimitDialog, PremiumUpgradeDialog } from '@/components/common';
 import { ChallengeCard } from '@/components/cards/ChallengeCard.jsx';
 import { ChallengeFormDialog } from '@/components/cards/ChallengeFormDialog.jsx';
 import { ChallengeHabitPickerDialog } from '@/components/cards/ChallengeHabitPickerDialog.jsx';
@@ -62,6 +62,24 @@ function getChallengePremiumPrompt(code) {
     return 'Creating your own challenges is a Premium feature. Upgrade to create challenges and invite friends.';
 }
 
+function isPlanLimitError(code) {
+    return code === 'PREMIUM_ACTIVE_CHALLENGE_LIMIT' || code === 'PREMIUM_ACTIVE_CREATED_LIMIT';
+}
+
+function getChallengeLimitPrompt(code, backendMessage) {
+    if (code === 'PREMIUM_ACTIVE_CREATED_LIMIT') {
+        return {
+            title: 'Challenge creation limit reached',
+            message: backendMessage || 'You reached the active challenge creation limit for your current plan.',
+        };
+    }
+
+    return {
+        title: 'Challenge limit reached',
+        message: backendMessage || 'You reached the active challenge limit for your current plan.',
+    };
+}
+
 function ChallengeAlert({ error, notice, onUpgrade }) {
     if (error) {
         return (
@@ -106,6 +124,7 @@ export function ChallengesPage() {
     const [error, setError] = useState(null);
     const [notice, setNotice] = useState('');
     const [premiumPrompt, setPremiumPrompt] = useState('');
+    const [limitPrompt, setLimitPrompt] = useState(null);
 
     const userId = getUserId(user);
     const incomingInvitations = invitations.incoming ?? [];
@@ -151,6 +170,11 @@ export function ChallengesPage() {
     function showActionError(actionError, fallbackMessage) {
         if (isFreeUser && isUpgradeError(actionError.code)) {
             setPremiumPrompt(getChallengePremiumPrompt(actionError.code));
+            return;
+        }
+
+        if (!isFreeUser && isPlanLimitError(actionError.code)) {
+            setLimitPrompt(getChallengeLimitPrompt(actionError.code, actionError.message));
             return;
         }
 
@@ -419,6 +443,17 @@ export function ChallengesPage() {
                     }
                 }}
                 message={premiumPrompt}
+            />
+
+            <PlanLimitDialog
+                open={Boolean(limitPrompt)}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setLimitPrompt(null);
+                    }
+                }}
+                title={limitPrompt?.title}
+                message={limitPrompt?.message}
             />
         </Page>
     );
