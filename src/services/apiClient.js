@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+import { API_BASE_URL } from '../../config.js';
 
 export async function apiRequest(path, options = {}) {
     const { redirectOnUnauthorized = true, ...requestOptions } = options;
@@ -46,8 +46,8 @@ export async function apiRequest(path, options = {}) {
                 : 'Request failed';
         const error = new Error(message);
 
-        if (typeof responseBody === 'object' && responseBody?.code) {
-            error.code = responseBody.code;
+        if (typeof responseBody === 'object' && (responseBody?.code || responseBody?.errorCode)) {
+            error.code = responseBody.code || responseBody.errorCode;
         }
 
         throw error;

@@ -19,6 +19,8 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { PremiumUpgradeDialog } from '@/components/common';
+import { useAuth } from '@/context/authContext';
 import { createHabit, updateHabit } from '@/services/habitService';
 
 const ICONS = [
@@ -33,15 +35,37 @@ const FREQUENCIES = ['Daily', 'Weekly', 'Monthly', 'Custom'];
 
 const CATEGORIES = ['Movement', 'Productivity', 'Nutrition', 'Connection'];
 
-export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit }) {
+const DAYS_OF_WEEK = [
+    { label: 'Mon', value: 1 },
+    { label: 'Tue', value: 2 },
+    { label: 'Wed', value: 3 },
+    { label: 'Thu', value: 4 },
+    { label: 'Fri', value: 5 },
+    { label: 'Sat', value: 6 },
+    { label: 'Sun', value: 7 },
+];
+
+export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, existingHabits = [] }) {
+    const { user } = useAuth();
     const [name, setName] = useState('');
     const [icon, setIcon] = useState('🎯');
     const [target, setTarget] = useState(1);
     const [unit, setUnit] = useState('');
     const [customUnit, setCustomUnit] = useState('');
     const [frequency, setFrequency] = useState('');
+    const [customDays, setCustomDays] = useState([]);
     const [category, setCategory] = useState('');
+    const [customCategory, setCustomCategory] = useState('');
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
+    const [formError, setFormError] = useState('');
+    const [premiumPrompt, setPremiumPrompt] = useState('');
+    const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
+    const dynamicCategories = [...new Set([
+        ...(existingHabits?.map(h => h.category).filter(Boolean) || []),
+        editHabit?.category
+    ].filter(Boolean))];
+    const ALL_CATEGORIES = [...new Set([...CATEGORIES, ...dynamicCategories])];
+    const SELECTABLE_CATEGORIES = [...ALL_CATEGORIES, 'Custom'];
 
     // Effect to pre-fill form when editHabit is passed
     useEffect(() => {
@@ -50,7 +74,17 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit }) {
             setTarget(editHabit.target || 1);
             setIcon(editHabit.icon || '🎯');
             setFrequency(editHabit.frequency || '');
-            setCategory(editHabit.category || '');
+            if (ALL_CATEGORIES.includes(editHabit.category)) {
+                setCategory(editHabit.category);
+                setCustomCategory('');
+            } else if (editHabit.category) {
+                setCategory('Custom');
+                setCustomCategory(editHabit.category);
+            } else {
+                setCategory('');
+            }
+            setCustomDays(editHabit.customDays || []);
+            setFormError('');
             
             if (UNITS.includes(editHabit.unit)) {
                 setUnit(editHabit.unit);
@@ -68,17 +102,22 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit }) {
             setUnit('');
             setCustomUnit('');
             setFrequency('');
+            setCustomDays([]);
             setCategory('');
+            setCustomCategory('');
             setIcon('🎯');
+            setFormError('');
         }
-    }, [open, editHabit]);
+    }, [open, editHabit, ALL_CATEGORIES.join(',')]);
 
     async function handleSubmit(e) {
         e.preventDefault();
         
         if (!name.trim() || !frequency || !category) return;
+        if (frequency === 'Custom' && customDays.length === 0) return;
 
         const finalUnit = unit === 'Custom' ? customUnit : unit;
+        const finalCategory = category === 'Custom' ? customCategory : category;
 
         const data = {
             title: name,
@@ -86,11 +125,13 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit }) {
             target: Number(target),
             unit: finalUnit,
             frequency,
-            category,
+            customDays,
+            category: finalCategory,
             icon
         };
 
         try {
+            setFormError('');
             let result;
             if (editHabit) {
                 result = await updateHabit(editHabit.id, data);
@@ -100,16 +141,28 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit }) {
             if (onHabitAdded) onHabitAdded(result.data, !!editHabit);
             onOpenChange(false);
         } catch (error) {
+            if (!editHabit && isFreeUser && error.code === 'HABIT_LIMIT_REACHED') {
+                setPremiumPrompt('You already reached the free habit limit. Upgrade to Premium to create up to 6 habits.');
+                return;
+            }
+
+            setFormError(error.message || (editHabit ? 'Failed to update habit' : 'Failed to create habit'));
             console.error(editHabit ? 'Failed to update habit' : 'Failed to create habit', error);
         }
     }
 
     return (
+        <>
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-xl rounded-2xl bg-[#1e1b3a] p-10 border-0 text-white shadow-2xl">
                 <h2 className="mb-8 text-center text-2xl font-bold tracking-tight text-white">
                     {editHabit ? 'Edit Habit' : 'Add Habit'}
                 </h2>
+                {formError ? (
+                    <p className="mb-4 rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                        {formError}
+                    </p>
+                ) : null}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Icon picker + Habit name — side by side */}
@@ -261,8 +314,8 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit }) {
                                 <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:opacity-50 [&>svg]:text-white">
                                     <SelectValue placeholder="Select" />
                                 </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={4} className="rounded-xl border-purple-500/20 bg-[#1e1b3a] w-[var(--radix-select-trigger-width)] z-[100]">
-                                    {CATEGORIES.map((c) => (
+                                <SelectContent position="popper" sideOffset={4} className="rounded-xl border-purple-500/20 bg-[#1e1b3a] w-[var(--radix-select-trigger-width)] z-[100] max-h-60 overflow-y-auto">
+                                    {SELECTABLE_CATEGORIES.map((c) => (
                                         <SelectItem
                                             key={c}
                                             value={c}
@@ -274,7 +327,50 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit }) {
                                 </SelectContent>
                             </Select>
                         </div>
+                        
+                        {/* Custom Category Support */}
+                        {category === 'Custom' && (
+                            <div className="col-span-2 space-y-2.5">
+                                <Label className="text-sm font-medium text-white">Custom Category</Label>
+                                <Input
+                                    value={customCategory}
+                                    onChange={(e) => setCustomCategory(e.target.value)}
+                                    placeholder="e.g. Finances, Learning"
+                                    required={category === 'Custom'}
+                                    className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:border-purple-500 focus:ring-purple-500/20"
+                                />
+                            </div>
+                        )}
                     </div>
+
+                    {/* Custom Days Picker — shown when frequency is Custom */}
+                    {frequency === 'Custom' && (
+                        <div className="space-y-2.5">
+                            <Label className="text-sm font-medium text-white">Specific Days</Label>
+                            <div className="flex gap-2">
+                                {DAYS_OF_WEEK.map(day => (
+                                    <button
+                                        key={day.value}
+                                        type="button"
+                                        onClick={() => {
+                                            setCustomDays(prev => 
+                                                prev.includes(day.value) 
+                                                    ? prev.filter(d => d !== day.value)
+                                                    : [...prev, day.value]
+                                            )
+                                        }}
+                                        className={`flex-1 h-10 rounded-xl text-sm font-medium transition-all ${
+                                            customDays.includes(day.value)
+                                                ? 'bg-purple-500 text-white shadow-md shadow-purple-500/30'
+                                                : 'bg-[#2d2b55]/60 text-slate-300 hover:bg-[#2d2b55]'
+                                        }`}
+                                    >
+                                        {day.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Submit */}
                     <Button
@@ -287,5 +383,15 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit }) {
                 </form>
             </DialogContent>
         </Dialog>
+        <PremiumUpgradeDialog
+            open={Boolean(premiumPrompt)}
+            onOpenChange={(nextOpen) => {
+                if (!nextOpen) {
+                    setPremiumPrompt('');
+                }
+            }}
+            message={premiumPrompt}
+        />
+        </>
     );
 }

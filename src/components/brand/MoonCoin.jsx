@@ -1,4 +1,3 @@
-import { Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function MoonCoin({ amount, compact = false, className }) {

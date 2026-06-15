@@ -1,6 +1,8 @@
 import { Link, NavLink } from 'react-router-dom';
-import { Dumbbell, Home, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Dumbbell, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
+import { getFriendRequests } from '@/services/socialApi';
 import howlyIcon from '@/assets/howly.png';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/authContext';
@@ -9,6 +11,7 @@ const defaultItems = [
     { label: 'Home', to: '/dashboard', icon: Home },
     { label: 'Social', to: '/social', icon: UsersRound },
     { label: 'Shop', to: '/shop', icon: ShoppingBag },
+    { label: 'Inventory', to: '/inventory', icon: PackageOpen },
     { label: 'Challenges', to: '/challenges', icon: Trophy },
     { label: 'Profile', to: '/profile', icon: UserRound },
 ];
@@ -35,11 +38,48 @@ export function NavBar({
     className,
 }) {    
     const { user } = useAuth();
+    const [pendingFriendRequestCount, setPendingFriendRequestCount] = useState(0);
     const brandSizeClasses = brandSizes[brandSize] ?? brandSizes.md;
     const profileItem = items.find((item) => item.to === '/profile');
     const navigationItems = items.filter((item) => item.to !== '/profile');
     const coinAmount = user?.coins ?? 0;
     const navProfilePictureUrl = user?.profilePictureUrl;
+    const displayedPendingFriendRequestCount = user ? pendingFriendRequestCount : 0;
+
+    useEffect(() => {
+        if (!user) {
+            return undefined;
+        }
+
+        let isMounted = true;
+
+        async function refreshPendingFriendRequests() {
+            try {
+                const requests = await getFriendRequests();
+
+                if (isMounted) {
+                    setPendingFriendRequestCount(requests?.incoming?.length ?? 0);
+                    window.dispatchEvent(new CustomEvent('howly:social-requests-refreshed', {
+                        detail: requests,
+                    }));
+                }
+            } catch {
+                if (isMounted) {
+                    setPendingFriendRequestCount(0);
+                }
+            }
+        }
+
+        refreshPendingFriendRequests();
+        const intervalId = setInterval(refreshPendingFriendRequests, 30000);
+        window.addEventListener('howly:social-requests-updated', refreshPendingFriendRequests);
+
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+            window.removeEventListener('howly:social-requests-updated', refreshPendingFriendRequests);
+        };
+    }, [user]);
 
     return (
         <nav
@@ -49,7 +89,7 @@ export function NavBar({
             )}
             aria-label="Primary navigation"
         >
-            <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-4 md:px-6">
+            <div className="flex w-full items-center justify-between gap-6 px-4 md:px-8">
                 <div className="flex min-w-0 items-center gap-3 sm:gap-6">
                     <Link to="/dashboard" className="flex shrink-0 items-center gap-2">
                         <img
@@ -77,7 +117,14 @@ export function NavBar({
                                         )
                                     }
                                 >
-                                    <Icon className="size-5" aria-hidden="true" />
+                                    <span className="relative">
+                                        <Icon className="size-5" aria-hidden="true" />
+                                        {item.to === '/social' && displayedPendingFriendRequestCount > 0 ? (
+                                            <span className="absolute -right-2 -top-2 flex min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-4 text-white">
+                                                {displayedPendingFriendRequestCount}
+                                            </span>
+                                        ) : null}
+                                    </span>
                                     <span className="hidden truncate sm:inline">{item.label}</span>
                                 </NavLink>
                             );

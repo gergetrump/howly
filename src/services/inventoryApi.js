@@ -10,3 +10,22 @@ export function buyItem(itemId) {
         body: JSON.stringify({ itemId }),
     });
 }
+
+export function saveOutfit(equippedUserItemIds) {
+    return apiRequest('/inventory/outfit', {
+        method: 'PUT',
+        body: JSON.stringify({ equippedUserItemIds }),
+    });
+}
+
+export function equipInventoryItem(userItemId) {
+    return apiRequest(`/inventory/${userItemId}/equip`, {
+        method: 'POST',
+    });
+}
+
+export function unequipInventoryItem(userItemId) {
+    return apiRequest(`/inventory/${userItemId}/equip`, {
+        method: 'DELETE',
+    });
+}

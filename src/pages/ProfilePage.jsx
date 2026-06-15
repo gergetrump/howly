@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Bell,
@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
+import { StoryArchive } from '@/components/stories/StoryArchive.jsx';
+import { PremiumUpgradeDialog } from '@/components/common';
 // import { ThemeToggle } from '@/components/brand/ThemeToggle.jsx';
 import { logoutUser } from '@/services/authService';
 import {
@@ -22,22 +24,19 @@ import {
 } from '@/services/userService';
 import { useAuth } from '@/context/authContext';
 import { createCheckoutSession, createManagePremiumSession } from '@/services/paymentService';
+// TEMP: companion type tester
+import { CompanionAvatar } from '@/components/brand';
+import { COMPANIONS, getDefaultCompanionName } from '@/constants/companions';
+import { getMyCompanion, selectCompanion } from '@/services/companionService';
 
 
-function SettingsRow({
-    icon: Icon,
-    iconColor = 'text-slate-400',
-    title,
-    subtitle,
-    onClick,
-    disabled = false,
-}) {
+function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle, onClick, disabled }) {
     return (
         <button
             type="button"
             onClick={onClick}
             disabled={disabled}
-            className="flex w-full items-center justify-between border-b border-slate-700/50 bg-slate-800/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-slate-700/70 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-between border-b border-slate-700/50 bg-slate-800/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-slate-700/70 disabled:opacity-50"
         >
             <div className="flex items-center gap-4">
                 <Icon className={`size-5 ${iconColor}`} />
@@ -81,14 +80,41 @@ function GhostModeRow() {
 export function ProfilePage() {
     const navigate = useNavigate();
 
-    const { user, setUser, isLoadingUser } = useAuth();
+    const { user, setUser, isLoadingUser, refreshUser } = useAuth();
     // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState('');
     const [premiumError, setPremiumError] = useState('');
     const [isStartingCheckout, setIsStartingCheckout] = useState(false);
+    const [isManagingPremium, setIsManagingPremium] = useState(false);
     const [isUploadingPicture, setIsUploadingPicture] = useState(false);
     const [isDeletingPicture, setIsDeletingPicture] = useState(false);
     const [pictureError, setPictureError] = useState('');
+
+    // TEMP: companion type tester (remove once "companion everywhere" is verified)
+    const [testType, setTestType] = useState('wolf');
+    const [testMsg, setTestMsg] = useState('');
+
+    useEffect(() => {
+        getMyCompanion()
+            .then((res) => {
+                if (res?.data?.type) setTestType(res.data.type);
+            })
+            .catch(() => { });
+    }, []);
+
+    async function applyTestCompanion(type) {
+        setTestType(type);
+        setTestMsg('Saving...');
+        try {
+            await selectCompanion({ type, name: getDefaultCompanionName(type) });
+            setTestMsg(`Saved "${type}". Open other pages to see it everywhere.`);
+            if (refreshUser) {
+                await refreshUser();
+            }
+        } catch (err) {
+            setTestMsg(err.message || 'Failed to save');
+        }
+    }
 
     async function handleUpgradeToPremium() {
         try {
@@ -113,6 +139,7 @@ export function ProfilePage() {
             setIsStartingCheckout(false);
         }
     }
+    const [premiumPrompt, setPremiumPrompt] = useState('');
 
     async function handleLogout() {
         try {
@@ -164,20 +191,23 @@ export function ProfilePage() {
     async function handleManagePremium() {
         try {
             setPremiumError('');
+            setIsManagingPremium(true);
             const response = await createManagePremiumSession();
-            
+
             if (!response?.url) {
                 throw new Error('Manage premium session did not include a URL');
             }
 
             window.location.href = response.url;
         } catch (error) {
-            console.error('Could not start checkout:', error);
+            console.error('Could not start manage-premium session:', error);
             setPremiumError(
                 error.message === 'Request failed'
                     ? 'Premium management is unavailable right now.'
                     : error.message || 'Could not manage premium'
             );
+        } finally {
+            setIsManagingPremium(false);
         }
     }
 
@@ -212,6 +242,7 @@ export function ProfilePage() {
     const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Howly User'; const username = user?.username || 'unknown';
     const streak = user?.streak ?? 0;
     const completed = user?.completedHabits ?? 0;
+    const isPremium = user?.isPremium === true || user?.role === 'admin';
 
     return (
         <Page theme="forest">
@@ -284,20 +315,47 @@ export function ProfilePage() {
                 </div>
             </section>
 
+            {/* TEMP: companion type tester — remove once verified */}
+            <PageSection title="Companion (test)">
+                <div className="flex flex-col items-center gap-4 rounded-2xl bg-slate-800/80 px-6 py-6">
+                    <CompanionAvatar type={testType} size="xl" showName={false} />
+                    <div className="flex gap-3">
+                        {COMPANIONS.map((companion) => (
+                            <button
+                                key={companion.type}
+                                type="button"
+                                onClick={() => applyTestCompanion(companion.type)}
+                                className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${testType === companion.type
+                                    ? 'border-howly-primary bg-howly-primary/10 text-white'
+                                    : 'border-slate-600 bg-slate-800 text-slate-200 hover:border-slate-500'
+                                    }`}
+                            >
+                                {companion.label}
+                            </button>
+                        ))}
+                    </div>
+                    {testMsg && <p className="text-sm text-slate-400">{testMsg}</p>}
+                </div>
+            </PageSection>
+
+            <PageSection title="My Stories">
+                <StoryArchive />
+            </PageSection>
+
             <PageSection title="Privacy">
                 <GhostModeRow />
             </PageSection>
 
             <PageSection title="Account">
                 <div className="overflow-hidden rounded-2xl">
-
-                    {user?.isPremium ? (
+                    {isPremium ? (
                         <SettingsRow
                             icon={Crown}
                             iconColor="text-yellow-400"
-                            title='Manage your Premium Subscription'
+                            title={isManagingPremium ? 'Opening portal...' : 'Manage your Premium Subscription'}
                             onClick={handleManagePremium}
-                            />  
+                            disabled={isManagingPremium}
+                        />
                     ) : (
                         <SettingsRow
                             icon={Crown}
@@ -305,9 +363,8 @@ export function ProfilePage() {
                             title={isStartingCheckout ? 'Starting checkout...' : 'Upgrade to Premium'}
                             onClick={handleUpgradeToPremium}
                             disabled={isStartingCheckout}
-                        />  
+                        />
                     )}
-
                     <SettingsRow icon={Bell} title="Notifications" />
                     <SettingsRow icon={Lock} title="Privacy & Security" />
                 </div>
@@ -335,6 +392,16 @@ export function ProfilePage() {
                     Log out
                 </button>
             </PageSection>
+
+            <PremiumUpgradeDialog
+                open={Boolean(premiumPrompt)}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setPremiumPrompt('');
+                    }
+                }}
+                message={premiumPrompt}
+            />
         </Page>
     );
 }

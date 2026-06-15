@@ -1,2 +1,11 @@
+export { default as CozyJacket } from './CozyJacket';
+export { default as Cup } from './Cup';
+export { default as CupBrown } from './CupBrown';
+export { default as Glasses } from './Glasses';
 export { default as Hoodie } from './Hoodie';
-export { default as HoodieNew } from './HoodieNew';
+export { default as Phone } from './Phone';
+export { default as Sneaker, SneakerPair } from './Sneaker';
+export { default as Suit } from './Suit';
+export { default as Top } from './Top';
+export { default as TopWarm } from './TopWarm';
+export { default as WarmHat } from './WarmHat';
