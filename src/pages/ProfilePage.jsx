@@ -15,7 +15,7 @@ import {
 
 import { Page, PageSection, Heading } from '@/components/layout';
 import { StoryArchive } from '@/components/stories/StoryArchive.jsx';
-import { PremiumUpgradeDialog } from '@/components/common';
+import { Button } from '@/components/ui/button';
 // import { ThemeToggle } from '@/components/brand/ThemeToggle.jsx';
 import { logoutUser } from '@/services/authService';
 import {
@@ -23,18 +23,20 @@ import {
     deleteCurrentUserProfilePicture,
 } from '@/services/userService';
 import { useAuth } from '@/context/authContext';
-import { createCheckoutSession } from '@/services/paymentService';
+import { createManagePremiumSession } from '@/services/paymentService';
 // TEMP: companion type tester
 import { CompanionAvatar } from '@/components/brand';
 import { COMPANIONS, getDefaultCompanionName } from '@/constants/companions';
 import { getMyCompanion, selectCompanion } from '@/services/companionService';
 
 
-function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle }) {
+function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle, onClick, disabled }) {
     return (
         <button
             type="button"
-            className="flex w-full items-center justify-between border-b border-slate-700/50 bg-slate-800/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-slate-700/70"
+            onClick={onClick}
+            disabled={disabled}
+            className="flex w-full items-center justify-between border-b border-slate-700/50 bg-slate-800/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-slate-700/70 disabled:opacity-50"
         >
             <div className="flex items-center gap-4">
                 <Icon className={`size-5 ${iconColor}`} />
@@ -82,7 +84,7 @@ export function ProfilePage() {
     // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState('');
     const [premiumError, setPremiumError] = useState('');
-    const [isStartingCheckout, setIsStartingCheckout] = useState(false);
+    const [isManagingPremium, setIsManagingPremium] = useState(false);
     const [isUploadingPicture, setIsUploadingPicture] = useState(false);
     const [isDeletingPicture, setIsDeletingPicture] = useState(false);
     const [pictureError, setPictureError] = useState('');
@@ -96,7 +98,7 @@ export function ProfilePage() {
             .then((res) => {
                 if (res?.data?.type) setTestType(res.data.type);
             })
-            .catch(() => {});
+            .catch(() => { });
     }, []);
 
     async function applyTestCompanion(type) {
@@ -113,30 +115,14 @@ export function ProfilePage() {
         }
     }
 
-    async function handleUpgradeToPremium() {
-        try {
-            setPremiumError('');
-            setIsStartingCheckout(true);
-
-            const response = await createCheckoutSession();
-
-            if (!response?.url) {
-                throw new Error('Checkout session did not include a URL');
-            }
-
-            window.location.href = response.url;
-        } catch (error) {
-            console.error('Could not start checkout:', error);
-            setPremiumError(
-                error.message === 'Request failed'
-                    ? 'Premium checkout is unavailable right now.'
-                    : error.message || 'Could not start checkout'
-            );
-        } finally {
-            setIsStartingCheckout(false);
-        }
+    function handleUpgradeToPremium() {
+        navigate('/premium', {
+            state: {
+                message: 'Upgrade to Premium to unlock more habits, challenges, monthly coins, streak shields, and premium shop items.',
+                returnTo: '/profile',
+            },
+        });
     }
-    const [premiumPrompt, setPremiumPrompt] = useState('');
 
     async function handleLogout() {
         try {
@@ -182,6 +168,29 @@ export function ProfilePage() {
             setPictureError(error.message || 'Could not delete profile picture');
         } finally {
             setIsDeletingPicture(false);
+        }
+    }
+
+    async function handleManagePremium() {
+        try {
+            setPremiumError('');
+            setIsManagingPremium(true);
+            const response = await createManagePremiumSession();
+
+            if (!response?.url) {
+                throw new Error('Manage premium session did not include a URL');
+            }
+
+            window.location.href = response.url;
+        } catch (error) {
+            console.error('Could not start manage-premium session:', error);
+            setPremiumError(
+                error.message === 'Request failed'
+                    ? 'Premium management is unavailable right now.'
+                    : error.message || 'Could not manage premium'
+            );
+        } finally {
+            setIsManagingPremium(false);
         }
     }
 
@@ -241,25 +250,32 @@ export function ProfilePage() {
                     </div>
 
                     <div className="flex items-center justify-center gap-3">
-                        <label className="cursor-pointer rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">
-                            {isUploadingPicture ? 'Uploading...' : 'Change picture'}
-                            <input
-                                type="file"
-                                accept="image/png,image/jpeg,image/jpg"
-                                onChange={handleProfilePictureChange}
-                                disabled={isUploadingPicture}
-                                className="hidden"
-                            />
-                        </label>
+                        <Button
+                            asChild
+                            disabled={isUploadingPicture}
+                            className="h-9 rounded-xl bg-white px-4 text-slate-950 hover:bg-slate-200"
+                        >
+                            <label className="cursor-pointer">
+                                {isUploadingPicture ? 'Uploading...' : 'Change picture'}
+                                <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/jpg"
+                                    onChange={handleProfilePictureChange}
+                                    disabled={isUploadingPicture}
+                                    className="hidden"
+                                />
+                            </label>
+                        </Button>
 
-                        <button
+                        <Button
                             type="button"
+                            variant="outline"
                             onClick={handleDeleteProfilePicture}
                             disabled={isUploadingPicture || isDeletingPicture}
-                            className="rounded-xl bg-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-600 disabled:opacity-50"
+                            className="h-9 rounded-xl border-white/20 bg-white/10 px-4 text-white hover:bg-white/20"
                         >
                             {isDeletingPicture ? 'Removing...' : 'Remove'}
-                        </button>
+                        </Button>
                     </div>
 
                     {pictureError && (
@@ -299,11 +315,10 @@ export function ProfilePage() {
                                 key={companion.type}
                                 type="button"
                                 onClick={() => applyTestCompanion(companion.type)}
-                                className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${
-                                    testType === companion.type
-                                        ? 'border-howly-primary bg-howly-primary/10 text-white'
-                                        : 'border-slate-600 bg-slate-800 text-slate-200 hover:border-slate-500'
-                                }`}
+                                className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${testType === companion.type
+                                    ? 'border-howly-primary bg-howly-primary/10 text-white'
+                                    : 'border-slate-600 bg-slate-800 text-slate-200 hover:border-slate-500'
+                                    }`}
                             >
                                 {companion.label}
                             </button>
@@ -323,14 +338,22 @@ export function ProfilePage() {
 
             <PageSection title="Account">
                 <div className="overflow-hidden rounded-2xl">
-                    <SettingsRow
-                        icon={Crown}
-                        iconColor="text-yellow-400"
-                        title={isPremium ? 'Premium active' : 'Upgrade to Premium'}
-                        subtitle={isPremium ? 'Your premium benefits are enabled' : undefined}
-                        disabled={isPremium}
-                        onClick={() => setPremiumPrompt('Upgrade to Premium to unlock more habits, challenges, monthly coins, streak shields, and premium shop items.')}
-                    />
+                    {isPremium ? (
+                        <SettingsRow
+                            icon={Crown}
+                            iconColor="text-yellow-400"
+                            title={isManagingPremium ? 'Opening portal...' : 'Manage your Premium Subscription'}
+                            onClick={handleManagePremium}
+                            disabled={isManagingPremium}
+                        />
+                    ) : (
+                        <SettingsRow
+                            icon={Crown}
+                            iconColor="text-yellow-400"
+                            title="Upgrade to Premium"
+                            onClick={handleUpgradeToPremium}
+                        />
+                    )}
                     <SettingsRow icon={Bell} title="Notifications" />
                     <SettingsRow icon={Lock} title="Privacy & Security" />
                 </div>
@@ -358,16 +381,6 @@ export function ProfilePage() {
                     Log out
                 </button>
             </PageSection>
-
-            <PremiumUpgradeDialog
-                open={Boolean(premiumPrompt)}
-                onOpenChange={(nextOpen) => {
-                    if (!nextOpen) {
-                        setPremiumPrompt('');
-                    }
-                }}
-                message={premiumPrompt}
-            />
         </Page>
     );
 }

@@ -36,7 +36,7 @@ export function HabitCard({
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     return (
-        <Card className={cn(appCardClassName, completed && 'bg-pink-500/20 ring-pink-300/30')}>
+        <Card className={cn(appCardClassName, completed && 'bg-emerald-400/10 ring-emerald-300/25')}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}>
                     <span aria-hidden="true">{emoji}</span>

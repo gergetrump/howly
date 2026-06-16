@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Loader2, Pencil } from 'lucide-react';
-import { ActionButton, CardGrid, PlanLimitDialog, PremiumUpgradeDialog } from '@/components/common';
+import { ActionButton, CardGrid, PlanLimitDialog } from '@/components/common';
 import { ChallengeCard } from '@/components/cards/ChallengeCard.jsx';
 import { ChallengeFormDialog } from '@/components/cards/ChallengeFormDialog.jsx';
 import { ChallengeHabitPickerDialog } from '@/components/cards/ChallengeHabitPickerDialog.jsx';
@@ -110,6 +111,7 @@ function ChallengeAlert({ error, notice, onUpgrade }) {
 }
 
 export function ChallengesPage() {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('active');
     const [challenges, setChallenges] = useState([]);
@@ -123,7 +125,6 @@ export function ChallengesPage() {
     const [busyAction, setBusyAction] = useState('');
     const [error, setError] = useState(null);
     const [notice, setNotice] = useState('');
-    const [premiumPrompt, setPremiumPrompt] = useState('');
     const [limitPrompt, setLimitPrompt] = useState(null);
 
     const userId = getUserId(user);
@@ -169,7 +170,12 @@ export function ChallengesPage() {
 
     function showActionError(actionError, fallbackMessage) {
         if (isFreeUser && isUpgradeError(actionError.code)) {
-            setPremiumPrompt(getChallengePremiumPrompt(actionError.code));
+            navigate('/premium', {
+                state: {
+                    message: getChallengePremiumPrompt(actionError.code),
+                    returnTo: '/challenges',
+                },
+            });
             return;
         }
 
@@ -184,12 +190,22 @@ export function ChallengesPage() {
     function handleUpgradeClick() {
         setError(null);
         setNotice('');
-        setPremiumPrompt(getChallengePremiumPrompt(error?.code));
+        navigate('/premium', {
+            state: {
+                message: getChallengePremiumPrompt(error?.code),
+                returnTo: '/challenges',
+            },
+        });
     }
 
     function openCreateDialog() {
         if (isFreeUser) {
-            setPremiumPrompt(getChallengePremiumPrompt('PREMIUM_REQUIRED'));
+            navigate('/premium', {
+                state: {
+                    message: getChallengePremiumPrompt('PREMIUM_REQUIRED'),
+                    returnTo: '/challenges',
+                },
+            });
             return;
         }
 
@@ -433,16 +449,6 @@ export function ChallengesPage() {
                 onConfirm={handleConfirmHabitPicker}
                 isSubmitting={busyAction === 'join' || busyAction === 'accept'}
                 title={habitPickerTitle}
-            />
-
-            <PremiumUpgradeDialog
-                open={Boolean(premiumPrompt)}
-                onOpenChange={(nextOpen) => {
-                    if (!nextOpen) {
-                        setPremiumPrompt('');
-                    }
-                }}
-                message={premiumPrompt}
             />
 
             <PlanLimitDialog
