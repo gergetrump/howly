@@ -7,7 +7,7 @@ import {
     completeOnboarding,
     uploadCurrentUserProfilePicture,
     deleteCurrentUserProfilePicture,
-    searchUsers
+    searchUsers,
 } from './user.controller.js';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { uploadProfilePicture } from '../../middleware/upload.middleware.js';

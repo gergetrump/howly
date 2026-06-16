@@ -1,23 +1,80 @@
 
 import config from '../../config.js';
+import { ApiError } from '../errors/ApiError.js';
+import { toPublicUser } from '../features/users/user.service.js';
 import {
+    confirmPremiumCheckoutSession,
     constructStripeWebhookEvent,
     createPremiumCheckoutSession,
     markPremiumFromCheckoutSession,
+    markPremiumFromSubscription,
+    createManagePremiumSession,
 } from './payment.service.js';
 
-export async function createCheckoutSession(req, res) {
+export async function handleCreateCheckoutSession(req, res) {
     try {
         const userId = req.user.id;
         const session = await createPremiumCheckoutSession(userId);
         res.status(200).json({ url: session.url });
     } catch (error) {
         console.error('Stripe checkout error: ', error);
+
+        if (error instanceof ApiError) {
+            return res.status(error.statusCode).json({
+                message: error.message,
+                errorCode: error.errorCode,
+            });
+        }
+
         return res.status(500).json({
             message: 'Could not create checkout session',
         });
     }
 }
+
+export async function handleConfirmCheckoutSession(req, res, next) {
+    try {
+        const user = await confirmPremiumCheckoutSession(req.user.id, req.body?.sessionId);
+        return res.status(200).json({ user: toPublicUser(user) });
+    } catch (error) {
+        console.error('Stripe checkout confirmation error: ', error);
+
+        if (error instanceof ApiError) {
+            return next(error);
+        }
+
+        if (error?.type?.startsWith('Stripe')) {
+            return next(ApiError.internal(`Stripe could not confirm checkout session: ${error.message}`));
+        }
+
+        return next(error);
+    }
+}
+
+
+export async function handleCreateManagePremiumSession(req, res, next) {
+    try {
+        const userId = req.user.id;
+        const session = await createManagePremiumSession(userId);
+        res.status(200).json({ url: session.url });
+    } catch (error) {
+        console.error('Stripe session error: ', error);
+
+        if (error instanceof ApiError) {
+            return next(error);
+        }
+
+        if (error?.type?.startsWith('Stripe')) {
+            return next(ApiError.internal(`Stripe could not create manage premium session: ${error.message}`));
+        }
+
+        return next(error);
+        
+
+
+    }
+}
+
 
 export async function handleStripeWebhook(req, res) {
     try {
@@ -27,6 +84,13 @@ export async function handleStripeWebhook(req, res) {
 
         if (event.type === 'checkout.session.completed') {
             await markPremiumFromCheckoutSession(event.data.object);
+        }
+
+        if (
+            event.type === 'customer.subscription.updated' ||
+            event.type === 'customer.subscription.deleted'
+        ) {
+            await markPremiumFromSubscription(event.data.object);
         }
 
         return res.status(200).json({ received: true });
