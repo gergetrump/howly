@@ -4,7 +4,6 @@ import { Loader2, Pencil } from 'lucide-react';
 import { ActionButton, CardGrid, PlanLimitDialog } from '@/components/common';
 import { ChallengeCard } from '@/components/cards/ChallengeCard.jsx';
 import { ChallengeFormDialog } from '@/components/cards/ChallengeFormDialog.jsx';
-import { ChallengeHabitPickerDialog } from '@/components/cards/ChallengeHabitPickerDialog.jsx';
 import { ChallengeInvitationList } from '@/components/cards/ChallengeInvitationList.jsx';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
@@ -19,21 +18,12 @@ import {
     rejectChallengeInvitation,
     updateChallenge,
 } from '@/services/challengeService';
-import { getMyHabits } from '@/services/habitService';
 
 const CHALLENGE_TABS = [
     { value: 'active', label: 'Active challenges' },
     { value: 'friends', label: 'Friend challenges' },
     { value: 'public', label: 'Public challenges' },
 ];
-
-function normalizeHabits(response) {
-    if (Array.isArray(response)) {
-        return response;
-    }
-
-    return response?.data ?? [];
-}
 
 function getUserId(user) {
     return user?.id ?? user?._id;
@@ -116,12 +106,9 @@ export function ChallengesPage() {
     const [activeTab, setActiveTab] = useState('active');
     const [challenges, setChallenges] = useState([]);
     const [invitations, setInvitations] = useState({ incoming: [], outgoing: [] });
-    const [habits, setHabits] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingChallenge, setEditingChallenge] = useState(null);
-    const [habitPickerAction, setHabitPickerAction] = useState(null);
-    const [selectedHabitId, setSelectedHabitId] = useState('');
     const [busyAction, setBusyAction] = useState('');
     const [error, setError] = useState(null);
     const [notice, setNotice] = useState('');
@@ -129,13 +116,9 @@ export function ChallengesPage() {
 
     const userId = getUserId(user);
     const incomingInvitations = invitations.incoming ?? [];
-    const hasHabits = habits.length > 0;
     const canCreateChallenges = hasPremiumMembership(user);
     const isFreeUser = !canCreateChallenges;
     const currentTabLabel = CHALLENGE_TABS.find((tab) => tab.value === activeTab)?.label ?? 'Challenges';
-    const habitPickerTitle = habitPickerAction?.type === 'accept'
-        ? 'Accept invitation'
-        : 'Join challenge';
 
     const visibleChallenges = useMemo(() => challenges.filter(Boolean), [challenges]);
 
@@ -144,15 +127,13 @@ export function ChallengesPage() {
         setError(null);
 
         try {
-            const [challengeData, invitationData, habitData] = await Promise.all([
+            const [challengeData, invitationData] = await Promise.all([
                 getChallenges({ scope }),
                 getChallengeInvitations(),
-                getMyHabits({ limit: 100 }),
             ]);
 
             setChallenges(Array.isArray(challengeData) ? challengeData : []);
             setInvitations(invitationData ?? { incoming: [], outgoing: [] });
-            setHabits(normalizeHabits(habitData));
         } catch (loadError) {
             setError({ message: loadError.message || 'Failed to load challenges.', code: loadError.code });
         } finally {
@@ -226,26 +207,6 @@ export function ChallengesPage() {
         }
     }
 
-    function openHabitPicker(action) {
-        setError(null);
-        setNotice('');
-
-        if (!hasHabits) {
-            setNotice('Create a habit before joining a challenge.');
-            return;
-        }
-
-        setSelectedHabitId(habits[0]?.id ?? '');
-        setHabitPickerAction(action);
-    }
-
-    function closeHabitPicker() {
-        if (!busyAction) {
-            setHabitPickerAction(null);
-            setSelectedHabitId('');
-        }
-    }
-
     async function handleSubmitChallenge(formData, challenge) {
         setBusyAction(challenge ? 'edit' : 'create');
         setError(null);
@@ -269,29 +230,33 @@ export function ChallengesPage() {
         }
     }
 
-    async function handleConfirmHabitPicker() {
-        if (!habitPickerAction || !selectedHabitId) {
-            return;
-        }
-
-        setBusyAction(habitPickerAction.type);
+    async function handleJoinChallenge(challengeId) {
+        setBusyAction('join');
         setError(null);
         setNotice('');
 
         try {
-            if (habitPickerAction.type === 'accept') {
-                await acceptChallengeInvitation(habitPickerAction.invitationId, { habitId: selectedHabitId });
-                setNotice('Invitation accepted.');
-            } else {
-                await joinChallenge(habitPickerAction.challengeId, { habitId: selectedHabitId });
-                setNotice('Challenge joined.');
-            }
-
-            setHabitPickerAction(null);
-            setSelectedHabitId('');
+            await joinChallenge(challengeId);
+            setNotice('Challenge joined.');
             await loadChallengeData(activeTab);
         } catch (actionError) {
-            showActionError(actionError, 'Challenge action failed.');
+            showActionError(actionError, 'Failed to join challenge.');
+        } finally {
+            setBusyAction('');
+        }
+    }
+
+    async function handleAcceptInvitation(invitationId) {
+        setBusyAction(`accept-${invitationId}`);
+        setError(null);
+        setNotice('');
+
+        try {
+            await acceptChallengeInvitation(invitationId);
+            setNotice('Invitation accepted.');
+            await loadChallengeData(activeTab);
+        } catch (actionError) {
+            showActionError(actionError, 'Failed to accept invitation.');
         } finally {
             setBusyAction('');
         }
@@ -351,7 +316,7 @@ export function ChallengesPage() {
                     <ChallengeInvitationList
                         invitations={incomingInvitations}
                         busyAction={busyAction}
-                        onAccept={(invitationId) => openHabitPicker({ type: 'accept', invitationId })}
+                        onAccept={handleAcceptInvitation}
                         onReject={handleRejectInvitation}
                     />
                 ) : null}
@@ -411,7 +376,7 @@ export function ChallengesPage() {
                                     {shouldShowJoin ? (
                                         <ActionButton
                                             type="button"
-                                            onClick={() => openHabitPicker({ type: 'join', challengeId: challenge.id })}
+                                            onClick={() => handleJoinChallenge(challenge.id)}
                                             disabled={!isJoinable || busyAction === 'join'}
                                         >
                                             Join
@@ -436,19 +401,7 @@ export function ChallengesPage() {
                 onOpenChange={closeFormDialog}
                 onSubmit={handleSubmitChallenge}
                 isSubmitting={busyAction === 'create' || busyAction === 'edit'}
-                habits={habits}
                 challenge={editingChallenge}
-            />
-
-            <ChallengeHabitPickerDialog
-                open={Boolean(habitPickerAction)}
-                onOpenChange={closeHabitPicker}
-                habits={habits}
-                selectedHabitId={selectedHabitId}
-                onSelectedHabitIdChange={setSelectedHabitId}
-                onConfirm={handleConfirmHabitPicker}
-                isSubmitting={busyAction === 'join' || busyAction === 'accept'}
-                title={habitPickerTitle}
             />
 
             <PlanLimitDialog

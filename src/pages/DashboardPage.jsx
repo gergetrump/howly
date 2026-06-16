@@ -13,12 +13,14 @@ import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/servic
 import { getMyInventory } from '@/services/inventoryApi';
 import { getMyActiveStories } from '@/services/storyApi';
 import { getCurrentUserPlan } from '@/services/userService';
+import { getMyChallengeHabits } from '@/services/challengeService';
 import { useAuth } from '@/context/authContext';
 
 export function DashboardPage() {
     const navigate = useNavigate();
     const { user, companion } = useAuth();
     const [habits, setHabits] = useState([]);
+    const [challengeHabits, setChallengeHabits] = useState([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [habitToEdit, setHabitToEdit] = useState(null);
     const [allHabitsOpen, setAllHabitsOpen] = useState(false);
@@ -43,6 +45,16 @@ export function DashboardPage() {
             }
         }
         fetchHabits();
+
+        async function fetchChallengeHabits() {
+            try {
+                const response = await getMyChallengeHabits();
+                setChallengeHabits(Array.isArray(response) ? response : []);
+            } catch (error) {
+                console.error('Failed to load challenge habits:', error);
+            }
+        }
+        fetchChallengeHabits();
 
         getMyActiveStories()
             .then((stories) => {
@@ -113,6 +125,20 @@ export function DashboardPage() {
         } catch (error) {
             console.error('Failed to complete habit:', error);
             // Optionally show toast error here
+        }
+    }
+
+    async function handleChallengeHabitCompletion(item) {
+        try {
+            const wasCompleted = item.habit.isCompletedToday;
+            await (wasCompleted
+                ? uncheckInHabit(item.habit.id)
+                : checkInHabit(item.habit.id));
+
+            const response = await getMyChallengeHabits();
+            setChallengeHabits(Array.isArray(response) ? response : []);
+        } catch (error) {
+            console.error('Failed to complete challenge habit:', error);
         }
     }
 
@@ -276,6 +302,35 @@ export function DashboardPage() {
             </div>
 
             <PageSection title="My Challenges" width="sm">
+                <CardGrid columns={challengeHabits.length === 1 ? 1 : 2}>
+                    {challengeHabits.map((item) => {
+                        const progressText = `${item.participant?.daysCompleted ?? 0}/${item.challenge?.durationDays ?? 0} days`;
+
+                        return (
+                            <HabitCard
+                                key={item.participant.id}
+                                emoji={item.habit.icon}
+                                title={item.habit.title}
+                                frequency={item.challenge?.title}
+                                streakDays={item.participant?.daysCompleted ?? 0}
+                                completed={item.habit.isCompletedToday}
+                            >
+                                <div className="mr-2 hidden text-right text-xs text-slate-300 sm:block">
+                                    <span className="block font-medium text-white">{progressText}</span>
+                                    <span>{item.participant?.pendingRewardCoins ?? 0} coins pending</span>
+                                </div>
+                                <CompletionCircle
+                                    completed={item.habit.isCompletedToday}
+                                    onClick={() => handleChallengeHabitCompletion(item)}
+                                    aria-label={`Mark ${item.habit.title} challenge habit as completed`}
+                                />
+                            </HabitCard>
+                        );
+                    })}
+                    {challengeHabits.length === 0 && (
+                        <p className="text-sm text-slate-400 text-center py-4">No active challenge habits yet.</p>
+                    )}
+                </CardGrid>
             </PageSection>
 
             <AddHabitModal 

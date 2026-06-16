@@ -34,6 +34,7 @@ export function HabitCard({
     children,
 }) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const hasMenuActions = Boolean(onEdit || onDelete || onShareStory);
 
     return (
         <Card className={cn(appCardClassName, completed && 'bg-emerald-400/10 ring-emerald-300/25')}>
@@ -52,6 +53,7 @@ export function HabitCard({
 
                 <div className="flex items-center gap-1">
                     {children}
+                    {hasMenuActions ? (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-slate-400 hover:text-white hover:bg-slate-800">
@@ -60,26 +62,32 @@ export function HabitCard({
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40 border-slate-800 bg-slate-950 text-slate-300">
-                            <DropdownMenuItem onClick={onEdit} className="cursor-pointer focus:bg-slate-800 focus:text-white">
-                                <Edit2 className="mr-2 h-4 w-4" />
-                                Edit Habit
-                            </DropdownMenuItem>
+                            {onEdit ? (
+                                <DropdownMenuItem onClick={onEdit} className="cursor-pointer focus:bg-slate-800 focus:text-white">
+                                    <Edit2 className="mr-2 h-4 w-4" />
+                                    Edit Habit
+                                </DropdownMenuItem>
+                            ) : null}
                             {onShareStory ? (
                                 <DropdownMenuItem onClick={onShareStory} className="cursor-pointer focus:bg-slate-800 focus:text-white">
                                     <Camera className="mr-2 h-4 w-4" />
                                     Share Story
                                 </DropdownMenuItem>
                             ) : null}
-                            <DropdownMenuItem 
-                                onClick={() => setIsDeleteDialogOpen(true)} 
-                                className="cursor-pointer text-red-400 focus:bg-red-400/10 focus:text-red-400"
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Habit
-                            </DropdownMenuItem>
+                            {onDelete ? (
+                                <DropdownMenuItem
+                                    onClick={() => setIsDeleteDialogOpen(true)}
+                                    className="cursor-pointer text-red-400 focus:bg-red-400/10 focus:text-red-400"
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Habit
+                                </DropdownMenuItem>
+                            ) : null}
                         </DropdownMenuContent>
                     </DropdownMenu>
+                    ) : null}
 
+                    {onDelete ? (
                     <ConfirmationDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                         <ConfirmationDialogContent className="bg-[#1e1b3a] border-0 text-white rounded-3xl p-8 sm:max-w-md flex flex-col items-center text-center shadow-2xl">
                             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10 mb-2 border border-red-500/20">
@@ -111,6 +119,7 @@ export function HabitCard({
                             </ConfirmationDialogFooter>
                         </ConfirmationDialogContent>
                     </ConfirmationDialog>
+                    ) : null}
                 </div>
             </CardContent>
         </Card>

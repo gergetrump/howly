@@ -19,7 +19,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { ChallengeHabitList } from './ChallengeHabitList.jsx';
 
 const COINS_PER_CHALLENGE_DAY = 5;
 
@@ -38,8 +37,14 @@ const INITIAL_CHALLENGE_FORM = {
     frequency: 'daily',
     durationDays: 30,
     visibility: 'public',
-    habitId: '',
     startsAt: toDateInputValue(),
+    habitTitle: '',
+    habitIcon: 'C',
+    habitType: 'boolean',
+    habitTarget: 1,
+    habitUnit: '',
+    habitFrequency: 'Daily',
+    habitCategory: 'Challenge',
 };
 
 function buildChallengeForm(challenge) {
@@ -53,21 +58,26 @@ function buildChallengeForm(challenge) {
         frequency: challenge.frequency ?? 'daily',
         durationDays: challenge.durationDays ?? 30,
         visibility: challenge.visibility ?? 'public',
-        habitId: '',
         startsAt: toDateInputValue(challenge.startsAt ?? new Date()),
+        habitTitle: challenge.habitTemplate?.title ?? challenge.habitTitle ?? '',
+        habitIcon: challenge.habitTemplate?.icon ?? 'C',
+        habitType: challenge.habitTemplate?.type ?? 'boolean',
+        habitTarget: challenge.habitTemplate?.target ?? 1,
+        habitUnit: challenge.habitTemplate?.unit ?? '',
+        habitFrequency: challenge.habitTemplate?.frequency ?? 'Daily',
+        habitCategory: challenge.habitTemplate?.category ?? 'Challenge',
     };
 }
 
-export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting, habits, challenge }) {
+export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting, challenge }) {
     const isEditing = Boolean(challenge);
     const [form, setForm] = useState(() => buildChallengeForm(challenge));
     const calculatedReward = Number(form.durationDays || 0) * COINS_PER_CHALLENGE_DAY;
-    const selectedHabit = habits.find((habit) => habit.id === form.habitId);
     const canSubmit = Boolean(
         form.title.trim()
+            && form.habitTitle.trim()
             && Number(form.durationDays) > 0
             && form.startsAt
-            && (isEditing || selectedHabit)
     );
 
     function updateField(field, value) {
@@ -87,16 +97,20 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
         const payload = {
             title: form.title,
             description: form.description,
-            frequency: form.frequency,
+            frequency: form.habitFrequency.toLowerCase(),
             durationDays: Number(form.durationDays),
             visibility: form.visibility,
             startsAt: form.startsAt,
+            habitTemplate: {
+                title: form.habitTitle,
+                icon: form.habitIcon || 'C',
+                type: form.habitType,
+                target: form.habitType === 'numeric' ? Number(form.habitTarget || 1) : undefined,
+                unit: form.habitUnit,
+                frequency: form.habitFrequency,
+                category: form.habitCategory || 'Challenge',
+            },
         };
-
-        if (selectedHabit) {
-            payload.habitId = selectedHabit.id;
-            payload.habitTitle = selectedHabit.title;
-        }
 
         await onSubmit(payload, challenge);
     }
@@ -133,15 +147,70 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                             />
                         </div>
 
-                        <div className="space-y-2 sm:col-span-2">
-                            <Label>Habit</Label>
-                            <ChallengeHabitList
-                                habits={habits}
-                                selectedHabitId={form.habitId}
-                                onSelectHabitId={(habitId) => updateField('habitId', habitId)}
-                                allowEmptySelection={isEditing}
-                                currentHabitTitle={challenge?.habitTitle}
-                            />
+                        <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 sm:col-span-2">
+                            <Label>Challenge habit</Label>
+                            <div className="grid gap-3 sm:grid-cols-[72px_1fr]">
+                                <Input
+                                    aria-label="Habit icon"
+                                    value={form.habitIcon}
+                                    onChange={(event) => updateField('habitIcon', event.target.value)}
+                                    maxLength={5}
+                                    className="border-white/10 bg-white/10 text-center text-white placeholder:text-slate-400"
+                                />
+                                <Input
+                                    value={form.habitTitle}
+                                    onChange={(event) => updateField('habitTitle', event.target.value)}
+                                    required
+                                    maxLength={100}
+                                    placeholder="e.g. Read 10 pages"
+                                    className="border-white/10 bg-white/10 text-white placeholder:text-slate-400"
+                                />
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                <Select value={form.habitFrequency} onValueChange={(value) => updateField('habitFrequency', value)}>
+                                    <SelectTrigger className="h-9 w-full border-white/10 bg-white/10 text-white">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="border-white/10 bg-[#1e1b3a] text-white">
+                                        <SelectItem value="Daily">Daily</SelectItem>
+                                        <SelectItem value="Weekly">Weekly</SelectItem>
+                                        <SelectItem value="Monthly">Monthly</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Select value={form.habitType} onValueChange={(value) => updateField('habitType', value)}>
+                                    <SelectTrigger className="h-9 w-full border-white/10 bg-white/10 text-white">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="border-white/10 bg-[#1e1b3a] text-white">
+                                        <SelectItem value="boolean">Boolean</SelectItem>
+                                        <SelectItem value="numeric">Numeric</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Input
+                                    value={form.habitCategory}
+                                    onChange={(event) => updateField('habitCategory', event.target.value)}
+                                    maxLength={100}
+                                    className="border-white/10 bg-white/10 text-white placeholder:text-slate-400"
+                                />
+                            </div>
+                            {form.habitType === 'numeric' ? (
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        value={form.habitTarget}
+                                        onChange={(event) => updateField('habitTarget', event.target.value)}
+                                        className="border-white/10 bg-white/10 text-white [color-scheme:dark]"
+                                    />
+                                    <Input
+                                        value={form.habitUnit}
+                                        onChange={(event) => updateField('habitUnit', event.target.value)}
+                                        maxLength={50}
+                                        placeholder="Unit"
+                                        className="border-white/10 bg-white/10 text-white placeholder:text-slate-400"
+                                    />
+                                </div>
+                            ) : null}
                         </div>
 
                         <div className="space-y-2 sm:col-span-2">
@@ -186,20 +255,6 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                             <div className="flex h-8 items-center rounded-lg border border-white/10 bg-white/10 px-2.5 text-sm text-white">
                                 {calculatedReward} coins
                             </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Frequency</Label>
-                            <Select value={form.frequency} onValueChange={(value) => updateField('frequency', value)}>
-                                <SelectTrigger className="h-9 w-full border-white/10 bg-white/10 text-white">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="border-white/10 bg-[#1e1b3a] text-white">
-                                    <SelectItem value="daily">Daily</SelectItem>
-                                    <SelectItem value="weekly">Weekly</SelectItem>
-                                    <SelectItem value="monthly">Monthly</SelectItem>
-                                </SelectContent>
-                            </Select>
                         </div>
 
                         <div className="space-y-2">
