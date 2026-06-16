@@ -187,7 +187,7 @@ async function canCreateChallenge(user) {
 
     if (!plan.permissions.canCreateChallenges) {
         return {
-            error: 'premium membership is required to create challenges',
+            error: 'Creating your own challenges is a Premium feature.',
             code: 'PREMIUM_REQUIRED',
         };
     }
@@ -199,14 +199,14 @@ async function canCreateChallenge(user) {
 
     if (activeCreatedChallengeCount >= plan.limits.maxActiveCreatedChallenges) {
         return {
-            error: 'you can only create one challenge at a time as premium user, finish your other challenge first',
+            error: 'You can only create one active challenge at a time. Finish your current challenge before creating another one.',
             code: 'PREMIUM_ACTIVE_CREATED_LIMIT',
         };
     }
 
     if (activeChallengeIds.size >= getActiveChallengeLimit(currentUser)) {
         return {
-            error: 'you can only join 5 challenges at max',
+            error: 'You reached the maximum number of active challenges for your plan.',
             code: 'PREMIUM_ACTIVE_CHALLENGE_LIMIT',
         };
     }
@@ -253,7 +253,7 @@ function hasStartLockedUpdates(updates) {
     return START_LOCKED_UPDATE_FIELDS.some((field) => updates[field] !== undefined);
 }
 
-function serializeChallenge(challenge, participantCount = 0) {
+function serializeChallenge(challenge, participantCount = 0, viewerParticipant = null) {
     if (!challenge) {
         return null;
     }
@@ -273,6 +273,8 @@ function serializeChallenge(challenge, participantCount = 0) {
         status: getDisplayStatus(challenge),
         visibility: challenge.visibility,
         participantCount,
+        viewerParticipantStatus: viewerParticipant?.status,
+        viewerParticipantId: viewerParticipant?._id?.toString(),
         createdAt: challenge.createdAt,
         updatedAt: challenge.updatedAt,
     };
@@ -350,6 +352,22 @@ async function getParticipantCounts(challengeIds) {
     ]);
 
     return new Map(counts.map((item) => [item._id.toString(), item.count]));
+}
+
+async function getViewerParticipations(challengeIds, userId) {
+    if (!challengeIds.length || !userId) {
+        return new Map();
+    }
+
+    const participations = await ChallengeParticipant.find({
+        challenge: { $in: challengeIds },
+        user: userId,
+        status: { $ne: 'left' },
+    }).lean();
+
+    return new Map(
+        participations.map((participant) => [participant.challenge.toString(), participant])
+    );
 }
 
 function serializeParticipant(participant, challenge) {
@@ -486,10 +504,18 @@ export async function listChallenges(filters = {}, user) {
 
     const query = conditions.length ? { $and: conditions } : {};
     const challenges = await Challenge.find(query).sort({ createdAt: -1 });
-    const participantCounts = await getParticipantCounts(challenges.map((challenge) => challenge._id));
+    const challengeIds = challenges.map((challenge) => challenge._id);
+    const [participantCounts, viewerParticipations] = await Promise.all([
+        getParticipantCounts(challengeIds),
+        getViewerParticipations(challengeIds, user.id),
+    ]);
 
     return challenges.map((challenge) => (
-        serializeChallenge(challenge, participantCounts.get(challenge._id.toString()) ?? 0)
+        serializeChallenge(
+            challenge,
+            participantCounts.get(challenge._id.toString()) ?? 0,
+            viewerParticipations.get(challenge._id.toString())
+        )
     ));
 }
 
@@ -504,12 +530,19 @@ export async function getChallengeById(challengeId, user) {
         return { forbidden: true };
     }
 
-    const participantCount = await ChallengeParticipant.countDocuments({
-        challenge: challengeId,
-        status: { $ne: 'left' },
-    });
+    const [participantCount, viewerParticipant] = await Promise.all([
+        ChallengeParticipant.countDocuments({
+            challenge: challengeId,
+            status: { $ne: 'left' },
+        }),
+        ChallengeParticipant.findOne({
+            challenge: challengeId,
+            user: user.id,
+            status: { $ne: 'left' },
+        }).lean(),
+    ]);
 
-    return { challenge: serializeChallenge(challenge, participantCount) };
+    return { challenge: serializeChallenge(challenge, participantCount, viewerParticipant) };
 }
 
 export async function updateChallenge(challengeId, updates, user) {
@@ -598,11 +631,11 @@ export async function joinChallenge(challengeId, user) {
     }
 
     if (!await canViewChallenge(challenge, user)) {
-        return { error: 'user must be friends with the challenge creator to join this challenge' };
+        return { error: 'You need to be friends with the creator to join this challenge.' };
     }
 
     if (!isChallengeJoinable(challenge)) {
-        return { error: 'challenge is no longer joinable' };
+        return { error: 'This challenge can no longer be joined.' };
     }
 
     const joinPermission = await canAddActiveChallenge(user, challenge._id);
@@ -610,8 +643,8 @@ export async function joinChallenge(challengeId, user) {
     if (!joinPermission.allowed) {
         return {
             error: joinPermission.isPremium
-                ? 'you can only join 5 challenges at max'
-                : 'you can only join 2 challenges with the free version, buy premium to join more challenges',
+                ? 'You reached the maximum number of active challenges for your plan.'
+                : 'Free users can join up to 2 active challenges. Upgrade to Premium to join more.',
             code: joinPermission.isPremium
                 ? 'PREMIUM_ACTIVE_CHALLENGE_LIMIT'
                 : 'FREE_ACTIVE_CHALLENGE_LIMIT',
@@ -624,7 +657,10 @@ export async function joinChallenge(challengeId, user) {
     });
 
     if (existingParticipant && existingParticipant.status !== 'left') {
-        return { error: 'user already joined this challenge' };
+        return {
+            error: 'You are already participating in this challenge.',
+            code: 'CHALLENGE_ALREADY_JOINED',
+        };
     }
 
     if (existingParticipant) {
@@ -678,21 +714,21 @@ export async function createInvitation(challengeId, inviteeId, user) {
     }
 
     if (!isChallengeJoinable(challenge)) {
-        return { error: 'challenge is no longer joinable' };
+        return { error: 'This challenge can no longer be joined.' };
     }
 
     if (sameId(inviteeId, user.id)) {
-        return { error: 'cannot invite yourself to your own challenge' };
+        return { error: 'You cannot invite yourself to your own challenge.' };
     }
 
     const invitee = await User.findOne({ _id: inviteeId, isDeleted: false }).lean();
 
     if (!invitee) {
-        return { error: 'invitee not found' };
+        return { error: 'We could not find that user.' };
     }
 
     if (!await areFriends(challenge.createdBy, inviteeId)) {
-        return { error: 'invitee must be friends with the challenge creator' };
+        return { error: 'You can only invite friends to this challenge.' };
     }
 
     const existingParticipant = await ChallengeParticipant.findOne({
@@ -702,7 +738,7 @@ export async function createInvitation(challengeId, inviteeId, user) {
     }).lean();
 
     if (existingParticipant) {
-        return { error: 'invitee already joined this challenge' };
+        return { error: 'This friend is already participating in the challenge.' };
     }
 
     const existingPendingInvitation = await ChallengeInvitation.findOne({
@@ -712,7 +748,7 @@ export async function createInvitation(challengeId, inviteeId, user) {
     }).lean();
 
     if (existingPendingInvitation) {
-        return { error: 'pending challenge invitation already exists' };
+        return { error: 'This friend already has a pending invitation for this challenge.' };
     }
 
     const invitation = await ChallengeInvitation.create({
@@ -769,7 +805,7 @@ export async function acceptInvitation(invitationId, user) {
     const challenge = invitation.challenge;
 
     if (!isChallengeJoinable(challenge)) {
-        return { error: 'challenge is no longer joinable' };
+        return { error: 'This challenge can no longer be joined.' };
     }
 
     const joinPermission = await canAddActiveChallenge(user, challenge._id);
@@ -777,8 +813,8 @@ export async function acceptInvitation(invitationId, user) {
     if (!joinPermission.allowed) {
         return {
             error: joinPermission.isPremium
-                ? 'you can only join 5 challenges at max'
-                : 'you can only join 2 challenges with the free version, buy premium to join more challenges',
+                ? 'You reached the maximum number of active challenges for your plan.'
+                : 'Free users can join up to 2 active challenges. Upgrade to Premium to join more.',
             code: joinPermission.isPremium
                 ? 'PREMIUM_ACTIVE_CHALLENGE_LIMIT'
                 : 'FREE_ACTIVE_CHALLENGE_LIMIT',

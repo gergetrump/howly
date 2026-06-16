@@ -227,6 +227,10 @@ test('GET /api/challenges supports active, friends, and public scopes', async ()
         .expect(200);
 
     assert.equal(activeResponse.body.some((challenge) => challenge.id === publicChallenge.id), true);
+    assert.equal(
+        activeResponse.body.find((challenge) => challenge.id === publicChallenge.id).viewerParticipantStatus,
+        'active'
+    );
 
     const friendsResponse = await request(app)
         .get('/api/challenges?scope=friends')
@@ -242,6 +246,35 @@ test('GET /api/challenges supports active, friends, and public scopes', async ()
 
     assert.equal(publicResponse.body.some((challenge) => challenge.id === publicChallenge.id), true);
     assert.equal(publicResponse.body.some((challenge) => challenge.id === friendsChallenge.id), false);
+    assert.equal(
+        publicResponse.body.find((challenge) => challenge.id === publicChallenge.id).viewerParticipantStatus,
+        'active'
+    );
+});
+
+test('joining an already joined challenge returns a friendly error', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const participant = await buildUser();
+    const participantToken = signAccessToken(participant);
+    const challenge = await createChallenge(signAccessToken(owner), {
+        ownerId: owner._id,
+        title: 'Already Joined',
+    });
+
+    await request(app)
+        .post(`/api/challenges/${challenge.id}/join`)
+        .set('Authorization', `Bearer ${participantToken}`)
+        .send({})
+        .expect(201);
+
+    const response = await request(app)
+        .post(`/api/challenges/${challenge.id}/join`)
+        .set('Authorization', `Bearer ${participantToken}`)
+        .send({})
+        .expect(400);
+
+    assert.equal(response.body.code, 'CHALLENGE_ALREADY_JOINED');
+    assert.equal(response.body.message, 'You are already participating in this challenge.');
 });
 
 test('active challenge scope excludes challenges the user has not joined', async () => {
