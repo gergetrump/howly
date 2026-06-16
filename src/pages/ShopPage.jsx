@@ -47,7 +47,6 @@ export function ShopPage() {
     const [buyingItemId, setBuyingItemId] = useState(null);
     const [itemsToBuy, setItemsToBuy] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
-    const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
     const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
@@ -118,7 +117,6 @@ export function ShopPage() {
                 return;
             }
 
-            setNotice('Payment received. Updating your premium status...');
             setError('');
             restorePremiumReturnItem();
 
@@ -135,7 +133,6 @@ export function ShopPage() {
                     }
 
                     if (confirmation?.user?.isPremium) {
-                        setNotice('Premium is active. Welcome to Howly Premium.');
                         setSearchParams({}, { replace: true });
                         return;
                     }
@@ -151,7 +148,6 @@ export function ShopPage() {
             }
 
             if (refreshedUser?.isPremium) {
-                setNotice('Premium is active. Welcome to Howly Premium.');
                 setSearchParams({}, { replace: true });
                 return;
             }
@@ -163,11 +159,6 @@ export function ShopPage() {
                     return;
                 }
 
-                setNotice(
-                    retryUser?.isPremium
-                        ? 'Premium is active. Welcome to Howly Premium.'
-                        : 'Payment received. Premium status is still being confirmed.',
-                );
                 setSearchParams({}, { replace: true });
             }, 1500);
         }
@@ -294,7 +285,6 @@ export function ShopPage() {
             return;
         }
 
-        setNotice('');
         setError('');
         const isAlreadyPreviewed = isItemPreviewed(item._id);
         const isOwned = ownedItemIds.has(item._id);
@@ -318,7 +308,6 @@ export function ShopPage() {
     }
 
     function handleRemoveCartItem(itemId) {
-        setNotice('');
         setError('');
         setCartItems((currentCartItems) => currentCartItems.filter((item) => item._id !== itemId));
         setPreviewItems((currentPreviewItems) => currentPreviewItems.filter((item) => item._id !== itemId));
@@ -336,9 +325,13 @@ export function ShopPage() {
         setIsCartOpen(false);
     }
 
+    function clearPreviewItems() {
+        setPreviewItems([]);
+        setCartItems([]);
+    }
+
     async function handleBuyItems(itemsForPurchase) {
         setBuyingItemId('cart');
-        setNotice('');
         setError('');
         const purchasedItems = [];
         let failedItem = null;
@@ -358,9 +351,7 @@ export function ShopPage() {
             setCartItems((currentCartItems) => (
                 currentCartItems.filter((item) => !purchasedItems.some((purchasedItem) => purchasedItem._id === item._id))
             ));
-            setNotice(purchasedItems.length === 1
-                ? `${purchasedItems[0].name} is now in your inventory`
-                : `${purchasedItems.length} items are now in your inventory`);
+            await refreshCurrentUser();
         } catch (buyError) {
             if (purchasedItems.length > 0) {
                 setOwnedItemIds((currentOwnedItemIds) => {
@@ -371,6 +362,7 @@ export function ShopPage() {
                 setCartItems((currentCartItems) => (
                     currentCartItems.filter((item) => !purchasedItems.some((purchasedItem) => purchasedItem._id === item._id))
                 ));
+                await refreshCurrentUser();
             }
 
             if (buyError.code === 'ITEM_ALREADY_OWNED') {
@@ -405,104 +397,107 @@ export function ShopPage() {
     return (
         <Page theme="forest" className="h-screen overflow-hidden">
             <Heading title="Shop" subtitle="Unlock items for your companion." streakDays={user?.streak ?? 0} />
-            <section className="sticky top-24 z-20 flex min-h-72 flex-col items-center justify-end gap-3 text-center">
-                <CompanionAvatar
-                    type={companion?.type}
-                    name={companion?.name}
-                    size="xl"
-                    showName
-                    previewItemKeys={previewItemKeys}
-                />
-                <ActionButton
-                    type="button"
-                    className="h-9 bg-white/10 px-4 text-sm text-white hover:bg-white/20 disabled:text-slate-500"
-                    disabled={previewItems.length === 0}
-                    onClick={() => {
-                        setPreviewItems([]);
-                        setCartItems([]);
-                    }}
-                >
-                    Unequip all
-                </ActionButton>
-            </section>
+            <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(18rem,0.65fr)_minmax(0,1.7fr)] lg:items-start">
+                <section className="flex min-h-72 flex-col items-center justify-center gap-3 text-center lg:sticky lg:top-24 lg:min-h-[calc(100vh-11rem)]">
+                    <CompanionAvatar
+                        type={companion?.type}
+                        name={companion?.name}
+                        size="xl"
+                        showName
+                        previewItemKeys={previewItemKeys}
+                    />
+                </section>
 
-            <PageSection title="Shop Items" className="min-w-0">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-                        <TabsList className="h-auto flex-wrap border border-white/10 bg-white/10 p-1 text-slate-300">
-                            {ITEM_CATEGORIES.map((category) => (
-                                <TabsTrigger
-                                    key={category.value}
-                                    value={category.value}
-                                    className="px-3 py-1.5 text-slate-300 data-active:bg-white data-active:text-slate-950"
-                                >
-                                    {category.label}
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </Tabs>
-
-                    <ActionButton
-                        type="button"
-                        className="gap-2 bg-violet-500 px-4 text-white hover:bg-violet-400 disabled:bg-white/10 disabled:text-slate-500"
-                        disabled={cartItems.length === 0}
-                        onClick={() => setIsCartOpen(true)}
-                    >
-                        <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-                        Cart
-                        <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{cartItems.length}</span>
-                    </ActionButton>
-                </div>
-
-                {isLoading ? <p className="text-sm text-slate-300">Loading shop items...</p> : null}
-                {notice ? <p className="text-sm text-emerald-300">{notice}</p> : null}
-                {error ? <p className="text-sm text-red-300">{error}</p> : null}
-                {!isLoading && !error && items.length === 0 ? (
-                    <p className="text-sm text-slate-300">No shop items yet</p>
-                ) : null}
-                {!isLoading && !error && items.length > 0 && filteredItems.length === 0 ? (
-                    <p className="text-sm text-slate-300">No items in this category yet</p>
-                ) : null}
-
-                <div className="relative rounded-2xl border border-white/10 bg-white/5 p-3 shadow-xl shadow-slate-950/20">
-                    <div className="max-h-[25rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
-                        <CardGrid columns={4} className="pb-8">
-                            {filteredItems.map((item) => (
-                                <div key={item._id} data-shop-item-id={item._id}>
-                                    <ItemCard
-                                        name={item.name}
-                                        price={item.price}
-                                        premiumOnly={item.premiumOnly}
-                                        owned={ownedItemIds.has(item._id)}
-                                        showOwnedBadge={false}
-                                        dense
-                                        visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
+                <PageSection title="Shop Items" className="min-w-0">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+                            <TabsList className="h-auto flex-wrap border border-white/10 bg-white/10 p-1 text-slate-300">
+                                {ITEM_CATEGORIES.map((category) => (
+                                    <TabsTrigger
+                                        key={category.value}
+                                        value={category.value}
+                                        className="px-3 py-1.5 text-slate-300 data-active:bg-white data-active:text-slate-950"
                                     >
-                                        <ActionButton
-                                            type="button"
-                                            fullWidth
-                                            className="h-8 px-3 text-xs"
-                                            onClick={() => handleTryOnItem(item._id)}
-                                        >
-                                            {isItemPreviewed(item._id) || isItemInCart(item._id) ? 'Remove' : 'Try on'}
-                                        </ActionButton>
-                                        <ActionButton
-                                            type="button"
-                                            fullWidth
-                                            className="h-8 px-3 text-xs"
-                                            disabled={ownedItemIds.has(item._id) || buyingItemId === item._id}
-                                            onClick={() => openBuyConfirmation([item])}
-                                        >
-                                            {ownedItemIds.has(item._id) ? 'Owned' : 'Buy'}
-                                        </ActionButton>
-                                    </ItemCard>
-                                </div>
-                            ))}
-                        </CardGrid>
+                                        {category.label}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                        </Tabs>
+
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                            <ActionButton
+                                type="button"
+                                className="h-9 bg-white/10 px-4 text-sm text-white hover:bg-white/20 disabled:text-slate-500"
+                                disabled={previewItems.length === 0}
+                                onClick={clearPreviewItems}
+                            >
+                                Unequip all
+                            </ActionButton>
+                        </div>
                     </div>
-                    <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
-                </div>
-            </PageSection>
+
+                    {isLoading ? <p className="text-sm text-slate-300">Loading shop items...</p> : null}
+                    {error ? <p className="text-sm text-red-300">{error}</p> : null}
+                    {!isLoading && !error && items.length === 0 ? (
+                        <p className="text-sm text-slate-300">No shop items yet</p>
+                    ) : null}
+                    {!isLoading && !error && items.length > 0 && filteredItems.length === 0 ? (
+                        <p className="text-sm text-slate-300">No items in this category yet</p>
+                    ) : null}
+
+                    <div className="relative rounded-2xl border border-white/10 bg-white/5 p-3 shadow-xl shadow-slate-950/20">
+                        <div className="h-[38rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
+                            <CardGrid columns={3} className="pb-8">
+                                {filteredItems.map((item) => (
+                                    <div key={item._id} data-shop-item-id={item._id}>
+                                        <ItemCard
+                                            name={item.name}
+                                            price={item.price}
+                                            premiumOnly={item.premiumOnly}
+                                            owned={ownedItemIds.has(item._id)}
+                                            showOwnedBadge={false}
+                                            dense
+                                            visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
+                                        >
+                                            <ActionButton
+                                                type="button"
+                                                fullWidth
+                                                className="h-8 px-3 text-xs"
+                                                onClick={() => handleTryOnItem(item._id)}
+                                            >
+                                                {isItemPreviewed(item._id) || isItemInCart(item._id) ? 'Remove' : 'Try on'}
+                                            </ActionButton>
+                                            <ActionButton
+                                                type="button"
+                                                fullWidth
+                                                className="h-8 px-3 text-xs"
+                                                disabled={ownedItemIds.has(item._id) || buyingItemId === item._id}
+                                                onClick={() => openBuyConfirmation([item])}
+                                            >
+                                                {ownedItemIds.has(item._id) ? 'Owned' : 'Buy'}
+                                            </ActionButton>
+                                        </ItemCard>
+                                    </div>
+                                ))}
+                            </CardGrid>
+                        </div>
+                        <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
+                    </div>
+
+                    <div className="flex justify-end">
+                        <ActionButton
+                            type="button"
+                            className="gap-2 bg-violet-500 px-4 text-white hover:bg-violet-400 disabled:bg-white/10 disabled:text-slate-500"
+                            disabled={cartItems.length === 0}
+                            onClick={() => setIsCartOpen(true)}
+                        >
+                            <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+                            Cart
+                            <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{cartItems.length}</span>
+                        </ActionButton>
+                    </div>
+                </PageSection>
+            </div>
 
             <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
                 <DialogContent className="border-white/10 bg-[#1e1b3a] p-0 text-white shadow-2xl sm:max-w-lg">

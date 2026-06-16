@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
@@ -13,6 +14,7 @@ import {
 } from '@/services/inventoryApi';
 
 export function InventoryPage() {
+    const navigate = useNavigate();
     const { user, companion } = useAuth();
     const [inventory, setInventory] = useState([]);
     const [draftEquippedItemIds, setDraftEquippedItemIds] = useState(new Set());
@@ -200,35 +202,55 @@ export function InventoryPage() {
                     </ActionButton>
                 </div>
 
-                {isLoading ? <p className="text-sm text-slate-300">Loading your inventory...</p> : null}
                 {notice ? <p className="text-sm text-emerald-300">{notice}</p> : null}
                 {error ? <p className="text-sm text-red-300">{error}</p> : null}
-                {!isLoading && !error && ownedItems.length === 0 ? (
-                    <p className="text-sm text-slate-300">Your inventory is empty</p>
-                ) : null}
-                {!isLoading && !error && ownedItems.length > 0 && filteredItems.length === 0 ? (
-                    <p className="text-sm text-slate-300">No owned items in this category yet</p>
-                ) : null}
 
                 <div className="relative rounded-2xl border border-white/10 bg-white/5 p-4 shadow-xl shadow-slate-950/20">
-                    <div className="max-h-[25rem] overflow-y-scroll pr-3 [scrollbar-gutter:stable]">
-                        <CardGrid columns={4} className="gap-4 pb-8">
-                            {filteredItems.map((item) => (
-                                <ItemCard
-                                    key={item.userItemId}
-                                    name={item.name}
-                                    price={item.price}
-                                    premiumOnly={item.premiumOnly}
-                                    equipped={item.equipped}
-                                    showPrice={false}
-                                    dense
-                                    interactive
-                                    disabled={isSavingOutfit}
-                                    visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
-                                    onClick={() => handleToggleEquipped(item)}
-                                />
-                            ))}
-                        </CardGrid>
+                    <div className="h-[24rem] overflow-y-scroll pr-3 [scrollbar-gutter:stable]">
+                        {isLoading ? (
+                            <div className="flex h-full items-center justify-center text-center">
+                                <p className="text-sm text-slate-300">Loading your inventory...</p>
+                            </div>
+                        ) : null}
+
+                        {!isLoading && !error && ownedItems.length === 0 ? (
+                            <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+                                <p className="text-sm font-medium text-slate-200">Try on some items at the Shop!</p>
+                                <ActionButton
+                                    type="button"
+                                    className="bg-violet-500 px-5 text-white hover:bg-violet-400"
+                                    onClick={() => navigate('/shop')}
+                                >
+                                    Visit shop
+                                </ActionButton>
+                            </div>
+                        ) : null}
+
+                        {!isLoading && !error && ownedItems.length > 0 && filteredItems.length === 0 ? (
+                            <div className="flex h-full items-center justify-center text-center">
+                                <p className="text-sm text-slate-300">No owned items in this category yet</p>
+                            </div>
+                        ) : null}
+
+                        {!isLoading && !error && filteredItems.length > 0 ? (
+                            <CardGrid columns={4} className="gap-4 pb-8">
+                                {filteredItems.map((item) => (
+                                    <ItemCard
+                                        key={item.userItemId}
+                                        name={item.name}
+                                        price={item.price}
+                                        premiumOnly={item.premiumOnly}
+                                        equipped={item.equipped}
+                                        showPrice={false}
+                                        dense
+                                        interactive
+                                        disabled={isSavingOutfit}
+                                        visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
+                                        onClick={() => handleToggleEquipped(item)}
+                                    />
+                                ))}
+                            </CardGrid>
+                        ) : null}
                     </div>
                     <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
                 </div>
