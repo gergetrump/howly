@@ -11,6 +11,7 @@ import {
     leaveChallenge,
     listChallenges,
     listInvitations,
+    listMyChallengeHabits,
     listParticipants,
     recordProgress,
     rejectInvitation,
@@ -24,6 +25,7 @@ router.use(requireAuth);
 router.get('/', listChallenges);
 router.post('/', createChallenge);
 router.get('/invitations', listInvitations);
+router.get('/my-habits', listMyChallengeHabits);
 router.post('/invitations/:invitationId/accept', acceptInvitation);
 router.post('/invitations/:invitationId/reject', rejectInvitation);
 router.get('/:challengeId', getChallengeById);

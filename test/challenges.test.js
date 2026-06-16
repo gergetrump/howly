@@ -36,10 +36,17 @@ async function createChallenge(token, overrides = {}) {
         throw new Error('ownerId is required for createChallenge test helper');
     }
 
-    const habit = overrides.habit || await buildHabit(overrides.ownerId);
+    const habitTemplate = overrides.habitTemplate || {
+        title: overrides.habit?.title || 'Reading',
+        description: overrides.habit?.description || '',
+        icon: overrides.habit?.icon || 'C',
+        type: overrides.habit?.type || 'boolean',
+        frequency: overrides.habit?.frequency || 'Daily',
+        category: overrides.habit?.category || 'Challenge',
+    };
     const requestBody = {
         title: 'Daily Reading',
-        habitId: habit._id.toString(),
+        habitTemplate,
         description: 'Read a few pages every day',
         frequency: 'daily',
         durationDays: 30,
@@ -47,6 +54,7 @@ async function createChallenge(token, overrides = {}) {
     };
 
     delete requestBody.habit;
+    delete requestBody.habitTemplate.titleOverride;
     delete requestBody.ownerId;
 
     const response = await request(app)
@@ -124,7 +132,9 @@ test('POST /api/challenges creates a challenge for a premium user', async () => 
         user: owner._id,
     });
 
-    assert.equal(participant.habit.toString(), habit._id.toString());
+    const challengeHabit = await Habit.findById(participant.habit);
+    assert.equal(challengeHabit.source, 'challenge');
+    assert.equal(challengeHabit.title, 'Reading');
 });
 
 test('free users cannot create challenges', async () => {
@@ -271,7 +281,12 @@ test('challenge details can be edited before start but not after start', async (
         .set('Authorization', `Bearer ${ownerToken}`)
         .send({
             title: 'Future Running',
-            habitId: secondHabit._id.toString(),
+            habitTemplate: {
+                title: secondHabit.title,
+                type: 'boolean',
+                frequency: 'Daily',
+                category: 'Challenge',
+            },
             durationDays: 14,
         })
         .expect(200);
@@ -389,7 +404,9 @@ test('challenge participants can join, record progress, and claim prorated rewar
         .expect(201);
 
     assert.equal(joinResponse.body.participant.user, participant._id.toString());
-    assert.equal(joinResponse.body.participant.habit, habit._id.toString());
+    const generatedHabit = await Habit.findById(joinResponse.body.participant.habit);
+    assert.equal(generatedHabit.source, 'challenge');
+    assert.equal(generatedHabit.ownerId.toString(), participant._id.toString());
     assert.equal(joinResponse.body.participant.daysCompleted, 0);
 
     const progressResponse = await request(app)
@@ -426,7 +443,6 @@ test('habit check-in increments linked active challenge progress', async () => {
     const ownerToken = signAccessToken(owner);
     const participantToken = signAccessToken(participant);
     const ownerHabit = await buildHabit(owner._id);
-    const participantHabit = await buildHabit(participant._id);
     const challenge = await createChallenge(ownerToken, {
         habit: ownerHabit,
         ownerId: owner._id,
@@ -435,11 +451,16 @@ test('habit check-in increments linked active challenge progress', async () => {
     await request(app)
         .post(`/api/challenges/${challenge.id}/join`)
         .set('Authorization', `Bearer ${participantToken}`)
-        .send({ habitId: participantHabit._id.toString() })
+        .send({})
         .expect(201);
 
+    const participantRecordBeforeCheckIn = await ChallengeParticipant.findOne({
+        challenge: challenge.id,
+        user: participant._id,
+    });
+
     await request(app)
-        .post(`/api/habits/${participantHabit._id}/check-ins`)
+        .post(`/api/habits/${participantRecordBeforeCheckIn.habit}/check-ins`)
         .set('Authorization', `Bearer ${participantToken}`)
         .expect(200);
 
@@ -450,6 +471,105 @@ test('habit check-in increments linked active challenge progress', async () => {
 
     assert.equal(participantRecord.daysCompleted, 1);
     assert.ok(participantRecord.lastCompletedAt);
+});
+
+test('joining a challenge creates a challenge habit without using normal habit slots', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const participant = await buildUser();
+    const ownerToken = signAccessToken(owner);
+    const participantToken = signAccessToken(participant);
+    const challenge = await createChallenge(ownerToken, {
+        ownerId: owner._id,
+        habitTemplate: {
+            title: 'Daily Pages',
+            type: 'boolean',
+            frequency: 'Daily',
+            category: 'Learning',
+        },
+    });
+
+    await Promise.all([
+        buildHabit(participant._id, { title: 'Normal Habit 1' }),
+        buildHabit(participant._id, { title: 'Normal Habit 2' }),
+    ]);
+
+    const joinResponse = await request(app)
+        .post(`/api/challenges/${challenge.id}/join`)
+        .set('Authorization', `Bearer ${participantToken}`)
+        .send({})
+        .expect(201);
+
+    const challengeHabit = await Habit.findById(joinResponse.body.participant.habit);
+    assert.equal(challengeHabit.source, 'challenge');
+    assert.equal(challengeHabit.title, 'Daily Pages');
+    assert.equal(challengeHabit.challengeId.toString(), challenge.id);
+
+    const habitsResponse = await request(app)
+        .get('/api/habits')
+        .set('Authorization', `Bearer ${participantToken}`)
+        .expect(200);
+
+    assert.equal(habitsResponse.body.data.length, 2);
+    assert.equal(habitsResponse.body.data.some((habit) => habit.id === challengeHabit._id.toString()), false);
+
+    const myChallengeHabitsResponse = await request(app)
+        .get('/api/challenges/my-habits')
+        .set('Authorization', `Bearer ${participantToken}`)
+        .expect(200);
+
+    assert.equal(myChallengeHabitsResponse.body.length, 1);
+    assert.equal(myChallengeHabitsResponse.body[0].habit.id, challengeHabit._id.toString());
+    assert.equal(myChallengeHabitsResponse.body[0].participant.daysCompleted, 0);
+});
+
+test('unchecking a challenge habit decrements challenge progress without normal streaks', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const participant = await buildUser();
+    const challenge = await createChallenge(signAccessToken(owner), {
+        ownerId: owner._id,
+        habitTemplate: {
+            title: 'Daily Pages',
+            type: 'boolean',
+            frequency: 'Daily',
+            category: 'Learning',
+        },
+    });
+    const participantToken = signAccessToken(participant);
+
+    const joinResponse = await request(app)
+        .post(`/api/challenges/${challenge.id}/join`)
+        .set('Authorization', `Bearer ${participantToken}`)
+        .send({})
+        .expect(201);
+
+    await request(app)
+        .post(`/api/habits/${joinResponse.body.participant.habit}/check-ins`)
+        .set('Authorization', `Bearer ${participantToken}`)
+        .expect(200);
+
+    let participantRecord = await ChallengeParticipant.findOne({
+        challenge: challenge.id,
+        user: participant._id,
+    });
+    let challengeHabit = await Habit.findById(joinResponse.body.participant.habit);
+
+    assert.equal(participantRecord.daysCompleted, 1);
+    assert.equal(challengeHabit.streakCount, 0);
+
+    await request(app)
+        .delete(`/api/habits/${joinResponse.body.participant.habit}/check-ins`)
+        .set('Authorization', `Bearer ${participantToken}`)
+        .expect(200);
+
+    participantRecord = await ChallengeParticipant.findOne({
+        challenge: challenge.id,
+        user: participant._id,
+    });
+    challengeHabit = await Habit.findById(joinResponse.body.participant.habit);
+
+    assert.equal(participantRecord.daysCompleted, 0);
+    assert.equal(challengeHabit.streakCount, 0);
+    assert.equal(challengeHabit.lastCompletedAt, null);
 });
 
 test('PATCH /api/challenges/:challengeId rejects updates from non-owners', async () => {
@@ -526,7 +646,9 @@ test('friend-only challenges are visible and joinable only for friends', async (
         .expect(201);
 
     assert.equal(joinResponse.body.participant.user, friend._id.toString());
-    assert.equal(joinResponse.body.participant.habit, friendHabit._id.toString());
+    const friendChallengeHabit = await Habit.findById(joinResponse.body.participant.habit);
+    assert.equal(friendChallengeHabit.source, 'challenge');
+    assert.equal(friendChallengeHabit.ownerId.toString(), friend._id.toString());
 });
 
 test('challenge owners can invite friends and invitees can accept to join', async () => {
@@ -570,14 +692,16 @@ test('challenge owners can invite friends and invitees can accept to join', asyn
 
     assert.equal(acceptResponse.body.invitation.status, 'accepted');
     assert.equal(acceptResponse.body.participant.user, friend._id.toString());
-    assert.equal(acceptResponse.body.participant.habit, friendHabit._id.toString());
+    const acceptedChallengeHabit = await Habit.findById(acceptResponse.body.participant.habit);
+    assert.equal(acceptedChallengeHabit.source, 'challenge');
+    assert.equal(acceptedChallengeHabit.ownerId.toString(), friend._id.toString());
 
     const participant = await ChallengeParticipant.findOne({
         challenge: challenge.id,
         user: friend._id,
     });
     assert.equal(participant.status, 'active');
-    assert.equal(participant.habit.toString(), friendHabit._id.toString());
+    assert.equal(participant.habit.toString(), acceptedChallengeHabit._id.toString());
 });
 
 test('challenge invitations require creator ownership and friendship', async () => {
