@@ -57,6 +57,10 @@ function isPlanLimitError(code) {
     return code === 'PREMIUM_ACTIVE_CHALLENGE_LIMIT' || code === 'PREMIUM_ACTIVE_CREATED_LIMIT';
 }
 
+function isAlreadyJoinedError(code) {
+    return code === 'CHALLENGE_ALREADY_JOINED';
+}
+
 function getChallengeLimitPrompt(code, backendMessage) {
     if (code === 'PREMIUM_ACTIVE_CREATED_LIMIT') {
         return {
@@ -162,6 +166,11 @@ export function ChallengesPage() {
 
         if (!isFreeUser && isPlanLimitError(actionError.code)) {
             setLimitPrompt(getChallengeLimitPrompt(actionError.code, actionError.message));
+            return;
+        }
+
+        if (isAlreadyJoinedError(actionError.code)) {
+            setNotice(actionError.message || 'You are already participating in this challenge.');
             return;
         }
 
@@ -325,8 +334,10 @@ export function ChallengesPage() {
                     <CardGrid columns={2}>
                         {visibleChallenges.map((challenge) => {
                             const isOwnChallenge = userId && challenge.createdBy === userId;
+                            const hasJoined = Boolean(challenge.viewerParticipantStatus && challenge.viewerParticipantStatus !== 'left');
                             const isJoinable = challenge.status !== 'completed' && challenge.status !== 'failed';
-                            const shouldShowJoin = !isOwnChallenge && activeTab !== 'active';
+                            const shouldShowJoin = !isOwnChallenge && !hasJoined && activeTab !== 'active';
+                            const shouldShowJoined = !isOwnChallenge && hasJoined && activeTab !== 'active';
 
                             return (
                                 <ChallengeCard
@@ -371,6 +382,16 @@ export function ChallengesPage() {
                                             className="border-white/20 bg-white/10 text-white"
                                         >
                                             Active
+                                        </Button>
+                                    ) : null}
+                                    {shouldShowJoined ? (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            disabled
+                                            className="border-white/20 bg-white/10 text-white"
+                                        >
+                                            Joined
                                         </Button>
                                     ) : null}
                                     {shouldShowJoin ? (
