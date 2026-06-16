@@ -151,6 +151,21 @@ export function InventoryPage() {
         }
     }
 
+    function renderShopEmptyState() {
+        return (
+            <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+                <p className="text-sm font-medium text-slate-200">Try on some items at the Shop!</p>
+                <ActionButton
+                    type="button"
+                    className="bg-violet-500 px-5 text-white hover:bg-violet-400"
+                    onClick={() => navigate('/shop')}
+                >
+                    Visit shop
+                </ActionButton>
+            </div>
+        );
+    }
+
     return (
         <Page theme="forest" className="h-screen overflow-hidden">
             <Heading title="Inventory" subtitle="Equip items for your companion." streakDays={user?.streak ?? 0} />
@@ -214,22 +229,11 @@ export function InventoryPage() {
                         ) : null}
 
                         {!isLoading && !error && ownedItems.length === 0 ? (
-                            <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-                                <p className="text-sm font-medium text-slate-200">Try on some items at the Shop!</p>
-                                <ActionButton
-                                    type="button"
-                                    className="bg-violet-500 px-5 text-white hover:bg-violet-400"
-                                    onClick={() => navigate('/shop')}
-                                >
-                                    Visit shop
-                                </ActionButton>
-                            </div>
+                            renderShopEmptyState()
                         ) : null}
 
                         {!isLoading && !error && ownedItems.length > 0 && filteredItems.length === 0 ? (
-                            <div className="flex h-full items-center justify-center text-center">
-                                <p className="text-sm text-slate-300">No owned items in this category yet</p>
-                            </div>
+                            renderShopEmptyState()
                         ) : null}
 
                         {!isLoading && !error && filteredItems.length > 0 ? (
