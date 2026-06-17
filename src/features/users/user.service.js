@@ -91,10 +91,13 @@ export function toPublicUser(user) {
         profilePictureUrl,
         role: user.role,
         isPremium: user.isPremium,
+        onboardingCompleted: user.onboardingCompleted,
         authProvider: user.authProvider,
         providerId: user.providerId,
         coins: user.coins,
         streak: user.streak,
+        premiumStatus: user.premiumStatus,
+        premiumUntil: user.premiumUntil,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
     };
@@ -134,6 +137,15 @@ export async function resetUserProfilePicture(userId) {
     return User.findByIdAndUpdate(
         userId,
         { profilePictureUrl: null },
+        { returnDocument: 'after' }
+    );
+}
+
+// Mark the authenticated user's onboarding flow as completed.
+export async function completeOnboarding(userId) {
+    return User.findByIdAndUpdate(
+        userId,
+        { onboardingCompleted: true },
         { returnDocument: 'after' }
     );
 }

@@ -68,6 +68,11 @@ const userSchema = new Schema(
       type: Boolean,
       default: false
     },
+    stripeCustomerId: String,
+    stripeSubscriptionId: String,
+    premiumStatus: String, // active, canceled, past_due, unpaid
+    premiumUntil: Date,
+    
     isEmailVerified: {
       type: Boolean,
       default: false,
@@ -75,6 +80,12 @@ const userSchema = new Schema(
     emailVerifiedAt: {
       type: Date,
       default: null,
+    },
+    // Tracks whether the user has finished the post-signup onboarding flow
+    // (companion selection + starter habits). Gates the onboarding screens.
+    onboardingCompleted: {
+      type: Boolean,
+      default: false,
     },
     coins: {
       type: Number,

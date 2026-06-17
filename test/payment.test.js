@@ -41,18 +41,30 @@ after(async () => {
     }
 });
 
-test('checkout completion upgrades user and grants initial premium coins only once', async () => {
+test('checkout completion syncs premium subscription state', async () => {
     const user = await buildUser({ coins: 25, isPremium: false });
-    const session = { metadata: { userId: user._id.toString() } };
+    const periodEnd = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+    const session = {
+        customer: 'cus_test_123',
+        metadata: { userId: user._id.toString() },
+        subscription: {
+            id: 'sub_test_123',
+            status: 'active',
+            current_period_end: periodEnd,
+        },
+    };
 
     const upgradedUser = await markPremiumFromCheckoutSession(session);
     assert.equal(upgradedUser.isPremium, true);
-    assert.equal(upgradedUser.coins, 325);
+    assert.equal(upgradedUser.stripeCustomerId, 'cus_test_123');
+    assert.equal(upgradedUser.stripeSubscriptionId, 'sub_test_123');
+    assert.equal(upgradedUser.premiumStatus, 'active');
 
     const retriedUser = await markPremiumFromCheckoutSession(session);
     assert.equal(retriedUser.isPremium, true);
-    assert.equal(retriedUser.coins, 325);
+    assert.equal(retriedUser.coins, 25);
 
     const storedUser = await User.findById(user._id).lean();
-    assert.equal(storedUser.coins, 325);
+    assert.equal(storedUser.isPremium, true);
+    assert.equal(storedUser.stripeCustomerId, 'cus_test_123');
 });

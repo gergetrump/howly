@@ -25,7 +25,7 @@ export const PLANS = Object.freeze({
         key: PLAN_KEYS.PREMIUM,
         label: 'Premium',
         limits: Object.freeze({
-            maxHabits: 6,
+            maxHabits: 20,
             maxActiveChallenges: 5,
             maxActiveCreatedChallenges: 1,
         }),

@@ -9,6 +9,7 @@ import socialRoutes from './features/social/social.routes.js';
 import milestoneRoutes from './features/milestones/milestone.routes.js';
 import itemRoutes from './features/items/item.routes.js';
 import inventoryRoutes from './features/inventory/inventory.routes.js';
+import companionRoutes from './features/companion/companion.routes.js';
 import { errorMiddleware } from './middleware/error.middleware.js';
 import challengeRoutes from './features/challenges/challenge.routes.js';
 import storyRoutes from './features/stories/story.routes.js';
@@ -62,6 +63,7 @@ export default function createApp() {
     app.use('/api/inventory', inventoryRoutes);
     app.use('/api/payments', paymentRoutes);
     app.use('/api/stories', storyRoutes);
+    app.use('/api/companions', companionRoutes);
 
     // Central error handling
     app.use(errorMiddleware);
