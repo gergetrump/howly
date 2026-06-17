@@ -27,7 +27,7 @@ const config = {
             // Free key: https://openrouter.ai/keys
             apiKey: 'REDACTED',
             // Any free model from https://openrouter.ai/models?max_price=0
-            model: 'meta-llama/llama-3.3-70b-instruct:free',
+            model: 'openai/gpt-oss-120b:free',
         },
     }
 };

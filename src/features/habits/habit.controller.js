@@ -1,5 +1,8 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
+import { ApiError } from '../../errors/ApiError.js';
 import * as habitService from './habit.service.js';
+import { validateSuggestInput } from './habit.validation.js';
+import { suggestHabitsFromGoal } from './habitSuggestion.service.js';
 
 /**
  * GET /api/habits
@@ -75,4 +78,20 @@ export const completeHabit = asyncHandler(async (req, res) => {
 export const uncompleteHabit = asyncHandler(async (req, res) => {
     const habit = await habitService.uncompleteHabit(req.params.habitId, req.user.id);
     res.status(200).json({ data: habit });
+});
+
+/**
+ * POST /api/habits/suggest
+ * Returns up to 3 AI-generated habit suggestions for a free-text goal.
+ * Suggestions are not persisted — the client creates the chosen ones afterwards.
+ */
+export const suggestHabits = asyncHandler(async (req, res) => {
+    const { error, value } = validateSuggestInput(req.body);
+
+    if (error) {
+        throw ApiError.badRequest(error);
+    }
+
+    const suggestions = await suggestHabitsFromGoal(value.goal);
+    res.status(200).json({ data: { suggestions } });
 });
