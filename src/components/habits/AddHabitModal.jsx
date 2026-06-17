@@ -56,6 +56,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
     const [customDays, setCustomDays] = useState([]);
     const [category, setCategory] = useState('');
     const [customCategory, setCustomCategory] = useState('');
+    const [goal, setGoal] = useState(null);
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
     const [formError, setFormError] = useState('');
     const [premiumPrompt, setPremiumPrompt] = useState('');
@@ -72,6 +73,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
         if (open && editHabit) {
             setName(editHabit.title || '');
             setTarget(editHabit.target || 1);
+            setGoal(editHabit.goal ?? null);
             setIcon(editHabit.icon || '🎯');
             setFrequency(editHabit.frequency || '');
             if (ALL_CATEGORIES.includes(editHabit.category)) {
@@ -100,6 +102,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             // since there is no editHabit. Lets the user tweak before adding.
             setName(prefill.title || '');
             setTarget(1);
+            setGoal(prefill.goal ?? null);
             setUnit('');
             setCustomUnit('');
             setFrequency(prefill.frequency || '');
@@ -118,6 +121,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
         } else if (open && !editHabit) {
             // Reset for new
             setName('');
+            setGoal(null);
             setTarget(1);
             setUnit('');
             setCustomUnit('');
@@ -147,7 +151,8 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             frequency,
             customDays,
             category: finalCategory,
-            icon
+            icon,
+            goal: goal ?? null,
         };
 
         try {
