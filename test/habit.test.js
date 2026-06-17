@@ -9,6 +9,7 @@ import { signAccessToken } from '../src/features/auth/auth.service.js';
 import Habit from '../src/features/habits/habit.model.js';
 import User from '../src/features/users/user.model.js';
 import config from '../config.js';
+import { getPlanForUser } from '../src/config/plans.js';
 
 let mongo;
 let app;
@@ -215,11 +216,12 @@ test('free users can create only two habits', async () => {
   assert.equal(response.body.errorCode, 'HABIT_LIMIT_REACHED');
 });
 
-test('premium users can create six habits but not seven', async () => {
+test('premium users can create habits up to their plan limit', async () => {
   const user = await buildUser({ isPremium: true });
   const token = authHeader(user);
+  const maxHabits = getPlanForUser(user).limits.maxHabits;
 
-  for (let index = 1; index <= 6; index += 1) {
+  for (let index = 1; index <= maxHabits; index += 1) {
     await request(app)
       .post('/api/habits')
       .set('Authorization', token)
@@ -236,7 +238,7 @@ test('premium users can create six habits but not seven', async () => {
     .post('/api/habits')
     .set('Authorization', token)
     .send({
-      title: 'Seventh Premium Habit',
+      title: 'Habit Over Premium Limit',
       type: 'boolean',
       frequency: 'Daily',
       category: 'Movement',
