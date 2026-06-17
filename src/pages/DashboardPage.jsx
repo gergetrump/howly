@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Sparkles } from 'lucide-react';
 import { CardGrid, CompletionCircle } from '@/components/common';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
 import { CompanionStage } from '@/components/brand';
 import { AddHabitModal } from '@/components/habits/AddHabitModal.jsx';
+import { CompanionChatPanel } from '@/components/habits/CompanionChatPanel.jsx';
 import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
 import { NotificationBanner } from '@/components/ui/notification-banner';
 import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
@@ -15,8 +16,10 @@ import { useAuth } from '@/context/authContext';
 
 export function DashboardPage() {
     const { user, companion } = useAuth();
+    const isPremium = user?.isPremium === true || user?.role === 'admin';
     const [habits, setHabits] = useState([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
     const [habitToEdit, setHabitToEdit] = useState(null);
     const [allHabitsOpen, setAllHabitsOpen] = useState(false);
     const [milestoneNotice, setMilestoneNotice] = useState(null);
@@ -155,11 +158,36 @@ export function DashboardPage() {
                 <DailyProgressCard completed={completedCount} total={totalCount} />
             </PageSection>
 
-            <CompanionStage
-                type={companion?.type}
-                name={companion?.name}
-                equippedItemKeys={equippedItemKeys}
-            />
+            <div className={isChatOpen ? 'flex flex-col gap-4 px-4 md:flex-row md:items-start' : ''}>
+                <CompanionStage
+                    type={companion?.type}
+                    name={companion?.name}
+                    size={isChatOpen ? 'lg' : 'xl'}
+                    equippedItemKeys={equippedItemKeys}
+                    className={isChatOpen ? 'md:w-2/5 md:flex-shrink-0' : undefined}
+                />
+
+                {isChatOpen && (
+                    <CompanionChatPanel
+                        companionName={companion?.name}
+                        onClose={() => setIsChatOpen(false)}
+                        onHabitAdded={(habit) => setHabits((prev) => [habit, ...prev])}
+                    />
+                )}
+            </div>
+
+            {!isChatOpen && isPremium && (
+                <div className="flex justify-center px-4">
+                    <button
+                        type="button"
+                        onClick={() => setIsChatOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-purple-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-purple-600/25 transition-all hover:-translate-y-0.5 hover:from-purple-700 hover:to-purple-600"
+                    >
+                        <Sparkles size={16} />
+                        Ask {companion?.name || 'Howly'} for habit ideas
+                    </button>
+                </div>
+            )}
 
             <PageSection 
                 title="Today's Habits" 

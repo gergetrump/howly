@@ -45,7 +45,7 @@ const DAYS_OF_WEEK = [
     { label: 'Sun', value: 7 },
 ];
 
-export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, existingHabits = [] }) {
+export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, prefill, existingHabits = [] }) {
     const { user } = useAuth();
     const [name, setName] = useState('');
     const [icon, setIcon] = useState('🎯');
@@ -95,6 +95,26 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             } else {
                 setUnit('');
             }
+        } else if (open && prefill) {
+            // Pre-fill from an AI suggestion — but submit still CREATES (no id),
+            // since there is no editHabit. Lets the user tweak before adding.
+            setName(prefill.title || '');
+            setTarget(1);
+            setUnit('');
+            setCustomUnit('');
+            setFrequency(prefill.frequency || '');
+            setCustomDays([]);
+            setFormError('');
+            if (ALL_CATEGORIES.includes(prefill.category)) {
+                setCategory(prefill.category);
+                setCustomCategory('');
+            } else if (prefill.category) {
+                setCategory('Custom');
+                setCustomCategory(prefill.category);
+            } else {
+                setCategory('');
+            }
+            setIcon(prefill.icon || '🎯');
         } else if (open && !editHabit) {
             // Reset for new
             setName('');
@@ -108,7 +128,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             setIcon('🎯');
             setFormError('');
         }
-    }, [open, editHabit, ALL_CATEGORIES.join(',')]);
+    }, [open, editHabit, prefill, ALL_CATEGORIES.join(',')]);
 
     async function handleSubmit(e) {
         e.preventDefault();
