@@ -46,6 +46,7 @@ export function DashboardPage() {
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [habitToEdit, setHabitToEdit] = useState(null);
     const [prefillHabit, setPrefillHabit] = useState(null);
+    const [consumeSuggestion, setConsumeSuggestion] = useState(null);
     const [allHabitsOpen, setAllHabitsOpen] = useState(false);
     const [milestoneNotice, setMilestoneNotice] = useState(null);
     const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
@@ -143,6 +144,7 @@ export function DashboardPage() {
     function handleEdit(habit) {
         setHabitToEdit(habit);
         setPrefillHabit(null);
+        setConsumeSuggestion(null);
         setIsAddModalOpen(true);
     }
 
@@ -238,9 +240,10 @@ export function DashboardPage() {
                         companionName={companion?.name}
                         onClose={() => setIsChatOpen(false)}
                         onHabitAdded={(habit) => setHabits((prev) => [habit, ...prev])}
-                        onEditSuggestion={(suggestion) => {
+                        onEditSuggestion={(suggestion, removeFromPanel) => {
                             setHabitToEdit(null);
                             setPrefillHabit(suggestion);
+                            setConsumeSuggestion(() => removeFromPanel);
                             setIsAddModalOpen(true);
                         }}
                     />
@@ -266,6 +269,7 @@ export function DashboardPage() {
                 onAction={() => {
                     setHabitToEdit(null);
                     setPrefillHabit(null);
+                    setConsumeSuggestion(null);
                     setIsAddModalOpen(true);
                 }}
             >
@@ -329,6 +333,11 @@ export function DashboardPage() {
                         setHabits(prev => prev.map(h => h.id === savedHabit.id ? savedHabit : h));
                     } else {
                         setHabits(prev => [savedHabit, ...prev]);
+                        // Came from an AI suggestion → drop it from the panel now that it's saved.
+                        if (consumeSuggestion) {
+                            consumeSuggestion();
+                            setConsumeSuggestion(null);
+                        }
                     }
                 }}
             />
