@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Minus, ShoppingCart, X } from 'lucide-react';
-import { ActionButton, CardGrid, PremiumUpgradeDialog } from '@/components/common';
+import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
@@ -30,11 +30,13 @@ import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import { buyItem, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
-import { getCurrentUser } from '@/services/userService';
+import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
+import { confirmCheckoutSession } from '@/services/paymentService';
 
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
 
 export function ShopPage() {
+    const navigate = useNavigate();
     const { user, setUser, companion } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const [items, setItems] = useState([]);
@@ -48,10 +50,11 @@ export function ShopPage() {
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
-    const [premiumPrompt, setPremiumPrompt] = useState('');
     const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
+    const [planInfo, setPlanInfo] = useState(null);
 
     const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
+    const premiumMonthlyCoins = planInfo?.plans?.premium?.monthlyBenefits?.coins;
 
     const restorePremiumReturnItem = useCallback(() => {
         const returnItemId = window.sessionStorage.getItem(PREMIUM_RETURN_ITEM_STORAGE_KEY);
@@ -62,6 +65,20 @@ export function ShopPage() {
         }
     }, []);
 
+    const openPremiumPage = useCallback((message, returnItemId = '') => {
+        if (returnItemId) {
+            window.sessionStorage.setItem(PREMIUM_RETURN_ITEM_STORAGE_KEY, returnItemId);
+            setPremiumReturnItemId(returnItemId);
+        }
+
+        navigate('/premium', {
+            state: {
+                message,
+                returnTo: '/shop',
+            },
+        });
+    }, [navigate]);
+
     const refreshCurrentUser = useCallback(async () => {
         const currentUser = await getCurrentUser();
         const refreshedUser = currentUser.user ?? currentUser;
@@ -71,7 +88,16 @@ export function ShopPage() {
     }, [setUser]);
 
     useEffect(() => {
+        getCurrentUserPlan()
+            .then(setPlanInfo)
+            .catch((planError) => {
+                console.error('Failed to load user plan:', planError);
+            });
+    }, []);
+
+    useEffect(() => {
         const paymentStatus = searchParams.get('payment');
+        const checkoutSessionId = searchParams.get('checkout_session_id');
 
         if (!paymentStatus) {
             return undefined;
@@ -95,6 +121,28 @@ export function ShopPage() {
             setNotice('Payment received. Updating your premium status...');
             setError('');
             restorePremiumReturnItem();
+
+            if (checkoutSessionId) {
+                try {
+                    const confirmation = await confirmCheckoutSession(checkoutSessionId);
+
+                    if (!isCurrent) {
+                        return;
+                    }
+
+                    if (confirmation?.user) {
+                        setUser(confirmation.user);
+                    }
+
+                    if (confirmation?.user?.isPremium) {
+                        setNotice('Premium is active. Welcome to Howly Premium.');
+                        setSearchParams({}, { replace: true });
+                        return;
+                    }
+                } catch (confirmationError) {
+                    console.error('Could not confirm checkout session:', confirmationError);
+                }
+            }
 
             const refreshedUser = await refreshCurrentUser();
 
@@ -130,7 +178,7 @@ export function ShopPage() {
             isCurrent = false;
             window.clearTimeout(retryTimerId);
         };
-    }, [refreshCurrentUser, restorePremiumReturnItem, searchParams, setSearchParams]);
+    }, [refreshCurrentUser, restorePremiumReturnItem, searchParams, setSearchParams, setUser]);
 
     useEffect(() => {
         let isCurrent = true;
@@ -329,15 +377,19 @@ export function ShopPage() {
                 setError('One of these items is already in your inventory');
             } else if (buyError.code === 'PREMIUM_REQUIRED') {
                 if (isFreeUser) {
-                    setPremiumReturnItemId(failedItem?._id ?? '');
-                    setPremiumPrompt(`${failedItem?.name ?? 'This item'} is a premium item. Upgrade to buy premium shop items and get monthly bonus coins.`);
+                    openPremiumPage(
+                        `${failedItem?.name ?? 'This item'} is a premium item. Upgrade to buy premium shop items and get monthly bonus coins.`,
+                        failedItem?._id ?? '',
+                    );
                 } else {
                     setError(`${failedItem?.name ?? 'This item'} is premium only`);
                 }
             } else if (buyError.code === 'NOT_ENOUGH_COINS') {
                 if (isFreeUser) {
-                    setPremiumReturnItemId(failedItem?._id ?? '');
-                    setPremiumPrompt(`You do not have enough moon coins for ${failedItem?.name ?? 'this item'}. Premium gives you 300 moon coins every month.`);
+                    openPremiumPage(
+                        `You do not have enough moon coins for ${failedItem?.name ?? 'this item'}. Premium gives you monthly bonus coins${premiumMonthlyCoins ? ` (${premiumMonthlyCoins} coins)` : ''}.`,
+                        failedItem?._id ?? '',
+                    );
                 } else {
                     setError(`You do not have enough moon coins for ${failedItem?.name ?? 'this item'}`);
                 }
@@ -451,21 +503,6 @@ export function ShopPage() {
                     <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
                 </div>
             </PageSection>
-
-            <PremiumUpgradeDialog
-                open={Boolean(premiumPrompt)}
-                onOpenChange={(nextOpen) => {
-                    if (!nextOpen) {
-                        setPremiumPrompt('');
-                    }
-                }}
-                message={premiumPrompt}
-                onBeforeCheckout={() => {
-                    if (premiumReturnItemId) {
-                        window.sessionStorage.setItem(PREMIUM_RETURN_ITEM_STORAGE_KEY, premiumReturnItemId);
-                    }
-                }}
-            />
 
             <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
                 <DialogContent className="border-white/10 bg-[#1e1b3a] p-0 text-white shadow-2xl sm:max-w-lg">

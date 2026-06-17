@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Dumbbell, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import { getFriendRequests } from '@/services/socialApi';
-import howlyIcon from '@/assets/howly.png';
+import howlyIcon from '@/assets/wolf.svg';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/authContext';
 
@@ -113,7 +113,7 @@ export function NavBar({
                                     className={({ isActive }) =>
                                         cn(
                                     'flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm font-medium text-slate-400 transition hover:bg-white/10 hover:text-white sm:px-4 sm:text-base',
-                                            isActive && 'bg-pink-500/15 text-pink-100 ring-1 ring-pink-300/20',
+                                            isActive && 'bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-300/20',
                                         )
                                     }
                                 >
@@ -140,7 +140,7 @@ export function NavBar({
                             className={({ isActive }) =>
                                 cn(
                                     'flex size-12 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white',
-                                    isActive && 'bg-pink-500/15 text-pink-100 ring-1 ring-pink-300/20',
+                                    isActive && 'bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-300/20',
                                 )
                             }
                             aria-label="Profile"

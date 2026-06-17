@@ -5,3 +5,16 @@ export async function createCheckoutSession() {
         method: 'POST',
     });
 }
+
+export async function confirmCheckoutSession(sessionId) {
+    return apiRequest('/payments/confirm-checkout-session', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId }),
+    });
+}
+
+export async function createManagePremiumSession() {
+    return apiRequest('/payments/manage-premium-session', {
+        method: 'POST',
+    });
+}

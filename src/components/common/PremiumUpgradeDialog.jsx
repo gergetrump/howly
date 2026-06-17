@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Crown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,15 +10,50 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { createPremiumCheckoutSession } from '@/services/paymentApi';
+import { getCurrentUserPlan } from '@/services/userService';
 
-const PREMIUM_BENEFITS = [
-    'Create up to 6 habits',
+const FALLBACK_PREMIUM_BENEFITS = [
+    'Create more habits',
     'Create your own challenges',
-    'Join up to 5 active challenges',
-    'Get 300 moon coins every month',
-    'Receive 1 streak shield every month',
+    'Join more active challenges',
+    'Get monthly moon coins',
+    'Receive monthly streak shields',
     'Unlock premium shop items',
 ];
+
+function buildPremiumBenefits(plan) {
+    if (!plan) {
+        return FALLBACK_PREMIUM_BENEFITS;
+    }
+
+    const benefits = [];
+
+    if (plan.limits?.maxHabits) {
+        benefits.push(`Create up to ${plan.limits.maxHabits} habits`);
+    }
+
+    if (plan.permissions?.canCreateChallenges) {
+        benefits.push('Create your own challenges');
+    }
+
+    if (plan.limits?.maxActiveChallenges) {
+        benefits.push(`Join up to ${plan.limits.maxActiveChallenges} active challenges`);
+    }
+
+    if (plan.monthlyBenefits?.coins) {
+        benefits.push(`Get ${plan.monthlyBenefits.coins} moon coins every month`);
+    }
+
+    if (plan.monthlyBenefits?.streakShields) {
+        benefits.push(`Receive ${plan.monthlyBenefits.streakShields} streak shield every month`);
+    }
+
+    if (plan.permissions?.canBuyPremiumItems) {
+        benefits.push('Unlock premium shop items');
+    }
+
+    return benefits.length > 0 ? benefits : FALLBACK_PREMIUM_BENEFITS;
+}
 
 export function PremiumUpgradeDialog({
     open,
@@ -28,6 +63,34 @@ export function PremiumUpgradeDialog({
 }) {
     const [isCheckingOut, setIsCheckingOut] = useState(false);
     const [checkoutError, setCheckoutError] = useState('');
+    const [premiumPlan, setPremiumPlan] = useState(null);
+    const premiumBenefits = buildPremiumBenefits(premiumPlan);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        if (!open || premiumPlan) {
+            return () => {
+                isMounted = false;
+            };
+        }
+
+        getCurrentUserPlan()
+            .then((planResponse) => {
+                if (isMounted) {
+                    setPremiumPlan(planResponse?.plans?.premium ?? null);
+                }
+            })
+            .catch(() => {
+                if (isMounted) {
+                    setPremiumPlan(null);
+                }
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [open, premiumPlan]);
 
     async function handleBuyPremium() {
         setIsCheckingOut(true);
@@ -63,7 +126,7 @@ export function PremiumUpgradeDialog({
 
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <ul className="space-y-3">
-                        {PREMIUM_BENEFITS.map((benefit) => (
+                        {premiumBenefits.map((benefit) => (
                             <li key={benefit} className="flex items-start gap-3 text-sm text-slate-100">
                                 <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-400 text-slate-950">
                                     <Check className="size-3.5" aria-hidden="true" />

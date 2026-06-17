@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronDown, Sparkles } from 'lucide-react';
-import { CardGrid, CompletionCircle } from '@/components/common';
+import { CardGrid, CompletionCircle, PlanLimitDialog } from '@/components/common';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
@@ -9,10 +10,45 @@ import { AddHabitModal } from '@/components/habits/AddHabitModal.jsx';
 import { CompanionChatPanel } from '@/components/habits/CompanionChatPanel.jsx';
 import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
 import { NotificationBanner } from '@/components/ui/notification-banner';
+import { Card, CardContent } from '@/components/ui/card';
 import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
 import { getMyInventory } from '@/services/inventoryApi';
 import { getMyActiveStories } from '@/services/storyApi';
+import { getCurrentUserPlan } from '@/services/userService';
+import { getMyChallengeHabits } from '@/services/challengeService';
 import { useAuth } from '@/context/authContext';
+import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
+import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
+import { cn } from '@/lib/utils';
+
+function DashboardChallengeHabitCard({ item, onToggle }) {
+    const progressText = `${item.participant?.daysCompleted ?? 0}/${item.challenge?.durationDays ?? 0} days`;
+
+    return (
+        <Card className={cn(appCardClassName, item.habit.isCompletedToday && 'bg-emerald-400/10 ring-emerald-300/25')}>
+            <CardContent className="flex items-center gap-4">
+                <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}>
+                    <span aria-hidden="true">{item.habit.icon}</span>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                    <h3 className="truncate font-semibold text-white">{item.habit.title}</h3>
+                    <p className="mt-1 truncate text-sm text-slate-300">{item.challenge?.title}</p>
+                    <StreakBadge days={item.participant?.daysCompleted ?? 0} icon={'\uD83D\uDD25'} className="mt-1" />
+                </div>
+
+                <div className="flex shrink-0 items-center gap-3">
+                    <span className="text-sm font-medium text-white">{progressText}</span>
+                    <CompletionCircle
+                        completed={item.habit.isCompletedToday}
+                        onClick={() => onToggle(item)}
+                        label={`Mark ${item.habit.title} challenge habit as completed`}
+                    />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
 // Group habits by their goal. Habits without a goal come first (no header),
 // followed by one group per goal.
@@ -39,9 +75,11 @@ function groupHabitsByGoal(list) {
 }
 
 export function DashboardPage() {
+    const navigate = useNavigate();
     const { user, companion } = useAuth();
     const isPremium = user?.isPremium === true || user?.role === 'admin';
     const [habits, setHabits] = useState([]);
+    const [challengeHabits, setChallengeHabits] = useState([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [habitToEdit, setHabitToEdit] = useState(null);
@@ -52,8 +90,12 @@ export function DashboardPage() {
     const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
     const [storyHabit, setStoryHabit] = useState(null);
     const [equippedItemKeys, setEquippedItemKeys] = useState([]);
+    const [limitPrompt, setLimitPrompt] = useState(null);
+    const [planInfo, setPlanInfo] = useState(null);
     // Habit ids that already have an active (< 24h) story
     const [sharedHabitIds, setSharedHabitIds] = useState(new Set());
+    const planLimits = planInfo?.currentPlan?.limits;
+    const isPremiumUser = planInfo?.currentPlanKey === 'premium' || user?.role === 'admin' || user?.isPremium === true;
 
     useEffect(() => {
         async function fetchHabits() {
@@ -65,6 +107,16 @@ export function DashboardPage() {
             }
         }
         fetchHabits();
+
+        async function fetchChallengeHabits() {
+            try {
+                const response = await getMyChallengeHabits();
+                setChallengeHabits(Array.isArray(response) ? response : []);
+            } catch (error) {
+                console.error('Failed to load challenge habits:', error);
+            }
+        }
+        fetchChallengeHabits();
 
         getMyActiveStories()
             .then((stories) => {
@@ -91,6 +143,12 @@ export function DashboardPage() {
             })
             .catch((error) => {
                 console.error('Failed to load equipped outfit:', error);
+            });
+
+        getCurrentUserPlan()
+            .then(setPlanInfo)
+            .catch((error) => {
+                console.error('Failed to load user plan:', error);
             });
     }, []);
 
@@ -129,6 +187,20 @@ export function DashboardPage() {
         } catch (error) {
             console.error('Failed to complete habit:', error);
             // Optionally show toast error here
+        }
+    }
+
+    async function handleChallengeHabitCompletion(item) {
+        try {
+            const wasCompleted = item.habit.isCompletedToday;
+            await (wasCompleted
+                ? uncheckInHabit(item.habit.id)
+                : checkInHabit(item.habit.id));
+
+            const response = await getMyChallengeHabits();
+            setChallengeHabits(Array.isArray(response) ? response : []);
+        } catch (error) {
+            console.error('Failed to complete challenge habit:', error);
         }
     }
 
@@ -186,6 +258,34 @@ export function DashboardPage() {
                 ) : null}
             </HabitCard>
         );
+    }
+
+    function openAddHabitDialog() {
+        const maxHabits = planLimits?.maxHabits;
+
+        if (maxHabits && habits.length >= maxHabits) {
+            if (isPremiumUser) {
+                setLimitPrompt({
+                    title: 'Habit limit reached',
+                    message: `Premium users can create up to ${maxHabits} habits. Delete an existing habit before creating a new one.`,
+                });
+                return;
+            }
+
+            const premiumHabitLimit = planInfo?.plans?.premium?.limits?.maxHabits;
+            navigate('/premium', {
+                state: {
+                    message: `Free users can create up to ${maxHabits} habits. Upgrade to Premium${premiumHabitLimit ? ` to create up to ${premiumHabitLimit} habits` : ''}.`,
+                    returnTo: '/dashboard',
+                },
+            });
+            return;
+        }
+
+        setHabitToEdit(null);
+        setPrefillHabit(null);
+        setConsumeSuggestion(null);
+        setIsAddModalOpen(true);
     }
 
     const now = new Date();
@@ -266,12 +366,7 @@ export function DashboardPage() {
             <PageSection 
                 title="Today's Habits" 
                 actionLabel="Add Habit"
-                onAction={() => {
-                    setHabitToEdit(null);
-                    setPrefillHabit(null);
-                    setConsumeSuggestion(null);
-                    setIsAddModalOpen(true);
-                }}
+                onAction={openAddHabitDialog}
             >
                 {todaysHabits.length === 0 ? (
                     <p className="text-sm text-slate-400 text-center py-4">No habits scheduled for today. Take a break!</p>
@@ -320,6 +415,18 @@ export function DashboardPage() {
             </div>
 
             <PageSection title="My Challenges" width="sm">
+                <CardGrid columns={challengeHabits.length === 1 ? 1 : 2}>
+                    {challengeHabits.map((item) => (
+                        <DashboardChallengeHabitCard
+                            key={item.participant.id}
+                            item={item}
+                            onToggle={handleChallengeHabitCompletion}
+                        />
+                    ))}
+                    {challengeHabits.length === 0 && (
+                        <p className="text-sm text-slate-400 text-center py-4">No active challenge habits yet.</p>
+                    )}
+                </CardGrid>
             </PageSection>
 
             <AddHabitModal 
@@ -358,6 +465,17 @@ export function DashboardPage() {
                         setSharedHabitIds((prev) => new Set(prev).add(story.sourceId));
                     }
                 }}
+            />
+
+            <PlanLimitDialog
+                open={Boolean(limitPrompt)}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setLimitPrompt(null);
+                    }
+                }}
+                title={limitPrompt?.title}
+                message={limitPrompt?.message}
             />
         </Page>
     );

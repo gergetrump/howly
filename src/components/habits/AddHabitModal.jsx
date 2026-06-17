@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import {
     Dialog,
@@ -19,7 +20,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
-import { PremiumUpgradeDialog } from '@/components/common';
+import { PlanLimitDialog } from '@/components/common';
 import { useAuth } from '@/context/authContext';
 import { createHabit, updateHabit } from '@/services/habitService';
 
@@ -46,6 +47,7 @@ const DAYS_OF_WEEK = [
 ];
 
 export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, prefill, existingHabits = [] }) {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [name, setName] = useState('');
     const [icon, setIcon] = useState('🎯');
@@ -59,14 +61,14 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
     const [goal, setGoal] = useState(null);
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
     const [formError, setFormError] = useState('');
-    const [premiumPrompt, setPremiumPrompt] = useState('');
+    const [limitPrompt, setLimitPrompt] = useState(null);
     const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
-    const dynamicCategories = [...new Set([
+    const dynamicCategories = useMemo(() => [...new Set([
         ...(existingHabits?.map(h => h.category).filter(Boolean) || []),
         editHabit?.category
-    ].filter(Boolean))];
-    const ALL_CATEGORIES = [...new Set([...CATEGORIES, ...dynamicCategories])];
-    const SELECTABLE_CATEGORIES = [...ALL_CATEGORIES, 'Custom'];
+    ].filter(Boolean))], [existingHabits, editHabit?.category]);
+    const ALL_CATEGORIES = useMemo(() => [...new Set([...CATEGORIES, ...dynamicCategories])], [dynamicCategories]);
+    const SELECTABLE_CATEGORIES = useMemo(() => [...ALL_CATEGORIES, 'Custom'], [ALL_CATEGORIES]);
 
     // Effect to pre-fill form when editHabit is passed
     useEffect(() => {
@@ -132,7 +134,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             setIcon('🎯');
             setFormError('');
         }
-    }, [open, editHabit, prefill, ALL_CATEGORIES.join(',')]);
+    }, [open, editHabit, prefill, ALL_CATEGORIES]);
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -166,8 +168,23 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             if (onHabitAdded) onHabitAdded(result.data, !!editHabit);
             onOpenChange(false);
         } catch (error) {
-            if (!editHabit && isFreeUser && error.code === 'HABIT_LIMIT_REACHED') {
-                setPremiumPrompt('You already reached the free habit limit. Upgrade to Premium to create up to 6 habits.');
+            if (!editHabit && error.code === 'HABIT_LIMIT_REACHED') {
+                onOpenChange(false);
+                window.setTimeout(() => {
+                    if (isFreeUser) {
+                        navigate('/premium', {
+                            state: {
+                                message: error.message || 'You already reached the free habit limit. Upgrade to Premium to create more habits.',
+                                returnTo: '/dashboard',
+                            },
+                        });
+                    } else {
+                        setLimitPrompt({
+                            title: 'Habit limit reached',
+                            message: error.message || 'You reached the habit limit for your current plan.',
+                        });
+                    }
+                }, 0);
                 return;
             }
 
@@ -408,14 +425,15 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                 </form>
             </DialogContent>
         </Dialog>
-        <PremiumUpgradeDialog
-            open={Boolean(premiumPrompt)}
+        <PlanLimitDialog
+            open={Boolean(limitPrompt)}
             onOpenChange={(nextOpen) => {
                 if (!nextOpen) {
-                    setPremiumPrompt('');
+                    setLimitPrompt(null);
                 }
             }}
-            message={premiumPrompt}
+            title={limitPrompt?.title}
+            message={limitPrompt?.message}
         />
         </>
     );

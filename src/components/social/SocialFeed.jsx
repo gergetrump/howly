@@ -41,6 +41,7 @@ export function SocialFeed({
                             <StoryFeedCard
                                 key={`story-${post.id}`}
                                 authorName={getDisplayName(post.user)}
+                                authorAvatarSrc={post.user?.profilePictureUrl}
                                 story={post}
                                 isOwn={post.user?.id === currentUserId}
                                 onDelete={onDeleteStory}
@@ -60,12 +61,12 @@ export function SocialFeed({
                                 key={`milestone-${post.id}`}
                                 authorName={getDisplayName(post.user)}
                                 authorUsername={getUsername(post.user)}
-                            authorAvatarSrc={post.user?.profilePictureUrl}
-                            meta={formatRelativeTime(post.createdAt)}
-                            companionName={post.companion?.name || 'Howly'}
-                            companionEquippedItemKeys={post.companion?.equippedItemKeys ?? []}
-                            milestoneTitle={buildMilestoneTitle(post)}
-                        >
+                                authorAvatarSrc={post.user?.profilePictureUrl}
+                                meta={formatRelativeTime(post.createdAt)}
+                                companionName={post.companion?.name || 'Howly'}
+                                companionEquippedItemKeys={post.companion?.equippedItemKeys ?? []}
+                                milestoneTitle={buildMilestoneTitle(post)}
+                            >
                                 <MilestoneReactionPicker
                                     post={post}
                                     busy={busyPostId === post.id}
