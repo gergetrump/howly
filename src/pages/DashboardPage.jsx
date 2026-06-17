@@ -9,12 +9,45 @@ import { CompanionStage } from '@/components/brand';
 import { AddHabitModal } from '@/components/habits/AddHabitModal.jsx';
 import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
 import { NotificationBanner } from '@/components/ui/notification-banner';
+import { Card, CardContent } from '@/components/ui/card';
 import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
 import { getMyInventory } from '@/services/inventoryApi';
 import { getMyActiveStories } from '@/services/storyApi';
 import { getCurrentUserPlan } from '@/services/userService';
 import { getMyChallengeHabits } from '@/services/challengeService';
 import { useAuth } from '@/context/authContext';
+import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
+import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
+import { cn } from '@/lib/utils';
+
+function DashboardChallengeHabitCard({ item, onToggle }) {
+    const progressText = `${item.participant?.daysCompleted ?? 0}/${item.challenge?.durationDays ?? 0} days`;
+
+    return (
+        <Card className={cn(appCardClassName, item.habit.isCompletedToday && 'bg-emerald-400/10 ring-emerald-300/25')}>
+            <CardContent className="flex items-center gap-4">
+                <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}>
+                    <span aria-hidden="true">{item.habit.icon}</span>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                    <h3 className="truncate font-semibold text-white">{item.habit.title}</h3>
+                    <p className="mt-1 truncate text-sm text-slate-300">{item.challenge?.title}</p>
+                    <StreakBadge days={item.participant?.daysCompleted ?? 0} icon={'\uD83D\uDD25'} className="mt-1" />
+                </div>
+
+                <div className="flex shrink-0 items-center gap-3">
+                    <span className="text-sm font-medium text-white">{progressText}</span>
+                    <CompletionCircle
+                        completed={item.habit.isCompletedToday}
+                        onClick={() => onToggle(item)}
+                        label={`Mark ${item.habit.title} challenge habit as completed`}
+                    />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
 export function DashboardPage() {
     const navigate = useNavigate();
@@ -303,30 +336,13 @@ export function DashboardPage() {
 
             <PageSection title="My Challenges" width="sm">
                 <CardGrid columns={challengeHabits.length === 1 ? 1 : 2}>
-                    {challengeHabits.map((item) => {
-                        const progressText = `${item.participant?.daysCompleted ?? 0}/${item.challenge?.durationDays ?? 0} days`;
-
-                        return (
-                            <HabitCard
-                                key={item.participant.id}
-                                emoji={item.habit.icon}
-                                title={item.habit.title}
-                                frequency={item.challenge?.title}
-                                streakDays={item.participant?.daysCompleted ?? 0}
-                                completed={item.habit.isCompletedToday}
-                            >
-                                <div className="mr-2 hidden text-right text-xs text-slate-300 sm:block">
-                                    <span className="block font-medium text-white">{progressText}</span>
-                                    <span>{item.participant?.pendingRewardCoins ?? 0} coins pending</span>
-                                </div>
-                                <CompletionCircle
-                                    completed={item.habit.isCompletedToday}
-                                    onClick={() => handleChallengeHabitCompletion(item)}
-                                    aria-label={`Mark ${item.habit.title} challenge habit as completed`}
-                                />
-                            </HabitCard>
-                        );
-                    })}
+                    {challengeHabits.map((item) => (
+                        <DashboardChallengeHabitCard
+                            key={item.participant.id}
+                            item={item}
+                            onToggle={handleChallengeHabitCompletion}
+                        />
+                    ))}
                     {challengeHabits.length === 0 && (
                         <p className="text-sm text-slate-400 text-center py-4">No active challenge habits yet.</p>
                     )}
