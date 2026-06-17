@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Sparkles } from 'lucide-react';
 import { CardGrid, CompletionCircle, PlanLimitDialog } from '@/components/common';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
 import { CompanionStage } from '@/components/brand';
 import { AddHabitModal } from '@/components/habits/AddHabitModal.jsx';
+import { CompanionChatPanel } from '@/components/habits/CompanionChatPanel.jsx';
 import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
 import { NotificationBanner } from '@/components/ui/notification-banner';
 import { Card, CardContent } from '@/components/ui/card';
@@ -49,13 +50,40 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
     );
 }
 
+// Group habits by their goal. Habits without a goal come first (no header),
+// followed by one group per goal.
+function groupHabitsByGoal(list) {
+    const byGoal = new Map();
+    for (const habit of list) {
+        const key = habit.goal || '';
+        if (!byGoal.has(key)) {
+            byGoal.set(key, []);
+        }
+        byGoal.get(key).push(habit);
+    }
+
+    const groups = [];
+    if (byGoal.has('')) {
+        groups.push({ goal: null, habits: byGoal.get('') });
+    }
+    for (const [key, groupHabits] of byGoal) {
+        if (key !== '') {
+            groups.push({ goal: key, habits: groupHabits });
+        }
+    }
+    return groups;
+}
+
 export function DashboardPage() {
     const navigate = useNavigate();
     const { user, companion } = useAuth();
     const [habits, setHabits] = useState([]);
     const [challengeHabits, setChallengeHabits] = useState([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
     const [habitToEdit, setHabitToEdit] = useState(null);
+    const [prefillHabit, setPrefillHabit] = useState(null);
+    const [consumeSuggestion, setConsumeSuggestion] = useState(null);
     const [allHabitsOpen, setAllHabitsOpen] = useState(false);
     const [milestoneNotice, setMilestoneNotice] = useState(null);
     const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
@@ -186,7 +214,49 @@ export function DashboardPage() {
 
     function handleEdit(habit) {
         setHabitToEdit(habit);
+        setPrefillHabit(null);
+        setConsumeSuggestion(null);
         setIsAddModalOpen(true);
+    }
+
+    function renderGoalHeader(goalLabel) {
+        return (
+            <div className="px-1">
+                <span className="inline-flex items-center gap-2 rounded-full bg-howly-primary/15 px-4 py-1.5 text-sm font-bold text-howly-primary ring-1 ring-howly-primary/40">
+                    <Sparkles size={15} aria-hidden="true" />
+                    <span className="text-xs font-semibold uppercase tracking-wider opacity-70">Goal:</span>
+                    {goalLabel}
+                </span>
+            </div>
+        );
+    }
+
+    function renderHabitCard(habit, withCompletion) {
+        return (
+            <HabitCard
+                key={habit.id}
+                emoji={habit.icon}
+                title={habit.title}
+                frequency={habit.frequency}
+                streakDays={habit.streakCount}
+                completed={habit.isCompletedToday}
+                onEdit={() => handleEdit(habit)}
+                onDelete={() => handleDelete(habit.id)}
+                onShareStory={
+                    habit.isCompletedToday && !sharedHabitIds.has(habit.id)
+                        ? () => setStoryHabit(habit)
+                        : undefined
+                }
+            >
+                {withCompletion ? (
+                    <CompletionCircle
+                        completed={habit.isCompletedToday}
+                        onClick={() => handleHabitCompletion(habit)}
+                        aria-label={`Mark ${habit.title} as completed`}
+                    />
+                ) : null}
+            </HabitCard>
+        );
     }
 
     function openAddHabitDialog() {
@@ -212,6 +282,8 @@ export function DashboardPage() {
         }
 
         setHabitToEdit(null);
+        setPrefillHabit(null);
+        setConsumeSuggestion(null);
         setIsAddModalOpen(true);
     }
 
@@ -253,45 +325,62 @@ export function DashboardPage() {
                 <DailyProgressCard completed={completedCount} total={totalCount} />
             </PageSection>
 
-            <CompanionStage
-                type={companion?.type}
-                name={companion?.name}
-                equippedItemKeys={equippedItemKeys}
-            />
+            <div className={isChatOpen ? 'flex flex-col gap-4 px-4 md:flex-row md:items-start' : ''}>
+                <CompanionStage
+                    type={companion?.type}
+                    name={companion?.name}
+                    size={isChatOpen ? 'lg' : 'xl'}
+                    equippedItemKeys={equippedItemKeys}
+                    className={isChatOpen ? 'md:w-2/5 md:flex-shrink-0' : undefined}
+                />
+
+                {isChatOpen && (
+                    <CompanionChatPanel
+                        companionName={companion?.name}
+                        onClose={() => setIsChatOpen(false)}
+                        onHabitAdded={(habit) => setHabits((prev) => [habit, ...prev])}
+                        onEditSuggestion={(suggestion, removeFromPanel) => {
+                            setHabitToEdit(null);
+                            setPrefillHabit(suggestion);
+                            setConsumeSuggestion(() => removeFromPanel);
+                            setIsAddModalOpen(true);
+                        }}
+                    />
+                )}
+            </div>
+
+            {!isChatOpen && isPremiumUser && (
+                <div className="flex justify-center px-4">
+                    <button
+                        type="button"
+                        onClick={() => setIsChatOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-purple-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-purple-600/25 transition-all hover:-translate-y-0.5 hover:from-purple-700 hover:to-purple-600"
+                    >
+                        <Sparkles size={16} />
+                        Ask {companion?.name || 'Howly'} for habit ideas
+                    </button>
+                </div>
+            )}
 
             <PageSection 
                 title="Today's Habits" 
                 actionLabel="Add Habit"
                 onAction={openAddHabitDialog}
             >
-                <CardGrid columns={todaysHabits.length === 1 ? 1 : 2}>
-                    {todaysHabits.map((habit) => (
-                        <HabitCard
-                            key={habit.id}
-                            emoji={habit.icon}
-                            title={habit.title}
-                            frequency={habit.frequency}
-                            streakDays={habit.streakCount}
-                            completed={habit.isCompletedToday}
-                            onEdit={() => handleEdit(habit)}
-                            onDelete={() => handleDelete(habit.id)}
-                            onShareStory={
-                                habit.isCompletedToday && !sharedHabitIds.has(habit.id)
-                                    ? () => setStoryHabit(habit)
-                                    : undefined
-                            }
-                        >
-                            <CompletionCircle
-                                completed={habit.isCompletedToday}
-                                onClick={() => handleHabitCompletion(habit)}
-                                aria-label={`Mark ${habit.title} as completed`}
-                            />
-                        </HabitCard>
-                    ))}
-                    {todaysHabits.length === 0 && (
-                        <p className="text-sm text-slate-400 text-center py-4">No habits scheduled for today. Take a break!</p>
-                    )}
-                </CardGrid>
+                {todaysHabits.length === 0 ? (
+                    <p className="text-sm text-slate-400 text-center py-4">No habits scheduled for today. Take a break!</p>
+                ) : (
+                    <div className="space-y-4">
+                        {groupHabitsByGoal(todaysHabits).map((group) => (
+                            <div key={group.goal ?? '__ungrouped'} className="space-y-2">
+                                {group.goal ? renderGoalHeader(group.goal) : null}
+                                <CardGrid columns={group.habits.length === 1 ? 1 : 2}>
+                                    {group.habits.map((habit) => renderHabitCard(habit, true))}
+                                </CardGrid>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </PageSection>
 
             <div className="px-4">
@@ -307,29 +396,19 @@ export function DashboardPage() {
                     />
                 </button>
                 {allHabitsOpen && (
-                    <div className="mt-4">
-                        <CardGrid columns={habits.length === 1 ? 1 : 2}>
-                            {habits.map((habit) => (
-                                    <HabitCard
-                                        key={habit.id}
-                                        emoji={habit.icon}
-                                        title={habit.title}
-                                        frequency={habit.frequency}
-                                        streakDays={habit.streakCount}
-                                        completed={habit.isCompletedToday}
-                                        onEdit={() => handleEdit(habit)}
-                                        onDelete={() => handleDelete(habit.id)}
-                                        onShareStory={
-                                            habit.isCompletedToday && !sharedHabitIds.has(habit.id)
-                                                ? () => setStoryHabit(habit)
-                                                : undefined
-                                        }
-                                    />
-                            ))}
-                            {habits.length === 0 && (
-                                <p className="text-sm text-slate-400 text-center py-4">No habits yet. Click "Add Habit" to start!</p>
-                            )}
-                        </CardGrid>
+                    <div className="mt-4 space-y-4">
+                        {habits.length === 0 ? (
+                            <p className="text-sm text-slate-400 text-center py-4">No habits yet. Click "Add Habit" to start!</p>
+                        ) : (
+                            groupHabitsByGoal(habits).map((group) => (
+                                <div key={group.goal ?? '__ungrouped'} className="space-y-2">
+                                    {group.goal ? renderGoalHeader(group.goal) : null}
+                                    <CardGrid columns={group.habits.length === 1 ? 1 : 2}>
+                                        {group.habits.map((habit) => renderHabitCard(habit, false))}
+                                    </CardGrid>
+                                </div>
+                            ))
+                        )}
                     </div>
                 )}
             </div>
@@ -353,12 +432,18 @@ export function DashboardPage() {
                 open={isAddModalOpen} 
                 onOpenChange={setIsAddModalOpen}
                 editHabit={habitToEdit}
+                prefill={prefillHabit}
                 existingHabits={habits}
                 onHabitAdded={(savedHabit, isEdit) => {
                     if (isEdit) {
                         setHabits(prev => prev.map(h => h.id === savedHabit.id ? savedHabit : h));
                     } else {
                         setHabits(prev => [savedHabit, ...prev]);
+                        // Came from an AI suggestion → drop it from the panel now that it's saved.
+                        if (consumeSuggestion) {
+                            consumeSuggestion();
+                            setConsumeSuggestion(null);
+                        }
                     }
                 }}
             />
