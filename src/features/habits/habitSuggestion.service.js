@@ -8,22 +8,24 @@ const ALLOWED_FREQUENCIES = new Set(['Daily', 'Weekly', 'Monthly']);
 const ALLOWED_CATEGORIES = new Set(CATEGORIES);
 const MAX_SUGGESTIONS = 3;
 
-function buildPrompt(goal) {
+function buildPrompt(input) {
     return [
         'You are a habit coach inside a habit-tracking app.',
-        'The user gives you a personal goal. Suggest exactly 3 small, concrete, actionable habits that help reach it.',
+        'The user describes what they want to achieve — this can be a single word or a full sentence.',
+        'First extract a short goal label, then suggest exactly 3 small, concrete, actionable habits for it.',
         '',
         'Respond with ONLY a JSON object in this exact shape, nothing else:',
-        '{ "habits": [ { "title": string, "icon": string, "frequency": string, "category": string } ] }',
+        '{ "goal": string, "habits": [ { "title": string, "icon": string, "frequency": string, "category": string } ] }',
         '',
         'Rules:',
+        '- goal: a short, clean label of at most 4 words (e.g. "Sleep better", "Read more", "Get fit").',
         '- title: short and actionable, max 60 characters.',
         '- icon: a single emoji that fits the habit.',
         `- frequency: exactly one of ${[...ALLOWED_FREQUENCIES].join(', ')}.`,
         `- category: exactly one of ${[...ALLOWED_CATEGORIES].join(', ')}.`,
         '- Return exactly 3 habits. No explanations, no markdown fences.',
         '',
-        `User goal: ${goal}`,
+        `User input: ${input}`,
     ].join('\n');
 }
 
@@ -78,21 +80,33 @@ function normalizeSuggestions(parsed) {
     return suggestions;
 }
 
+// Use the model's extracted goal label if it looks sane, otherwise fall back to
+// a trimmed version of what the user typed.
+function normalizeGoal(parsed, fallbackInput) {
+    const extracted = typeof parsed?.goal === 'string' ? parsed.goal.trim() : '';
+    return (extracted || fallbackInput.trim()).slice(0, 60);
+}
+
 /**
- * Turn a free-text goal into up to 3 validated, ready-to-create habit suggestions.
+ * Turn free-text input (a word or a full sentence) into a short goal label plus
+ * up to 3 validated, ready-to-create habit suggestions.
  *
- * Suggestions are NOT persisted — the client shows them, the user picks, and the
- * chosen ones are created afterwards via the normal habit-create flow.
+ * Suggestions are NOT persisted — the client shows them, the user edits/picks,
+ * and the chosen ones are created via the normal habit-create flow.
  */
-export async function suggestHabitsFromGoal(goal) {
+export async function suggestHabitsFromGoal(input) {
     let raw;
 
     try {
-        raw = await generateText(buildPrompt(goal));
+        raw = await generateText(buildPrompt(input));
     } catch (err) {
         console.error('AI habit suggestion failed:', err);
         throw new ApiError(502, 'AI_UNAVAILABLE', 'Could not reach the AI service. Please try again.');
     }
 
-    return normalizeSuggestions(parseModelJson(raw));
+    const parsed = parseModelJson(raw);
+    return {
+        goal: normalizeGoal(parsed, input),
+        suggestions: normalizeSuggestions(parsed),
+    };
 }

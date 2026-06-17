@@ -82,8 +82,9 @@ export const uncompleteHabit = asyncHandler(async (req, res) => {
 
 /**
  * POST /api/habits/suggest
- * Returns up to 3 AI-generated habit suggestions for a free-text goal.
- * Suggestions are not persisted — the client creates the chosen ones afterwards.
+ * Extracts a short goal from free-text input (a word or a sentence) and returns
+ * up to 3 AI habit suggestions: { goal, suggestions }. Nothing is persisted —
+ * the client creates the chosen ones afterwards.
  */
 export const suggestHabits = asyncHandler(async (req, res) => {
     const { error, value } = validateSuggestInput(req.body);
@@ -92,6 +93,6 @@ export const suggestHabits = asyncHandler(async (req, res) => {
         throw ApiError.badRequest(error);
     }
 
-    const suggestions = await suggestHabitsFromGoal(value.goal);
-    res.status(200).json({ data: { suggestions } });
+    const result = await suggestHabitsFromGoal(value.goal);
+    res.status(200).json({ data: result });
 });
