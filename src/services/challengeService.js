@@ -22,21 +22,30 @@ export async function updateChallenge(challengeId, data) {
     });
 }
 
-export async function joinChallenge(challengeId, { habitId }) {
+export async function joinChallenge(challengeId) {
     return apiRequest(`/challenges/${challengeId}/join`, {
         method: 'POST',
-        body: JSON.stringify({ habitId }),
     });
+}
+
+export async function getMyChallengeHabits() {
+    return apiRequest('/challenges/my-habits');
 }
 
 export async function getChallengeInvitations() {
     return apiRequest('/challenges/invitations');
 }
 
-export async function acceptChallengeInvitation(invitationId, { habitId }) {
+export async function createChallengeInvitation(challengeId, inviteeId) {
+    return apiRequest(`/challenges/${challengeId}/invitations`, {
+        method: 'POST',
+        body: JSON.stringify({ inviteeId }),
+    });
+}
+
+export async function acceptChallengeInvitation(invitationId) {
     return apiRequest(`/challenges/invitations/${invitationId}/accept`, {
         method: 'POST',
-        body: JSON.stringify({ habitId }),
     });
 }
 

@@ -39,9 +39,13 @@ export function ChallengeInvitationList({ invitations, busyAction, onAccept, onR
                             <ActionButton
                                 type="button"
                                 onClick={() => onAccept(invitation.id)}
-                                disabled={busyAction === 'accept'}
+                                disabled={busyAction === `accept-${invitation.id}`}
                             >
-                                <Check className="size-4" aria-hidden="true" />
+                                {busyAction === `accept-${invitation.id}` ? (
+                                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                                ) : (
+                                    <Check className="size-4" aria-hidden="true" />
+                                )}
                                 Accept
                             </ActionButton>
                             <Button
