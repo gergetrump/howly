@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Pencil } from 'lucide-react';
+import { Loader2, Pencil, UserPlus } from 'lucide-react';
 import { ActionButton, CardGrid, PlanLimitDialog } from '@/components/common';
 import { ChallengeCard } from '@/components/cards/ChallengeCard.jsx';
 import { ChallengeFormDialog } from '@/components/cards/ChallengeFormDialog.jsx';
+import { ChallengeInviteDialog } from '@/components/cards/ChallengeInviteDialog.jsx';
 import { ChallengeInvitationList } from '@/components/cards/ChallengeInvitationList.jsx';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
@@ -12,12 +13,15 @@ import { useAuth } from '@/context/authContext';
 import {
     acceptChallengeInvitation,
     createChallenge,
+    createChallengeInvitation,
     getChallengeInvitations,
     getChallenges,
     joinChallenge,
     rejectChallengeInvitation,
     updateChallenge,
 } from '@/services/challengeService';
+import { getFriends } from '@/services/socialApi';
+import { getCurrentUserPlan } from '@/services/userService';
 
 const CHALLENGE_TABS = [
     { value: 'active', label: 'Active challenges' },
@@ -39,6 +43,14 @@ function hasPremiumMembership(user) {
 
 function canEditChallenge(challenge) {
     return challenge?.startsAt && new Date(challenge.startsAt).getTime() > Date.now();
+}
+
+function isActiveChallenge(challenge) {
+    return challenge
+        && challenge.status !== 'completed'
+        && challenge.status !== 'failed'
+        && challenge.endsAt
+        && new Date(challenge.endsAt).getTime() > Date.now();
 }
 
 function isUpgradeError(code) {
@@ -117,6 +129,12 @@ export function ChallengesPage() {
     const [error, setError] = useState(null);
     const [notice, setNotice] = useState('');
     const [limitPrompt, setLimitPrompt] = useState(null);
+    const [inviteChallenge, setInviteChallenge] = useState(null);
+    const [friends, setFriends] = useState([]);
+    const [selectedFriendIds, setSelectedFriendIds] = useState([]);
+    const [isLoadingFriends, setIsLoadingFriends] = useState(false);
+    const [inviteError, setInviteError] = useState('');
+    const [planInfo, setPlanInfo] = useState(null);
 
     const userId = getUserId(user);
     const incomingInvitations = invitations.incoming ?? [];
@@ -188,7 +206,7 @@ export function ChallengesPage() {
         });
     }
 
-    function openCreateDialog() {
+    async function openCreateDialog() {
         if (isFreeUser) {
             navigate('/premium', {
                 state: {
@@ -199,13 +217,81 @@ export function ChallengesPage() {
             return;
         }
 
-        setEditingChallenge(null);
-        setIsFormOpen(true);
+        setError(null);
+        setNotice('');
+        setBusyAction('create-precheck');
+
+        try {
+            const [mineChallenges, latestPlanInfo] = await Promise.all([
+                getChallenges({ mine: true }),
+                planInfo ? Promise.resolve(planInfo) : getCurrentUserPlan(),
+            ]);
+
+            if (!planInfo) {
+                setPlanInfo(latestPlanInfo);
+            }
+
+            const maxCreatedChallenges = latestPlanInfo?.currentPlan?.limits?.maxActiveCreatedChallenges;
+            const activeCreatedCount = Array.isArray(mineChallenges)
+                ? mineChallenges.filter(isActiveChallenge).length
+                : 0;
+
+            if (maxCreatedChallenges !== undefined && activeCreatedCount >= maxCreatedChallenges) {
+                setLimitPrompt(getChallengeLimitPrompt(
+                    'PREMIUM_ACTIVE_CREATED_LIMIT',
+                    `You can only create ${maxCreatedChallenges} active challenge${maxCreatedChallenges === 1 ? '' : 's'} at a time. Finish your current challenge before creating another one.`
+                ));
+                return;
+            }
+
+            setEditingChallenge(null);
+            setIsFormOpen(true);
+        } catch (createCheckError) {
+            setError({ message: createCheckError.message || 'Could not check challenge limits.' });
+        } finally {
+            setBusyAction('');
+        }
     }
 
     function openEditDialog(challenge) {
         setEditingChallenge(challenge);
         setIsFormOpen(true);
+    }
+
+    async function openInviteDialog(challenge) {
+        setInviteChallenge(challenge);
+        setSelectedFriendIds([]);
+        setInviteError('');
+        setIsLoadingFriends(true);
+
+        try {
+            const friendData = await getFriends();
+            setFriends(friendData ?? []);
+        } catch (friendError) {
+            setInviteError(friendError.message || 'Failed to load friends.');
+        } finally {
+            setIsLoadingFriends(false);
+        }
+    }
+
+    function closeInviteDialog(nextOpen) {
+        if (!nextOpen) {
+            setInviteChallenge(null);
+            setSelectedFriendIds([]);
+            setInviteError('');
+        }
+    }
+
+    function toggleInviteFriendId(friendId) {
+        if (!friendId) {
+            return;
+        }
+
+        setSelectedFriendIds((currentFriendIds) => (
+            currentFriendIds.includes(friendId)
+                ? currentFriendIds.filter((currentFriendId) => currentFriendId !== friendId)
+                : [...currentFriendIds, friendId]
+        ));
     }
 
     function closeFormDialog(nextOpen) {
@@ -287,6 +373,45 @@ export function ChallengesPage() {
         }
     }
 
+    async function handleSendChallengeInvitation() {
+        if (!inviteChallenge || selectedFriendIds.length === 0) {
+            return;
+        }
+
+        setBusyAction('invite');
+        setInviteError('');
+        setNotice('');
+        setError(null);
+
+        try {
+            const results = await Promise.allSettled(
+                selectedFriendIds.map((friendId) => createChallengeInvitation(inviteChallenge.id, friendId))
+            );
+            const sentCount = results.filter((result) => result.status === 'fulfilled').length;
+            const failedResults = results.filter((result) => result.status === 'rejected');
+
+            if (sentCount > 0) {
+                setNotice(sentCount === 1 ? 'Challenge invitation sent.' : `${sentCount} challenge invitations sent.`);
+                await loadChallengeData(activeTab);
+            }
+
+            if (failedResults.length > 0) {
+                setInviteError(
+                    failedResults.length === selectedFriendIds.length
+                        ? failedResults[0].reason?.message || 'Challenge invitations could not be sent.'
+                        : `${sentCount} sent, ${failedResults.length} could not be sent.`
+                );
+                return;
+            }
+
+            closeInviteDialog(false);
+        } catch (inviteActionError) {
+            setInviteError(inviteActionError.message || 'Challenge invitation could not be sent.');
+        } finally {
+            setBusyAction('');
+        }
+    }
+
     return (
         <Page theme="forest">
             <Heading title="Challenges" subtitle="Join friendly habit challenges." streakDays={user?.streakCount ?? user?.streak ?? 0} />
@@ -338,6 +463,7 @@ export function ChallengesPage() {
                             const isJoinable = challenge.status !== 'completed' && challenge.status !== 'failed';
                             const shouldShowJoin = !isOwnChallenge && !hasJoined && activeTab !== 'active';
                             const shouldShowJoined = !isOwnChallenge && hasJoined && activeTab !== 'active';
+                            const editLocked = !canEditChallenge(challenge);
 
                             return (
                                 <ChallengeCard
@@ -362,15 +488,30 @@ export function ChallengesPage() {
                                             >
                                                 Your challenge
                                             </Button>
+                                            <span
+                                                className="inline-flex"
+                                                title={editLocked ? 'Challenge already started' : undefined}
+                                            >
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={() => openEditDialog(challenge)}
+                                                    disabled={editLocked}
+                                                    className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+                                                >
+                                                    <Pencil className="size-4" aria-hidden="true" />
+                                                    Edit
+                                                </Button>
+                                            </span>
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                onClick={() => openEditDialog(challenge)}
-                                                disabled={!canEditChallenge(challenge)}
+                                                onClick={() => openInviteDialog(challenge)}
+                                                disabled={busyAction === 'invite'}
                                                 className="border-white/20 bg-white/10 text-white hover:bg-white/20"
                                             >
-                                                <Pencil className="size-4" aria-hidden="true" />
-                                                Edit
+                                                <UserPlus className="size-4" aria-hidden="true" />
+                                                Invite
                                             </Button>
                                         </>
                                     ) : null}
@@ -423,6 +564,19 @@ export function ChallengesPage() {
                 onSubmit={handleSubmitChallenge}
                 isSubmitting={busyAction === 'create' || busyAction === 'edit'}
                 challenge={editingChallenge}
+            />
+
+            <ChallengeInviteDialog
+                open={Boolean(inviteChallenge)}
+                onOpenChange={closeInviteDialog}
+                challenge={inviteChallenge}
+                friends={friends}
+                selectedFriendIds={selectedFriendIds}
+                onToggleFriendId={toggleInviteFriendId}
+                onInvite={handleSendChallengeInvitation}
+                isLoading={isLoadingFriends}
+                isSubmitting={busyAction === 'invite'}
+                error={inviteError}
             />
 
             <PlanLimitDialog

@@ -36,6 +36,13 @@ export async function getChallengeInvitations() {
     return apiRequest('/challenges/invitations');
 }
 
+export async function createChallengeInvitation(challengeId, inviteeId) {
+    return apiRequest(`/challenges/${challengeId}/invitations`, {
+        method: 'POST',
+        body: JSON.stringify({ inviteeId }),
+    });
+}
+
 export async function acceptChallengeInvitation(invitationId) {
     return apiRequest(`/challenges/invitations/${invitationId}/accept`, {
         method: 'POST',
