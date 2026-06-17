@@ -41,6 +41,18 @@ export async function createHabitsFromTemplates(templates) {
 }
 
 /**
+ * Ask the AI for habit suggestions based on a free-text goal.
+ * Returns { data: { suggestions: [{ title, icon, frequency, category }] } }.
+ * Suggestions are not saved — create the chosen ones via createHabitsFromTemplates.
+ */
+export async function suggestHabits(goal) {
+    return apiRequest('/habits/suggest', {
+        method: 'POST',
+        body: JSON.stringify({ goal }),
+    });
+}
+
+/**
  * Update a habit (partial update).
  */
 export async function updateHabit(habitId, data) {
