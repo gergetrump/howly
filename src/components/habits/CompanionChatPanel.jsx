@@ -1,13 +1,9 @@
 import { useState } from 'react';
-import { Sparkles, X, Plus, ArrowUp } from 'lucide-react';
+import { Sparkles, X, Plus, Pencil, ArrowUp } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import { suggestHabits, createHabitsFromTemplates } from '@/services/habitService';
 import { STARTER_HABITS } from '@/constants/starterHabits';
 import { getCompanionLines } from '@/constants/companionDialogue';
-import { cn } from '@/lib/utils';
-
-const FREQUENCIES = ['Daily', 'Weekly', 'Monthly'];
 
 // If the AI is unreachable or returns nothing usable, fall back to a few classic
 // starter habits so the panel never dead-ends.
@@ -24,15 +20,15 @@ function fallbackHabits() {
 // The companion "speaks" via this panel; the actual avatar sits to the left
 // (CompanionStage on the dashboard). Mounted fresh each time it opens, so no
 // reset logic is needed.
-export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAdded }) {
+export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAdded, onEditSuggestion }) {
     const lines = getCompanionLines(companionName);
 
     const [phase, setPhase] = useState('input'); // input | thinking | results
     const [input, setInput] = useState('');
     const [goal, setGoal] = useState('');
-    const [habits, setHabits] = useState([]); // editable: { key, title, icon, frequency, category }
+    const [habits, setHabits] = useState([]); // { key, title, icon, frequency, category }
     const [error, setError] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
+    const [addingKey, setAddingKey] = useState(null);
 
     async function handleAsk(event) {
         event.preventDefault();
@@ -58,33 +54,24 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
         setPhase('results');
     }
 
-    function updateHabit(key, patch) {
-        setHabits((previous) => previous.map((habit) => (habit.key === key ? { ...habit, ...patch } : habit)));
-    }
-
-    function removeHabit(key) {
-        setHabits((previous) => previous.filter((habit) => habit.key !== key));
-    }
-
-    async function handleAdd() {
-        if (!habits.length) return;
-
-        setIsSaving(true);
+    // Quick-add a suggestion as-is, then drop it from the list.
+    async function handleAdd(habit) {
+        setAddingKey(habit.key);
         setError('');
 
         try {
-            const templates = habits.map((habit) => ({
+            const response = await createHabitsFromTemplates([{
                 title: habit.title,
                 icon: habit.icon,
                 frequency: habit.frequency,
                 category: habit.category,
-            }));
-            const response = await createHabitsFromTemplates(templates);
-            (response?.data ?? []).forEach((habit) => onHabitAdded?.(habit));
-            onClose?.();
+            }]);
+            (response?.data ?? []).forEach((created) => onHabitAdded?.(created));
+            setHabits((previous) => previous.filter((entry) => entry.key !== habit.key));
         } catch (err) {
-            setError(err.message || 'Could not add the habits. Please try again.');
-            setIsSaving(false);
+            setError(err.message || 'Could not add the habit. Please try again.');
+        } finally {
+            setAddingKey(null);
         }
     }
 
@@ -124,49 +111,41 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                         {goal}
                     </p>
 
-                    <p className="pt-1 text-[11px] font-medium uppercase tracking-wide text-purple-300">Habits</p>
+                    <p className="pt-1 text-[11px] font-medium uppercase tracking-wide text-purple-300">Suggested habits</p>
                     {habits.map((habit) => (
                         <div
                             key={habit.key}
-                            className="flex items-center gap-2 rounded-xl border border-purple-500/20 bg-[#2d2b55]/50 p-2"
+                            className="flex items-center gap-2 rounded-xl border border-purple-500/20 bg-[#2d2b55]/50 p-2.5"
                         >
                             <span className="text-lg" aria-hidden="true">{habit.icon}</span>
-                            <input
-                                value={habit.title}
-                                onChange={(event) => updateHabit(habit.key, { title: event.target.value })}
-                                maxLength={100}
-                                className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-                            />
-                            <select
-                                value={habit.frequency}
-                                onChange={(event) => updateHabit(habit.key, { frequency: event.target.value })}
-                                className="rounded-lg border border-purple-500/20 bg-[#1e1b3a] px-1.5 py-1 text-xs text-white outline-none"
-                            >
-                                {FREQUENCIES.map((frequency) => (
-                                    <option key={frequency} value={frequency}>{frequency}</option>
-                                ))}
-                            </select>
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-white">{habit.title}</p>
+                                <p className="text-xs text-purple-300">
+                                    {habit.frequency}
+                                    {habit.category ? ` · ${habit.category}` : ''}
+                                </p>
+                            </div>
                             <button
                                 type="button"
-                                onClick={() => removeHabit(habit.key)}
-                                aria-label="Remove habit"
-                                className="text-slate-400 transition-colors hover:text-white"
+                                onClick={() => onEditSuggestion?.(habit)}
+                                aria-label="Edit habit"
+                                className="rounded-lg p-1.5 text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
                             >
-                                <X size={14} />
+                                <Pencil size={15} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleAdd(habit)}
+                                disabled={addingKey === habit.key}
+                                aria-label="Add habit"
+                                className="rounded-lg bg-purple-600 p-1.5 text-white transition-colors hover:bg-purple-500 disabled:opacity-50"
+                            >
+                                <Plus size={15} />
                             </button>
                         </div>
                     ))}
-
-                    {habits.length ? (
-                        <Button
-                            type="button"
-                            onClick={handleAdd}
-                            disabled={isSaving}
-                            className="mt-1 w-full rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-sm font-semibold text-white shadow-lg shadow-purple-600/25 transition-all hover:from-purple-700 hover:to-purple-600 disabled:opacity-50"
-                        >
-                            <Plus size={16} className="mr-1" />
-                            {isSaving ? 'Adding…' : `Add ${habits.length} habit${habits.length === 1 ? '' : 's'}`}
-                        </Button>
+                    {habits.length === 0 ? (
+                        <p className="py-2 text-center text-xs text-purple-300">All set — ask for more ideas below.</p>
                     ) : null}
                 </div>
             ) : null}
@@ -179,16 +158,14 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                     maxLength={200}
                     className="min-w-0 flex-1 rounded-xl border border-purple-500/20 bg-[#2d2b55]/60 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-purple-500"
                 />
-                <Button
+                <button
                     type="submit"
                     disabled={!input.trim() || phase === 'thinking'}
                     aria-label="Ask"
-                    className={cn(
-                        'rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 px-3 text-white transition-all hover:from-purple-700 hover:to-purple-600 disabled:opacity-50',
-                    )}
+                    className="rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 px-3 text-white transition-all hover:from-purple-700 hover:to-purple-600 disabled:opacity-50"
                 >
                     <ArrowUp size={16} />
-                </Button>
+                </button>
             </form>
         </div>
     );
