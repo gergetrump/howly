@@ -111,3 +111,17 @@ export function validateHabitId(id) {
 
     return { value: id };
 }
+
+export function validateSuggestInput(body = {}) {
+    const goal = isNonEmptyString(body.goal) ? body.goal.trim() : '';
+
+    if (!goal) {
+        return { error: 'goal is required' };
+    }
+
+    if (goal.length > 200) {
+        return { error: 'goal must be 200 characters or less' };
+    }
+
+    return { value: { goal } };
+}

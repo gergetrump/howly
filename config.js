@@ -20,6 +20,15 @@ const config = {
     stripe: {
         secretKey: 'REDACTED',
         webhook_secret: 'REDACTED'
+    },
+    // OpenRouter (OpenAI-compatible aggregator, free tier) — used for AI habit suggestions.
+    ai: {
+        openrouter: {
+            // Free key: https://openrouter.ai/keys
+            apiKey: 'REDACTED',
+            // Any free model from https://openrouter.ai/models?max_price=0
+            model: 'openai/gpt-oss-120b:free',
+        },
     }
 };
 

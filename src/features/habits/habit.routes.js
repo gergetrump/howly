@@ -9,6 +9,7 @@ import {
     deleteHabit,
     completeHabit,
     uncompleteHabit,
+    suggestHabits,
 } from './habit.controller.js';
 
 const router = Router();
@@ -20,6 +21,7 @@ router.use(requireAuth);
 router.get('/', getHabits);
 router.post('/', createHabit);
 router.post('/templates', createFromTemplates);
+router.post('/suggest', suggestHabits);
 
 // ── Single-resource routes ──────────────────────────────────────────
 router.get('/:habitId', getHabitById);

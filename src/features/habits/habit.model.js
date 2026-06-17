@@ -60,6 +60,13 @@ const habitSchema = new Schema(
             type: String,
             default: null,
         },
+        // The goal an AI-suggested habit belongs to; used to group habits in the dashboard.
+        goal: {
+            type: String,
+            trim: true,
+            maxlength: 100,
+            default: null,
+        },
         challengeId: {
             type: Schema.Types.ObjectId,
             ref: 'Challenge',
