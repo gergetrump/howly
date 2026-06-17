@@ -77,7 +77,6 @@ function groupHabitsByGoal(list) {
 export function DashboardPage() {
     const navigate = useNavigate();
     const { user, companion } = useAuth();
-    const isPremium = user?.isPremium === true || user?.role === 'admin';
     const [habits, setHabits] = useState([]);
     const [challengeHabits, setChallengeHabits] = useState([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -350,7 +349,7 @@ export function DashboardPage() {
                 )}
             </div>
 
-            {!isChatOpen && isPremium && (
+            {!isChatOpen && isPremiumUser && (
                 <div className="flex justify-center px-4">
                     <button
                         type="button"
