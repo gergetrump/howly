@@ -153,7 +153,7 @@ export function InventoryPage() {
 
     function renderShopEmptyState() {
         return (
-            <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+            <div className="flex min-h-48 flex-col items-center justify-center gap-4 text-center">
                 <p className="text-sm font-medium text-slate-200">Try on some items at the Shop!</p>
                 <ActionButton
                     type="button"
@@ -167,7 +167,7 @@ export function InventoryPage() {
     }
 
     return (
-        <Page theme="forest" className="h-screen overflow-hidden">
+        <Page theme="forest">
             <Heading title="Inventory" subtitle="Equip items for your companion." streakDays={user?.streak ?? 0} />
             <section className="sticky top-24 z-20 flex min-h-72 flex-col items-center justify-end gap-3 text-center">
                 <CompanionAvatar
@@ -220,44 +220,39 @@ export function InventoryPage() {
                 {notice ? <p className="text-sm text-emerald-300">{notice}</p> : null}
                 {error ? <p className="text-sm text-red-300">{error}</p> : null}
 
-                <div className="relative rounded-2xl border border-white/10 bg-white/5 p-4 shadow-xl shadow-slate-950/20">
-                    <div className="h-[24rem] overflow-y-scroll pr-3 [scrollbar-gutter:stable]">
-                        {isLoading ? (
-                            <div className="flex h-full items-center justify-center text-center">
-                                <p className="text-sm text-slate-300">Loading your inventory...</p>
-                            </div>
-                        ) : null}
-
-                        {!isLoading && !error && ownedItems.length === 0 ? (
-                            renderShopEmptyState()
-                        ) : null}
-
-                        {!isLoading && !error && ownedItems.length > 0 && filteredItems.length === 0 ? (
-                            renderShopEmptyState()
-                        ) : null}
-
-                        {!isLoading && !error && filteredItems.length > 0 ? (
-                            <CardGrid columns={4} className="gap-4 pb-8">
-                                {filteredItems.map((item) => (
-                                    <ItemCard
-                                        key={item.userItemId}
-                                        name={item.name}
-                                        price={item.price}
-                                        premiumOnly={item.premiumOnly}
-                                        equipped={item.equipped}
-                                        showPrice={false}
-                                        dense
-                                        interactive
-                                        disabled={isSavingOutfit}
-                                        visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
-                                        onClick={() => handleToggleEquipped(item)}
-                                    />
-                                ))}
-                            </CardGrid>
-                        ) : null}
+                {isLoading ? (
+                    <div className="flex min-h-48 items-center justify-center text-center">
+                        <p className="text-sm text-slate-300">Loading your inventory...</p>
                     </div>
-                    <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
-                </div>
+                ) : null}
+
+                {!isLoading && !error && ownedItems.length === 0 ? (
+                    renderShopEmptyState()
+                ) : null}
+
+                {!isLoading && !error && ownedItems.length > 0 && filteredItems.length === 0 ? (
+                    renderShopEmptyState()
+                ) : null}
+
+                {!isLoading && !error && filteredItems.length > 0 ? (
+                    <CardGrid columns={4} className="gap-4 pb-8">
+                        {filteredItems.map((item) => (
+                            <ItemCard
+                                key={item.userItemId}
+                                name={item.name}
+                                price={item.price}
+                                premiumOnly={item.premiumOnly}
+                                equipped={item.equipped}
+                                showPrice={false}
+                                dense
+                                interactive
+                                disabled={isSavingOutfit}
+                                visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
+                                onClick={() => handleToggleEquipped(item)}
+                            />
+                        ))}
+                    </CardGrid>
+                ) : null}
             </PageSection>
         </Page>
     );

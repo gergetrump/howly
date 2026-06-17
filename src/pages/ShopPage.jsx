@@ -395,10 +395,10 @@ export function ShopPage() {
     }
 
     return (
-        <Page theme="forest" className="h-screen overflow-hidden">
+        <Page theme="forest" className="overflow-hidden">
             <Heading title="Shop" subtitle="Unlock items for your companion." streakDays={user?.streak ?? 0} />
             <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(18rem,0.65fr)_minmax(0,1.7fr)] lg:items-start">
-                <section className="flex min-h-72 flex-col items-center justify-center gap-3 text-center lg:sticky lg:top-24 lg:min-h-[calc(100vh-11rem)]">
+                <section className="flex min-h-72 flex-col items-center justify-center gap-3 text-center lg:sticky lg:top-24 lg:min-h-[30rem]">
                     <CompanionAvatar
                         type={companion?.type}
                         name={companion?.name}
@@ -441,54 +441,57 @@ export function ShopPage() {
                     {!isLoading && !error && items.length === 0 ? (
                         <p className="text-sm text-slate-300">No shop items yet</p>
                     ) : null}
-                    {!isLoading && !error && items.length > 0 && filteredItems.length === 0 ? (
-                        <p className="text-sm text-slate-300">No items in this category yet</p>
-                    ) : null}
-
                     <div className="relative rounded-2xl border border-white/10 bg-white/5 p-3 shadow-xl shadow-slate-950/20">
-                        <div className="h-[38rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
-                            <CardGrid columns={3} className="pb-8">
-                                {filteredItems.map((item) => (
-                                    <div key={item._id} data-shop-item-id={item._id}>
-                                        <ItemCard
-                                            name={item.name}
-                                            price={item.price}
-                                            premiumOnly={item.premiumOnly}
-                                            owned={ownedItemIds.has(item._id)}
-                                            showOwnedBadge={false}
-                                            dense
-                                            visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
-                                        >
-                                            <ActionButton
-                                                type="button"
-                                                fullWidth
-                                                className="h-8 px-3 text-xs"
-                                                onClick={() => handleTryOnItem(item._id)}
+                        <div className="h-[34rem] max-h-[34rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
+                            {!isLoading && !error && items.length > 0 && filteredItems.length === 0 ? (
+                                <div className="flex h-full items-center justify-center text-center">
+                                    <p className="text-sm text-slate-300">No items in this category yet</p>
+                                </div>
+                            ) : null}
+
+                            {filteredItems.length > 0 ? (
+                                <CardGrid columns={3} className="pb-8">
+                                    {filteredItems.map((item) => (
+                                        <div key={item._id} data-shop-item-id={item._id}>
+                                            <ItemCard
+                                                name={item.name}
+                                                price={item.price}
+                                                premiumOnly={item.premiumOnly}
+                                                owned={ownedItemIds.has(item._id)}
+                                                showOwnedBadge={false}
+                                                dense
+                                                visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
                                             >
-                                                {isItemPreviewed(item._id) || isItemInCart(item._id) ? 'Remove' : 'Try on'}
-                                            </ActionButton>
-                                            <ActionButton
-                                                type="button"
-                                                fullWidth
-                                                className="h-8 px-3 text-xs"
-                                                disabled={ownedItemIds.has(item._id) || buyingItemId === item._id}
-                                                onClick={() => openBuyConfirmation([item])}
-                                            >
-                                                {ownedItemIds.has(item._id) ? 'Owned' : 'Buy'}
-                                            </ActionButton>
-                                        </ItemCard>
-                                    </div>
-                                ))}
-                            </CardGrid>
+                                                <ActionButton
+                                                    type="button"
+                                                    fullWidth
+                                                    className="h-8 px-3 text-xs"
+                                                    onClick={() => handleTryOnItem(item._id)}
+                                                >
+                                                    {isItemPreviewed(item._id) || isItemInCart(item._id) ? 'Remove' : 'Try on'}
+                                                </ActionButton>
+                                                <ActionButton
+                                                    type="button"
+                                                    fullWidth
+                                                    className="h-8 px-3 text-xs"
+                                                    disabled={ownedItemIds.has(item._id) || buyingItemId === item._id}
+                                                    onClick={() => openBuyConfirmation([item])}
+                                                >
+                                                    {ownedItemIds.has(item._id) ? 'Owned' : 'Buy'}
+                                                </ActionButton>
+                                            </ItemCard>
+                                        </div>
+                                    ))}
+                                </CardGrid>
+                            ) : null}
                         </div>
                         <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
                     </div>
 
-                    <div className="flex justify-end">
+                    <div className="mt-4 flex justify-end">
                         <ActionButton
                             type="button"
-                            className="gap-2 bg-violet-500 px-4 text-white hover:bg-violet-400 disabled:bg-white/10 disabled:text-slate-500"
-                            disabled={cartItems.length === 0}
+                            className={`gap-2 px-4 text-white ${cartItems.length === 0 ? 'bg-white/10 hover:bg-white/15' : 'bg-violet-500 hover:bg-violet-400'}`}
                             onClick={() => setIsCartOpen(true)}
                         >
                             <ShoppingCart className="h-4 w-4" aria-hidden="true" />
@@ -510,6 +513,11 @@ export function ShopPage() {
                         </DialogHeader>
 
                         <div className="mt-5 max-h-80 space-y-3 overflow-y-auto pr-1">
+                            {cartItems.length === 0 ? (
+                                <div className="rounded-2xl bg-white/8 p-5 text-center text-sm text-slate-300 ring-1 ring-white/10">
+                                    Your cart is empty
+                                </div>
+                            ) : null}
                             {cartItems.map((item) => {
                                 const isOwned = ownedItemIds.has(item._id);
 
