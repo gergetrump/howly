@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Dumbbell, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
+import { BarChart3, Dumbbell, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import { getFriendRequests } from '@/services/socialApi';
 import howlyIcon from '@/assets/wolf.svg';
@@ -13,6 +13,7 @@ const defaultItems = [
     { label: 'Shop', to: '/shop', icon: ShoppingBag },
     { label: 'Inventory', to: '/inventory', icon: PackageOpen },
     { label: 'Challenges', to: '/challenges', icon: Trophy },
+    { label: 'Analytics', to: '/analytics', icon: BarChart3 },
     { label: 'Profile', to: '/profile', icon: UserRound },
 ];
 
