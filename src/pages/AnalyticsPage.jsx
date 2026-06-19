@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BarChart3, CheckCircle2, Clock3, Loader2, TrendingUp } from 'lucide-react';
+import { BarChart3, CheckCircle2, Clock3, Loader2, Target, TrendingUp, Trophy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
-import { getHabitAnalytics } from '@/services/analyticsService';
+import { getChallengeAnalytics, getHabitAnalytics } from '@/services/analyticsService';
 import { useAuth } from '@/context/authContext';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
@@ -108,6 +108,7 @@ function CompletionChart({ habits }) {
 
 function TimelineChart({ dailyTotals }) {
     const maxExpected = Math.max(1, ...dailyTotals.map((day) => day.expected));
+    const labelInterval = dailyTotals.length > 14 ? 5 : 1;
 
     return (
         <Card className={appCardClassName}>
@@ -119,27 +120,36 @@ function TimelineChart({ dailyTotals }) {
             </CardHeader>
             <CardContent>
                 <div className="flex h-48 items-end gap-2">
-                    {dailyTotals.map((day) => {
+                    {dailyTotals.map((day, index) => {
                         const expectedHeight = Math.max((day.expected / maxExpected) * 100, 4);
                         const completedHeight = day.expected
                             ? Math.max((day.completed / maxExpected) * 100, day.completed ? 4 : 0)
                             : 0;
+                        const showLabel = dailyTotals.length <= 14
+                            || index === 0
+                            || index === dailyTotals.length - 1
+                            || index % labelInterval === 0;
 
                         return (
                             <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center gap-2">
-                                <div className="relative flex h-36 w-full items-end justify-center rounded-t-lg bg-white/5">
+                                <div className="relative flex h-36 w-full items-end justify-center rounded-t-lg bg-slate-950/30">
                                     <div
-                                        className="absolute bottom-0 w-3/5 rounded-t-lg bg-white/10"
+                                        className="absolute bottom-0 w-3/5 rounded-t-lg border border-slate-300/35 bg-slate-400/35"
                                         style={{ height: `${expectedHeight}%` }}
                                         title={`${day.expected} scheduled`}
                                     />
                                     <div
-                                        className="absolute bottom-0 w-3/5 rounded-t-lg bg-emerald-400"
+                                        className="absolute bottom-0 w-3/5 rounded-t-lg bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.35)]"
                                         style={{ height: `${completedHeight}%` }}
                                         title={`${day.completed} completed`}
                                     />
                                 </div>
-                                <span className="truncate text-[11px] text-slate-400">{day.label}</span>
+                                <span
+                                    className="h-4 truncate text-[11px] text-slate-400"
+                                    title={day.label}
+                                >
+                                    {showLabel ? day.label : ''}
+                                </span>
                             </div>
                         );
                     })}
@@ -226,10 +236,127 @@ function TimeAnalytics({ summary, habits }) {
     );
 }
 
+function ChallengeProgressChart({ challenges }) {
+    const visibleChallenges = challenges.filter((item) => item.expected > 0 || item.completed > 0 || item.participant.daysCompleted > 0);
+
+    return (
+        <Card className={appCardClassName}>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                    <Trophy className="size-5 text-emerald-300" aria-hidden="true" />
+                    Challenge progress
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {visibleChallenges.length ? visibleChallenges.map((item) => {
+                    const periodRate = item.completionRate;
+                    const totalRate = item.progressRate;
+
+                    return (
+                        <div key={item.participant.id} className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="truncate font-semibold text-white">{item.challenge.title}</p>
+                                    <p className="truncate text-sm text-emerald-100">{item.habit.title}</p>
+                                </div>
+                                <span className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-slate-200">
+                                    {item.participant.status}
+                                </span>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-sm text-slate-300">
+                                    <span>Selected period</span>
+                                    <span>{item.completed}/{item.expected} · {percent(periodRate)}</span>
+                                </div>
+                                <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                                    <div
+                                        className={cn('h-full rounded-full transition-all', getCompletionTone(periodRate))}
+                                        style={{ width: `${clampPercent(periodRate)}%` }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-sm text-slate-300">
+                                    <span>Total progress</span>
+                                    <span>
+                                        {item.participant.daysCompleted}/{item.challenge.durationDays} days · {percent(totalRate)}
+                                    </span>
+                                </div>
+                                <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                                    <div
+                                        className="h-full rounded-full bg-emerald-300"
+                                        style={{ width: `${clampPercent(totalRate)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }) : (
+                    <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
+                        Join a challenge and check off its habit to see challenge analytics.
+                    </p>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+function ChallengeTimeAnalytics({ summary, challenges }) {
+    const timedChallenges = challenges.filter((item) => item.averageCompletionTime?.label);
+
+    return (
+        <Card className={appCardClassName}>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                    <Clock3 className="size-5 text-emerald-300" aria-hidden="true" />
+                    Challenge completion time
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-3 rounded-xl bg-white/5 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="font-semibold text-white">Overall</span>
+                        <span className="text-lg font-bold text-emerald-100">
+                            {summary.averageCompletionTime?.label ?? 'No data'}
+                        </span>
+                    </div>
+                    <TimeMarker
+                        minutes={summary.averageCompletionTime?.minutes}
+                        label={summary.averageCompletionTime?.label}
+                    />
+                </div>
+
+                <div className="space-y-3">
+                    {timedChallenges.length ? timedChallenges.map((item) => (
+                        <div key={item.participant.id} className="grid gap-3 rounded-xl border border-white/10 bg-white/5 p-3 sm:grid-cols-[220px_1fr_64px] sm:items-center">
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-white">{item.challenge.title}</p>
+                                <p className="truncate text-xs text-emerald-100">{item.habit.title}</p>
+                            </div>
+                            <TimeMarker
+                                minutes={item.averageCompletionTime.minutes}
+                                label={item.averageCompletionTime.label}
+                            />
+                            <span className="text-right text-sm font-semibold text-emerald-100">
+                                {item.averageCompletionTime.label}
+                            </span>
+                        </div>
+                    )) : (
+                        <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
+                            Complete challenge habits to see average times per challenge.
+                        </p>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 export function AnalyticsPage() {
     const { user } = useAuth();
     const [period, setPeriod] = useState('week');
-    const [analytics, setAnalytics] = useState(null);
+    const [habitAnalytics, setHabitAnalytics] = useState(null);
+    const [challengeAnalytics, setChallengeAnalytics] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -241,15 +368,20 @@ export function AnalyticsPage() {
             setError('');
 
             try {
-                const response = await getHabitAnalytics(period);
+                const [habitResponse, challengeResponse] = await Promise.all([
+                    getHabitAnalytics(period),
+                    getChallengeAnalytics(period),
+                ]);
 
                 if (isMounted) {
-                    setAnalytics(response?.data ?? null);
+                    setHabitAnalytics(habitResponse?.data ?? null);
+                    setChallengeAnalytics(challengeResponse?.data ?? null);
                 }
             } catch (loadError) {
                 if (isMounted) {
                     setError(loadError.message || 'Could not load analytics.');
-                    setAnalytics(null);
+                    setHabitAnalytics(null);
+                    setChallengeAnalytics(null);
                 }
             } finally {
                 if (isMounted) {
@@ -266,8 +398,12 @@ export function AnalyticsPage() {
     }, [period]);
 
     const bestHabit = useMemo(() => (
-        analytics?.habits?.find((item) => item.completionRate !== null) ?? null
-    ), [analytics]);
+        habitAnalytics?.habits?.find((item) => item.completionRate !== null) ?? null
+    ), [habitAnalytics]);
+
+    const bestChallenge = useMemo(() => (
+        challengeAnalytics?.challenges?.find((item) => item.completionRate !== null) ?? null
+    ), [challengeAnalytics]);
 
     return (
         <Page theme="forest">
@@ -308,19 +444,19 @@ export function AnalyticsPage() {
                     </div>
                 ) : null}
 
-                {!isLoading && analytics ? (
+                {!isLoading && habitAnalytics ? (
                     <>
                         <div className="grid gap-4 md:grid-cols-3">
                             <SummaryCard
                                 icon={CheckCircle2}
                                 label="Follow-through"
-                                value={percent(analytics.summary.completionRate)}
-                                helper={`${analytics.summary.completed}/${analytics.summary.expected} scheduled habits`}
+                                value={percent(habitAnalytics.summary.completionRate)}
+                                helper={`${habitAnalytics.summary.completed}/${habitAnalytics.summary.expected} scheduled habits`}
                             />
                             <SummaryCard
                                 icon={Clock3}
                                 label="Average time"
-                                value={analytics.summary.averageCompletionTime?.label ?? 'No data'}
+                                value={habitAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
                                 helper="Across all completed habits"
                             />
                             <SummaryCard
@@ -331,9 +467,43 @@ export function AnalyticsPage() {
                             />
                         </div>
 
-                        <CompletionChart habits={analytics.habits ?? []} />
-                        <TimelineChart dailyTotals={analytics.dailyTotals ?? []} />
-                        <TimeAnalytics summary={analytics.summary} habits={analytics.habits ?? []} />
+                        <CompletionChart habits={habitAnalytics.habits ?? []} />
+                        <TimelineChart dailyTotals={habitAnalytics.dailyTotals ?? []} />
+                        <TimeAnalytics summary={habitAnalytics.summary} habits={habitAnalytics.habits ?? []} />
+                    </>
+                ) : null}
+            </PageSection>
+
+            <PageSection width="lg" title="Challenge analytics">
+                {!isLoading && challengeAnalytics ? (
+                    <>
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <SummaryCard
+                                icon={Trophy}
+                                label="Active challenges"
+                                value={challengeAnalytics.summary.activeChallengeCount}
+                                helper={`${challengeAnalytics.challenges?.length ?? 0} total challenge participations`}
+                            />
+                            <SummaryCard
+                                icon={Target}
+                                label="Challenge follow-through"
+                                value={percent(challengeAnalytics.summary.completionRate)}
+                                helper={`${challengeAnalytics.summary.completed}/${challengeAnalytics.summary.expected} expected challenge days`}
+                            />
+                            <SummaryCard
+                                icon={Clock3}
+                                label="Average time"
+                                value={challengeAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
+                                helper={bestChallenge ? `Best: ${bestChallenge.challenge.title}` : 'Complete challenges to compare'}
+                            />
+                        </div>
+
+                        <ChallengeProgressChart challenges={challengeAnalytics.challenges ?? []} />
+                        <TimelineChart dailyTotals={challengeAnalytics.dailyTotals ?? []} />
+                        <ChallengeTimeAnalytics
+                            summary={challengeAnalytics.summary}
+                            challenges={challengeAnalytics.challenges ?? []}
+                        />
                     </>
                 ) : null}
             </PageSection>
