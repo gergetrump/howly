@@ -1,4 +1,5 @@
 import Habit from '../habits/habit.model.js';
+import ChallengeParticipant from '../challenges/challengeParticipant.model.js';
 import HabitCheckIn from './habitCheckIn.model.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -23,7 +24,11 @@ function addDays(date, days) {
 }
 
 function toDateKey(date) {
-    return date.toISOString().slice(0, 10);
+    return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, '0'),
+        String(date.getDate()).padStart(2, '0'),
+    ].join('-');
 }
 
 function getIsoWeekYear(date) {
@@ -163,6 +168,24 @@ function serializeHabit(habit) {
         frequency: habit.frequency,
         category: habit.category ?? null,
     };
+}
+
+function serializeChallenge(challenge) {
+    return {
+        id: challenge._id.toString(),
+        title: challenge.title,
+        habitTitle: challenge.habitTitle,
+        status: challenge.status,
+        visibility: challenge.visibility,
+        durationDays: challenge.durationDays,
+        coinReward: challenge.coinReward,
+        startsAt: challenge.startsAt?.toISOString(),
+        endsAt: challenge.endsAt?.toISOString(),
+    };
+}
+
+function isWithinRange(day, startsAt, endsAt) {
+    return day.date >= startOfDay(startsAt) && day.date <= endOfDay(endsAt);
 }
 
 export async function recordHabitCheckIn({ userId, habit, completedAt = new Date() }) {
@@ -305,6 +328,156 @@ export async function getHabitAnalytics(userId, { period = 'week' } = {}) {
         },
         dailyTotals,
         habits: habitAnalytics.sort((left, right) => {
+            const leftRate = left.completionRate ?? -1;
+            const rightRate = right.completionRate ?? -1;
+            return rightRate - leftRate;
+        }),
+    };
+}
+
+export async function getChallengeAnalytics(userId, { period = 'week' } = {}) {
+    const selectedPeriod = buildPeriod(period);
+    const participants = await ChallengeParticipant.find({
+        user: userId,
+        status: { $ne: 'left' },
+        joinedAt: { $lte: selectedPeriod.end },
+    })
+        .populate('challenge')
+        .populate('habit')
+        .sort({ joinedAt: -1 });
+    const activeParticipants = participants.filter((participant) => (
+        participant.challenge
+        && participant.habit
+        && participant.challenge.startsAt <= selectedPeriod.end
+        && participant.challenge.endsAt >= selectedPeriod.start
+    ));
+    const habitIds = activeParticipants.map((participant) => participant.habit._id);
+    let checkIns = habitIds.length
+        ? await HabitCheckIn.find({
+            user: userId,
+            habit: { $in: habitIds },
+            completedAt: { $gte: selectedPeriod.start, $lte: selectedPeriod.end },
+        }).sort({ completedAt: 1 }).lean()
+        : [];
+    const existingChallengeEventKeys = new Set(
+        checkIns.map((checkIn) => `${checkIn.habit.toString()}:${checkIn.periodKey}`),
+    );
+    const syntheticChallengeCheckIns = activeParticipants
+        .filter((participant) => participant.lastCompletedAt
+            && participant.lastCompletedAt >= selectedPeriod.start
+            && participant.lastCompletedAt <= selectedPeriod.end)
+        .map((participant) => ({
+            user: userId,
+            habit: participant.habit._id,
+            periodKey: getPeriodKeyForHabit(participant.habit, participant.lastCompletedAt),
+            completedAt: participant.lastCompletedAt,
+            synthetic: true,
+        }))
+        .filter((checkIn) => !existingChallengeEventKeys.has(`${checkIn.habit.toString()}:${checkIn.periodKey}`));
+
+    checkIns = [...checkIns, ...syntheticChallengeCheckIns]
+        .sort((left, right) => left.completedAt.getTime() - right.completedAt.getTime());
+    const checkInsByHabit = new Map();
+
+    for (const checkIn of checkIns) {
+        const habitId = checkIn.habit.toString();
+        if (!checkInsByHabit.has(habitId)) {
+            checkInsByHabit.set(habitId, []);
+        }
+        checkInsByHabit.get(habitId).push(checkIn);
+    }
+
+    const dailyTotals = selectedPeriod.labels.map((day) => ({
+        date: day.key,
+        label: day.label,
+        expected: 0,
+        completed: 0,
+        completionRate: null,
+    }));
+
+    const challengeAnalytics = activeParticipants.map((participant) => {
+        const habitId = participant.habit._id.toString();
+        const participantCheckIns = checkInsByHabit.get(habitId) ?? [];
+        const daily = selectedPeriod.labels.map((day, index) => {
+            const expected = isWithinRange(
+                day,
+                participant.joinedAt > participant.challenge.startsAt
+                    ? participant.joinedAt
+                    : participant.challenge.startsAt,
+                participant.challenge.endsAt,
+            );
+            const completedCount = participantCheckIns
+                .filter((checkIn) => toDateKey(checkIn.completedAt) === day.key)
+                .length;
+
+            if (expected) {
+                dailyTotals[index].expected += 1;
+            }
+
+            if (completedCount > 0) {
+                dailyTotals[index].completed += completedCount;
+            }
+
+            return {
+                date: day.key,
+                label: day.label,
+                expected,
+                completed: completedCount > 0,
+                count: completedCount,
+            };
+        });
+        const expectedCount = daily.filter((day) => day.expected).length;
+        const completedCount = daily.filter((day) => day.completed).length;
+        const progressRate = completionRate(participant.daysCompleted, participant.challenge.durationDays);
+
+        return {
+            challenge: serializeChallenge(participant.challenge),
+            habit: serializeHabit(participant.habit),
+            participant: {
+                id: participant._id.toString(),
+                status: participant.status,
+                joinedAt: participant.joinedAt.toISOString(),
+                daysCompleted: participant.daysCompleted,
+                rewardCoins: participant.rewardCoins,
+                rewardClaimed: participant.rewardClaimed,
+            },
+            expected: expectedCount,
+            completed: completedCount,
+            completionRate: completionRate(completedCount, expectedCount),
+            progressRate,
+            averageCompletionTime: averageTimeOfDay(participantCheckIns.map((checkIn) => checkIn.completedAt)),
+            daily,
+        };
+    });
+
+    for (const day of dailyTotals) {
+        day.completionRate = completionRate(day.completed, day.expected);
+    }
+
+    const totalExpected = challengeAnalytics.reduce((sum, item) => sum + item.expected, 0);
+    const totalCompleted = challengeAnalytics.reduce((sum, item) => sum + item.completed, 0);
+    const totalProgressDays = challengeAnalytics.reduce((sum, item) => sum + item.participant.daysCompleted, 0);
+    const totalChallengeDays = challengeAnalytics.reduce((sum, item) => sum + item.challenge.durationDays, 0);
+
+    return {
+        period: {
+            key: selectedPeriod.key,
+            days: selectedPeriod.days,
+            start: selectedPeriod.start.toISOString(),
+            end: selectedPeriod.end.toISOString(),
+        },
+        summary: {
+            activeChallengeCount: challengeAnalytics
+                .filter((item) => item.participant.status === 'active')
+                .length,
+            expected: totalExpected,
+            completed: totalCompleted,
+            completionRate: completionRate(totalCompleted, totalExpected),
+            progressRate: completionRate(totalProgressDays, totalChallengeDays),
+            averageCompletionTime: averageTimeOfDay(checkIns.map((checkIn) => checkIn.completedAt)),
+        },
+        dailyTotals,
+        challenges: challengeAnalytics.sort((left, right) => {
             const leftRate = left.completionRate ?? -1;
             const rightRate = right.completionRate ?? -1;
             return rightRate - leftRate;
