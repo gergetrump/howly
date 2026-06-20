@@ -294,7 +294,6 @@ export async function completeHabit(habitId, userId) {
         habit.lastCompletedAt = new Date();
         await habit.save();
         await recordProgressForHabit({ userId, habitId: habit._id });
-        await creditOverallStreak(userId);
 
         return {
             habit: toHabitDto(habit),
@@ -373,7 +372,9 @@ async function creditOverallStreak(userId) {
         return { streak: user.streak, creditedToday: true };
     }
 
-    const habits = await Habit.find({ ownerId: userId }).select('frequency lastCompletedAt');
+    // Challenge habits are excluded
+    const habits = await Habit.find({ ownerId: userId, source: { $ne: 'challenge' } })
+        .select('frequency lastCompletedAt');
 
     // Needs at least one habit, all completed for their period, to count.
     if (habits.length === 0 || !habits.every((habit) => isCompletedForPeriod(habit))) {
