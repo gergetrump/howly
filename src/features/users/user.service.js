@@ -96,6 +96,8 @@ export function toPublicUser(user) {
         providerId: user.providerId,
         coins: user.coins,
         streak: user.streak,
+        streakShields: user.streakShields ?? 0,
+        streakRepairDeadline: user.streakRepairDeadline ?? null,
         premiumStatus: user.premiumStatus,
         premiumUntil: user.premiumUntil,
         createdAt: user.createdAt,
