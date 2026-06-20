@@ -294,6 +294,7 @@ export async function completeHabit(habitId, userId) {
         habit.lastCompletedAt = new Date();
         await habit.save();
         await recordProgressForHabit({ userId, habitId: habit._id });
+        await creditOverallStreak(userId);
 
         return {
             habit: toHabitDto(habit),
@@ -318,6 +319,7 @@ export async function completeHabit(habitId, userId) {
         ? await enrichMilestonePost(milestonePost)
         : null;
     await recordProgressForHabit({ userId, habitId: habit._id });
+    await creditOverallStreak(userId);
 
     return {
         habit: toHabitDto(habit),
@@ -359,4 +361,54 @@ export async function uncompleteHabit(habitId, userId) {
     await habit.save();
 
     return toHabitDto(habit);
+}
+
+
+async function creditOverallStreak(userId) {
+    const user = await User.findById(userId).select('streak streakLastDay');
+    if (!user) return null;
+
+    // Already credited today → nothing to do.
+    if (user.streakLastDay && isToday(user.streakLastDay)) {
+        return { streak: user.streak, creditedToday: true };
+    }
+
+    const habits = await Habit.find({ ownerId: userId }).select('frequency lastCompletedAt');
+
+    // Needs at least one habit, all completed for their period, to count.
+    if (habits.length === 0 || !habits.every((habit) => isCompletedForPeriod(habit))) {
+        return { streak: user.streak, creditedToday: false };
+    }
+
+    // Continue the streak if yesterday was kept, otherwise start a fresh one.
+    if (user.streakLastDay && isYesterday(user.streakLastDay)) {
+        user.streak += 1;
+    } else {
+        user.streak = 1;
+    }
+    user.streakLastDay = new Date();
+    await user.save();
+
+    return { streak: user.streak, creditedToday: true };
+}
+
+/**
+ * Daily cron: reset the overall streak for any user who missed a day.
+ */
+export async function resetMissedOverallStreaks() {
+    const users = await User.find({ streak: { $gt: 0 } }).select('streak streakLastDay');
+
+    let reset = 0;
+    for (const user of users) {
+        const last = user.streakLastDay;
+        const kept = last && (isToday(last) || isYesterday(last));
+
+        if (!kept) {
+            user.streak = 0;
+            await user.save();
+            reset += 1;
+        }
+    }
+
+    return { reset };
 }
