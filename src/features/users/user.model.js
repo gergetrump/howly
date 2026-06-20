@@ -97,6 +97,23 @@ const userSchema = new Schema(
       default: 0,
       min: 0,
     },
+    // Streak Freeze ("shields") balance the user holds. Granted monthly to premium users (cron) and buyable in the shop. A daily cron consumes one
+    //to protect all habit streaks on a missed day.
+    streakShields: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    // Last time the monthly premium grant ran for this user (idempotency).
+    streakShieldsLastGrantedAt: {
+      type: Date,
+      default: null,
+    },
+    // Grace window after a missed day with no shield: the streak is held (not broken) until this deadline (~2 days).
+    streakRepairDeadline: {
+      type: Date,
+      default: null,
+    },
     isDeleted: {
       type: Boolean,
       default: false,
