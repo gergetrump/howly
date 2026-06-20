@@ -3,6 +3,7 @@ import {
     grantMonthlyShields,
     runDailyStreakMaintenance,
 } from '../features/streakFreeze/streakFreeze.service.js';
+import { resetMissedOverallStreaks } from '../features/habits/habit.service.js';
 
 async function runDaily() {
     try {
@@ -10,6 +11,13 @@ async function runDaily() {
         console.log('[cron] daily streak maintenance:', result);
     } catch (error) {
         console.error('[cron] daily streak maintenance failed:', error);
+    }
+
+    try {
+        const result = await resetMissedOverallStreaks();
+        console.log('[cron] overall streak reset:', result);
+    } catch (error) {
+        console.error('[cron] overall streak reset failed:', error);
     }
 }
 
