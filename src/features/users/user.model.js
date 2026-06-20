@@ -97,6 +97,10 @@ const userSchema = new Schema(
       default: 0,
       min: 0,
     },
+    streakLastDay: {
+      type: Date,
+      default: null,
+    },
     // Streak Freeze ("shields") balance the user holds. Granted monthly to premium users (cron) and buyable in the shop. A daily cron consumes one
     //to protect all habit streaks on a missed day.
     streakShields: {
