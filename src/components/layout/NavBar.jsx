@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Dumbbell, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
+import { StreakShieldBadge } from '@/components/brand/StreakShieldBadge.jsx';
 import { getFriendRequests } from '@/services/socialApi';
 import howlyIcon from '@/assets/wolf.svg';
 import { cn } from '@/lib/utils';
@@ -134,6 +135,7 @@ export function NavBar({
 
                 <div className="flex shrink-0 items-center gap-2">
                     <MoonCoin amount={coinAmount} compact />
+                    <StreakShieldBadge count={user?.streakShields ?? 0} showLabel={false} size="sm" />
                     {profileItem ? (
                         <NavLink
                             to={profileItem.to}
