@@ -1,6 +1,5 @@
 import CozyJacket, { CozyJacketLayer } from './CozyJacket';
 import Cup, { CupLayer } from './Cup';
-import CupBrown, { CupBrownLayer } from './CupBrown';
 import { GlassesLayer, GlassesPreview } from './Glasses';
 import Hoodie, { HoodieLayer } from './Hoodie';
 import Phone, { PhoneLayer } from './Phone';
@@ -20,15 +19,9 @@ const itemRegistry = {
     },
     'cup': {
         type: 'accessory',
+        displayName: 'Warm Cup',
         visual: Cup,
         layer: CupLayer,
-        transform: 'translate(1300 750)',
-        previewClassName: 'max-h-[85%] max-w-[50%]',
-    },
-    'brown-cup': {
-        type: 'accessory',
-        visual: CupBrown,
-        layer: CupBrownLayer,
         transform: 'translate(1300 750)',
         previewClassName: 'max-h-[85%] max-w-[50%]',
     },
@@ -94,6 +87,12 @@ const itemRegistry = {
 
 export function getItemRegistryEntry(assetKey) {
     return itemRegistry[assetKey?.trim()] ?? null;
+}
+
+export function getItemDisplayName(item) {
+    const itemEntry = getItemRegistryEntry(item?.assetKey);
+
+    return itemEntry?.displayName ?? item?.name ?? '';
 }
 
 export function renderShopItemVisual(item, className = 'max-h-full max-w-full', customization = {}) {

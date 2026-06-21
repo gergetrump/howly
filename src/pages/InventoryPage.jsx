@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
-import { renderShopItemVisual } from '@/components/brand/items/itemRegistry';
+import { getItemDisplayName, renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/authContext';
@@ -12,6 +12,7 @@ import {
     getMyInventory,
     saveOutfit,
 } from '@/services/inventoryApi';
+import { getEquippedItemConfigsFromInventory, itemMatchesCategory } from '@/lib/inventoryItems';
 
 export function InventoryPage() {
     const navigate = useNavigate();
@@ -60,13 +61,12 @@ export function InventoryPage() {
     }, []);
 
     const equippedItemConfigs = useMemo(
-        () => inventory
-            .filter((entry) => draftEquippedItemIds.has(entry._id))
-            .map((entry) => ({
-                assetKey: entry.item?.assetKey,
-                customization: entry.customization ?? {},
-            }))
-            .filter((item) => item.assetKey),
+        () => getEquippedItemConfigsFromInventory(
+            inventory.map((entry) => ({
+                ...entry,
+                equipped: draftEquippedItemIds.has(entry._id),
+            })),
+        ),
         [draftEquippedItemIds, inventory],
     );
 
@@ -94,7 +94,7 @@ export function InventoryPage() {
     const filteredItems = useMemo(
         () => activeCategory === 'all'
             ? ownedItems
-            : ownedItems.filter((item) => item.type === activeCategory),
+            : ownedItems.filter((item) => itemMatchesCategory(item, activeCategory)),
         [activeCategory, ownedItems],
     );
 
@@ -237,7 +237,7 @@ export function InventoryPage() {
                         {filteredItems.map((item) => (
                             <ItemCard
                                 key={item.userItemId}
-                                name={item.name}
+                                name={getItemDisplayName(item)}
                                 price={item.price}
                                 premiumOnly={item.premiumOnly}
                                 equipped={item.equipped}

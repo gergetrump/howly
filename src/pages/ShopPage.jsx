@@ -6,7 +6,7 @@ import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
-import { renderShopItemVisual } from '@/components/brand/items/itemRegistry';
+import { getItemDisplayName, renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -33,9 +33,9 @@ import { buyItem, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
 import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
 import { confirmCheckoutSession } from '@/services/paymentService';
+import { itemMatchesCategory } from '@/lib/inventoryItems';
 
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
-const HOODIE_ASSET_KEY = 'hoodie';
 const MAX_CUSTOM_TEXT_LENGTH = 20;
 const ITEM_CUSTOMIZATION_CONFIG = {
     hoodie: {
@@ -57,6 +57,18 @@ const ITEM_CUSTOMIZATION_CONFIG = {
         },
     },
     'cream-top': {
+        defaults: {
+            color: '#F4EFE5',
+            buttonColor: '#B18167',
+            pocketColor: '#DDCEAF',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'buttonColor', label: 'Buttons' },
+            { key: 'pocketColor', label: 'Pockets' },
+        ],
+    },
+    'warm-top': {
         defaults: {
             color: '#F4EFE5',
             buttonColor: '#B18167',
@@ -92,6 +104,48 @@ const ITEM_CUSTOMIZATION_CONFIG = {
             { key: 'shirtColor', label: 'Shirt' },
             { key: 'tieColor', label: 'Tie' },
             { key: 'tieStripeColor', label: 'Tie stripe' },
+        ],
+    },
+    cup: {
+        defaults: {
+            color: '#E09AAB',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+        ],
+    },
+    glasses: {
+        defaults: {
+            color: '#000000',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+        ],
+    },
+    phone: {
+        defaults: {
+            frameColor: '#D9D9D9',
+            backgroundColor: '#575757',
+        },
+        colorSlots: [
+            { key: 'frameColor', label: 'Frame' },
+            { key: 'backgroundColor', label: 'Background' },
+        ],
+    },
+    'warm-hat': {
+        defaults: {
+            color: '#4A6741',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+        ],
+    },
+    sneaker: {
+        defaults: {
+            color: '#1A1A1A',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
         ],
     },
 };
@@ -156,15 +210,10 @@ function ItemColorPicker({ colors, colorSlots, activeSlot, onSlotChange, onColor
     const [isOpen, setIsOpen] = useState(false);
     const fallbackSlot = colorSlots[0]?.key;
     const selectedColor = colors[activeSlot] ?? colors[fallbackSlot] ?? '#FFFFFF';
-    const [hexInput, setHexInput] = useState(selectedColor.toUpperCase());
     const [position, setPosition] = useState({ left: 0, top: 0 });
     const triggerRef = useRef(null);
     const panelRef = useRef(null);
     const nativeColorInputRef = useRef(null);
-
-    useEffect(() => {
-        setHexInput(selectedColor.toUpperCase());
-    }, [selectedColor]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -217,8 +266,6 @@ function ItemColorPicker({ colors, colorSlots, activeSlot, onSlotChange, onColor
         const nextValue = event.target.value;
         const normalizedColor = normalizeHexInput(nextValue);
 
-        setHexInput(nextValue);
-
         if (normalizedColor) {
             applyColor(normalizedColor);
         }
@@ -252,7 +299,8 @@ function ItemColorPicker({ colors, colorSlots, activeSlot, onSlotChange, onColor
                         aria-hidden="true"
                     />
                     <input
-                        value={hexInput}
+                        key={selectedColor}
+                        defaultValue={selectedColor.toUpperCase()}
                         className="w-28 border-b border-white/70 bg-transparent text-lg font-bold uppercase tracking-wide text-white outline-none"
                         aria-label="Hoodie color hex code"
                         onChange={handleHexInputChange}
@@ -541,7 +589,7 @@ export function ShopPage() {
             }
 
             retryTimerId = window.setTimeout(async () => {
-                const retryUser = await refreshCurrentUser();
+                await refreshCurrentUser();
 
                 if (!isCurrent) {
                     return;
@@ -630,7 +678,7 @@ export function ShopPage() {
     const filteredItems = useMemo(
         () => activeCategory === 'all'
             ? items
-            : items.filter((item) => item.type === activeCategory),
+            : items.filter((item) => itemMatchesCategory(item, activeCategory)),
         [activeCategory, items],
     );
 
@@ -804,20 +852,20 @@ export function ShopPage() {
             } else if (buyError.code === 'PREMIUM_REQUIRED') {
                 if (isFreeUser) {
                     openPremiumPage(
-                        `${failedItem?.name ?? 'This item'} is a premium item. Upgrade to buy premium shop items and get monthly bonus coins.`,
+                        `${failedItem ? getItemDisplayName(failedItem) : 'This item'} is a premium item. Upgrade to buy premium shop items and get monthly bonus coins.`,
                         failedItem?._id ?? '',
                     );
                 } else {
-                    setError(`${failedItem?.name ?? 'This item'} is premium only`);
+                    setError(`${failedItem ? getItemDisplayName(failedItem) : 'This item'} is premium only`);
                 }
             } else if (buyError.code === 'NOT_ENOUGH_COINS') {
                 if (isFreeUser) {
                     openPremiumPage(
-                        `You do not have enough moon coins for ${failedItem?.name ?? 'this item'}. Premium gives you monthly bonus coins${premiumMonthlyCoins ? ` (${premiumMonthlyCoins} coins)` : ''}.`,
+                        `You do not have enough moon coins for ${failedItem ? getItemDisplayName(failedItem) : 'this item'}. Premium gives you monthly bonus coins${premiumMonthlyCoins ? ` (${premiumMonthlyCoins} coins)` : ''}.`,
                         failedItem?._id ?? '',
                     );
                 } else {
-                    setError(`You do not have enough moon coins for ${failedItem?.name ?? 'this item'}`);
+                    setError(`You do not have enough moon coins for ${failedItem ? getItemDisplayName(failedItem) : 'this item'}`);
                 }
             } else {
                 setError('Buying these items did not work');
@@ -894,7 +942,7 @@ export function ShopPage() {
                                         return (
                                         <div key={item._id} data-shop-item-id={item._id}>
                                             <ItemCard
-                                                name={item.name}
+                                                name={getItemDisplayName(item)}
                                                 price={item.price}
                                                 premiumOnly={item.premiumOnly}
                                                 owned={isItemOwned(item)}
@@ -906,7 +954,7 @@ export function ShopPage() {
                                                             colors={itemCustomization}
                                                             colorSlots={customizationConfig.colorSlots}
                                                             activeSlot={activeColorSlot}
-                                                            itemName={item.name}
+                                                            itemName={getItemDisplayName(item)}
                                                             onSlotChange={(slot) => setActiveColorSlots((currentSlots) => ({
                                                                 ...currentSlots,
                                                                 [item.assetKey]: slot,
@@ -994,7 +1042,7 @@ export function ShopPage() {
                                             {renderShopItemVisual(item, 'max-h-full max-w-full', getItemCustomization(item))}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="truncate font-semibold">{item.name}</p>
+                                            <p className="truncate font-semibold">{getItemDisplayName(item)}</p>
                                             {isOwned ? (
                                                 <p className="text-sm text-slate-300">Already owned</p>
                                             ) : (
@@ -1006,7 +1054,7 @@ export function ShopPage() {
                                             size="icon"
                                             variant="ghost"
                                             className="rounded-full text-slate-300 hover:bg-white/10 hover:text-white"
-                                            aria-label={`Remove ${item.name} from cart`}
+                                            aria-label={`Remove ${getItemDisplayName(item)} from cart`}
                                             onClick={() => handleRemoveCartItem(item._id)}
                                         >
                                             <Minus className="h-4 w-4" aria-hidden="true" />
@@ -1048,7 +1096,7 @@ export function ShopPage() {
 
                         <ConfirmationDialogHeader className="space-y-0 text-center">
                             <ConfirmationDialogTitle className="mx-auto max-w-sm text-xl font-bold leading-tight">
-                                Buy {itemsToBuy.length === 1 ? itemsToBuy[0].name : `${itemsToBuy.length} items`}?
+                                Buy {itemsToBuy.length === 1 ? getItemDisplayName(itemsToBuy[0]) : `${itemsToBuy.length} items`}?
                             </ConfirmationDialogTitle>
                             <ConfirmationDialogDescription className="sr-only">
                                 Confirm that these items should be added to your inventory.
