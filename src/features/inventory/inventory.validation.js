@@ -1,6 +1,16 @@
 import mongoose from 'mongoose';
 
-const CUSTOMIZATION_COLOR_FIELDS = ['color', 'stringColor', 'textColor'];
+const CUSTOMIZATION_COLOR_FIELDS = [
+    'color',
+    'stringColor',
+    'textColor',
+    'buttonColor',
+    'pocketColor',
+    'jacketColor',
+    'shirtColor',
+    'tieColor',
+    'tieStripeColor',
+];
 const MAX_CUSTOM_TEXT_LENGTH = 20;
 
 function sanitizeCustomization(customization = {}) {

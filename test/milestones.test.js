@@ -87,7 +87,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   const author = await buildUser({ username: 'author', email: 'author@example.com' });
   const friend = await buildUser({ username: 'friend', email: 'friend@example.com' });
   const habit = await buildHabit(author, { title: 'Chess', streakCount: 10 });
-  const companion = await Companion.create({ user: author._id, name: 'Luna' });
+  const companion = await Companion.create({ user: author._id, name: 'Luna', type: 'bear' });
   const hoodie = await Item.create({
     name: 'Cozy Hoodie',
     type: 'clothing',
@@ -108,7 +108,17 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   });
 
   await UserItem.create([
-    { user: author._id, item: hoodie._id, equipped: true },
+    {
+      user: author._id,
+      item: hoodie._id,
+      equipped: true,
+      customization: {
+        color: '#4F772D',
+        stringColor: '#F8FAFC',
+        textColor: '#111827',
+        text: 'LUNA',
+      },
+    },
     { user: author._id, item: glasses._id, equipped: true },
     { user: author._id, item: cup._id, equipped: false },
   ]);
@@ -139,7 +149,20 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(feedResponse.body[0].habit.icon, '🎯');
   assert.equal(feedResponse.body[0].companion.id, companion._id.toString());
   assert.equal(feedResponse.body[0].companion.name, 'Luna');
+  assert.equal(feedResponse.body[0].companion.type, 'bear');
   assert.deepEqual(feedResponse.body[0].companion.equippedItemKeys.sort(), ['glasses', 'hoodie']);
+  assert.deepEqual(
+    feedResponse.body[0].companion.equippedItemConfigs.find((item) => item.assetKey === 'hoodie'),
+    {
+      assetKey: 'hoodie',
+      customization: {
+        color: '#4F772D',
+        stringColor: '#F8FAFC',
+        textColor: '#111827',
+        text: 'LUNA',
+      },
+    },
+  );
   assert.equal(feedResponse.body[0].likedByCurrentUser, false);
   assert.equal(feedResponse.body[0].currentUserReaction, null);
   assert.deepEqual(feedResponse.body[0].reactionCounts, []);
@@ -166,7 +189,12 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(firstReactionResponse.body.milestonePost.habit.frequency, 'Daily');
   assert.equal(firstReactionResponse.body.milestonePost.habit.icon, '🎯');
   assert.equal(firstReactionResponse.body.milestonePost.companion.name, 'Luna');
+  assert.equal(firstReactionResponse.body.milestonePost.companion.type, 'bear');
   assert.deepEqual(firstReactionResponse.body.milestonePost.companion.equippedItemKeys.sort(), ['glasses', 'hoodie']);
+  assert.equal(
+    firstReactionResponse.body.milestonePost.companion.equippedItemConfigs.find((item) => item.assetKey === 'hoodie').customization.text,
+    'LUNA',
+  );
 
   // Choosing another emoji changes the user's single reaction
   const changedReactionResponse = await request(app)

@@ -216,3 +216,73 @@ test('users cannot buy the same hoodie customization twice', async () => {
 
     assert.equal(updatedUser.coins, 900);
 });
+
+test('users can own different customizations for other customizable clothing items', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const top = await buildItem({ type: 'clothing', assetKey: 'cream-top', price: 100 });
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: top._id.toString(),
+            customization: {
+                color: '#F4EFE5',
+                buttonColor: '#B18167',
+                pocketColor: '#DDCEAF',
+            },
+        })
+        .expect(201);
+
+    const secondResponse = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: top._id.toString(),
+            customization: {
+                color: '#DBEAFE',
+                buttonColor: '#1D4ED8',
+                pocketColor: '#93C5FD',
+            },
+        })
+        .expect(201);
+
+    assert.deepEqual(secondResponse.body.customization, {
+        color: '#DBEAFE',
+        buttonColor: '#1D4ED8',
+        pocketColor: '#93C5FD',
+    });
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: top._id }), 2);
+});
+
+test('legacy customizable inventory entries count as the default customization', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const hoodie = await buildItem({ type: 'clothing', assetKey: 'hoodie', price: 100 });
+
+    await UserItem.create({
+        user: user._id,
+        item: hoodie._id,
+    });
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({ itemId: hoodie._id.toString() })
+        .expect(409);
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: hoodie._id.toString(),
+            customization: {
+                color: '#4F772D',
+                stringColor: '#F8FAFC',
+                textColor: '#111827',
+                text: 'FOREST',
+            },
+        })
+        .expect(201);
+
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: hoodie._id }), 2);
+});

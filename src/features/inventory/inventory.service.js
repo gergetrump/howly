@@ -15,11 +15,29 @@ export const INVENTORY_ERROR_CODES = {
 };
 
 const SINGLE_EQUIP_ITEM_TYPES = new Set(['clothing', 'shoes']);
-const DEFAULT_HOODIE_CUSTOMIZATION = {
-    color: '#C66E6E',
-    stringColor: '#DADADA',
-    textColor: '#FFFFFF',
-    text: 'HOWLY',
+const CUSTOMIZABLE_ITEM_DEFAULTS = {
+    hoodie: {
+        color: '#C66E6E',
+        stringColor: '#DADADA',
+        textColor: '#FFFFFF',
+        text: 'HOWLY',
+    },
+    'cream-top': {
+        color: '#F4EFE5',
+        buttonColor: '#B18167',
+        pocketColor: '#DDCEAF',
+    },
+    'cozy-jacket': {
+        jacketColor: '#4A6741',
+        stringColor: '#DADADA',
+        shirtColor: '#F4EFE5',
+    },
+    suit: {
+        jacketColor: '#392E18',
+        shirtColor: '#EEEEEE',
+        tieColor: '#670000',
+        tieStripeColor: '#FFC000',
+    },
 };
 
 let ensuredCustomizationIndexes = false;
@@ -31,29 +49,30 @@ function inventoryError(code) {
 }
 
 function normalizeCustomizationForItem(item, customization = {}) {
-    if (item.assetKey !== 'hoodie') {
+    const defaults = CUSTOMIZABLE_ITEM_DEFAULTS[item.assetKey];
+
+    if (!defaults) {
         return {};
     }
 
     return {
-        color: customization.color ?? DEFAULT_HOODIE_CUSTOMIZATION.color,
-        stringColor: customization.stringColor ?? DEFAULT_HOODIE_CUSTOMIZATION.stringColor,
-        textColor: customization.textColor ?? DEFAULT_HOODIE_CUSTOMIZATION.textColor,
-        text: customization.text ?? DEFAULT_HOODIE_CUSTOMIZATION.text,
+        ...defaults,
+        ...customization,
     };
 }
 
 function buildCustomizationKey(item, customization = {}) {
-    if (item.assetKey !== 'hoodie') {
+    const defaults = CUSTOMIZABLE_ITEM_DEFAULTS[item.assetKey];
+
+    if (!defaults) {
         return 'default';
     }
 
-    return JSON.stringify({
-        color: customization.color,
-        stringColor: customization.stringColor,
-        textColor: customization.textColor,
-        text: customization.text,
-    });
+    return JSON.stringify(
+        Object.fromEntries(
+            Object.keys(defaults).map((key) => [key, customization[key]]),
+        ),
+    );
 }
 
 async function ensureCustomizationIndexes() {
@@ -100,10 +119,21 @@ export async function buyItem({ userId, itemId, customization = {} }) {
 
     const normalizedCustomization = normalizeCustomizationForItem(item, customization);
     const customizationKey = buildCustomizationKey(item, normalizedCustomization);
+    const defaultCustomizationKey = buildCustomizationKey(item, normalizeCustomizationForItem(item, {}));
+    const customizationKeyConditions = [{ customizationKey }];
+
+    if (customizationKey === defaultCustomizationKey || customizationKey === 'default') {
+        customizationKeyConditions.push(
+            { customizationKey: 'default' },
+            { customizationKey: { $exists: false } },
+            { customizationKey: null },
+        );
+    }
+
     const existingUserItem = await UserItem.findOne({
         user: userId,
         item: itemId,
-        customizationKey,
+        $or: customizationKeyConditions,
     });
 
     if (existingUserItem) {
