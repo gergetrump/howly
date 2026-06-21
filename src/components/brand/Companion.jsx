@@ -1,4 +1,4 @@
-import { CompanionAvatar } from '@/components/brand/companionAvatar';
+import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
 
 export function Companion({
     src,
@@ -7,6 +7,7 @@ export function Companion({
     size = 'xl',
     showName = true,
     equippedItemKeys = [],
+    equippedItemConfigs = [],
     className,
 }) {
     return (
@@ -17,6 +18,7 @@ export function Companion({
             size={size}
             showName={showName}
             equippedItemKeys={equippedItemKeys}
+            equippedItemConfigs={equippedItemConfigs}
             className={className}
         />
     );

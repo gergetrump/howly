@@ -64,7 +64,9 @@ export function SocialFeed({
                                 authorAvatarSrc={post.user?.profilePictureUrl}
                                 meta={formatRelativeTime(post.createdAt)}
                                 companionName={post.companion?.name || 'Howly'}
+                                companionType={post.companion?.type || 'wolf'}
                                 companionEquippedItemKeys={post.companion?.equippedItemKeys ?? []}
+                                companionEquippedItemConfigs={post.companion?.equippedItemConfigs ?? []}
                                 milestoneTitle={buildMilestoneTitle(post)}
                             >
                                 <MilestoneReactionPicker

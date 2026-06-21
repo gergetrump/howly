@@ -42,6 +42,12 @@ const DEFAULT_HOODIE_COLORS = {
     text: '#FFFFFF',
 };
 const DEFAULT_HOODIE_TEXT = 'HOWLY';
+const DEFAULT_HOODIE_CUSTOMIZATION = {
+    color: DEFAULT_HOODIE_COLORS.whole,
+    stringColor: DEFAULT_HOODIE_COLORS.strings,
+    textColor: DEFAULT_HOODIE_COLORS.text,
+    text: DEFAULT_HOODIE_TEXT,
+};
 const MAX_HOODIE_TEXT_LENGTH = 20;
 const HOODIE_COLOR_SLOTS = [
     { key: 'whole', label: 'Whole' },
@@ -62,6 +68,41 @@ function normalizeHexInput(value) {
     const hexValue = trimmedValue.startsWith('#') ? trimmedValue : `#${trimmedValue}`;
 
     return /^#[0-9A-Fa-f]{6}$/.test(hexValue) ? hexValue.toUpperCase() : null;
+}
+
+function normalizeHoodieCustomization(customization = {}) {
+    return {
+        color: customization.color ?? DEFAULT_HOODIE_CUSTOMIZATION.color,
+        stringColor: customization.stringColor ?? DEFAULT_HOODIE_CUSTOMIZATION.stringColor,
+        textColor: customization.textColor ?? DEFAULT_HOODIE_CUSTOMIZATION.textColor,
+        text: customization.text ?? DEFAULT_HOODIE_CUSTOMIZATION.text,
+    };
+}
+
+function getItemOwnershipSignature(item, customization = {}) {
+    const itemId = item?._id?.toString?.() ?? item?._id;
+
+    if (!itemId) {
+        return '';
+    }
+
+    if (item.assetKey !== HOODIE_ASSET_KEY) {
+        return `${itemId}:default`;
+    }
+
+    const hoodieCustomization = normalizeHoodieCustomization(customization);
+
+    return [
+        itemId,
+        hoodieCustomization.color,
+        hoodieCustomization.stringColor,
+        hoodieCustomization.textColor,
+        hoodieCustomization.text,
+    ].join(':');
+}
+
+function getInventoryEntryOwnershipSignature(entry) {
+    return getItemOwnershipSignature(entry.item, entry.customization ?? {});
 }
 
 function HoodieColorPicker({ colors, activeSlot, onSlotChange, onColorChange }) {
@@ -323,7 +364,7 @@ export function ShopPage() {
     const { user, setUser, companion } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const [items, setItems] = useState([]);
-    const [ownedItemIds, setOwnedItemIds] = useState(new Set());
+    const [ownedItemSignatures, setOwnedItemSignatures] = useState(new Set());
     const [previewItems, setPreviewItems] = useState([]);
     const [cartItems, setCartItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -471,7 +512,11 @@ export function ShopPage() {
 
                 if (isCurrent) {
                     setItems(nextItems);
-                    setOwnedItemIds(new Set(nextInventory.map((entry) => entry.item?._id).filter(Boolean)));
+                    setOwnedItemSignatures(new Set(
+                        nextInventory
+                            .map(getInventoryEntryOwnershipSignature)
+                            .filter(Boolean),
+                    ));
                 }
             } catch {
                 if (isCurrent) {
@@ -512,8 +557,8 @@ export function ShopPage() {
     );
 
     const cartItemsToBuy = useMemo(
-        () => cartItems.filter((item) => !ownedItemIds.has(item._id)),
-        [cartItems, ownedItemIds],
+        () => cartItems.filter((item) => !isItemOwned(item)),
+        [cartItems, hoodieColors, hoodieText, ownedItemSignatures],
     );
 
     const cartTotalPrice = useMemo(
@@ -568,6 +613,10 @@ export function ShopPage() {
         return previewItems.some((item) => item._id === itemId);
     }
 
+    function isItemOwned(item) {
+        return ownedItemSignatures.has(getItemOwnershipSignature(item, getItemCustomization(item)));
+    }
+
     function addSelectedItem(currentItems, item) {
         if (SINGLE_EQUIP_ITEM_TYPES.has(item.type)) {
             return [
@@ -588,7 +637,7 @@ export function ShopPage() {
 
         setError('');
         const isAlreadyPreviewed = isItemPreviewed(item._id);
-        const isOwned = ownedItemIds.has(item._id);
+        const isOwned = isItemOwned(item);
 
         if (isAlreadyPreviewed) {
             setPreviewItems((currentPreviewItems) => currentPreviewItems.filter((previewItem) => previewItem._id !== item._id));
@@ -615,7 +664,7 @@ export function ShopPage() {
     }
 
     function openBuyConfirmation(itemsForPurchase) {
-        const nextItemsToBuy = itemsForPurchase.filter((item) => !ownedItemIds.has(item._id));
+        const nextItemsToBuy = itemsForPurchase.filter((item) => !isItemOwned(item));
 
         if (nextItemsToBuy.length === 0) {
             setError('All selected items are already in your inventory');
@@ -658,14 +707,16 @@ export function ShopPage() {
         try {
             for (const item of itemsForPurchase) {
                 failedItem = item;
-                await buyItem(item._id);
+                await buyItem(item._id, getItemCustomization(item));
                 purchasedItems.push(item);
             }
 
-            setOwnedItemIds((currentOwnedItemIds) => {
-                const nextOwnedItemIds = new Set(currentOwnedItemIds);
-                purchasedItems.forEach((item) => nextOwnedItemIds.add(item._id));
-                return nextOwnedItemIds;
+            setOwnedItemSignatures((currentOwnedItemSignatures) => {
+                const nextOwnedItemSignatures = new Set(currentOwnedItemSignatures);
+                purchasedItems.forEach((item) => {
+                    nextOwnedItemSignatures.add(getItemOwnershipSignature(item, getItemCustomization(item)));
+                });
+                return nextOwnedItemSignatures;
             });
             setCartItems((currentCartItems) => (
                 currentCartItems.filter((item) => !purchasedItems.some((purchasedItem) => purchasedItem._id === item._id))
@@ -673,10 +724,12 @@ export function ShopPage() {
             await refreshCurrentUser();
         } catch (buyError) {
             if (purchasedItems.length > 0) {
-                setOwnedItemIds((currentOwnedItemIds) => {
-                    const nextOwnedItemIds = new Set(currentOwnedItemIds);
-                    purchasedItems.forEach((item) => nextOwnedItemIds.add(item._id));
-                    return nextOwnedItemIds;
+                setOwnedItemSignatures((currentOwnedItemSignatures) => {
+                    const nextOwnedItemSignatures = new Set(currentOwnedItemSignatures);
+                    purchasedItems.forEach((item) => {
+                        nextOwnedItemSignatures.add(getItemOwnershipSignature(item, getItemCustomization(item)));
+                    });
+                    return nextOwnedItemSignatures;
                 });
                 setCartItems((currentCartItems) => (
                     currentCartItems.filter((item) => !purchasedItems.some((purchasedItem) => purchasedItem._id === item._id))
@@ -777,7 +830,7 @@ export function ShopPage() {
                                                 name={item.name}
                                                 price={item.price}
                                                 premiumOnly={item.premiumOnly}
-                                                owned={ownedItemIds.has(item._id)}
+                                                owned={isItemOwned(item)}
                                                 showOwnedBadge={false}
                                                 dense
                                                 titleAction={item.assetKey === HOODIE_ASSET_KEY ? (
@@ -805,10 +858,10 @@ export function ShopPage() {
                                                     type="button"
                                                     fullWidth
                                                     className="h-8 px-3 text-xs"
-                                                    disabled={ownedItemIds.has(item._id) || buyingItemId === item._id}
+                                                    disabled={isItemOwned(item) || buyingItemId === item._id}
                                                     onClick={() => openBuyConfirmation([item])}
                                                 >
-                                                    {ownedItemIds.has(item._id) ? 'Owned' : 'Buy'}
+                                                    {isItemOwned(item) ? 'Owned' : 'Buy'}
                                                 </ActionButton>
                                             </ItemCard>
                                         </div>
@@ -850,7 +903,7 @@ export function ShopPage() {
                                 </div>
                             ) : null}
                             {cartItems.map((item) => {
-                                const isOwned = ownedItemIds.has(item._id);
+                                const isOwned = isItemOwned(item);
 
                                 return (
                                     <div

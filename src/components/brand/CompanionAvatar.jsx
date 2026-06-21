@@ -59,9 +59,10 @@ export function CompanionAvatar({
                                     previewItemKeys = [],
                                     previewItemConfigs = [],
                                     equippedItemKeys = [],
+                                    equippedItemConfigs = [],
                                     className,
                                 }) {
-    const companionItems = [...equippedItemKeys, ...previewItemKeys, previewItemKey, ...previewItemConfigs]
+    const companionItems = [...equippedItemKeys, ...equippedItemConfigs, ...previewItemKeys, previewItemKey, ...previewItemConfigs]
         .map(toCompanionItem)
         .filter((item) => item?.assetKey);
     const companionItemsByKey = new Map(companionItems.map((item) => [item.assetKey, item]));

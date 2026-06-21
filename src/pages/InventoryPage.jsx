@@ -20,7 +20,6 @@ export function InventoryPage() {
     const [draftEquippedItemIds, setDraftEquippedItemIds] = useState(new Set());
     const [isLoading, setIsLoading] = useState(true);
     const [isSavingOutfit, setIsSavingOutfit] = useState(false);
-    const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
 
@@ -60,11 +59,14 @@ export function InventoryPage() {
         };
     }, []);
 
-    const equippedItemKeys = useMemo(
+    const equippedItemConfigs = useMemo(
         () => inventory
             .filter((entry) => draftEquippedItemIds.has(entry._id))
-            .map((entry) => entry.item?.assetKey)
-            .filter(Boolean),
+            .map((entry) => ({
+                assetKey: entry.item?.assetKey,
+                customization: entry.customization ?? {},
+            }))
+            .filter((item) => item.assetKey),
         [draftEquippedItemIds, inventory],
     );
 
@@ -74,6 +76,7 @@ export function InventoryPage() {
                 ...entry.item,
                 userItemId: entry._id,
                 equipped: draftEquippedItemIds.has(entry._id),
+                customization: entry.customization ?? {},
             }))
             .filter((item) => item?._id),
         [draftEquippedItemIds, inventory],
@@ -104,7 +107,6 @@ export function InventoryPage() {
     }, [draftEquippedItemIds, savedEquippedItemIds]);
 
     function handleToggleEquipped(item) {
-        setNotice('');
         setError('');
 
         setDraftEquippedItemIds((currentItemIds) => {
@@ -130,7 +132,6 @@ export function InventoryPage() {
 
     async function handleSaveOutfit() {
         setIsSavingOutfit(true);
-        setNotice('');
         setError('');
 
         try {
@@ -142,7 +143,6 @@ export function InventoryPage() {
                     .filter((entry) => entry.equipped)
                     .map((entry) => entry._id),
             ));
-            setNotice('Outfit saved');
             window.dispatchEvent(new Event('howly:outfit-updated'));
         } catch {
             setError('Saving this outfit did not work');
@@ -175,14 +175,13 @@ export function InventoryPage() {
                     name={companion?.name}
                     size="xl"
                     showName
-                    equippedItemKeys={equippedItemKeys}
+                    equippedItemConfigs={equippedItemConfigs}
                 />
                 <ActionButton
                     type="button"
                     className="h-9 bg-white/10 px-4 text-sm text-white hover:bg-white/20 disabled:text-slate-500"
                     disabled={draftEquippedItemIds.size === 0 || isSavingOutfit}
                     onClick={() => {
-                        setNotice('');
                         setError('');
                         setDraftEquippedItemIds(new Set());
                     }}
@@ -217,7 +216,6 @@ export function InventoryPage() {
                     </ActionButton>
                 </div>
 
-                {notice ? <p className="text-sm text-emerald-300">{notice}</p> : null}
                 {error ? <p className="text-sm text-red-300">{error}</p> : null}
 
                 {isLoading ? (
@@ -247,7 +245,7 @@ export function InventoryPage() {
                                 dense
                                 interactive
                                 disabled={isSavingOutfit}
-                                visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
+                                visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', item.customization)}
                                 onClick={() => handleToggleEquipped(item)}
                             />
                         ))}

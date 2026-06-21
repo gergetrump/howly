@@ -25,7 +25,7 @@ export function DashboardPage() {
     const [milestoneNotice, setMilestoneNotice] = useState(null);
     const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
     const [storyHabit, setStoryHabit] = useState(null);
-    const [equippedItemKeys, setEquippedItemKeys] = useState([]);
+    const [equippedItemConfigs, setEquippedItemConfigs] = useState([]);
     const [limitPrompt, setLimitPrompt] = useState(null);
     const [planInfo, setPlanInfo] = useState(null);
     // Habit ids that already have an active (< 24h) story
@@ -60,11 +60,14 @@ export function DashboardPage() {
 
         getMyInventory()
             .then((inventory) => {
-                setEquippedItemKeys(
+                setEquippedItemConfigs(
                     (inventory ?? [])
                         .filter((entry) => entry.equipped)
-                        .map((entry) => entry.item?.assetKey)
-                        .filter(Boolean),
+                        .map((entry) => ({
+                            assetKey: entry.item?.assetKey,
+                            customization: entry.customization ?? {},
+                        }))
+                        .filter((item) => item.assetKey),
                 );
             })
             .catch((error) => {
@@ -197,7 +200,7 @@ export function DashboardPage() {
             <CompanionStage
                 type={companion?.type}
                 name={companion?.name}
-                equippedItemKeys={equippedItemKeys}
+                equippedItemConfigs={equippedItemConfigs}
             />
 
             <PageSection 
