@@ -112,3 +112,107 @@ test('free users can still buy non-premium items', async () => {
     assert.equal(response.body.item._id, item._id.toString());
     assert.equal(await UserItem.countDocuments({ user: user._id, item: item._id }), 1);
 });
+
+test('buying an item stores the selected customization on the inventory entry', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const item = await buildItem({ type: 'clothing', assetKey: 'hoodie', price: 100 });
+    const customization = {
+        color: '#4f772d',
+        stringColor: '#f8fafc',
+        textColor: '#111827',
+        text: 'forest howly',
+    };
+
+    const response = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({ itemId: item._id.toString(), customization })
+        .expect(201);
+
+    assert.deepEqual(response.body.customization, {
+        color: '#4F772D',
+        stringColor: '#F8FAFC',
+        textColor: '#111827',
+        text: 'FOREST HOWLY',
+    });
+
+    const userItem = await UserItem.findOne({ user: user._id, item: item._id }).lean();
+
+    assert.deepEqual(userItem.customization, response.body.customization);
+
+    const inventoryResponse = await request(app)
+        .get('/api/inventory/me')
+        .set('Authorization', authHeader(user))
+        .expect(200);
+
+    assert.deepEqual(inventoryResponse.body[0].customization, response.body.customization);
+});
+
+test('users can own the same hoodie with different customizations', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const item = await buildItem({ type: 'clothing', assetKey: 'hoodie', price: 100 });
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: item._id.toString(),
+            customization: {
+                color: '#C66E6E',
+                stringColor: '#DADADA',
+                textColor: '#FFFFFF',
+                text: 'HOWLY',
+            },
+        })
+        .expect(201);
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: item._id.toString(),
+            customization: {
+                color: '#4F772D',
+                stringColor: '#F8FAFC',
+                textColor: '#111827',
+                text: 'FOREST',
+            },
+        })
+        .expect(201);
+
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: item._id }), 2);
+
+    const updatedUser = await User.findById(user._id).lean();
+
+    assert.equal(updatedUser.coins, 800);
+});
+
+test('users cannot buy the same hoodie customization twice', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const item = await buildItem({ type: 'clothing', assetKey: 'hoodie', price: 100 });
+    const customization = {
+        color: '#4F772D',
+        stringColor: '#F8FAFC',
+        textColor: '#111827',
+        text: 'FOREST',
+    };
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({ itemId: item._id.toString(), customization })
+        .expect(201);
+
+    const response = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({ itemId: item._id.toString(), customization })
+        .expect(409);
+
+    assert.equal(response.body.code, 'ITEM_ALREADY_OWNED');
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: item._id }), 1);
+
+    const updatedUser = await User.findById(user._id).lean();
+
+    assert.equal(updatedUser.coins, 900);
+});
