@@ -10,6 +10,58 @@ export const CHALLENGE_VISIBILITIES = ["public", "friends"];
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
+const habitTemplateSchema = new Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 1,
+      maxlength: 100,
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+      default: "",
+    },
+    icon: {
+      type: String,
+      default: "C",
+    },
+    type: {
+      type: String,
+      enum: ["boolean", "numeric"],
+      default: "boolean",
+    },
+    target: {
+      type: Number,
+      default: null,
+    },
+    unit: {
+      type: String,
+      trim: true,
+      maxlength: 50,
+      default: "",
+    },
+    frequency: {
+      type: String,
+      enum: ["Daily", "Weekly", "Monthly"],
+      required: true,
+    },
+    customDays: [{
+      type: Number,
+      min: 1,
+      max: 7,
+    }],
+    category: {
+      type: String,
+      default: "Challenge",
+    },
+  },
+  { _id: false }
+);
+
 function calculateEndDate(startsAt, durationDays) {
   return new Date(startsAt.getTime() + durationDays * DAY_IN_MS);
 }
@@ -35,6 +87,10 @@ const challengeSchema = new Schema(
       trim: true,
       minlength: 1,
       maxlength: 100,
+    },
+    habitTemplate: {
+      type: habitTemplateSchema,
+      required: true,
     },
     description: {
       type: String,

@@ -138,6 +138,9 @@ function toHabitDto(habit) {
         frequency: habit.frequency,
         customDays: habit.customDays || [],
         category: habit.category ?? null,
+        goal: habit.goal ?? null,
+        source: habit.source ?? 'manual',
+        challengeId: habit.challengeId ? habit.challengeId.toString() : null,
         streakCount: habit.streakCount,
         isCompletedToday: isCompletedForPeriod(habit),
         createdAt: habit.createdAt.toISOString(),
@@ -154,7 +157,10 @@ async function assertCanCreateHabits(userId, requestedHabitCount = 1) {
     }
 
     const plan = getPlanForUser(user);
-    const currentHabitCount = await Habit.countDocuments({ ownerId: userId });
+    const currentHabitCount = await Habit.countDocuments({
+        ownerId: userId,
+        source: { $ne: 'challenge' },
+    });
     const nextHabitCount = currentHabitCount + requestedHabitCount;
 
     if (nextHabitCount <= plan.limits.maxHabits) {
@@ -178,11 +184,11 @@ export async function getHabitsForUser(userId, { page = 1, limit = 20 } = {}) {
     const skip = (page - 1) * limit;
 
     const [habits, total] = await Promise.all([
-        Habit.find({ ownerId: userId })
+        Habit.find({ ownerId: userId, source: { $ne: 'challenge' } })
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit),
-        Habit.countDocuments({ ownerId: userId }),
+        Habit.countDocuments({ ownerId: userId, source: { $ne: 'challenge' } }),
     ]);
 
     return {
@@ -231,6 +237,7 @@ export async function createHabitsFromTemplates(userId, templates) {
         frequency: t.frequency,
         customDays: t.customDays || [],
         category: t.category,
+        goal: t.goal ?? null,
         ownerId: userId,
         source: 'onboarding',
         templateKey: t.templateKey ?? null,
@@ -283,6 +290,17 @@ export async function completeHabit(habitId, userId) {
         throw ApiError.badRequest('Habit already completed for this period.');
     }
 
+    if (habit.source === 'challenge') {
+        habit.lastCompletedAt = new Date();
+        await habit.save();
+        await recordProgressForHabit({ userId, habitId: habit._id });
+
+        return {
+            habit: toHabitDto(habit),
+            milestonePost: null,
+        };
+    }
+
     // ── Streak calculation ──
     const last = habit.lastCompletedAt;
     
@@ -320,6 +338,14 @@ export async function uncompleteHabit(habitId, userId) {
 
     if (!isCompletedForPeriod(habit)) {
         throw ApiError.badRequest('Habit not completed for this period.');
+    }
+
+    if (habit.source === 'challenge') {
+        habit.lastCompletedAt = null;
+        await habit.save();
+        await recordProgressForHabit({ userId, habitId: habit._id, days: -1 });
+
+        return toHabitDto(habit);
     }
 
     // Revert streak

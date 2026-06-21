@@ -154,6 +154,12 @@ export async function listInvitations(req, res) {
     return res.status(200).json(invitations);
 }
 
+export async function listMyChallengeHabits(req, res) {
+    const challengeHabits = await challengeService.listMyChallengeHabits(req.user);
+
+    return res.status(200).json(challengeHabits);
+}
+
 export async function acceptInvitation(req, res) {
     const { error } = validateChallengeInvitationId(req.params.invitationId);
 

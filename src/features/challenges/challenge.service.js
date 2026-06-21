@@ -10,8 +10,8 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const COINS_PER_CHALLENGE_DAY = 5;
 const START_LOCKED_UPDATE_FIELDS = [
     'title',
-    'habitId',
     'habitTitle',
+    'habitTemplate',
     'description',
     'frequency',
     'durationDays',
@@ -68,8 +68,47 @@ async function canViewChallenge(challenge, user) {
     return areFriends(user.id, challenge.createdBy);
 }
 
-async function getOwnedHabit(habitId, userId) {
-    return Habit.findOne({ _id: habitId, ownerId: userId }).lean();
+function habitFrequencyToChallengeFrequency(frequency) {
+    return String(frequency || '').toLowerCase();
+}
+
+function toHabitTemplate(input = {}) {
+    return {
+        title: input.title,
+        description: input.description ?? '',
+        icon: input.icon ?? 'C',
+        type: input.type ?? 'boolean',
+        target: input.target ?? null,
+        unit: input.unit ?? '',
+        frequency: input.frequency,
+        customDays: input.customDays ?? [],
+        category: input.category ?? 'Challenge',
+    };
+}
+
+function getHabitFieldsFromTemplate(template) {
+    const habitTemplate = toHabitTemplate(template);
+
+    return {
+        title: habitTemplate.title,
+        description: habitTemplate.description,
+        icon: habitTemplate.icon,
+        type: habitTemplate.type,
+        target: habitTemplate.target,
+        unit: habitTemplate.unit,
+        frequency: habitTemplate.frequency,
+        customDays: habitTemplate.customDays,
+        category: habitTemplate.category,
+    };
+}
+
+async function createChallengeHabitForUser({ challenge, userId }) {
+    return Habit.create({
+        ...getHabitFieldsFromTemplate(challenge.habitTemplate),
+        ownerId: userId,
+        source: 'challenge',
+        challengeId: challenge._id,
+    });
 }
 
 async function getChallengeUserContext(user) {
@@ -148,7 +187,7 @@ async function canCreateChallenge(user) {
 
     if (!plan.permissions.canCreateChallenges) {
         return {
-            error: 'premium membership is required to create challenges',
+            error: 'Creating your own challenges is a Premium feature.',
             code: 'PREMIUM_REQUIRED',
         };
     }
@@ -160,14 +199,14 @@ async function canCreateChallenge(user) {
 
     if (activeCreatedChallengeCount >= plan.limits.maxActiveCreatedChallenges) {
         return {
-            error: 'you can only create one challenge at a time as premium user, finish your other challenge first',
+            error: 'You can only create one active challenge at a time. Finish your current challenge before creating another one.',
             code: 'PREMIUM_ACTIVE_CREATED_LIMIT',
         };
     }
 
     if (activeChallengeIds.size >= getActiveChallengeLimit(currentUser)) {
         return {
-            error: 'you can only join 5 challenges at max',
+            error: 'You reached the maximum number of active challenges for your plan.',
             code: 'PREMIUM_ACTIVE_CHALLENGE_LIMIT',
         };
     }
@@ -214,7 +253,7 @@ function hasStartLockedUpdates(updates) {
     return START_LOCKED_UPDATE_FIELDS.some((field) => updates[field] !== undefined);
 }
 
-function serializeChallenge(challenge, participantCount = 0) {
+function serializeChallenge(challenge, participantCount = 0, viewerParticipant = null) {
     if (!challenge) {
         return null;
     }
@@ -224,6 +263,7 @@ function serializeChallenge(challenge, participantCount = 0) {
         createdBy: challenge.createdBy.toString(),
         title: challenge.title,
         habitTitle: challenge.habitTitle,
+        habitTemplate: challenge.habitTemplate,
         description: challenge.description,
         coinReward: challenge.coinReward,
         frequency: challenge.frequency,
@@ -233,8 +273,61 @@ function serializeChallenge(challenge, participantCount = 0) {
         status: getDisplayStatus(challenge),
         visibility: challenge.visibility,
         participantCount,
+        viewerParticipantStatus: viewerParticipant?.status,
+        viewerParticipantId: viewerParticipant?._id?.toString(),
         createdAt: challenge.createdAt,
         updatedAt: challenge.updatedAt,
+    };
+}
+
+function isCompletedForPeriod(habit) {
+    if (!habit?.lastCompletedAt) {
+        return false;
+    }
+
+    const now = new Date();
+    const completedAt = new Date(habit.lastCompletedAt);
+
+    if (habit.frequency === 'Weekly') {
+        const day = now.getDay() || 7;
+        const monday = new Date(now);
+        monday.setHours(0, 0, 0, 0);
+        monday.setDate(monday.getDate() - day + 1);
+        return completedAt >= monday;
+    }
+
+    if (habit.frequency === 'Monthly') {
+        return completedAt.getFullYear() === now.getFullYear()
+            && completedAt.getMonth() === now.getMonth();
+    }
+
+    return completedAt.getFullYear() === now.getFullYear()
+        && completedAt.getMonth() === now.getMonth()
+        && completedAt.getDate() === now.getDate();
+}
+
+function serializeChallengeHabit(habit) {
+    if (!habit) {
+        return null;
+    }
+
+    return {
+        id: habit._id.toString(),
+        title: habit.title,
+        description: habit.description,
+        icon: habit.icon,
+        type: habit.type,
+        target: habit.target ?? null,
+        unit: habit.unit ?? null,
+        frequency: habit.frequency,
+        customDays: habit.customDays || [],
+        category: habit.category ?? null,
+        source: habit.source ?? 'challenge',
+        challengeId: habit.challengeId ? habit.challengeId.toString() : null,
+        streakCount: habit.streakCount,
+        isCompletedToday: isCompletedForPeriod(habit),
+        createdAt: habit.createdAt,
+        updatedAt: habit.updatedAt,
     };
 }
 
@@ -259,6 +352,22 @@ async function getParticipantCounts(challengeIds) {
     ]);
 
     return new Map(counts.map((item) => [item._id.toString(), item.count]));
+}
+
+async function getViewerParticipations(challengeIds, userId) {
+    if (!challengeIds.length || !userId) {
+        return new Map();
+    }
+
+    const participations = await ChallengeParticipant.find({
+        challenge: { $in: challengeIds },
+        user: userId,
+        status: { $ne: 'left' },
+    }).lean();
+
+    return new Map(
+        participations.map((participant) => [participant.challenge.toString(), participant])
+    );
 }
 
 function serializeParticipant(participant, challenge) {
@@ -309,24 +418,22 @@ export async function createChallenge(input, user) {
     const createPermission = await canCreateChallenge(user);
 
     if (createPermission.error) {
-        return { error: createPermission.error };
-    }
-
-    const habit = await getOwnedHabit(input.habitId, user.id);
-
-    if (!habit) {
-        return { error: 'habitId must belong to the current user' };
+        return { error: createPermission.error, code: createPermission.code };
     }
 
     const startsAt = input.startsAt || new Date();
+    const habitTemplate = toHabitTemplate(input.habitTemplate);
     const challenge = await Challenge.create({
         ...input,
         createdBy: user.id,
-        habitTitle: input.habitTitle || habit.title,
+        habitTemplate,
+        habitTitle: habitTemplate.title,
+        frequency: input.frequency || habitFrequencyToChallengeFrequency(habitTemplate.frequency),
         coinReward: getCoinReward(input.durationDays),
         startsAt,
         endsAt: calculateEndDate(startsAt, input.durationDays),
     });
+    const habit = await createChallengeHabitForUser({ challenge, userId: user.id });
     const participant = await ChallengeParticipant.create({
         challenge: challenge._id,
         user: user.id,
@@ -397,10 +504,18 @@ export async function listChallenges(filters = {}, user) {
 
     const query = conditions.length ? { $and: conditions } : {};
     const challenges = await Challenge.find(query).sort({ createdAt: -1 });
-    const participantCounts = await getParticipantCounts(challenges.map((challenge) => challenge._id));
+    const challengeIds = challenges.map((challenge) => challenge._id);
+    const [participantCounts, viewerParticipations] = await Promise.all([
+        getParticipantCounts(challengeIds),
+        getViewerParticipations(challengeIds, user.id),
+    ]);
 
     return challenges.map((challenge) => (
-        serializeChallenge(challenge, participantCounts.get(challenge._id.toString()) ?? 0)
+        serializeChallenge(
+            challenge,
+            participantCounts.get(challenge._id.toString()) ?? 0,
+            viewerParticipations.get(challenge._id.toString())
+        )
     ));
 }
 
@@ -415,12 +530,19 @@ export async function getChallengeById(challengeId, user) {
         return { forbidden: true };
     }
 
-    const participantCount = await ChallengeParticipant.countDocuments({
-        challenge: challengeId,
-        status: { $ne: 'left' },
-    });
+    const [participantCount, viewerParticipant] = await Promise.all([
+        ChallengeParticipant.countDocuments({
+            challenge: challengeId,
+            status: { $ne: 'left' },
+        }),
+        ChallengeParticipant.findOne({
+            challenge: challengeId,
+            user: user.id,
+            status: { $ne: 'left' },
+        }).lean(),
+    ]);
 
-    return { challenge: serializeChallenge(challenge, participantCount) };
+    return { challenge: serializeChallenge(challenge, participantCount, viewerParticipant) };
 }
 
 export async function updateChallenge(challengeId, updates, user) {
@@ -441,34 +563,39 @@ export async function updateChallenge(challengeId, updates, user) {
         };
     }
 
-    let nextHabitTitle = updates.habitTitle;
-
-    if (updates.habitId !== undefined) {
-        const habit = await getOwnedHabit(updates.habitId, user.id);
-
-        if (!habit) {
-            return { error: 'habitId must belong to the current user' };
-        }
-
-        nextHabitTitle = habit.title;
-        await ChallengeParticipant.findOneAndUpdate(
-            { challenge: challengeId, user: user.id },
-            { habit: habit._id },
-            { returnDocument: 'after' }
-        );
-    }
+    const nextHabitTemplate = updates.habitTemplate
+        ? toHabitTemplate(updates.habitTemplate)
+        : challenge.habitTemplate;
+    const nextHabitTitle = updates.habitTemplate
+        ? nextHabitTemplate.title
+        : updates.habitTitle;
 
     const nextStartsAt = updates.startsAt || challenge.startsAt;
     const nextDurationDays = updates.durationDays || challenge.durationDays;
-    const { habitId, ...challengeUpdates } = updates;
+    const { habitTemplate, ...challengeUpdates } = updates;
 
     Object.assign(challenge, challengeUpdates, {
+        ...(habitTemplate ? { habitTemplate: nextHabitTemplate } : {}),
         ...(nextHabitTitle ? { habitTitle: nextHabitTitle } : {}),
+        frequency: updates.frequency || habitFrequencyToChallengeFrequency(nextHabitTemplate.frequency),
         coinReward: getCoinReward(nextDurationDays),
         endsAt: calculateEndDate(nextStartsAt, nextDurationDays),
     });
 
     await challenge.save();
+
+    if (habitTemplate) {
+        const participants = await ChallengeParticipant.find({
+            challenge: challengeId,
+            status: 'active',
+            habit: { $ne: null },
+        }).select('habit').lean();
+
+        await Habit.updateMany(
+            { _id: { $in: participants.map((participant) => participant.habit) }, source: 'challenge' },
+            { $set: getHabitFieldsFromTemplate(nextHabitTemplate) }
+        );
+    }
 
     const participantCount = await ChallengeParticipant.countDocuments({
         challenge: challengeId,
@@ -496,25 +623,19 @@ export async function deleteChallenge(challengeId, user) {
     return { challenge: serializeChallenge(challenge) };
 }
 
-export async function joinChallenge(challengeId, user, { habitId }) {
+export async function joinChallenge(challengeId, user) {
     const challenge = await Challenge.findById(challengeId);
 
     if (!challenge) {
         return { notFound: true };
     }
 
-    const habit = await getOwnedHabit(habitId, user.id);
-
-    if (!habit) {
-        return { error: 'habitId must belong to the current user' };
-    }
-
     if (!await canViewChallenge(challenge, user)) {
-        return { error: 'user must be friends with the challenge creator to join this challenge' };
+        return { error: 'You need to be friends with the creator to join this challenge.' };
     }
 
     if (!isChallengeJoinable(challenge)) {
-        return { error: 'challenge is no longer joinable' };
+        return { error: 'This challenge can no longer be joined.' };
     }
 
     const joinPermission = await canAddActiveChallenge(user, challenge._id);
@@ -522,8 +643,8 @@ export async function joinChallenge(challengeId, user, { habitId }) {
     if (!joinPermission.allowed) {
         return {
             error: joinPermission.isPremium
-                ? 'you can only join 5 challenges at max'
-                : 'you can only join 2 challenges with the free version, buy premium to join more challenges',
+                ? 'You reached the maximum number of active challenges for your plan.'
+                : 'Free users can join up to 2 active challenges. Upgrade to Premium to join more.',
             code: joinPermission.isPremium
                 ? 'PREMIUM_ACTIVE_CHALLENGE_LIMIT'
                 : 'FREE_ACTIVE_CHALLENGE_LIMIT',
@@ -536,14 +657,18 @@ export async function joinChallenge(challengeId, user, { habitId }) {
     });
 
     if (existingParticipant && existingParticipant.status !== 'left') {
-        return { error: 'user already joined this challenge' };
+        return {
+            error: 'You are already participating in this challenge.',
+            code: 'CHALLENGE_ALREADY_JOINED',
+        };
     }
 
     if (existingParticipant) {
+        const habit = await createChallengeHabitForUser({ challenge, userId: user.id });
         existingParticipant.status = 'active';
         existingParticipant.joinedAt = new Date();
         existingParticipant.daysCompleted = 0;
-        existingParticipant.habit = habitId;
+        existingParticipant.habit = habit._id;
         existingParticipant.lastCompletedAt = null;
         existingParticipant.rewardClaimed = false;
         existingParticipant.rewardClaimedAt = null;
@@ -560,10 +685,11 @@ export async function joinChallenge(challengeId, user, { habitId }) {
         };
     }
 
+    const habit = await createChallengeHabitForUser({ challenge, userId: user.id });
     const participant = await ChallengeParticipant.create({
         challenge: challengeId,
         user: user.id,
-        habit: habitId,
+        habit: habit._id,
     });
     const participantCount = await ChallengeParticipant.countDocuments({
         challenge: challengeId,
@@ -588,21 +714,21 @@ export async function createInvitation(challengeId, inviteeId, user) {
     }
 
     if (!isChallengeJoinable(challenge)) {
-        return { error: 'challenge is no longer joinable' };
+        return { error: 'This challenge can no longer be joined.' };
     }
 
     if (sameId(inviteeId, user.id)) {
-        return { error: 'cannot invite yourself to your own challenge' };
+        return { error: 'You cannot invite yourself to your own challenge.' };
     }
 
     const invitee = await User.findOne({ _id: inviteeId, isDeleted: false }).lean();
 
     if (!invitee) {
-        return { error: 'invitee not found' };
+        return { error: 'We could not find that user.' };
     }
 
     if (!await areFriends(challenge.createdBy, inviteeId)) {
-        return { error: 'invitee must be friends with the challenge creator' };
+        return { error: 'You can only invite friends to this challenge.' };
     }
 
     const existingParticipant = await ChallengeParticipant.findOne({
@@ -612,7 +738,7 @@ export async function createInvitation(challengeId, inviteeId, user) {
     }).lean();
 
     if (existingParticipant) {
-        return { error: 'invitee already joined this challenge' };
+        return { error: 'This friend is already participating in the challenge.' };
     }
 
     const existingPendingInvitation = await ChallengeInvitation.findOne({
@@ -622,7 +748,7 @@ export async function createInvitation(challengeId, inviteeId, user) {
     }).lean();
 
     if (existingPendingInvitation) {
-        return { error: 'pending challenge invitation already exists' };
+        return { error: 'This friend already has a pending invitation for this challenge.' };
     }
 
     const invitation = await ChallengeInvitation.create({
@@ -665,7 +791,7 @@ export async function listInvitations(userId) {
     };
 }
 
-export async function acceptInvitation(invitationId, user, { habitId }) {
+export async function acceptInvitation(invitationId, user) {
     const invitation = await ChallengeInvitation.findOne({
         _id: invitationId,
         invitee: user.id,
@@ -677,14 +803,9 @@ export async function acceptInvitation(invitationId, user, { habitId }) {
     }
 
     const challenge = invitation.challenge;
-    const habit = await getOwnedHabit(habitId, user.id);
-
-    if (!habit) {
-        return { error: 'habitId must belong to the current user' };
-    }
 
     if (!isChallengeJoinable(challenge)) {
-        return { error: 'challenge is no longer joinable' };
+        return { error: 'This challenge can no longer be joined.' };
     }
 
     const joinPermission = await canAddActiveChallenge(user, challenge._id);
@@ -692,8 +813,8 @@ export async function acceptInvitation(invitationId, user, { habitId }) {
     if (!joinPermission.allowed) {
         return {
             error: joinPermission.isPremium
-                ? 'you can only join 5 challenges at max'
-                : 'you can only join 2 challenges with the free version, buy premium to join more challenges',
+                ? 'You reached the maximum number of active challenges for your plan.'
+                : 'Free users can join up to 2 active challenges. Upgrade to Premium to join more.',
             code: joinPermission.isPremium
                 ? 'PREMIUM_ACTIVE_CHALLENGE_LIMIT'
                 : 'FREE_ACTIVE_CHALLENGE_LIMIT',
@@ -721,9 +842,10 @@ export async function acceptInvitation(invitationId, user, { habitId }) {
     }
 
     if (participant) {
+        const habit = await createChallengeHabitForUser({ challenge, userId: user.id });
         participant.status = 'active';
         participant.joinedAt = new Date();
-        participant.habit = habitId;
+        participant.habit = habit._id;
         participant.daysCompleted = 0;
         participant.lastCompletedAt = null;
         participant.rewardClaimed = false;
@@ -731,10 +853,11 @@ export async function acceptInvitation(invitationId, user, { habitId }) {
         participant.rewardCoins = 0;
         await participant.save();
     } else {
+        const habit = await createChallengeHabitForUser({ challenge, userId: user.id });
         participant = await ChallengeParticipant.create({
             challenge: challenge._id,
             user: user.id,
-            habit: habitId,
+            habit: habit._id,
         });
     }
 
@@ -770,11 +893,42 @@ export async function rejectInvitation(invitationId, user) {
     return { invitation: serializeInvitation(invitation) };
 }
 
+export async function listMyChallengeHabits(user) {
+    const participants = await ChallengeParticipant.find({
+        user: user.id,
+        status: 'active',
+        habit: { $ne: null },
+    })
+        .populate('challenge')
+        .populate('habit')
+        .sort({ joinedAt: -1 });
+
+    const activeItems = participants.filter((participant) => (
+        participant.challenge
+            && participant.habit
+            && participant.habit.source === 'challenge'
+            && isChallengeJoinable(participant.challenge)
+    ));
+
+    const participantCounts = await getParticipantCounts(
+        activeItems.map((participant) => participant.challenge._id)
+    );
+
+    return activeItems.map((participant) => ({
+        challenge: serializeChallenge(
+            participant.challenge,
+            participantCounts.get(participant.challenge._id.toString()) ?? 0
+        ),
+        participant: serializeParticipant(participant, participant.challenge),
+        habit: serializeChallengeHabit(participant.habit),
+    }));
+}
+
 export async function recordProgressForHabit({ userId, habitId, days = 1 }) {
     const participants = await ChallengeParticipant.find({
         user: userId,
         habit: habitId,
-        status: 'active',
+        status: { $in: ['active', 'completed'] },
     });
 
     const results = [];
@@ -786,11 +940,20 @@ export async function recordProgressForHabit({ userId, habitId, days = 1 }) {
             continue;
         }
 
-        participant.daysCompleted = Math.min(participant.daysCompleted + days, challenge.durationDays);
-        participant.lastCompletedAt = new Date();
+        if (participant.status === 'completed' && days > 0) {
+            continue;
+        }
+
+        participant.daysCompleted = Math.min(
+            Math.max(participant.daysCompleted + days, 0),
+            challenge.durationDays
+        );
+        participant.lastCompletedAt = days > 0 ? new Date() : null;
 
         if (participant.daysCompleted >= challenge.durationDays) {
             participant.status = 'completed';
+        } else if (participant.status === 'completed') {
+            participant.status = 'active';
         }
 
         await participant.save();
