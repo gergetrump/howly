@@ -10,6 +10,8 @@ const CUSTOMIZATION_COLOR_FIELDS = [
     'shirtColor',
     'tieColor',
     'tieStripeColor',
+    'frameColor',
+    'backgroundColor',
 ];
 const MAX_CUSTOM_TEXT_LENGTH = 20;
 

@@ -27,6 +27,11 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
         buttonColor: '#B18167',
         pocketColor: '#DDCEAF',
     },
+    'warm-top': {
+        color: '#F4EFE5',
+        buttonColor: '#B18167',
+        pocketColor: '#DDCEAF',
+    },
     'cozy-jacket': {
         jacketColor: '#4A6741',
         stringColor: '#DADADA',
@@ -37,6 +42,22 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
         shirtColor: '#EEEEEE',
         tieColor: '#670000',
         tieStripeColor: '#FFC000',
+    },
+    cup: {
+        color: '#E09AAB',
+    },
+    glasses: {
+        color: '#000000',
+    },
+    phone: {
+        frameColor: '#D9D9D9',
+        backgroundColor: '#575757',
+    },
+    'warm-hat': {
+        color: '#4A6741',
+    },
+    sneaker: {
+        color: '#1A1A1A',
     },
 };
 

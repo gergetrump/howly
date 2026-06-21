@@ -255,6 +255,44 @@ test('users can own different customizations for other customizable clothing ite
     assert.equal(await UserItem.countDocuments({ user: user._id, item: top._id }), 2);
 });
 
+test('users can own customized accessories and shoes', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const phone = await buildItem({ type: 'accessory', assetKey: 'phone', price: 100 });
+    const sneaker = await buildItem({ type: 'shoes', assetKey: 'sneaker', price: 100 });
+
+    const phoneResponse = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: phone._id.toString(),
+            customization: {
+                frameColor: '#DBEAFE',
+                backgroundColor: '#111827',
+            },
+        })
+        .expect(201);
+
+    const sneakerResponse = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: sneaker._id.toString(),
+            customization: {
+                color: '#1D4ED8',
+            },
+        })
+        .expect(201);
+
+    assert.deepEqual(phoneResponse.body.customization, {
+        frameColor: '#DBEAFE',
+        backgroundColor: '#111827',
+    });
+    assert.deepEqual(sneakerResponse.body.customization, {
+        color: '#1D4ED8',
+    });
+    assert.equal(await UserItem.countDocuments({ user: user._id }), 2);
+});
+
 test('legacy customizable inventory entries count as the default customization', async () => {
     const user = await buildUser({ coins: 1000 });
     const hoodie = await buildItem({ type: 'clothing', assetKey: 'hoodie', price: 100 });
