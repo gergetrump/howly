@@ -46,7 +46,7 @@ const DAYS_OF_WEEK = [
     { label: 'Sun', value: 7 },
 ];
 
-export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, existingHabits = [] }) {
+export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, prefill, existingHabits = [] }) {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [name, setName] = useState('');
@@ -58,6 +58,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
     const [customDays, setCustomDays] = useState([]);
     const [category, setCategory] = useState('');
     const [customCategory, setCustomCategory] = useState('');
+    const [goal, setGoal] = useState(null);
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
     const [formError, setFormError] = useState('');
     const [limitPrompt, setLimitPrompt] = useState(null);
@@ -74,6 +75,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
         if (open && editHabit) {
             setName(editHabit.title || '');
             setTarget(editHabit.target || 1);
+            setGoal(editHabit.goal ?? null);
             setIcon(editHabit.icon || '🎯');
             setFrequency(editHabit.frequency || '');
             if (ALL_CATEGORIES.includes(editHabit.category)) {
@@ -97,9 +99,31 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             } else {
                 setUnit('');
             }
+        } else if (open && prefill) {
+            // Pre-fill from an AI suggestion — but submit still CREATES (no id),
+            // since there is no editHabit. Lets the user tweak before adding.
+            setName(prefill.title || '');
+            setTarget(1);
+            setGoal(prefill.goal ?? null);
+            setUnit('');
+            setCustomUnit('');
+            setFrequency(prefill.frequency || '');
+            setCustomDays([]);
+            setFormError('');
+            if (ALL_CATEGORIES.includes(prefill.category)) {
+                setCategory(prefill.category);
+                setCustomCategory('');
+            } else if (prefill.category) {
+                setCategory('Custom');
+                setCustomCategory(prefill.category);
+            } else {
+                setCategory('');
+            }
+            setIcon(prefill.icon || '🎯');
         } else if (open && !editHabit) {
             // Reset for new
             setName('');
+            setGoal(null);
             setTarget(1);
             setUnit('');
             setCustomUnit('');
@@ -110,7 +134,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             setIcon('🎯');
             setFormError('');
         }
-    }, [open, editHabit, ALL_CATEGORIES]);
+    }, [open, editHabit, prefill, ALL_CATEGORIES]);
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -129,7 +153,8 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             frequency,
             customDays,
             category: finalCategory,
-            icon
+            icon,
+            goal: goal ?? null,
         };
 
         try {
