@@ -36,25 +36,66 @@ import { confirmCheckoutSession } from '@/services/paymentService';
 
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
 const HOODIE_ASSET_KEY = 'hoodie';
-const DEFAULT_HOODIE_COLORS = {
-    whole: '#C66E6E',
-    strings: '#DADADA',
-    text: '#FFFFFF',
+const MAX_CUSTOM_TEXT_LENGTH = 20;
+const ITEM_CUSTOMIZATION_CONFIG = {
+    hoodie: {
+        defaults: {
+            color: '#C66E6E',
+            stringColor: '#DADADA',
+            textColor: '#FFFFFF',
+            text: 'HOWLY',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'stringColor', label: 'Strings' },
+            { key: 'textColor', label: 'Text' },
+        ],
+        text: {
+            key: 'text',
+            label: 'Hoodie text',
+            placeholder: 'HOWLY',
+        },
+    },
+    'cream-top': {
+        defaults: {
+            color: '#F4EFE5',
+            buttonColor: '#B18167',
+            pocketColor: '#DDCEAF',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'buttonColor', label: 'Buttons' },
+            { key: 'pocketColor', label: 'Pockets' },
+        ],
+    },
+    'cozy-jacket': {
+        defaults: {
+            jacketColor: '#4A6741',
+            stringColor: '#DADADA',
+            shirtColor: '#F4EFE5',
+        },
+        colorSlots: [
+            { key: 'jacketColor', label: 'Jacket' },
+            { key: 'stringColor', label: 'Strings' },
+            { key: 'shirtColor', label: 'Shirt' },
+        ],
+    },
+    suit: {
+        defaults: {
+            jacketColor: '#392E18',
+            shirtColor: '#EEEEEE',
+            tieColor: '#670000',
+            tieStripeColor: '#FFC000',
+        },
+        colorSlots: [
+            { key: 'jacketColor', label: 'Jacket' },
+            { key: 'shirtColor', label: 'Shirt' },
+            { key: 'tieColor', label: 'Tie' },
+            { key: 'tieStripeColor', label: 'Tie stripe' },
+        ],
+    },
 };
-const DEFAULT_HOODIE_TEXT = 'HOWLY';
-const DEFAULT_HOODIE_CUSTOMIZATION = {
-    color: DEFAULT_HOODIE_COLORS.whole,
-    stringColor: DEFAULT_HOODIE_COLORS.strings,
-    textColor: DEFAULT_HOODIE_COLORS.text,
-    text: DEFAULT_HOODIE_TEXT,
-};
-const MAX_HOODIE_TEXT_LENGTH = 20;
-const HOODIE_COLOR_SLOTS = [
-    { key: 'whole', label: 'Whole' },
-    { key: 'strings', label: 'Strings' },
-    { key: 'text', label: 'Text' },
-];
-const HOODIE_PALETTE_COLORS = [
+const PALETTE_COLORS = [
     '#FFFFFF', '#F8FAFC', '#E5E7EB', '#CBD5E1', '#94A3B8', '#64748B', '#334155', '#111827',
     '#FCE7F3', '#F9A8D4', '#F472B6', '#EC4899', '#BE185D', '#7E2249', '#DDD6FE', '#A78BFA',
     '#FEE2E2', '#FDA4AF', '#FB7185', '#EF4444', '#B91C1C', '#FED7AA', '#FB923C', '#C2410C',
@@ -70,12 +111,21 @@ function normalizeHexInput(value) {
     return /^#[0-9A-Fa-f]{6}$/.test(hexValue) ? hexValue.toUpperCase() : null;
 }
 
-function normalizeHoodieCustomization(customization = {}) {
+function getCustomizationConfig(assetKey) {
+    return ITEM_CUSTOMIZATION_CONFIG[assetKey] ?? null;
+}
+
+function normalizeItemCustomization(itemOrAssetKey, customization = {}) {
+    const assetKey = typeof itemOrAssetKey === 'string' ? itemOrAssetKey : itemOrAssetKey?.assetKey;
+    const config = getCustomizationConfig(assetKey);
+
+    if (!config) {
+        return {};
+    }
+
     return {
-        color: customization.color ?? DEFAULT_HOODIE_CUSTOMIZATION.color,
-        stringColor: customization.stringColor ?? DEFAULT_HOODIE_CUSTOMIZATION.stringColor,
-        textColor: customization.textColor ?? DEFAULT_HOODIE_CUSTOMIZATION.textColor,
-        text: customization.text ?? DEFAULT_HOODIE_CUSTOMIZATION.text,
+        ...config.defaults,
+        ...customization,
     };
 }
 
@@ -86,28 +136,26 @@ function getItemOwnershipSignature(item, customization = {}) {
         return '';
     }
 
-    if (item.assetKey !== HOODIE_ASSET_KEY) {
+    const config = getCustomizationConfig(item.assetKey);
+
+    if (!config) {
         return `${itemId}:default`;
     }
 
-    const hoodieCustomization = normalizeHoodieCustomization(customization);
+    const normalizedCustomization = normalizeItemCustomization(item, customization);
+    const signatureParts = Object.keys(config.defaults).map((key) => normalizedCustomization[key]);
 
-    return [
-        itemId,
-        hoodieCustomization.color,
-        hoodieCustomization.stringColor,
-        hoodieCustomization.textColor,
-        hoodieCustomization.text,
-    ].join(':');
+    return [itemId, ...signatureParts].join(':');
 }
 
 function getInventoryEntryOwnershipSignature(entry) {
     return getItemOwnershipSignature(entry.item, entry.customization ?? {});
 }
 
-function HoodieColorPicker({ colors, activeSlot, onSlotChange, onColorChange }) {
+function ItemColorPicker({ colors, colorSlots, activeSlot, onSlotChange, onColorChange, itemName }) {
     const [isOpen, setIsOpen] = useState(false);
-    const selectedColor = colors[activeSlot] ?? DEFAULT_HOODIE_COLORS.whole;
+    const fallbackSlot = colorSlots[0]?.key;
+    const selectedColor = colors[activeSlot] ?? colors[fallbackSlot] ?? '#FFFFFF';
     const [hexInput, setHexInput] = useState(selectedColor.toUpperCase());
     const [position, setPosition] = useState({ left: 0, top: 0 });
     const triggerRef = useRef(null);
@@ -183,7 +231,7 @@ function HoodieColorPicker({ colors, activeSlot, onSlotChange, onColorChange }) 
             style={{ left: position.left, top: position.top }}
         >
             <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl bg-white/8 p-1">
-                {HOODIE_COLOR_SLOTS.map((slot) => (
+                {colorSlots.map((slot) => (
                     <button
                         key={slot.key}
                         type="button"
@@ -230,13 +278,13 @@ function HoodieColorPicker({ colors, activeSlot, onSlotChange, onColorChange }) 
             </div>
 
             <div className="grid grid-cols-8 gap-1.5">
-                {HOODIE_PALETTE_COLORS.map((color) => (
+                {PALETTE_COLORS.map((color) => (
                     <button
                         key={color}
                         type="button"
                         className={`h-7 rounded-sm border transition hover:scale-105 ${selectedColor === color ? 'border-white ring-2 ring-white/60' : 'border-white/20'}`}
                         style={{ backgroundColor: color }}
-                        aria-label={`Choose hoodie color ${color}`}
+                        aria-label={`Choose ${itemName} color ${color}`}
                         aria-pressed={selectedColor === color}
                         onClick={() => applyColor(color)}
                     />
@@ -252,7 +300,7 @@ function HoodieColorPicker({ colors, activeSlot, onSlotChange, onColorChange }) 
                 ref={triggerRef}
                 type="button"
                 className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20"
-                aria-label="Customize hoodie color"
+                aria-label={`Customize ${itemName} color`}
                 aria-expanded={isOpen}
                 onClick={() => setIsOpen((currentValue) => !currentValue)}
             >
@@ -263,7 +311,7 @@ function HoodieColorPicker({ colors, activeSlot, onSlotChange, onColorChange }) 
     );
 }
 
-function HoodieTextEditor({ value, onChange }) {
+function ItemTextEditor({ value, label, placeholder, onChange }) {
     const [isOpen, setIsOpen] = useState(false);
     const [position, setPosition] = useState({ left: 0, top: 0 });
     const triggerRef = useRef(null);
@@ -315,7 +363,7 @@ function HoodieTextEditor({ value, onChange }) {
     function handleTextChange(event) {
         const nextText = event.target.value
             .replace(/[^a-zA-Z0-9 ]/g, '')
-            .slice(0, MAX_HOODIE_TEXT_LENGTH)
+            .slice(0, MAX_CUSTOM_TEXT_LENGTH)
             .toUpperCase();
 
         onChange(nextText);
@@ -327,15 +375,15 @@ function HoodieTextEditor({ value, onChange }) {
             className="fixed z-[1000] w-56 rounded-2xl border border-white/15 bg-[#2b4563] p-4 text-white shadow-2xl shadow-slate-950/50"
             style={{ left: position.left, top: position.top }}
         >
-            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-200" htmlFor="hoodie-text-input">
-                Hoodie text
+            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-200" htmlFor="item-text-input">
+                {label}
             </label>
             <input
-                id="hoodie-text-input"
+                id="item-text-input"
                 value={value}
                 className="mt-2 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-bold uppercase tracking-wide text-white outline-none focus:border-violet-200"
-                maxLength={MAX_HOODIE_TEXT_LENGTH}
-                placeholder={DEFAULT_HOODIE_TEXT}
+                maxLength={MAX_CUSTOM_TEXT_LENGTH}
+                placeholder={placeholder}
                 onChange={handleTextChange}
             />
         </div>,
@@ -348,7 +396,7 @@ function HoodieTextEditor({ value, onChange }) {
                 ref={triggerRef}
                 type="button"
                 className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20"
-                aria-label="Edit hoodie text"
+                aria-label={`Edit ${label}`}
                 aria-expanded={isOpen}
                 onClick={() => setIsOpen((currentValue) => !currentValue)}
             >
@@ -375,9 +423,22 @@ export function ShopPage() {
     const [activeCategory, setActiveCategory] = useState('all');
     const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
     const [planInfo, setPlanInfo] = useState(null);
-    const [hoodieColors, setHoodieColors] = useState(DEFAULT_HOODIE_COLORS);
-    const [activeHoodieColorSlot, setActiveHoodieColorSlot] = useState('whole');
-    const [hoodieText, setHoodieText] = useState(DEFAULT_HOODIE_TEXT);
+    const [itemCustomizations, setItemCustomizations] = useState(() => (
+        Object.fromEntries(
+            Object.entries(ITEM_CUSTOMIZATION_CONFIG).map(([assetKey, config]) => [
+                assetKey,
+                { ...config.defaults },
+            ]),
+        )
+    ));
+    const [activeColorSlots, setActiveColorSlots] = useState(() => (
+        Object.fromEntries(
+            Object.entries(ITEM_CUSTOMIZATION_CONFIG).map(([assetKey, config]) => [
+                assetKey,
+                config.colorSlots[0]?.key,
+            ]),
+        )
+    ));
 
     const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
     const premiumMonthlyCoins = planInfo?.plans?.premium?.monthlyBenefits?.coins;
@@ -543,22 +604,17 @@ export function ShopPage() {
 
     const previewItemConfigs = useMemo(
         () => previewItems
-            .filter((item) => item.assetKey === HOODIE_ASSET_KEY)
+            .filter((item) => getCustomizationConfig(item.assetKey))
             .map((item) => ({
                 assetKey: item.assetKey,
-                customization: {
-                    color: hoodieColors.whole,
-                    stringColor: hoodieColors.strings,
-                    textColor: hoodieColors.text,
-                    text: hoodieText,
-                },
+                customization: getItemCustomization(item),
             })),
-        [hoodieColors, hoodieText, previewItems],
+        [itemCustomizations, previewItems],
     );
 
     const cartItemsToBuy = useMemo(
         () => cartItems.filter((item) => !isItemOwned(item)),
-        [cartItems, hoodieColors, hoodieText, ownedItemSignatures],
+        [cartItems, itemCustomizations, ownedItemSignatures],
     );
 
     const cartTotalPrice = useMemo(
@@ -681,20 +737,26 @@ export function ShopPage() {
     }
 
     function getItemCustomization(item) {
-        return item.assetKey === HOODIE_ASSET_KEY
-            ? {
-                color: hoodieColors.whole,
-                stringColor: hoodieColors.strings,
-                textColor: hoodieColors.text,
-                text: hoodieText,
-            }
-            : {};
+        return normalizeItemCustomization(item, itemCustomizations[item.assetKey]);
     }
 
-    function handleHoodieColorChange(slot, color) {
-        setHoodieColors((currentColors) => ({
-            ...currentColors,
-            [slot]: color,
+    function handleItemColorChange(assetKey, slot, color) {
+        setItemCustomizations((currentCustomizations) => ({
+            ...currentCustomizations,
+            [assetKey]: {
+                ...normalizeItemCustomization(assetKey, currentCustomizations[assetKey]),
+                [slot]: color,
+            },
+        }));
+    }
+
+    function handleItemTextChange(assetKey, textKey, text) {
+        setItemCustomizations((currentCustomizations) => ({
+            ...currentCustomizations,
+            [assetKey]: {
+                ...normalizeItemCustomization(assetKey, currentCustomizations[assetKey]),
+                [textKey]: text,
+            },
         }));
     }
 
@@ -824,7 +886,12 @@ export function ShopPage() {
 
                             {filteredItems.length > 0 ? (
                                 <CardGrid columns={3} className="pb-8">
-                                    {filteredItems.map((item) => (
+                                    {filteredItems.map((item) => {
+                                        const customizationConfig = getCustomizationConfig(item.assetKey);
+                                        const itemCustomization = getItemCustomization(item);
+                                        const activeColorSlot = activeColorSlots[item.assetKey] ?? customizationConfig?.colorSlots[0]?.key;
+
+                                        return (
                                         <div key={item._id} data-shop-item-id={item._id}>
                                             <ItemCard
                                                 name={item.name}
@@ -833,15 +900,27 @@ export function ShopPage() {
                                                 owned={isItemOwned(item)}
                                                 showOwnedBadge={false}
                                                 dense
-                                                titleAction={item.assetKey === HOODIE_ASSET_KEY ? (
+                                                titleAction={customizationConfig ? (
                                                     <div className="flex items-center gap-1">
-                                                        <HoodieColorPicker
-                                                            colors={hoodieColors}
-                                                            activeSlot={activeHoodieColorSlot}
-                                                            onSlotChange={setActiveHoodieColorSlot}
-                                                            onColorChange={handleHoodieColorChange}
+                                                        <ItemColorPicker
+                                                            colors={itemCustomization}
+                                                            colorSlots={customizationConfig.colorSlots}
+                                                            activeSlot={activeColorSlot}
+                                                            itemName={item.name}
+                                                            onSlotChange={(slot) => setActiveColorSlots((currentSlots) => ({
+                                                                ...currentSlots,
+                                                                [item.assetKey]: slot,
+                                                            }))}
+                                                            onColorChange={(slot, color) => handleItemColorChange(item.assetKey, slot, color)}
                                                         />
-                                                        <HoodieTextEditor value={hoodieText} onChange={setHoodieText} />
+                                                        {customizationConfig.text ? (
+                                                            <ItemTextEditor
+                                                                value={itemCustomization[customizationConfig.text.key] ?? ''}
+                                                                label={customizationConfig.text.label}
+                                                                placeholder={customizationConfig.text.placeholder}
+                                                                onChange={(text) => handleItemTextChange(item.assetKey, customizationConfig.text.key, text)}
+                                                            />
+                                                        ) : null}
                                                     </div>
                                                 ) : null}
                                                 visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', getItemCustomization(item))}
@@ -865,7 +944,8 @@ export function ShopPage() {
                                                 </ActionButton>
                                             </ItemCard>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </CardGrid>
                             ) : null}
                         </div>
