@@ -18,6 +18,7 @@ export function ItemCard({
     dense = false,
     interactive = false,
     disabled = false,
+    titleAction,
     children,
     onClick,
 }) {
@@ -67,6 +68,7 @@ export function ItemCard({
                 <div className="space-y-1">
                     <div className="flex items-start justify-between gap-2">
                         <h3 className="text-sm font-semibold">{name}</h3>
+                        {titleAction ? <div className="shrink-0">{titleAction}</div> : null}
                     </div>
                     {showPrice || children ? (
                         <div className="flex items-center justify-between gap-3">

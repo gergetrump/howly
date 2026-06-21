@@ -31,8 +31,23 @@ const X_OFFSET = {
     bear: 48,
 };
 
-function CompanionItemLayer({ itemKey }) {
-    return renderCompanionItemLayer(itemKey);
+function CompanionItemLayer({ item }) {
+    return renderCompanionItemLayer(item.assetKey, item.customization);
+}
+
+function toCompanionItem(item) {
+    if (!item) {
+        return null;
+    }
+
+    if (typeof item === 'string') {
+        return { assetKey: item, customization: {} };
+    }
+
+    return {
+        assetKey: item.assetKey,
+        customization: item.customization ?? {},
+    };
 }
 
 export function CompanionAvatar({
@@ -42,10 +57,16 @@ export function CompanionAvatar({
                                     showName = false,
                                     previewItemKey,
                                     previewItemKeys = [],
+                                    previewItemConfigs = [],
                                     equippedItemKeys = [],
                                     className,
                                 }) {
-    const itemKeys = orderCompanionItemKeys([...equippedItemKeys, ...previewItemKeys, previewItemKey].filter(Boolean));
+    const companionItems = [...equippedItemKeys, ...previewItemKeys, previewItemKey, ...previewItemConfigs]
+        .map(toCompanionItem)
+        .filter((item) => item?.assetKey);
+    const companionItemsByKey = new Map(companionItems.map((item) => [item.assetKey, item]));
+    const itemKeys = orderCompanionItemKeys([...companionItemsByKey.keys()]);
+    const orderedItems = itemKeys.map((itemKey) => companionItemsByKey.get(itemKey));
     const Skin = SKINS[type] ?? WolfSkin;
     const offsetX = X_OFFSET[type] ?? 0;
 
@@ -62,8 +83,8 @@ export function CompanionAvatar({
                     <Skin part="back" />
 
                     {/* Equipped items (shared across all companion types) */}
-                    {itemKeys.map((itemKey) => (
-                        <CompanionItemLayer key={itemKey} itemKey={itemKey} />
+                    {orderedItems.map((item) => (
+                        <CompanionItemLayer key={item.assetKey} item={item} />
                     ))}
 
                     {/* Nose, drawn on top of the items */}

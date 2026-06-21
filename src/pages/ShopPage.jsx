@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Minus, ShoppingCart, X } from 'lucide-react';
+import { Minus, Palette, Pencil, ShoppingCart, X } from 'lucide-react';
 import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
@@ -34,6 +35,288 @@ import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
 import { confirmCheckoutSession } from '@/services/paymentService';
 
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
+const HOODIE_ASSET_KEY = 'hoodie';
+const DEFAULT_HOODIE_COLORS = {
+    whole: '#C66E6E',
+    strings: '#DADADA',
+    text: '#FFFFFF',
+};
+const DEFAULT_HOODIE_TEXT = 'HOWLY';
+const MAX_HOODIE_TEXT_LENGTH = 20;
+const HOODIE_COLOR_SLOTS = [
+    { key: 'whole', label: 'Whole' },
+    { key: 'strings', label: 'Strings' },
+    { key: 'text', label: 'Text' },
+];
+const HOODIE_PALETTE_COLORS = [
+    '#FFFFFF', '#F8FAFC', '#E5E7EB', '#CBD5E1', '#94A3B8', '#64748B', '#334155', '#111827',
+    '#FCE7F3', '#F9A8D4', '#F472B6', '#EC4899', '#BE185D', '#7E2249', '#DDD6FE', '#A78BFA',
+    '#FEE2E2', '#FDA4AF', '#FB7185', '#EF4444', '#B91C1C', '#FED7AA', '#FB923C', '#C2410C',
+    '#FEF3C7', '#FDE68A', '#FACC15', '#CA8A04', '#713F12', '#DCFCE7', '#86EFAC', '#22C55E',
+    '#BBF7D0', '#5EEAD4', '#14B8A6', '#0F766E', '#E0F2FE', '#7DD3FC', '#0EA5E9', '#0369A1',
+    '#DBEAFE', '#93C5FD', '#3B82F6', '#1D4ED8', '#312E81', '#EDE9FE', '#8B5CF6', '#6D28D9',
+];
+
+function normalizeHexInput(value) {
+    const trimmedValue = value.trim();
+    const hexValue = trimmedValue.startsWith('#') ? trimmedValue : `#${trimmedValue}`;
+
+    return /^#[0-9A-Fa-f]{6}$/.test(hexValue) ? hexValue.toUpperCase() : null;
+}
+
+function HoodieColorPicker({ colors, activeSlot, onSlotChange, onColorChange }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const selectedColor = colors[activeSlot] ?? DEFAULT_HOODIE_COLORS.whole;
+    const [hexInput, setHexInput] = useState(selectedColor.toUpperCase());
+    const [position, setPosition] = useState({ left: 0, top: 0 });
+    const triggerRef = useRef(null);
+    const panelRef = useRef(null);
+    const nativeColorInputRef = useRef(null);
+
+    useEffect(() => {
+        setHexInput(selectedColor.toUpperCase());
+    }, [selectedColor]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            return undefined;
+        }
+
+        function updatePosition() {
+            const triggerRect = triggerRef.current?.getBoundingClientRect();
+
+            if (!triggerRect) {
+                return;
+            }
+
+            const panelWidth = 320;
+            const left = Math.min(
+                Math.max(triggerRect.left - panelWidth + triggerRect.width, 16),
+                window.innerWidth - panelWidth - 16,
+            );
+            const top = triggerRect.bottom + 10;
+
+            setPosition({ left, top });
+        }
+
+        function handleClickOutside(event) {
+            if (
+                !triggerRef.current?.contains(event.target)
+                && !panelRef.current?.contains(event.target)
+            ) {
+                setIsOpen(false);
+            }
+        }
+
+        updatePosition();
+        document.addEventListener('mousedown', handleClickOutside);
+        window.addEventListener('resize', updatePosition);
+        window.addEventListener('scroll', updatePosition, true);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('resize', updatePosition);
+            window.removeEventListener('scroll', updatePosition, true);
+        };
+    }, [isOpen]);
+
+    function applyColor(nextColor) {
+        onColorChange(activeSlot, nextColor.toUpperCase());
+    }
+
+    function handleHexInputChange(event) {
+        const nextValue = event.target.value;
+        const normalizedColor = normalizeHexInput(nextValue);
+
+        setHexInput(nextValue);
+
+        if (normalizedColor) {
+            applyColor(normalizedColor);
+        }
+    }
+
+    const pickerPanel = isOpen ? createPortal(
+        <div
+            ref={panelRef}
+            className="fixed z-[1000] w-80 rounded-2xl border border-white/15 bg-[#2b4563] p-4 text-white shadow-2xl shadow-slate-950/50"
+            style={{ left: position.left, top: position.top }}
+        >
+            <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl bg-white/8 p-1">
+                {HOODIE_COLOR_SLOTS.map((slot) => (
+                    <button
+                        key={slot.key}
+                        type="button"
+                        className={`rounded-lg px-2 py-1.5 text-xs font-semibold transition ${activeSlot === slot.key ? 'bg-white text-slate-950' : 'text-slate-200 hover:bg-white/10'}`}
+                        aria-pressed={activeSlot === slot.key}
+                        onClick={() => onSlotChange(slot.key)}
+                    >
+                        {slot.label}
+                    </button>
+                ))}
+            </div>
+
+            <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                    <span
+                        className="h-10 w-16 rounded-xl border border-white/20"
+                        style={{ backgroundColor: selectedColor }}
+                        aria-hidden="true"
+                    />
+                    <input
+                        value={hexInput}
+                        className="w-28 border-b border-white/70 bg-transparent text-lg font-bold uppercase tracking-wide text-white outline-none"
+                        aria-label="Hoodie color hex code"
+                        onChange={handleHexInputChange}
+                    />
+                </div>
+                <button
+                    type="button"
+                    className="relative flex h-10 w-12 items-center justify-center rounded-md border border-white/70 bg-white/10 transition hover:bg-white/20"
+                    aria-label="Open color wheel"
+                    onClick={() => nativeColorInputRef.current?.click()}
+                >
+                    <Palette className="h-6 w-6" aria-hidden="true" />
+                    <input
+                        ref={nativeColorInputRef}
+                        type="color"
+                        value={selectedColor}
+                        className="sr-only"
+                        aria-hidden="true"
+                        tabIndex={-1}
+                        onChange={(event) => applyColor(event.target.value)}
+                    />
+                </button>
+            </div>
+
+            <div className="grid grid-cols-8 gap-1.5">
+                {HOODIE_PALETTE_COLORS.map((color) => (
+                    <button
+                        key={color}
+                        type="button"
+                        className={`h-7 rounded-sm border transition hover:scale-105 ${selectedColor === color ? 'border-white ring-2 ring-white/60' : 'border-white/20'}`}
+                        style={{ backgroundColor: color }}
+                        aria-label={`Choose hoodie color ${color}`}
+                        aria-pressed={selectedColor === color}
+                        onClick={() => applyColor(color)}
+                    />
+                ))}
+            </div>
+        </div>,
+        document.body,
+    ) : null;
+
+    return (
+        <>
+            <button
+                ref={triggerRef}
+                type="button"
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20"
+                aria-label="Customize hoodie color"
+                aria-expanded={isOpen}
+                onClick={() => setIsOpen((currentValue) => !currentValue)}
+            >
+                <Palette className="h-5 w-5 text-slate-100" aria-hidden="true" />
+            </button>
+            {pickerPanel}
+        </>
+    );
+}
+
+function HoodieTextEditor({ value, onChange }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [position, setPosition] = useState({ left: 0, top: 0 });
+    const triggerRef = useRef(null);
+    const panelRef = useRef(null);
+
+    useEffect(() => {
+        if (!isOpen) {
+            return undefined;
+        }
+
+        function updatePosition() {
+            const triggerRect = triggerRef.current?.getBoundingClientRect();
+
+            if (!triggerRect) {
+                return;
+            }
+
+            const panelWidth = 220;
+            const left = Math.min(
+                Math.max(triggerRect.left - panelWidth + triggerRect.width, 16),
+                window.innerWidth - panelWidth - 16,
+            );
+            const top = triggerRect.bottom + 10;
+
+            setPosition({ left, top });
+        }
+
+        function handleClickOutside(event) {
+            if (
+                !triggerRef.current?.contains(event.target)
+                && !panelRef.current?.contains(event.target)
+            ) {
+                setIsOpen(false);
+            }
+        }
+
+        updatePosition();
+        document.addEventListener('mousedown', handleClickOutside);
+        window.addEventListener('resize', updatePosition);
+        window.addEventListener('scroll', updatePosition, true);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('resize', updatePosition);
+            window.removeEventListener('scroll', updatePosition, true);
+        };
+    }, [isOpen]);
+
+    function handleTextChange(event) {
+        const nextText = event.target.value
+            .replace(/[^a-zA-Z0-9 ]/g, '')
+            .slice(0, MAX_HOODIE_TEXT_LENGTH)
+            .toUpperCase();
+
+        onChange(nextText);
+    }
+
+    const editorPanel = isOpen ? createPortal(
+        <div
+            ref={panelRef}
+            className="fixed z-[1000] w-56 rounded-2xl border border-white/15 bg-[#2b4563] p-4 text-white shadow-2xl shadow-slate-950/50"
+            style={{ left: position.left, top: position.top }}
+        >
+            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-200" htmlFor="hoodie-text-input">
+                Hoodie text
+            </label>
+            <input
+                id="hoodie-text-input"
+                value={value}
+                className="mt-2 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-bold uppercase tracking-wide text-white outline-none focus:border-violet-200"
+                maxLength={MAX_HOODIE_TEXT_LENGTH}
+                placeholder={DEFAULT_HOODIE_TEXT}
+                onChange={handleTextChange}
+            />
+        </div>,
+        document.body,
+    ) : null;
+
+    return (
+        <>
+            <button
+                ref={triggerRef}
+                type="button"
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20"
+                aria-label="Edit hoodie text"
+                aria-expanded={isOpen}
+                onClick={() => setIsOpen((currentValue) => !currentValue)}
+            >
+                <Pencil className="h-4 w-4 text-slate-100" aria-hidden="true" />
+            </button>
+            {editorPanel}
+        </>
+    );
+}
 
 export function ShopPage() {
     const navigate = useNavigate();
@@ -51,6 +334,9 @@ export function ShopPage() {
     const [activeCategory, setActiveCategory] = useState('all');
     const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
     const [planInfo, setPlanInfo] = useState(null);
+    const [hoodieColors, setHoodieColors] = useState(DEFAULT_HOODIE_COLORS);
+    const [activeHoodieColorSlot, setActiveHoodieColorSlot] = useState('whole');
+    const [hoodieText, setHoodieText] = useState(DEFAULT_HOODIE_TEXT);
 
     const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
     const premiumMonthlyCoins = planInfo?.plans?.premium?.monthlyBenefits?.coins;
@@ -210,6 +496,21 @@ export function ShopPage() {
         [previewItems],
     );
 
+    const previewItemConfigs = useMemo(
+        () => previewItems
+            .filter((item) => item.assetKey === HOODIE_ASSET_KEY)
+            .map((item) => ({
+                assetKey: item.assetKey,
+                customization: {
+                    color: hoodieColors.whole,
+                    stringColor: hoodieColors.strings,
+                    textColor: hoodieColors.text,
+                    text: hoodieText,
+                },
+            })),
+        [hoodieColors, hoodieText, previewItems],
+    );
+
     const cartItemsToBuy = useMemo(
         () => cartItems.filter((item) => !ownedItemIds.has(item._id)),
         [cartItems, ownedItemIds],
@@ -330,6 +631,24 @@ export function ShopPage() {
         setCartItems([]);
     }
 
+    function getItemCustomization(item) {
+        return item.assetKey === HOODIE_ASSET_KEY
+            ? {
+                color: hoodieColors.whole,
+                stringColor: hoodieColors.strings,
+                textColor: hoodieColors.text,
+                text: hoodieText,
+            }
+            : {};
+    }
+
+    function handleHoodieColorChange(slot, color) {
+        setHoodieColors((currentColors) => ({
+            ...currentColors,
+            [slot]: color,
+        }));
+    }
+
     async function handleBuyItems(itemsForPurchase) {
         setBuyingItemId('cart');
         setError('');
@@ -405,6 +724,7 @@ export function ShopPage() {
                         size="xl"
                         showName
                         previewItemKeys={previewItemKeys}
+                        previewItemConfigs={previewItemConfigs}
                     />
                 </section>
 
@@ -460,7 +780,18 @@ export function ShopPage() {
                                                 owned={ownedItemIds.has(item._id)}
                                                 showOwnedBadge={false}
                                                 dense
-                                                visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
+                                                titleAction={item.assetKey === HOODIE_ASSET_KEY ? (
+                                                    <div className="flex items-center gap-1">
+                                                        <HoodieColorPicker
+                                                            colors={hoodieColors}
+                                                            activeSlot={activeHoodieColorSlot}
+                                                            onSlotChange={setActiveHoodieColorSlot}
+                                                            onColorChange={handleHoodieColorChange}
+                                                        />
+                                                        <HoodieTextEditor value={hoodieText} onChange={setHoodieText} />
+                                                    </div>
+                                                ) : null}
+                                                visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', getItemCustomization(item))}
                                             >
                                                 <ActionButton
                                                     type="button"
@@ -527,7 +858,7 @@ export function ShopPage() {
                                         className="flex items-center gap-3 rounded-2xl bg-white/8 p-3 ring-1 ring-white/10"
                                     >
                                         <div className="flex h-16 w-20 shrink-0 items-center justify-center">
-                                            {renderShopItemVisual(item, 'max-h-full max-w-full')}
+                                            {renderShopItemVisual(item, 'max-h-full max-w-full', getItemCustomization(item))}
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <p className="truncate font-semibold">{item.name}</p>

@@ -96,11 +96,11 @@ export function getItemRegistryEntry(assetKey) {
     return itemRegistry[assetKey?.trim()] ?? null;
 }
 
-export function renderShopItemVisual(item, className = 'max-h-full max-w-full') {
+export function renderShopItemVisual(item, className = 'max-h-full max-w-full', customization = {}) {
     const itemEntry = getItemRegistryEntry(item.assetKey);
     const Visual = itemEntry?.visual;
 
-    return Visual ? <Visual className={itemEntry.previewClassName ?? className} aria-hidden="true" /> : null;
+    return Visual ? <Visual className={itemEntry.previewClassName ?? className} aria-hidden="true" {...customization} /> : null;
 }
 
 export function getItemLayerType(assetKey) {
@@ -123,7 +123,7 @@ export function orderCompanionItemKeys(itemKeys = []) {
     });
 }
 
-export function renderCompanionItemLayer(assetKey) {
+export function renderCompanionItemLayer(assetKey, customization = {}) {
     const itemEntry = getItemRegistryEntry(assetKey);
 
     if (!itemEntry?.layer) {
@@ -132,5 +132,5 @@ export function renderCompanionItemLayer(assetKey) {
 
     const Layer = itemEntry.layer;
 
-    return <Layer transform={itemEntry.transform} {...itemEntry.layerProps} />;
+    return <Layer transform={itemEntry.transform} {...itemEntry.layerProps} {...customization} />;
 }
