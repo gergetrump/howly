@@ -206,14 +206,61 @@ function getInventoryEntryOwnershipSignature(entry) {
     return getItemOwnershipSignature(entry.item, entry.customization ?? {});
 }
 
-function ItemColorPicker({ colors, colorSlots, activeSlot, onSlotChange, onColorChange, itemName }) {
+function ItemColorPicker({
+    colors,
+    colorSlots,
+    activeSlot,
+    onSlotChange,
+    onColorChange,
+    itemName,
+    onAddToCart,
+    addToCartLabel = 'Add to cart',
+    isAddToCartDisabled = false,
+}) {
     const [isOpen, setIsOpen] = useState(false);
     const fallbackSlot = colorSlots[0]?.key;
     const selectedColor = colors[activeSlot] ?? colors[fallbackSlot] ?? '#FFFFFF';
-    const [position, setPosition] = useState({ left: 0, top: 0 });
+    const [position, setPosition] = useState(null);
     const triggerRef = useRef(null);
     const panelRef = useRef(null);
     const nativeColorInputRef = useRef(null);
+
+    function getPanelPosition() {
+        const triggerRect = triggerRef.current?.getBoundingClientRect();
+
+        if (!triggerRect) {
+            return null;
+        }
+
+        const panelWidth = 320;
+        const panelMaxHeight = 560;
+        const minimumPanelHeight = 160;
+        const viewportMargin = 16;
+        const triggerGap = 10;
+        const maxViewportHeight = Math.max(minimumPanelHeight, window.innerHeight - (viewportMargin * 2));
+        const left = Math.min(
+            Math.max(triggerRect.left - panelWidth + triggerRect.width, viewportMargin),
+            window.innerWidth - panelWidth - viewportMargin,
+        );
+        const availableBelow = window.innerHeight - triggerRect.bottom - triggerGap - viewportMargin;
+        const availableAbove = triggerRect.top - triggerGap - viewportMargin;
+        const shouldOpenBelow = availableBelow >= Math.min(panelMaxHeight, minimumPanelHeight) || availableBelow >= availableAbove;
+        const availableVerticalSpace = shouldOpenBelow ? availableBelow : availableAbove;
+        const maxHeight = Math.min(
+            panelMaxHeight,
+            maxViewportHeight,
+            Math.max(minimumPanelHeight, availableVerticalSpace),
+        );
+        const preferredTop = shouldOpenBelow
+            ? triggerRect.bottom + triggerGap
+            : Math.max(viewportMargin, triggerRect.top - triggerGap - maxHeight);
+        const top = Math.min(
+            Math.max(preferredTop, viewportMargin),
+            window.innerHeight - maxHeight - viewportMargin,
+        );
+
+        return { left, top, maxHeight };
+    }
 
     useEffect(() => {
         if (!isOpen) {
@@ -221,20 +268,11 @@ function ItemColorPicker({ colors, colorSlots, activeSlot, onSlotChange, onColor
         }
 
         function updatePosition() {
-            const triggerRect = triggerRef.current?.getBoundingClientRect();
+            const nextPosition = getPanelPosition();
 
-            if (!triggerRect) {
-                return;
+            if (nextPosition) {
+                setPosition(nextPosition);
             }
-
-            const panelWidth = 320;
-            const left = Math.min(
-                Math.max(triggerRect.left - panelWidth + triggerRect.width, 16),
-                window.innerWidth - panelWidth - 16,
-            );
-            const top = triggerRect.bottom + 10;
-
-            setPosition({ left, top });
         }
 
         function handleClickOutside(event) {
@@ -271,11 +309,25 @@ function ItemColorPicker({ colors, colorSlots, activeSlot, onSlotChange, onColor
         }
     }
 
-    const pickerPanel = isOpen ? createPortal(
+    function handleTogglePicker() {
+        if (isOpen) {
+            setIsOpen(false);
+            return;
+        }
+
+        const triggerRect = triggerRef.current?.getBoundingClientRect();
+        const nextPosition = triggerRect ? getPanelPosition() : null;
+
+        setPosition(nextPosition);
+
+        setIsOpen(true);
+    }
+
+    const pickerPanel = isOpen && position ? createPortal(
         <div
             ref={panelRef}
-            className="fixed z-[1000] w-80 rounded-2xl border border-white/15 bg-[#2b4563] p-4 text-white shadow-2xl shadow-slate-950/50"
-            style={{ left: position.left, top: position.top }}
+            className="fixed z-[1000] w-80 overflow-y-auto rounded-2xl border border-white/15 bg-[#2b4563] p-4 text-white shadow-2xl shadow-slate-950/50"
+            style={{ left: position.left, top: position.top, maxHeight: position.maxHeight }}
         >
             <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl bg-white/8 p-1">
                 {colorSlots.map((slot) => (
@@ -338,6 +390,15 @@ function ItemColorPicker({ colors, colorSlots, activeSlot, onSlotChange, onColor
                     />
                 ))}
             </div>
+
+            <button
+                type="button"
+                className="mt-4 h-9 w-full rounded-xl bg-violet-500 text-sm font-semibold text-white transition hover:bg-violet-400 disabled:bg-white/10 disabled:text-slate-400"
+                disabled={isAddToCartDisabled}
+                onClick={onAddToCart}
+            >
+                {addToCartLabel}
+            </button>
         </div>,
         document.body,
     ) : null;
@@ -350,7 +411,7 @@ function ItemColorPicker({ colors, colorSlots, activeSlot, onSlotChange, onColor
                 className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20"
                 aria-label={`Customize ${itemName} color`}
                 aria-expanded={isOpen}
-                onClick={() => setIsOpen((currentValue) => !currentValue)}
+                onClick={handleTogglePicker}
             >
                 <Palette className="h-5 w-5 text-slate-100" aria-hidden="true" />
             </button>
@@ -650,30 +711,16 @@ export function ShopPage() {
         [previewItems],
     );
 
-    const previewItemConfigs = useMemo(
-        () => previewItems
-            .filter((item) => getCustomizationConfig(item.assetKey))
-            .map((item) => ({
-                assetKey: item.assetKey,
-                customization: getItemCustomization(item),
-            })),
-        [itemCustomizations, previewItems],
-    );
+    const previewItemConfigs = previewItems
+        .filter((item) => getCustomizationConfig(item.assetKey))
+        .map((item) => ({
+            assetKey: item.assetKey,
+            customization: getItemCustomization(item),
+        }));
 
-    const cartItemsToBuy = useMemo(
-        () => cartItems.filter((item) => !isItemOwned(item)),
-        [cartItems, itemCustomizations, ownedItemSignatures],
-    );
-
-    const cartTotalPrice = useMemo(
-        () => cartItemsToBuy.reduce((total, item) => total + (item.price ?? 0), 0),
-        [cartItemsToBuy],
-    );
-
-    const confirmationTotalPrice = useMemo(
-        () => itemsToBuy.reduce((total, item) => total + (item.price ?? 0), 0),
-        [itemsToBuy],
-    );
+    const cartItemsToBuy = cartItems.filter((entry) => !isPurchaseEntryOwned(entry));
+    const cartTotalPrice = cartItemsToBuy.reduce((total, entry) => total + (getPurchaseEntryItem(entry)?.price ?? 0), 0);
+    const confirmationTotalPrice = itemsToBuy.reduce((total, entry) => total + (getPurchaseEntryItem(entry)?.price ?? 0), 0);
 
     const filteredItems = useMemo(
         () => activeCategory === 'all'
@@ -709,8 +756,44 @@ export function ShopPage() {
         return () => window.clearTimeout(restoreTimerId);
     }, [items, premiumReturnItemId]);
 
-    function isItemInCart(itemId) {
-        return cartItems.some((item) => item._id === itemId);
+    function getPurchaseEntryItem(entry) {
+        return entry?.item ?? entry;
+    }
+
+    function getPurchaseEntryCustomization(entry) {
+        const item = getPurchaseEntryItem(entry);
+
+        if (!item) {
+            return {};
+        }
+
+        return entry?.customization
+            ? normalizeItemCustomization(item, entry.customization)
+            : getItemCustomization(item);
+    }
+
+    function getPurchaseEntrySignature(entry) {
+        const item = getPurchaseEntryItem(entry);
+
+        return getItemOwnershipSignature(item, getPurchaseEntryCustomization(entry));
+    }
+
+    function createPurchaseEntry(item) {
+        const customization = getItemCustomization(item);
+
+        return {
+            cartKey: getItemOwnershipSignature(item, customization),
+            item,
+            customization,
+        };
+    }
+
+    function isPurchaseEntryOwned(entry) {
+        return ownedItemSignatures.has(getPurchaseEntrySignature(entry));
+    }
+
+    function isCurrentItemInCart(item) {
+        return cartItems.some((entry) => entry.cartKey === createPurchaseEntry(item).cartKey);
     }
 
     function isItemPreviewed(itemId) {
@@ -732,6 +815,25 @@ export function ShopPage() {
         return [...currentItems, item];
     }
 
+    function addCartEntry(currentCartItems, item) {
+        const nextEntry = createPurchaseEntry(item);
+
+        if (ownedItemSignatures.has(nextEntry.cartKey)) {
+            return currentCartItems;
+        }
+
+        if (currentCartItems.some((entry) => entry.cartKey === nextEntry.cartKey)) {
+            return currentCartItems;
+        }
+
+        return [...currentCartItems, nextEntry];
+    }
+
+    function handleAddCurrentItemToCart(item) {
+        setError('');
+        setCartItems((currentCartItems) => addCartEntry(currentCartItems, item));
+    }
+
     function handleTryOnItem(itemId) {
         const item = items.find((shopItem) => shopItem._id === itemId);
 
@@ -741,34 +843,22 @@ export function ShopPage() {
 
         setError('');
         const isAlreadyPreviewed = isItemPreviewed(item._id);
-        const isOwned = isItemOwned(item);
 
         if (isAlreadyPreviewed) {
             setPreviewItems((currentPreviewItems) => currentPreviewItems.filter((previewItem) => previewItem._id !== item._id));
-            setCartItems((currentCartItems) => currentCartItems.filter((cartItem) => cartItem._id !== item._id));
             return;
         }
 
         setPreviewItems((currentPreviewItems) => addSelectedItem(currentPreviewItems, item));
-
-        if (isOwned) {
-            if (SINGLE_EQUIP_ITEM_TYPES.has(item.type)) {
-                setCartItems((currentCartItems) => currentCartItems.filter((cartItem) => cartItem.type !== item.type));
-            }
-            return;
-        }
-
-        setCartItems((currentCartItems) => addSelectedItem(currentCartItems, item));
     }
 
-    function handleRemoveCartItem(itemId) {
+    function handleRemoveCartEntry(cartKey) {
         setError('');
-        setCartItems((currentCartItems) => currentCartItems.filter((item) => item._id !== itemId));
-        setPreviewItems((currentPreviewItems) => currentPreviewItems.filter((item) => item._id !== itemId));
+        setCartItems((currentCartItems) => currentCartItems.filter((entry) => entry.cartKey !== cartKey));
     }
 
-    function openBuyConfirmation(itemsForPurchase) {
-        const nextItemsToBuy = itemsForPurchase.filter((item) => !isItemOwned(item));
+    function openBuyConfirmation(entriesForPurchase) {
+        const nextItemsToBuy = entriesForPurchase.filter((entry) => !isPurchaseEntryOwned(entry));
 
         if (nextItemsToBuy.length === 0) {
             setError('All selected items are already in your inventory');
@@ -808,44 +898,49 @@ export function ShopPage() {
         }));
     }
 
-    async function handleBuyItems(itemsForPurchase) {
+    async function handleBuyItems(entriesForPurchase) {
         setBuyingItemId('cart');
         setError('');
-        const purchasedItems = [];
-        let failedItem = null;
+        const purchasedEntries = [];
+        let failedEntry = null;
 
         try {
-            for (const item of itemsForPurchase) {
-                failedItem = item;
-                await buyItem(item._id, getItemCustomization(item));
-                purchasedItems.push(item);
+            for (const entry of entriesForPurchase) {
+                const item = getPurchaseEntryItem(entry);
+                const customization = getPurchaseEntryCustomization(entry);
+
+                failedEntry = entry;
+                await buyItem(item._id, customization);
+                purchasedEntries.push(entry);
             }
 
             setOwnedItemSignatures((currentOwnedItemSignatures) => {
                 const nextOwnedItemSignatures = new Set(currentOwnedItemSignatures);
-                purchasedItems.forEach((item) => {
-                    nextOwnedItemSignatures.add(getItemOwnershipSignature(item, getItemCustomization(item)));
+                purchasedEntries.forEach((entry) => {
+                    nextOwnedItemSignatures.add(getPurchaseEntrySignature(entry));
                 });
                 return nextOwnedItemSignatures;
             });
             setCartItems((currentCartItems) => (
-                currentCartItems.filter((item) => !purchasedItems.some((purchasedItem) => purchasedItem._id === item._id))
+                currentCartItems.filter((entry) => !purchasedEntries.some((purchasedEntry) => purchasedEntry.cartKey === entry.cartKey))
             ));
             await refreshCurrentUser();
         } catch (buyError) {
-            if (purchasedItems.length > 0) {
+            if (purchasedEntries.length > 0) {
                 setOwnedItemSignatures((currentOwnedItemSignatures) => {
                     const nextOwnedItemSignatures = new Set(currentOwnedItemSignatures);
-                    purchasedItems.forEach((item) => {
-                        nextOwnedItemSignatures.add(getItemOwnershipSignature(item, getItemCustomization(item)));
+                    purchasedEntries.forEach((entry) => {
+                        nextOwnedItemSignatures.add(getPurchaseEntrySignature(entry));
                     });
                     return nextOwnedItemSignatures;
                 });
                 setCartItems((currentCartItems) => (
-                    currentCartItems.filter((item) => !purchasedItems.some((purchasedItem) => purchasedItem._id === item._id))
+                    currentCartItems.filter((entry) => !purchasedEntries.some((purchasedEntry) => purchasedEntry.cartKey === entry.cartKey))
                 ));
                 await refreshCurrentUser();
             }
+
+            const failedItem = getPurchaseEntryItem(failedEntry);
 
             if (buyError.code === 'ITEM_ALREADY_OWNED') {
                 setError('One of these items is already in your inventory');
@@ -946,8 +1041,11 @@ export function ShopPage() {
                                                 price={item.price}
                                                 premiumOnly={item.premiumOnly}
                                                 owned={isItemOwned(item)}
+                                                equipped={isItemPreviewed(item._id)}
                                                 showOwnedBadge={false}
                                                 dense
+                                                interactive
+                                                onClick={() => handleTryOnItem(item._id)}
                                                 titleAction={customizationConfig ? (
                                                     <div className="flex items-center gap-1">
                                                         <ItemColorPicker
@@ -955,11 +1053,20 @@ export function ShopPage() {
                                                             colorSlots={customizationConfig.colorSlots}
                                                             activeSlot={activeColorSlot}
                                                             itemName={getItemDisplayName(item)}
+                                                            addToCartLabel={
+                                                                isItemOwned(item)
+                                                                    ? 'Owned'
+                                                                    : isCurrentItemInCart(item)
+                                                                        ? 'In cart'
+                                                                        : 'Add to cart'
+                                                            }
+                                                            isAddToCartDisabled={isItemOwned(item) || isCurrentItemInCart(item)}
                                                             onSlotChange={(slot) => setActiveColorSlots((currentSlots) => ({
                                                                 ...currentSlots,
                                                                 [item.assetKey]: slot,
                                                             }))}
                                                             onColorChange={(slot, color) => handleItemColorChange(item.assetKey, slot, color)}
+                                                            onAddToCart={() => handleAddCurrentItemToCart(item)}
                                                         />
                                                         {customizationConfig.text ? (
                                                             <ItemTextEditor
@@ -977,16 +1084,17 @@ export function ShopPage() {
                                                     type="button"
                                                     fullWidth
                                                     className="h-8 px-3 text-xs"
-                                                    onClick={() => handleTryOnItem(item._id)}
+                                                    disabled={isItemOwned(item) || isCurrentItemInCart(item)}
+                                                    onClick={() => handleAddCurrentItemToCart(item)}
                                                 >
-                                                    {isItemPreviewed(item._id) || isItemInCart(item._id) ? 'Remove' : 'Try on'}
+                                                    {isItemOwned(item) ? 'Owned' : isCurrentItemInCart(item) ? 'In cart' : 'Add to cart'}
                                                 </ActionButton>
                                                 <ActionButton
                                                     type="button"
                                                     fullWidth
                                                     className="h-8 px-3 text-xs"
                                                     disabled={isItemOwned(item) || buyingItemId === item._id}
-                                                    onClick={() => openBuyConfirmation([item])}
+                                                    onClick={() => openBuyConfirmation([createPurchaseEntry(item)])}
                                                 >
                                                     {isItemOwned(item) ? 'Owned' : 'Buy'}
                                                 </ActionButton>
@@ -1030,16 +1138,18 @@ export function ShopPage() {
                                     Your cart is empty
                                 </div>
                             ) : null}
-                            {cartItems.map((item) => {
-                                const isOwned = isItemOwned(item);
+                            {cartItems.map((entry) => {
+                                const item = getPurchaseEntryItem(entry);
+                                const customization = getPurchaseEntryCustomization(entry);
+                                const isOwned = isPurchaseEntryOwned(entry);
 
                                 return (
                                     <div
-                                        key={item._id}
+                                        key={entry.cartKey}
                                         className="flex items-center gap-3 rounded-2xl bg-white/8 p-3 ring-1 ring-white/10"
                                     >
                                         <div className="flex h-16 w-20 shrink-0 items-center justify-center">
-                                            {renderShopItemVisual(item, 'max-h-full max-w-full', getItemCustomization(item))}
+                                            {renderShopItemVisual(item, 'max-h-full max-w-full', customization)}
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <p className="truncate font-semibold">{getItemDisplayName(item)}</p>
@@ -1055,7 +1165,7 @@ export function ShopPage() {
                                             variant="ghost"
                                             className="rounded-full text-slate-300 hover:bg-white/10 hover:text-white"
                                             aria-label={`Remove ${getItemDisplayName(item)} from cart`}
-                                            onClick={() => handleRemoveCartItem(item._id)}
+                                            onClick={() => handleRemoveCartEntry(entry.cartKey)}
                                         >
                                             <Minus className="h-4 w-4" aria-hidden="true" />
                                         </Button>
@@ -1096,7 +1206,7 @@ export function ShopPage() {
 
                         <ConfirmationDialogHeader className="space-y-0 text-center">
                             <ConfirmationDialogTitle className="mx-auto max-w-sm text-xl font-bold leading-tight">
-                                Buy {itemsToBuy.length === 1 ? getItemDisplayName(itemsToBuy[0]) : `${itemsToBuy.length} items`}?
+                                Buy {itemsToBuy.length === 1 ? getItemDisplayName(getPurchaseEntryItem(itemsToBuy[0])) : `${itemsToBuy.length} items`}?
                             </ConfirmationDialogTitle>
                             <ConfirmationDialogDescription className="sr-only">
                                 Confirm that these items should be added to your inventory.
