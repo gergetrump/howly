@@ -10,8 +10,11 @@ const CUSTOMIZATION_COLOR_FIELDS = [
     'shirtColor',
     'tieColor',
     'tieStripeColor',
+    'frameColor',
+    'backgroundColor',
 ];
 const MAX_CUSTOM_TEXT_LENGTH = 20;
+const ITEM_SIDES = new Set(['left', 'right']);
 
 function sanitizeCustomization(customization = {}) {
     if (!customization || typeof customization !== 'object' || Array.isArray(customization)) {
@@ -37,6 +40,32 @@ function sanitizeCustomization(customization = {}) {
 
         if (text) {
             sanitizedCustomization.text = text;
+        }
+    }
+
+    if (typeof customization.side === 'string') {
+        const side = customization.side.trim().toLowerCase();
+
+        if (ITEM_SIDES.has(side)) {
+            sanitizedCustomization.side = side;
+        }
+    }
+
+    return sanitizedCustomization;
+}
+
+function sanitizeOutfitCustomization(customization = {}) {
+    if (!customization || typeof customization !== 'object' || Array.isArray(customization)) {
+        return {};
+    }
+
+    const sanitizedCustomization = {};
+
+    if (typeof customization.side === 'string') {
+        const side = customization.side.trim().toLowerCase();
+
+        if (ITEM_SIDES.has(side)) {
+            sanitizedCustomization.side = side;
         }
     }
 
@@ -76,5 +105,21 @@ export function validateSaveOutfitInput(body = {}) {
         return { error: 'equippedUserItemIds must contain only valid ObjectIds' };
     }
 
-    return { value: { equippedUserItemIds: uniqueUserItemIds } };
+    const customizationUpdates = body.customizationUpdates && typeof body.customizationUpdates === 'object' && !Array.isArray(body.customizationUpdates)
+        ? body.customizationUpdates
+        : {};
+    const sanitizedCustomizationUpdates = {};
+
+    Object.entries(customizationUpdates).forEach(([userItemId, customization]) => {
+        if (mongoose.Types.ObjectId.isValid(userItemId)) {
+            sanitizedCustomizationUpdates[userItemId] = sanitizeOutfitCustomization(customization);
+        }
+    });
+
+    return {
+        value: {
+            equippedUserItemIds: uniqueUserItemIds,
+            customizationUpdates: sanitizedCustomizationUpdates,
+        },
+    };
 }
