@@ -7,7 +7,11 @@ import createApp from '../src/app.js';
 import connectDB from '../src/config/database.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
 import config from '../config.js';
-import { Story, StoryLike } from '../src/features/stories/story.model.js';
+import {
+  Story,
+  StoryLike,
+  STORY_FEED_VISIBLE_HOURS,
+} from '../src/features/stories/story.model.js';
 import { Friendship } from '../src/features/social/social.model.js';
 import Habit from '../src/features/habits/habit.model.js';
 import User from '../src/features/users/user.model.js';
@@ -55,7 +59,7 @@ async function buildStory(owner, habit, overrides = {}) {
     imageUrl: 'https://example.com/story.jpg',
     imagePublicId: 'howly/stories/test',
     caption: '',
-    feedExpiresAt: new Date(now + 24 * HOUR_IN_MS),
+    feedExpiresAt: new Date(now + STORY_FEED_VISIBLE_HOURS * HOUR_IN_MS),
     archiveExpiresAt: new Date(now + 90 * DAY_IN_MS),
     ...overrides,
   });
@@ -256,17 +260,27 @@ test('a friend can like and unlike a story (toggle)', async () => {
   assert.equal(unlikeResponse.body.story.likeCount, 0);
 });
 
-test('liking your own story returns 400 with CANNOT_LIKE_OWN_STORY', async () => {
+test('users can like and unlike their own story', async () => {
   const owner = await buildUser();
   const habit = await buildHabit(owner);
   const story = await buildStory(owner, habit);
 
-  const response = await request(app)
+  const likeResponse = await request(app)
     .post(`/api/stories/${story._id}/like`)
     .set('Authorization', authHeader(owner))
-    .expect(400);
+    .expect(200);
 
-  assert.equal(response.body.code, 'CANNOT_LIKE_OWN_STORY');
+  assert.equal(likeResponse.body.liked, true);
+  assert.equal(likeResponse.body.story.likeCount, 1);
+  assert.equal(likeResponse.body.story.likedByCurrentUser, true);
+
+  const unlikeResponse = await request(app)
+    .post(`/api/stories/${story._id}/like`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(unlikeResponse.body.liked, false);
+  assert.equal(unlikeResponse.body.story.likeCount, 0);
 });
 
 test('non-friends cannot like a story (404)', async () => {
@@ -322,17 +336,39 @@ test('the owner can see who liked their story', async () => {
   assert.ok(!('passwordHash' in response.body[0]));
 });
 
-test('non-owners cannot see the likers of a story (404)', async () => {
+test('friends can see who liked a visible story', async () => {
   const owner = await buildUser();
-  const friend = await buildUser();
+  const friend = await buildUser({ username: 'viewer' });
+  const liker = await buildUser({ username: 'story_liker' });
   await makeFriends(owner, friend);
+  await makeFriends(owner, liker);
 
   const habit = await buildHabit(owner);
   const story = await buildStory(owner, habit);
 
   await request(app)
+    .post(`/api/stories/${story._id}/like`)
+    .set('Authorization', authHeader(liker))
+    .expect(200);
+
+  const response = await request(app)
     .get(`/api/stories/${story._id}/likes`)
     .set('Authorization', authHeader(friend))
+    .expect(200);
+
+  assert.equal(response.body.length, 1);
+  assert.equal(response.body[0].username, 'story_liker');
+});
+
+test('strangers cannot see who liked a story', async () => {
+  const owner = await buildUser();
+  const stranger = await buildUser();
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  await request(app)
+    .get(`/api/stories/${story._id}/likes`)
+    .set('Authorization', authHeader(stranger))
     .expect(404);
 });
 
