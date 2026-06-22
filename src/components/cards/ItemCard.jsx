@@ -18,6 +18,7 @@ export function ItemCard({
     dense = false,
     interactive = false,
     disabled = false,
+    titleAction,
     children,
     onClick,
 }) {
@@ -31,6 +32,12 @@ export function ItemCard({
         if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
             onClick(event);
+        }
+    }
+
+    function stopCardClick(event) {
+        if (interactive) {
+            event.stopPropagation();
         }
     }
 
@@ -67,12 +74,17 @@ export function ItemCard({
                 <div className="space-y-1">
                     <div className="flex items-start justify-between gap-2">
                         <h3 className="text-sm font-semibold">{name}</h3>
+                        {titleAction ? (
+                            <div className="shrink-0" onClick={stopCardClick}>
+                                {titleAction}
+                            </div>
+                        ) : null}
                     </div>
                     {showPrice || children ? (
                         <div className="flex items-center justify-between gap-3">
                             {showPrice ? <MoonCoin amount={price} compact /> : <span />}
                             {children ? (
-                                <div className="ml-auto grid w-full max-w-40 grid-cols-2 gap-2">
+                                <div className="ml-auto grid w-full max-w-40 grid-cols-2 gap-2" onClick={stopCardClick}>
                                     {children}
                                 </div>
                             ) : null}

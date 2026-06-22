@@ -20,6 +20,7 @@ import { useAuth } from '@/context/authContext';
 import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
+import { getEquippedItemConfigsFromInventory } from '@/lib/inventoryItems';
 
 function DashboardChallengeHabitCard({ item, onToggle }) {
     const progressText = `${item.participant?.daysCompleted ?? 0}/${item.challenge?.durationDays ?? 0} days`;
@@ -88,7 +89,7 @@ export function DashboardPage() {
     const [milestoneNotice, setMilestoneNotice] = useState(null);
     const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
     const [storyHabit, setStoryHabit] = useState(null);
-    const [equippedItemKeys, setEquippedItemKeys] = useState([]);
+    const [equippedItemConfigs, setEquippedItemConfigs] = useState([]);
     const [limitPrompt, setLimitPrompt] = useState(null);
     const [planInfo, setPlanInfo] = useState(null);
     // Habit ids that already have an active (< 24h) story
@@ -131,24 +132,35 @@ export function DashboardPage() {
                 console.error('Failed to load active stories:', error);
             });
 
-        getMyInventory()
-            .then((inventory) => {
-                setEquippedItemKeys(
-                    (inventory ?? [])
-                        .filter((entry) => entry.equipped)
-                        .map((entry) => entry.item?.assetKey)
-                        .filter(Boolean),
-                );
-            })
-            .catch((error) => {
-                console.error('Failed to load equipped outfit:', error);
-            });
-
         getCurrentUserPlan()
             .then(setPlanInfo)
             .catch((error) => {
                 console.error('Failed to load user plan:', error);
             });
+    }, []);
+
+    useEffect(() => {
+        let isCurrent = true;
+
+        async function fetchEquippedOutfit() {
+            try {
+                const inventory = await getMyInventory();
+
+                if (isCurrent) {
+                    setEquippedItemConfigs(getEquippedItemConfigsFromInventory(inventory));
+                }
+            } catch (error) {
+                console.error('Failed to load equipped outfit:', error);
+            }
+        }
+
+        fetchEquippedOutfit();
+        window.addEventListener('howly:outfit-updated', fetchEquippedOutfit);
+
+        return () => {
+            isCurrent = false;
+            window.removeEventListener('howly:outfit-updated', fetchEquippedOutfit);
+        };
     }, []);
 
     useEffect(() => {
@@ -330,7 +342,7 @@ export function DashboardPage() {
                     type={companion?.type}
                     name={companion?.name}
                     size={isChatOpen ? 'lg' : 'xl'}
-                    equippedItemKeys={equippedItemKeys}
+                    equippedItemConfigs={equippedItemConfigs}
                     className={isChatOpen ? 'md:w-2/5 md:flex-shrink-0' : undefined}
                 />
 

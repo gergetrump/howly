@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CompanionAvatar } from '@/components/brand/companionAvatar';
+import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
 import { appCardClassName } from '@/components/cards/cardStyles';
 
 export function FeedPostCard({
@@ -8,9 +8,11 @@ export function FeedPostCard({
     authorAvatarSrc,
     meta,
     companionName,
+    companionType,
     companionAvatarSrc,
     companionSrc,
     companionEquippedItemKeys = [],
+    companionEquippedItemConfigs = [],
     milestoneTitle,
     children,
 }) {
@@ -47,10 +49,12 @@ export function FeedPostCard({
                     <div className="flex justify-center sm:w-44 sm:shrink-0">
                         <CompanionAvatar
                             src={resolvedCompanionSrc}
+                            type={companionType}
                             name={companionName}
                             size="feed"
                             showName={false}
                             equippedItemKeys={companionEquippedItemKeys}
+                            equippedItemConfigs={companionEquippedItemConfigs}
                         />
                     </div>
 

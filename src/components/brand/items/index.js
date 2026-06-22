@@ -1,6 +1,5 @@
 export { default as CozyJacket } from './CozyJacket';
 export { default as Cup } from './Cup';
-export { default as CupBrown } from './CupBrown';
 export { default as Glasses } from './Glasses';
 export { default as Hoodie } from './Hoodie';
 export { default as Phone } from './Phone';
