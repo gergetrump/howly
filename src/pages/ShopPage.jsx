@@ -1,32 +1,22 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Minus, Palette, Pencil, ShoppingCart, X } from 'lucide-react';
-import { ActionButton, CardGrid } from '@/components/common';
-import { ItemCard } from '@/components/cards';
+import { ShoppingCart } from 'lucide-react';
+import { ActionButton } from '@/components/common';
 import { CompanionAvatar } from '@/components/brand';
-import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
-import { getItemDisplayName, renderShopItemVisual } from '@/components/brand/items/itemRegistry';
+import { getItemDisplayName, hasItemSideOptions } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import {
-    ConfirmationDialog,
-    ConfirmationDialogAction,
-    ConfirmationDialogCancel,
-    ConfirmationDialogContent,
-    ConfirmationDialogDescription,
-    ConfirmationDialogFooter,
-    ConfirmationDialogHeader,
-    ConfirmationDialogTitle,
-} from '@/components/ui/confirmation-dialog';
+    CartDialog,
+    getCustomizationConfig,
+    getInventoryEntryOwnershipSignature,
+    getItemOwnershipSignature,
+    ITEM_CUSTOMIZATION_CONFIG,
+    normalizeItemCustomization,
+    PurchaseConfirmationDialog,
+    ShopCustomizationPanel,
+    ShopItemGrid,
+} from '@/components/shop';
 import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import { buyItem, getMyInventory } from '@/services/inventoryApi';
@@ -36,485 +26,6 @@ import { confirmCheckoutSession } from '@/services/paymentService';
 import { itemMatchesCategory } from '@/lib/inventoryItems';
 
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
-const MAX_CUSTOM_TEXT_LENGTH = 20;
-const ITEM_CUSTOMIZATION_CONFIG = {
-    hoodie: {
-        defaults: {
-            color: '#C66E6E',
-            stringColor: '#DADADA',
-            textColor: '#FFFFFF',
-            text: 'HOWLY',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Whole' },
-            { key: 'stringColor', label: 'Strings' },
-            { key: 'textColor', label: 'Text' },
-        ],
-        text: {
-            key: 'text',
-            label: 'Hoodie text',
-            placeholder: 'HOWLY',
-        },
-    },
-    'cream-top': {
-        defaults: {
-            color: '#F4EFE5',
-            buttonColor: '#B18167',
-            pocketColor: '#DDCEAF',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Whole' },
-            { key: 'buttonColor', label: 'Buttons' },
-            { key: 'pocketColor', label: 'Pockets' },
-        ],
-    },
-    'warm-top': {
-        defaults: {
-            color: '#F4EFE5',
-            buttonColor: '#B18167',
-            pocketColor: '#DDCEAF',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Whole' },
-            { key: 'buttonColor', label: 'Buttons' },
-            { key: 'pocketColor', label: 'Pockets' },
-        ],
-    },
-    'cozy-jacket': {
-        defaults: {
-            jacketColor: '#4A6741',
-            stringColor: '#DADADA',
-            shirtColor: '#F4EFE5',
-        },
-        colorSlots: [
-            { key: 'jacketColor', label: 'Jacket' },
-            { key: 'stringColor', label: 'Strings' },
-            { key: 'shirtColor', label: 'Shirt' },
-        ],
-    },
-    suit: {
-        defaults: {
-            jacketColor: '#392E18',
-            shirtColor: '#EEEEEE',
-            tieColor: '#670000',
-            tieStripeColor: '#FFC000',
-        },
-        colorSlots: [
-            { key: 'jacketColor', label: 'Jacket' },
-            { key: 'shirtColor', label: 'Shirt' },
-            { key: 'tieColor', label: 'Tie' },
-            { key: 'tieStripeColor', label: 'Tie stripe' },
-        ],
-    },
-    cup: {
-        defaults: {
-            color: '#E09AAB',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Whole' },
-        ],
-    },
-    glasses: {
-        defaults: {
-            color: '#000000',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Whole' },
-        ],
-    },
-    phone: {
-        defaults: {
-            frameColor: '#D9D9D9',
-            backgroundColor: '#575757',
-        },
-        colorSlots: [
-            { key: 'frameColor', label: 'Frame' },
-            { key: 'backgroundColor', label: 'Background' },
-        ],
-    },
-    'warm-hat': {
-        defaults: {
-            color: '#4A6741',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Whole' },
-        ],
-    },
-    sneaker: {
-        defaults: {
-            color: '#1A1A1A',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Whole' },
-        ],
-    },
-};
-const PALETTE_COLORS = [
-    '#FFFFFF', '#F8FAFC', '#E5E7EB', '#CBD5E1', '#94A3B8', '#64748B', '#334155', '#111827',
-    '#FCE7F3', '#F9A8D4', '#F472B6', '#EC4899', '#BE185D', '#7E2249', '#DDD6FE', '#A78BFA',
-    '#FEE2E2', '#FDA4AF', '#FB7185', '#EF4444', '#B91C1C', '#FED7AA', '#FB923C', '#C2410C',
-    '#FEF3C7', '#FDE68A', '#FACC15', '#CA8A04', '#713F12', '#DCFCE7', '#86EFAC', '#22C55E',
-    '#BBF7D0', '#5EEAD4', '#14B8A6', '#0F766E', '#E0F2FE', '#7DD3FC', '#0EA5E9', '#0369A1',
-    '#DBEAFE', '#93C5FD', '#3B82F6', '#1D4ED8', '#312E81', '#EDE9FE', '#8B5CF6', '#6D28D9',
-];
-
-function normalizeHexInput(value) {
-    const trimmedValue = value.trim();
-    const hexValue = trimmedValue.startsWith('#') ? trimmedValue : `#${trimmedValue}`;
-
-    return /^#[0-9A-Fa-f]{6}$/.test(hexValue) ? hexValue.toUpperCase() : null;
-}
-
-function getCustomizationConfig(assetKey) {
-    return ITEM_CUSTOMIZATION_CONFIG[assetKey] ?? null;
-}
-
-function normalizeItemCustomization(itemOrAssetKey, customization = {}) {
-    const assetKey = typeof itemOrAssetKey === 'string' ? itemOrAssetKey : itemOrAssetKey?.assetKey;
-    const config = getCustomizationConfig(assetKey);
-
-    if (!config) {
-        return {};
-    }
-
-    return {
-        ...config.defaults,
-        ...customization,
-    };
-}
-
-function getItemOwnershipSignature(item, customization = {}) {
-    const itemId = item?._id?.toString?.() ?? item?._id;
-
-    if (!itemId) {
-        return '';
-    }
-
-    const config = getCustomizationConfig(item.assetKey);
-
-    if (!config) {
-        return `${itemId}:default`;
-    }
-
-    const normalizedCustomization = normalizeItemCustomization(item, customization);
-    const signatureParts = Object.keys(config.defaults).map((key) => normalizedCustomization[key]);
-
-    return [itemId, ...signatureParts].join(':');
-}
-
-function getInventoryEntryOwnershipSignature(entry) {
-    return getItemOwnershipSignature(entry.item, entry.customization ?? {});
-}
-
-function ItemColorPicker({
-    colors,
-    colorSlots,
-    activeSlot,
-    onSlotChange,
-    onColorChange,
-    itemName,
-    onAddToCart,
-    addToCartLabel = 'Add to cart',
-    isAddToCartDisabled = false,
-}) {
-    const [isOpen, setIsOpen] = useState(false);
-    const fallbackSlot = colorSlots[0]?.key;
-    const selectedColor = colors[activeSlot] ?? colors[fallbackSlot] ?? '#FFFFFF';
-    const [position, setPosition] = useState(null);
-    const triggerRef = useRef(null);
-    const panelRef = useRef(null);
-    const nativeColorInputRef = useRef(null);
-
-    function getPanelPosition() {
-        const triggerRect = triggerRef.current?.getBoundingClientRect();
-
-        if (!triggerRect) {
-            return null;
-        }
-
-        const panelWidth = 320;
-        const panelMaxHeight = 560;
-        const minimumPanelHeight = 160;
-        const viewportMargin = 16;
-        const triggerGap = 10;
-        const maxViewportHeight = Math.max(minimumPanelHeight, window.innerHeight - (viewportMargin * 2));
-        const left = Math.min(
-            Math.max(triggerRect.left - panelWidth + triggerRect.width, viewportMargin),
-            window.innerWidth - panelWidth - viewportMargin,
-        );
-        const availableBelow = window.innerHeight - triggerRect.bottom - triggerGap - viewportMargin;
-        const availableAbove = triggerRect.top - triggerGap - viewportMargin;
-        const shouldOpenBelow = availableBelow >= Math.min(panelMaxHeight, minimumPanelHeight) || availableBelow >= availableAbove;
-        const availableVerticalSpace = shouldOpenBelow ? availableBelow : availableAbove;
-        const maxHeight = Math.min(
-            panelMaxHeight,
-            maxViewportHeight,
-            Math.max(minimumPanelHeight, availableVerticalSpace),
-        );
-        const preferredTop = shouldOpenBelow
-            ? triggerRect.bottom + triggerGap
-            : Math.max(viewportMargin, triggerRect.top - triggerGap - maxHeight);
-        const top = Math.min(
-            Math.max(preferredTop, viewportMargin),
-            window.innerHeight - maxHeight - viewportMargin,
-        );
-
-        return { left, top, maxHeight };
-    }
-
-    useEffect(() => {
-        if (!isOpen) {
-            return undefined;
-        }
-
-        function updatePosition() {
-            const nextPosition = getPanelPosition();
-
-            if (nextPosition) {
-                setPosition(nextPosition);
-            }
-        }
-
-        function handleClickOutside(event) {
-            if (
-                !triggerRef.current?.contains(event.target)
-                && !panelRef.current?.contains(event.target)
-            ) {
-                setIsOpen(false);
-            }
-        }
-
-        updatePosition();
-        document.addEventListener('mousedown', handleClickOutside);
-        window.addEventListener('resize', updatePosition);
-        window.addEventListener('scroll', updatePosition, true);
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            window.removeEventListener('resize', updatePosition);
-            window.removeEventListener('scroll', updatePosition, true);
-        };
-    }, [isOpen]);
-
-    function applyColor(nextColor) {
-        onColorChange(activeSlot, nextColor.toUpperCase());
-    }
-
-    function handleHexInputChange(event) {
-        const nextValue = event.target.value;
-        const normalizedColor = normalizeHexInput(nextValue);
-
-        if (normalizedColor) {
-            applyColor(normalizedColor);
-        }
-    }
-
-    function handleTogglePicker() {
-        if (isOpen) {
-            setIsOpen(false);
-            return;
-        }
-
-        const triggerRect = triggerRef.current?.getBoundingClientRect();
-        const nextPosition = triggerRect ? getPanelPosition() : null;
-
-        setPosition(nextPosition);
-
-        setIsOpen(true);
-    }
-
-    const pickerPanel = isOpen && position ? createPortal(
-        <div
-            ref={panelRef}
-            className="fixed z-[1000] w-80 overflow-y-auto rounded-2xl border border-white/15 bg-[#2b4563] p-4 text-white shadow-2xl shadow-slate-950/50"
-            style={{ left: position.left, top: position.top, maxHeight: position.maxHeight }}
-        >
-            <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl bg-white/8 p-1">
-                {colorSlots.map((slot) => (
-                    <button
-                        key={slot.key}
-                        type="button"
-                        className={`rounded-lg px-2 py-1.5 text-xs font-semibold transition ${activeSlot === slot.key ? 'bg-white text-slate-950' : 'text-slate-200 hover:bg-white/10'}`}
-                        aria-pressed={activeSlot === slot.key}
-                        onClick={() => onSlotChange(slot.key)}
-                    >
-                        {slot.label}
-                    </button>
-                ))}
-            </div>
-
-            <div className="mb-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                    <span
-                        className="h-10 w-16 rounded-xl border border-white/20"
-                        style={{ backgroundColor: selectedColor }}
-                        aria-hidden="true"
-                    />
-                    <input
-                        key={selectedColor}
-                        defaultValue={selectedColor.toUpperCase()}
-                        className="w-28 border-b border-white/70 bg-transparent text-lg font-bold uppercase tracking-wide text-white outline-none"
-                        aria-label="Hoodie color hex code"
-                        onChange={handleHexInputChange}
-                    />
-                </div>
-                <button
-                    type="button"
-                    className="relative flex h-10 w-12 items-center justify-center rounded-md border border-white/70 bg-white/10 transition hover:bg-white/20"
-                    aria-label="Open color wheel"
-                    onClick={() => nativeColorInputRef.current?.click()}
-                >
-                    <Palette className="h-6 w-6" aria-hidden="true" />
-                    <input
-                        ref={nativeColorInputRef}
-                        type="color"
-                        value={selectedColor}
-                        className="sr-only"
-                        aria-hidden="true"
-                        tabIndex={-1}
-                        onChange={(event) => applyColor(event.target.value)}
-                    />
-                </button>
-            </div>
-
-            <div className="grid grid-cols-8 gap-1.5">
-                {PALETTE_COLORS.map((color) => (
-                    <button
-                        key={color}
-                        type="button"
-                        className={`h-7 rounded-sm border transition hover:scale-105 ${selectedColor === color ? 'border-white ring-2 ring-white/60' : 'border-white/20'}`}
-                        style={{ backgroundColor: color }}
-                        aria-label={`Choose ${itemName} color ${color}`}
-                        aria-pressed={selectedColor === color}
-                        onClick={() => applyColor(color)}
-                    />
-                ))}
-            </div>
-
-            <button
-                type="button"
-                className="mt-4 h-9 w-full rounded-xl bg-violet-500 text-sm font-semibold text-white transition hover:bg-violet-400 disabled:bg-white/10 disabled:text-slate-400"
-                disabled={isAddToCartDisabled}
-                onClick={onAddToCart}
-            >
-                {addToCartLabel}
-            </button>
-        </div>,
-        document.body,
-    ) : null;
-
-    return (
-        <>
-            <button
-                ref={triggerRef}
-                type="button"
-                className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20"
-                aria-label={`Customize ${itemName} color`}
-                aria-expanded={isOpen}
-                onClick={handleTogglePicker}
-            >
-                <Palette className="h-5 w-5 text-slate-100" aria-hidden="true" />
-            </button>
-            {pickerPanel}
-        </>
-    );
-}
-
-function ItemTextEditor({ value, label, placeholder, onChange }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [position, setPosition] = useState({ left: 0, top: 0 });
-    const triggerRef = useRef(null);
-    const panelRef = useRef(null);
-
-    useEffect(() => {
-        if (!isOpen) {
-            return undefined;
-        }
-
-        function updatePosition() {
-            const triggerRect = triggerRef.current?.getBoundingClientRect();
-
-            if (!triggerRect) {
-                return;
-            }
-
-            const panelWidth = 220;
-            const left = Math.min(
-                Math.max(triggerRect.left - panelWidth + triggerRect.width, 16),
-                window.innerWidth - panelWidth - 16,
-            );
-            const top = triggerRect.bottom + 10;
-
-            setPosition({ left, top });
-        }
-
-        function handleClickOutside(event) {
-            if (
-                !triggerRef.current?.contains(event.target)
-                && !panelRef.current?.contains(event.target)
-            ) {
-                setIsOpen(false);
-            }
-        }
-
-        updatePosition();
-        document.addEventListener('mousedown', handleClickOutside);
-        window.addEventListener('resize', updatePosition);
-        window.addEventListener('scroll', updatePosition, true);
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            window.removeEventListener('resize', updatePosition);
-            window.removeEventListener('scroll', updatePosition, true);
-        };
-    }, [isOpen]);
-
-    function handleTextChange(event) {
-        const nextText = event.target.value
-            .replace(/[^a-zA-Z0-9 ]/g, '')
-            .slice(0, MAX_CUSTOM_TEXT_LENGTH)
-            .toUpperCase();
-
-        onChange(nextText);
-    }
-
-    const editorPanel = isOpen ? createPortal(
-        <div
-            ref={panelRef}
-            className="fixed z-[1000] w-56 rounded-2xl border border-white/15 bg-[#2b4563] p-4 text-white shadow-2xl shadow-slate-950/50"
-            style={{ left: position.left, top: position.top }}
-        >
-            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-200" htmlFor="item-text-input">
-                {label}
-            </label>
-            <input
-                id="item-text-input"
-                value={value}
-                className="mt-2 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-bold uppercase tracking-wide text-white outline-none focus:border-violet-200"
-                maxLength={MAX_CUSTOM_TEXT_LENGTH}
-                placeholder={placeholder}
-                onChange={handleTextChange}
-            />
-        </div>,
-        document.body,
-    ) : null;
-
-    return (
-        <>
-            <button
-                ref={triggerRef}
-                type="button"
-                className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20"
-                aria-label={`Edit ${label}`}
-                aria-expanded={isOpen}
-                onClick={() => setIsOpen((currentValue) => !currentValue)}
-            >
-                <Pencil className="h-4 w-4 text-slate-100" aria-hidden="true" />
-            </button>
-            {editorPanel}
-        </>
-    );
-}
 
 export function ShopPage() {
     const navigate = useNavigate();
@@ -531,6 +42,7 @@ export function ShopPage() {
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
     const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
+    const [selectedCustomItemId, setSelectedCustomItemId] = useState('');
     const [planInfo, setPlanInfo] = useState(null);
     const [itemCustomizations, setItemCustomizations] = useState(() => (
         Object.fromEntries(
@@ -728,6 +240,16 @@ export function ShopPage() {
             : items.filter((item) => itemMatchesCategory(item, activeCategory)),
         [activeCategory, items],
     );
+    const selectedCustomItem = useMemo(() => {
+        const selectedItem = items.find((item) => item._id === selectedCustomItemId);
+
+        return selectedItem && getCustomizationConfig(selectedItem.assetKey) ? selectedItem : null;
+    }, [items, selectedCustomItemId]);
+    const selectedCustomizationConfig = getCustomizationConfig(selectedCustomItem?.assetKey);
+    const selectedItemCustomization = selectedCustomItem ? getItemCustomization(selectedCustomItem) : {};
+    const selectedActiveColorSlot = selectedCustomItem
+        ? activeColorSlots[selectedCustomItem.assetKey] ?? selectedCustomizationConfig?.colorSlots[0]?.key
+        : '';
 
     useEffect(() => {
         if (!premiumReturnItemId || items.length === 0) {
@@ -842,6 +364,9 @@ export function ShopPage() {
         }
 
         setError('');
+        if (getCustomizationConfig(item.assetKey)) {
+            setSelectedCustomItemId(item._id);
+        }
         const isAlreadyPreviewed = isItemPreviewed(item._id);
 
         if (isAlreadyPreviewed) {
@@ -894,6 +419,16 @@ export function ShopPage() {
             [assetKey]: {
                 ...normalizeItemCustomization(assetKey, currentCustomizations[assetKey]),
                 [textKey]: text,
+            },
+        }));
+    }
+
+    function handleItemSideChange(assetKey, side) {
+        setItemCustomizations((currentCustomizations) => ({
+            ...currentCustomizations,
+            [assetKey]: {
+                ...normalizeItemCustomization(assetKey, currentCustomizations[assetKey]),
+                side,
             },
         }));
     }
@@ -972,9 +507,9 @@ export function ShopPage() {
     }
 
     return (
-        <Page theme="forest" className="overflow-hidden">
+        <Page theme="forest" contentClassName="max-w-[112rem]">
             <Heading title="Shop" subtitle="Unlock items for your companion." streakDays={user?.streak ?? 0} />
-            <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(18rem,0.65fr)_minmax(0,1.7fr)] lg:items-start">
+            <div className="grid min-h-0 flex-1 gap-8 lg:grid-cols-[minmax(13rem,0.5fr)_minmax(0,1.55fr)_minmax(16rem,0.6fr)] lg:items-start xl:gap-10">
                 <section className="flex min-h-72 flex-col items-center justify-center gap-3 text-center lg:sticky lg:top-24 lg:min-h-[30rem]">
                     <CompanionAvatar
                         type={companion?.type}
@@ -1019,94 +554,21 @@ export function ShopPage() {
                     {!isLoading && !error && items.length === 0 ? (
                         <p className="text-sm text-slate-300">No shop items yet</p>
                     ) : null}
-                    <div className="relative rounded-2xl border border-white/10 bg-white/5 p-3 shadow-xl shadow-slate-950/20">
-                        <div className="h-[34rem] max-h-[34rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
-                            {!isLoading && !error && items.length > 0 && filteredItems.length === 0 ? (
-                                <div className="flex h-full items-center justify-center text-center">
-                                    <p className="text-sm text-slate-300">No items in this category yet</p>
-                                </div>
-                            ) : null}
-
-                            {filteredItems.length > 0 ? (
-                                <CardGrid columns={3} className="pb-8">
-                                    {filteredItems.map((item) => {
-                                        const customizationConfig = getCustomizationConfig(item.assetKey);
-                                        const itemCustomization = getItemCustomization(item);
-                                        const activeColorSlot = activeColorSlots[item.assetKey] ?? customizationConfig?.colorSlots[0]?.key;
-
-                                        return (
-                                        <div key={item._id} data-shop-item-id={item._id}>
-                                            <ItemCard
-                                                name={getItemDisplayName(item)}
-                                                price={item.price}
-                                                premiumOnly={item.premiumOnly}
-                                                owned={isItemOwned(item)}
-                                                equipped={isItemPreviewed(item._id)}
-                                                showOwnedBadge={false}
-                                                dense
-                                                interactive
-                                                onClick={() => handleTryOnItem(item._id)}
-                                                titleAction={customizationConfig ? (
-                                                    <div className="flex items-center gap-1">
-                                                        <ItemColorPicker
-                                                            colors={itemCustomization}
-                                                            colorSlots={customizationConfig.colorSlots}
-                                                            activeSlot={activeColorSlot}
-                                                            itemName={getItemDisplayName(item)}
-                                                            addToCartLabel={
-                                                                isItemOwned(item)
-                                                                    ? 'Owned'
-                                                                    : isCurrentItemInCart(item)
-                                                                        ? 'In cart'
-                                                                        : 'Add to cart'
-                                                            }
-                                                            isAddToCartDisabled={isItemOwned(item) || isCurrentItemInCart(item)}
-                                                            onSlotChange={(slot) => setActiveColorSlots((currentSlots) => ({
-                                                                ...currentSlots,
-                                                                [item.assetKey]: slot,
-                                                            }))}
-                                                            onColorChange={(slot, color) => handleItemColorChange(item.assetKey, slot, color)}
-                                                            onAddToCart={() => handleAddCurrentItemToCart(item)}
-                                                        />
-                                                        {customizationConfig.text ? (
-                                                            <ItemTextEditor
-                                                                value={itemCustomization[customizationConfig.text.key] ?? ''}
-                                                                label={customizationConfig.text.label}
-                                                                placeholder={customizationConfig.text.placeholder}
-                                                                onChange={(text) => handleItemTextChange(item.assetKey, customizationConfig.text.key, text)}
-                                                            />
-                                                        ) : null}
-                                                    </div>
-                                                ) : null}
-                                                visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', getItemCustomization(item))}
-                                            >
-                                                <ActionButton
-                                                    type="button"
-                                                    fullWidth
-                                                    className="h-8 px-3 text-xs"
-                                                    disabled={isItemOwned(item) || isCurrentItemInCart(item)}
-                                                    onClick={() => handleAddCurrentItemToCart(item)}
-                                                >
-                                                    {isItemOwned(item) ? 'Owned' : isCurrentItemInCart(item) ? 'In cart' : 'Add to cart'}
-                                                </ActionButton>
-                                                <ActionButton
-                                                    type="button"
-                                                    fullWidth
-                                                    className="h-8 px-3 text-xs"
-                                                    disabled={isItemOwned(item) || buyingItemId === item._id}
-                                                    onClick={() => openBuyConfirmation([createPurchaseEntry(item)])}
-                                                >
-                                                    {isItemOwned(item) ? 'Owned' : 'Buy'}
-                                                </ActionButton>
-                                            </ItemCard>
-                                        </div>
-                                        );
-                                    })}
-                                </CardGrid>
-                            ) : null}
-                        </div>
-                        <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
-                    </div>
+                    <ShopItemGrid
+                        isLoading={isLoading}
+                        error={error}
+                        items={items}
+                        filteredItems={filteredItems}
+                        getItemCustomization={getItemCustomization}
+                        onAddCurrentItemToCart={handleAddCurrentItemToCart}
+                        isItemOwned={isItemOwned}
+                        isCurrentItemInCart={isCurrentItemInCart}
+                        isItemPreviewed={isItemPreviewed}
+                        onTryOnItem={handleTryOnItem}
+                        openBuyConfirmation={openBuyConfirmation}
+                        createPurchaseEntry={createPurchaseEntry}
+                        buyingItemId={buyingItemId}
+                    />
 
                     <div className="mt-4 flex justify-end">
                         <ActionButton
@@ -1120,111 +582,53 @@ export function ShopPage() {
                         </ActionButton>
                     </div>
                 </PageSection>
+
+                <ShopCustomizationPanel
+                    item={selectedCustomItem}
+                    customizationConfig={selectedCustomizationConfig}
+                    customization={selectedItemCustomization}
+                    activeSlot={selectedActiveColorSlot}
+                    addToCartLabel={
+                        selectedCustomItem && isItemOwned(selectedCustomItem)
+                            ? 'Owned'
+                            : selectedCustomItem && isCurrentItemInCart(selectedCustomItem)
+                                ? 'In cart'
+                                : 'Add to cart'
+                    }
+                    isAddToCartDisabled={!selectedCustomItem || isItemOwned(selectedCustomItem) || isCurrentItemInCart(selectedCustomItem)}
+                    onActiveSlotChange={(slot) => setActiveColorSlots((currentSlots) => ({
+                        ...currentSlots,
+                        [selectedCustomItem.assetKey]: slot,
+                    }))}
+                    onColorChange={(slot, color) => handleItemColorChange(selectedCustomItem.assetKey, slot, color)}
+                    onTextChange={(textKey, text) => handleItemTextChange(selectedCustomItem.assetKey, textKey, text)}
+                    onSideChange={(side) => handleItemSideChange(selectedCustomItem.assetKey, side)}
+                    onAddToCart={() => handleAddCurrentItemToCart(selectedCustomItem)}
+                    canChangeSide={hasItemSideOptions(selectedCustomItem?.assetKey)}
+                />
             </div>
 
-            <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
-                <DialogContent className="border-white/10 bg-[#1e1b3a] p-0 text-white shadow-2xl sm:max-w-lg">
-                    <div className="p-6">
-                        <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold">Cart</DialogTitle>
-                            <DialogDescription className="text-slate-300">
-                                Items you are trying on
-                            </DialogDescription>
-                        </DialogHeader>
+            <CartDialog
+                isOpen={isCartOpen}
+                onOpenChange={setIsCartOpen}
+                cartItems={cartItems}
+                cartItemsToBuy={cartItemsToBuy}
+                cartTotalPrice={cartTotalPrice}
+                getPurchaseEntryItem={getPurchaseEntryItem}
+                getPurchaseEntryCustomization={getPurchaseEntryCustomization}
+                isPurchaseEntryOwned={isPurchaseEntryOwned}
+                onRemoveCartEntry={handleRemoveCartEntry}
+                onOpenBuyConfirmation={openBuyConfirmation}
+            />
 
-                        <div className="mt-5 max-h-80 space-y-3 overflow-y-auto pr-1">
-                            {cartItems.length === 0 ? (
-                                <div className="rounded-2xl bg-white/8 p-5 text-center text-sm text-slate-300 ring-1 ring-white/10">
-                                    Your cart is empty
-                                </div>
-                            ) : null}
-                            {cartItems.map((entry) => {
-                                const item = getPurchaseEntryItem(entry);
-                                const customization = getPurchaseEntryCustomization(entry);
-                                const isOwned = isPurchaseEntryOwned(entry);
-
-                                return (
-                                    <div
-                                        key={entry.cartKey}
-                                        className="flex items-center gap-3 rounded-2xl bg-white/8 p-3 ring-1 ring-white/10"
-                                    >
-                                        <div className="flex h-16 w-20 shrink-0 items-center justify-center">
-                                            {renderShopItemVisual(item, 'max-h-full max-w-full', customization)}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate font-semibold">{getItemDisplayName(item)}</p>
-                                            {isOwned ? (
-                                                <p className="text-sm text-slate-300">Already owned</p>
-                                            ) : (
-                                                <MoonCoin amount={item.price} compact />
-                                            )}
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            size="icon"
-                                            variant="ghost"
-                                            className="rounded-full text-slate-300 hover:bg-white/10 hover:text-white"
-                                            aria-label={`Remove ${getItemDisplayName(item)} from cart`}
-                                            onClick={() => handleRemoveCartEntry(entry.cartKey)}
-                                        >
-                                            <Minus className="h-4 w-4" aria-hidden="true" />
-                                        </Button>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
-                            <div>
-                                <p className="text-sm text-slate-300">Total</p>
-                                <MoonCoin amount={cartTotalPrice} />
-                            </div>
-                            <ActionButton
-                                type="button"
-                                className="h-11 bg-violet-500 px-5 text-white hover:bg-violet-400 disabled:bg-white/10 disabled:text-slate-500"
-                                disabled={cartItemsToBuy.length === 0}
-                                onClick={() => openBuyConfirmation(cartItems)}
-                            >
-                                Buy
-                            </ActionButton>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            <ConfirmationDialog open={itemsToBuy.length > 0} onOpenChange={(open) => !open && setItemsToBuy([])}>
-                <ConfirmationDialogContent className="overflow-hidden rounded-3xl border border-violet-300/20 bg-[#1e1b3a] p-0 text-white shadow-2xl shadow-violet-950/40 sm:max-w-md">
-                    <div className="relative bg-gradient-to-br from-violet-500/25 via-transparent to-fuchsia-500/15 px-8 pb-8 pt-18">
-                        <ConfirmationDialogCancel
-                            size="icon"
-                            variant="ghost"
-                            className="absolute left-5 top-5 h-10 w-10 rounded-full bg-white/12 text-white hover:bg-white/20 hover:text-white"
-                            aria-label="Close purchase confirmation"
-                        >
-                            <X className="h-5 w-5" aria-hidden="true" />
-                        </ConfirmationDialogCancel>
-
-                        <ConfirmationDialogHeader className="space-y-0 text-center">
-                            <ConfirmationDialogTitle className="mx-auto max-w-sm text-xl font-bold leading-tight">
-                                Buy {itemsToBuy.length === 1 ? getItemDisplayName(getPurchaseEntryItem(itemsToBuy[0])) : `${itemsToBuy.length} items`}?
-                            </ConfirmationDialogTitle>
-                            <ConfirmationDialogDescription className="sr-only">
-                                Confirm that these items should be added to your inventory.
-                            </ConfirmationDialogDescription>
-                        </ConfirmationDialogHeader>
-
-                        <ConfirmationDialogFooter className="mt-5 block">
-                            <ConfirmationDialogAction
-                                className="h-10 w-full rounded-xl bg-violet-500 text-sm font-semibold text-white shadow-lg shadow-violet-950/30 hover:bg-violet-400 disabled:bg-violet-500/60"
-                                disabled={itemsToBuy.length === 0 || buyingItemId === 'cart'}
-                                onClick={() => handleBuyItems(itemsToBuy)}
-                            >
-                                {buyingItemId === 'cart' ? 'Buying...' : `Buy ${confirmationTotalPrice} 🌙`}
-                            </ConfirmationDialogAction>
-                        </ConfirmationDialogFooter>
-                    </div>
-                </ConfirmationDialogContent>
-            </ConfirmationDialog>
+            <PurchaseConfirmationDialog
+                itemsToBuy={itemsToBuy}
+                confirmationTotalPrice={confirmationTotalPrice}
+                buyingItemId={buyingItemId}
+                getPurchaseEntryItem={getPurchaseEntryItem}
+                onOpenChange={(open) => !open && setItemsToBuy([])}
+                onBuyItems={handleBuyItems}
+            />
         </Page>
     );
 }
