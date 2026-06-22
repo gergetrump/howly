@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import { ActionButton } from '@/components/common';
 import { CompanionAvatar } from '@/components/brand';
-import { getItemDisplayName } from '@/components/brand/items/itemRegistry';
+import { getItemDisplayName, hasItemSideOptions } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -14,6 +14,7 @@ import {
     ITEM_CUSTOMIZATION_CONFIG,
     normalizeItemCustomization,
     PurchaseConfirmationDialog,
+    ShopCustomizationPanel,
     ShopItemGrid,
 } from '@/components/shop';
 import { useAuth } from '@/context/authContext';
@@ -41,6 +42,7 @@ export function ShopPage() {
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
     const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
+    const [selectedCustomItemId, setSelectedCustomItemId] = useState('');
     const [planInfo, setPlanInfo] = useState(null);
     const [itemCustomizations, setItemCustomizations] = useState(() => (
         Object.fromEntries(
@@ -238,6 +240,16 @@ export function ShopPage() {
             : items.filter((item) => itemMatchesCategory(item, activeCategory)),
         [activeCategory, items],
     );
+    const selectedCustomItem = useMemo(() => {
+        const selectedItem = items.find((item) => item._id === selectedCustomItemId);
+
+        return selectedItem && getCustomizationConfig(selectedItem.assetKey) ? selectedItem : null;
+    }, [items, selectedCustomItemId]);
+    const selectedCustomizationConfig = getCustomizationConfig(selectedCustomItem?.assetKey);
+    const selectedItemCustomization = selectedCustomItem ? getItemCustomization(selectedCustomItem) : {};
+    const selectedActiveColorSlot = selectedCustomItem
+        ? activeColorSlots[selectedCustomItem.assetKey] ?? selectedCustomizationConfig?.colorSlots[0]?.key
+        : '';
 
     useEffect(() => {
         if (!premiumReturnItemId || items.length === 0) {
@@ -352,6 +364,9 @@ export function ShopPage() {
         }
 
         setError('');
+        if (getCustomizationConfig(item.assetKey)) {
+            setSelectedCustomItemId(item._id);
+        }
         const isAlreadyPreviewed = isItemPreviewed(item._id);
 
         if (isAlreadyPreviewed) {
@@ -404,6 +419,16 @@ export function ShopPage() {
             [assetKey]: {
                 ...normalizeItemCustomization(assetKey, currentCustomizations[assetKey]),
                 [textKey]: text,
+            },
+        }));
+    }
+
+    function handleItemSideChange(assetKey, side) {
+        setItemCustomizations((currentCustomizations) => ({
+            ...currentCustomizations,
+            [assetKey]: {
+                ...normalizeItemCustomization(assetKey, currentCustomizations[assetKey]),
+                side,
             },
         }));
     }
@@ -482,9 +507,9 @@ export function ShopPage() {
     }
 
     return (
-        <Page theme="forest" className="overflow-hidden">
+        <Page theme="forest" contentClassName="max-w-[112rem]">
             <Heading title="Shop" subtitle="Unlock items for your companion." streakDays={user?.streak ?? 0} />
-            <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(18rem,0.65fr)_minmax(0,1.7fr)] lg:items-start">
+            <div className="grid min-h-0 flex-1 gap-8 lg:grid-cols-[minmax(13rem,0.5fr)_minmax(0,1.55fr)_minmax(16rem,0.6fr)] lg:items-start xl:gap-10">
                 <section className="flex min-h-72 flex-col items-center justify-center gap-3 text-center lg:sticky lg:top-24 lg:min-h-[30rem]">
                     <CompanionAvatar
                         type={companion?.type}
@@ -534,11 +559,7 @@ export function ShopPage() {
                         error={error}
                         items={items}
                         filteredItems={filteredItems}
-                        activeColorSlots={activeColorSlots}
-                        setActiveColorSlots={setActiveColorSlots}
                         getItemCustomization={getItemCustomization}
-                        onItemColorChange={handleItemColorChange}
-                        onItemTextChange={handleItemTextChange}
                         onAddCurrentItemToCart={handleAddCurrentItemToCart}
                         isItemOwned={isItemOwned}
                         isCurrentItemInCart={isCurrentItemInCart}
@@ -561,6 +582,30 @@ export function ShopPage() {
                         </ActionButton>
                     </div>
                 </PageSection>
+
+                <ShopCustomizationPanel
+                    item={selectedCustomItem}
+                    customizationConfig={selectedCustomizationConfig}
+                    customization={selectedItemCustomization}
+                    activeSlot={selectedActiveColorSlot}
+                    addToCartLabel={
+                        selectedCustomItem && isItemOwned(selectedCustomItem)
+                            ? 'Owned'
+                            : selectedCustomItem && isCurrentItemInCart(selectedCustomItem)
+                                ? 'In cart'
+                                : 'Add to cart'
+                    }
+                    isAddToCartDisabled={!selectedCustomItem || isItemOwned(selectedCustomItem) || isCurrentItemInCart(selectedCustomItem)}
+                    onActiveSlotChange={(slot) => setActiveColorSlots((currentSlots) => ({
+                        ...currentSlots,
+                        [selectedCustomItem.assetKey]: slot,
+                    }))}
+                    onColorChange={(slot, color) => handleItemColorChange(selectedCustomItem.assetKey, slot, color)}
+                    onTextChange={(textKey, text) => handleItemTextChange(selectedCustomItem.assetKey, textKey, text)}
+                    onSideChange={(side) => handleItemSideChange(selectedCustomItem.assetKey, side)}
+                    onAddToCart={() => handleAddCurrentItemToCart(selectedCustomItem)}
+                    canChangeSide={hasItemSideOptions(selectedCustomItem?.assetKey)}
+                />
             </div>
 
             <CartDialog

@@ -124,7 +124,7 @@ export function FriendsPanel({
     getRelationship,
 }) {
     return (
-        <aside className="space-y-3 lg:sticky lg:top-6">
+        <aside className="ml-auto w-full max-w-[42rem] space-y-3 lg:sticky lg:top-6 lg:max-w-[22rem]">
             <div className="flex flex-wrap items-center gap-2">
                 <div className="inline-flex rounded-lg border border-white/10 bg-white/10 p-1 text-sm text-slate-300">
                     <button

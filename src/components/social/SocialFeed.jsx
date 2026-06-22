@@ -31,7 +31,7 @@ export function SocialFeed({
     onDeleteStory,
 }) {
     return (
-        <PageSection title="Feed" className="min-w-0">
+        <PageSection title="Feed" className="min-w-0 lg:max-w-[64rem]">
             {isLoading ? (
                 <EmptyState>Loading feed</EmptyState>
             ) : feed.length ? (
