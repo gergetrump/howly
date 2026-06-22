@@ -404,24 +404,3 @@ async function creditOverallStreak(userId) {
 
     return { streak: user.streak, creditedToday: true };
 }
-
-/**
- * Daily cron: reset the overall streak for any user who missed a day.
- */
-export async function resetMissedOverallStreaks() {
-    const users = await User.find({ streak: { $gt: 0 } }).select('streak streakLastDay');
-
-    let reset = 0;
-    for (const user of users) {
-        const last = user.streakLastDay;
-        const kept = last && (isToday(last) || isYesterday(last));
-
-        if (!kept) {
-            user.streak = 0;
-            await user.save();
-            reset += 1;
-        }
-    }
-
-    return { reset };
-}
