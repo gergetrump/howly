@@ -40,7 +40,7 @@ function isYesterday(date) {
 /**
  * Checks if a date falls within the current calendar period based on habit frequency.
  */
-function isCompletedForPeriod(habit) {
+export function isCompletedForPeriod(habit) {
     const date = habit.lastCompletedAt;
     if (!date) return false;
     const now = new Date();
@@ -100,7 +100,7 @@ function getPreviousScheduledDate(customDays) {
 /**
  * Checks if a date falls strictly in the PREVIOUS calendar period for streak calculation.
  */
-function isPreviousPeriod(habit, date) {
+export function isPreviousPeriod(habit, date) {
     if (!date) return false;
     const now = new Date();
     const frequency = habit.frequency;
@@ -150,6 +150,7 @@ function toHabitDto(habit) {
         source: habit.source ?? 'manual',
         challengeId: habit.challengeId ? habit.challengeId.toString() : null,
         streakCount: habit.streakCount,
+        streakRepairDeadline: habit.streakRepairDeadline ?? null,
         isCompletedToday: isCompletedForPeriod(habit),
         createdAt: habit.createdAt.toISOString(),
     };
@@ -300,6 +301,7 @@ export async function completeHabit(habitId, userId) {
 
     if (habit.source === 'challenge') {
         habit.lastCompletedAt = new Date();
+        habit.streakRepairDeadline = null;
         await habit.save();
         await recordProgressForHabit({ userId, habitId: habit._id });
 
@@ -320,6 +322,7 @@ export async function completeHabit(habitId, userId) {
     }
 
     habit.lastCompletedAt = new Date();
+    habit.streakRepairDeadline = null;
     await habit.save();
     const { milestonePost } = await createMilestonePostForHabit(habit);
     const enrichedMilestonePost = milestonePost
