@@ -62,6 +62,14 @@ function isCompletedForPeriod(habit) {
     return isToday(date);
 }
 
+function isDueToday(habit) {
+    if (habit.frequency === 'Custom' && habit.customDays && habit.customDays.length > 0) {
+        const currentDay = new Date().getDay() || 7; // 1-7 (Mon-Sun)
+        return habit.customDays.includes(currentDay);
+    }
+    return true;
+}
+
 function getPreviousScheduledDate(customDays) {
     const now = new Date();
     const currentDay = now.getDay() || 7; // 1-7
@@ -374,10 +382,11 @@ async function creditOverallStreak(userId) {
 
     // Challenge habits are excluded
     const habits = await Habit.find({ ownerId: userId, source: { $ne: 'challenge' } })
-        .select('frequency lastCompletedAt');
+        .select('frequency lastCompletedAt customDays');
+    const dueToday = habits.filter(isDueToday);
 
-    // Needs at least one habit, all completed for their period, to count.
-    if (habits.length === 0 || !habits.every((habit) => isCompletedForPeriod(habit))) {
+    // A complete day = every habit due today is done (and there is at least one).
+    if (dueToday.length === 0 || !dueToday.every((habit) => isCompletedForPeriod(habit))) {
         return { streak: user.streak, creditedToday: false };
     }
 
