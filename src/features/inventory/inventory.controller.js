@@ -95,6 +95,7 @@ export async function buyItem(req, res) {
         const userItem = await inventoryService.buyItem({
             userId: req.user.id,
             itemId: value.itemId,
+            customization: value.customization,
         });
 
         return res.status(201).json(userItem);

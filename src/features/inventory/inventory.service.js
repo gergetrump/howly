@@ -15,11 +15,84 @@ export const INVENTORY_ERROR_CODES = {
 };
 
 const SINGLE_EQUIP_ITEM_TYPES = new Set(['clothing', 'shoes']);
+const CUSTOMIZABLE_ITEM_DEFAULTS = {
+    hoodie: {
+        color: '#C66E6E',
+        stringColor: '#DADADA',
+        textColor: '#FFFFFF',
+        text: 'HOWLY',
+    },
+    'cream-top': {
+        color: '#F4EFE5',
+        buttonColor: '#B18167',
+        pocketColor: '#DDCEAF',
+    },
+    'cozy-jacket': {
+        jacketColor: '#4A6741',
+        stringColor: '#DADADA',
+        shirtColor: '#F4EFE5',
+    },
+    suit: {
+        jacketColor: '#392E18',
+        shirtColor: '#EEEEEE',
+        tieColor: '#670000',
+        tieStripeColor: '#FFC000',
+    },
+};
+
+let ensuredCustomizationIndexes = false;
 
 function inventoryError(code) {
     const error = new Error(code);
     error.code = code;
     return error;
+}
+
+function normalizeCustomizationForItem(item, customization = {}) {
+    const defaults = CUSTOMIZABLE_ITEM_DEFAULTS[item.assetKey];
+
+    if (!defaults) {
+        return {};
+    }
+
+    return {
+        ...defaults,
+        ...customization,
+    };
+}
+
+function buildCustomizationKey(item, customization = {}) {
+    const defaults = CUSTOMIZABLE_ITEM_DEFAULTS[item.assetKey];
+
+    if (!defaults) {
+        return 'default';
+    }
+
+    return JSON.stringify(
+        Object.fromEntries(
+            Object.keys(defaults).map((key) => [key, customization[key]]),
+        ),
+    );
+}
+
+async function ensureCustomizationIndexes() {
+    if (ensuredCustomizationIndexes) {
+        return;
+    }
+
+    try {
+        await UserItem.collection.dropIndex('user_1_item_1');
+    } catch (error) {
+        if (error.codeName !== 'IndexNotFound' && error.code !== 27) {
+            throw error;
+        }
+    }
+
+    await UserItem.collection.createIndex(
+        { user: 1, item: 1, customizationKey: 1 },
+        { unique: true },
+    );
+    ensuredCustomizationIndexes = true;
 }
 
 export async function listUserItems({ userId }) {
@@ -28,10 +101,9 @@ export async function listUserItems({ userId }) {
         .sort({ createdAt: -1 });
 }
 
-export async function buyItem({ userId, itemId }) {
-    const [item, existingUserItem, user] = await Promise.all([
+export async function buyItem({ userId, itemId, customization = {} }) {
+    const [item, user] = await Promise.all([
         Item.findById(itemId),
-        UserItem.findOne({ user: userId, item: itemId }),
         User.findById(userId),
     ]);
 
@@ -42,6 +114,27 @@ export async function buyItem({ userId, itemId }) {
     if (!user) {
         throw inventoryError(INVENTORY_ERROR_CODES.USER_NOT_FOUND);
     }
+
+    await ensureCustomizationIndexes();
+
+    const normalizedCustomization = normalizeCustomizationForItem(item, customization);
+    const customizationKey = buildCustomizationKey(item, normalizedCustomization);
+    const defaultCustomizationKey = buildCustomizationKey(item, normalizeCustomizationForItem(item, {}));
+    const customizationKeyConditions = [{ customizationKey }];
+
+    if (customizationKey === defaultCustomizationKey || customizationKey === 'default') {
+        customizationKeyConditions.push(
+            { customizationKey: 'default' },
+            { customizationKey: { $exists: false } },
+            { customizationKey: null },
+        );
+    }
+
+    const existingUserItem = await UserItem.findOne({
+        user: userId,
+        item: itemId,
+        $or: customizationKeyConditions,
+    });
 
     if (existingUserItem) {
         throw inventoryError(INVENTORY_ERROR_CODES.ITEM_ALREADY_OWNED);
@@ -60,10 +153,24 @@ export async function buyItem({ userId, itemId }) {
     user.coins -= item.price;
     await user.save();
 
-    const userItem = await UserItem.create({
-        user: userId,
-        item: itemId,
-    });
+    let userItem;
+
+    try {
+        userItem = await UserItem.create({
+            user: userId,
+            item: itemId,
+            customization: normalizedCustomization,
+            customizationKey,
+        });
+    } catch (error) {
+        if (error.code === 11000) {
+            user.coins += item.price;
+            await user.save();
+            throw inventoryError(INVENTORY_ERROR_CODES.ITEM_ALREADY_OWNED);
+        }
+
+        throw error;
+    }
 
     return userItem.populate('item');
 }
