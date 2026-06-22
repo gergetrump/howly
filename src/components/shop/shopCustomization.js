@@ -1,4 +1,5 @@
 export const MAX_CUSTOM_TEXT_LENGTH = 20;
+const NON_OWNERSHIP_CUSTOMIZATION_KEYS = new Set(['side']);
 
 export const ITEM_CUSTOMIZATION_CONFIG = {
     hoodie: {
@@ -154,7 +155,9 @@ export function getItemOwnershipSignature(item, customization = {}) {
     }
 
     const normalizedCustomization = normalizeItemCustomization(item, customization);
-    const signatureParts = Object.keys(config.defaults).map((key) => normalizedCustomization[key]);
+    const signatureParts = Object.keys(config.defaults)
+        .filter((key) => !NON_OWNERSHIP_CUSTOMIZATION_KEYS.has(key))
+        .map((key) => normalizedCustomization[key]);
 
     return [itemId, ...signatureParts].join(':');
 }

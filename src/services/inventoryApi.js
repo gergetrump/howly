@@ -11,10 +11,10 @@ export function buyItem(itemId, customization = {}) {
     });
 }
 
-export function saveOutfit(equippedUserItemIds) {
+export function saveOutfit(equippedUserItemIds, customizationUpdates = {}) {
     return apiRequest('/inventory/outfit', {
         method: 'PUT',
-        body: JSON.stringify({ equippedUserItemIds }),
+        body: JSON.stringify({ equippedUserItemIds, customizationUpdates }),
     });
 }
 
