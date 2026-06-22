@@ -33,7 +33,7 @@ const itemRegistry = {
         type: 'accessory',
         visual: GlassesPreview,
         layer: GlassesLayer,
-        transform: 'translate(480 550)',
+        transform: 'translate(485 550)',
         previewClassName: 'max-h-[64%] max-w-[80%]',
     },
     'hoodie': {
