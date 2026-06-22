@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
-import { getItemDisplayName, renderShopItemVisual } from '@/components/brand/items/itemRegistry';
+import { getItemDisplayName, hasItemSideOptions, renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/authContext';
@@ -19,10 +20,30 @@ export function InventoryPage() {
     const { user, companion } = useAuth();
     const [inventory, setInventory] = useState([]);
     const [draftEquippedItemIds, setDraftEquippedItemIds] = useState(new Set());
+    const [draftItemSides, setDraftItemSides] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [isSavingOutfit, setIsSavingOutfit] = useState(false);
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
+
+    const getInventorySides = useCallback((inventoryEntries) => (
+        Object.fromEntries(
+            inventoryEntries
+                .filter((entry) => hasItemSideOptions(entry.item?.assetKey))
+                .map((entry) => [entry._id, entry.customization?.side === 'left' ? 'left' : 'right']),
+        )
+    ), []);
+
+    const getDraftCustomization = useCallback((entry) => {
+        if (!hasItemSideOptions(entry.item?.assetKey)) {
+            return entry.customization ?? {};
+        }
+
+        return {
+            ...(entry.customization ?? {}),
+            side: draftItemSides[entry._id] ?? entry.customization?.side ?? 'right',
+        };
+    }, [draftItemSides]);
 
     useEffect(() => {
         let isCurrent = true;
@@ -41,6 +62,7 @@ export function InventoryPage() {
                             .filter((entry) => entry.equipped)
                             .map((entry) => entry._id),
                     ));
+                    setDraftItemSides(getInventorySides(nextInventory));
                 }
             } catch {
                 if (isCurrent) {
@@ -58,16 +80,17 @@ export function InventoryPage() {
         return () => {
             isCurrent = false;
         };
-    }, []);
+    }, [getInventorySides]);
 
     const equippedItemConfigs = useMemo(
         () => getEquippedItemConfigsFromInventory(
             inventory.map((entry) => ({
                 ...entry,
                 equipped: draftEquippedItemIds.has(entry._id),
+                customization: getDraftCustomization(entry),
             })),
         ),
-        [draftEquippedItemIds, inventory],
+        [draftEquippedItemIds, getDraftCustomization, inventory],
     );
 
     const ownedItems = useMemo(
@@ -76,10 +99,10 @@ export function InventoryPage() {
                 ...entry.item,
                 userItemId: entry._id,
                 equipped: draftEquippedItemIds.has(entry._id),
-                customization: entry.customization ?? {},
+                customization: getDraftCustomization(entry),
             }))
             .filter((item) => item?._id),
-        [draftEquippedItemIds, inventory],
+        [draftEquippedItemIds, getDraftCustomization, inventory],
     );
 
     const savedEquippedItemIds = useMemo(
@@ -90,6 +113,7 @@ export function InventoryPage() {
         ),
         [inventory],
     );
+    const savedItemSides = useMemo(() => getInventorySides(inventory), [getInventorySides, inventory]);
 
     const filteredItems = useMemo(
         () => activeCategory === 'all'
@@ -103,8 +127,12 @@ export function InventoryPage() {
             return true;
         }
 
-        return [...draftEquippedItemIds].some((itemId) => !savedEquippedItemIds.has(itemId));
-    }, [draftEquippedItemIds, savedEquippedItemIds]);
+        if ([...draftEquippedItemIds].some((itemId) => !savedEquippedItemIds.has(itemId))) {
+            return true;
+        }
+
+        return Object.entries(draftItemSides).some(([userItemId, side]) => savedItemSides[userItemId] !== side);
+    }, [draftEquippedItemIds, draftItemSides, savedEquippedItemIds, savedItemSides]);
 
     function handleToggleEquipped(item) {
         setError('');
@@ -135,7 +163,12 @@ export function InventoryPage() {
         setError('');
 
         try {
-            const savedInventory = await saveOutfit([...draftEquippedItemIds]);
+            const customizationUpdates = Object.fromEntries(
+                Object.entries(draftItemSides)
+                    .filter(([userItemId, side]) => savedItemSides[userItemId] !== side)
+                    .map(([userItemId, side]) => [userItemId, { side }]),
+            );
+            const savedInventory = await saveOutfit([...draftEquippedItemIds], customizationUpdates);
 
             setInventory(savedInventory);
             setDraftEquippedItemIds(new Set(
@@ -143,12 +176,54 @@ export function InventoryPage() {
                     .filter((entry) => entry.equipped)
                     .map((entry) => entry._id),
             ));
+            setDraftItemSides(getInventorySides(savedInventory));
             window.dispatchEvent(new Event('howly:outfit-updated'));
         } catch {
             setError('Saving this outfit did not work');
         } finally {
             setIsSavingOutfit(false);
         }
+    }
+
+    function handleSideChange(userItemId, side) {
+        setError('');
+        setDraftItemSides((currentSides) => ({
+            ...currentSides,
+            [userItemId]: side,
+        }));
+    }
+
+    function renderSideControls(item) {
+        if (!hasItemSideOptions(item.assetKey)) {
+            return null;
+        }
+
+        const selectedSide = item.customization?.side === 'left' ? 'left' : 'right';
+
+        return (
+            <div className="flex items-center gap-1">
+                <button
+                    type="button"
+                    className={`grid h-7 w-7 place-items-center rounded-md border transition ${selectedSide === 'left' ? 'border-violet-200 bg-violet-400/35 text-white' : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'}`}
+                    aria-label={`Move ${getItemDisplayName(item)} to the left side`}
+                    aria-pressed={selectedSide === 'left'}
+                    disabled={isSavingOutfit}
+                    onClick={() => handleSideChange(item.userItemId, 'left')}
+                >
+                    <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                </button>
+                <button
+                    type="button"
+                    className={`grid h-7 w-7 place-items-center rounded-md border transition ${selectedSide === 'right' ? 'border-violet-200 bg-violet-400/35 text-white' : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'}`}
+                    aria-label={`Move ${getItemDisplayName(item)} to the right side`}
+                    aria-pressed={selectedSide === 'right'}
+                    disabled={isSavingOutfit}
+                    onClick={() => handleSideChange(item.userItemId, 'right')}
+                >
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </button>
+            </div>
+        );
     }
 
     function renderShopEmptyState() {
@@ -245,6 +320,7 @@ export function InventoryPage() {
                                 dense
                                 interactive
                                 disabled={isSavingOutfit}
+                                titleAction={renderSideControls(item)}
                                 visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', item.customization)}
                                 onClick={() => handleToggleEquipped(item)}
                             />

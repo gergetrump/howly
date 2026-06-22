@@ -363,10 +363,10 @@ export function SocialPage() {
     }
 
     return (
-        <Page theme="forest">
+        <Page theme="forest" contentClassName="max-w-[112rem]">
             <Heading title="Social" subtitle="See what your friends are building." streakDays={user?.streak ?? 0} />
 
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,22rem)] lg:items-start xl:gap-12">
                 <SocialFeed
                     feed={feed}
                     isLoading={isLoading}
