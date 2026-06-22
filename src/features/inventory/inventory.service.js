@@ -45,6 +45,7 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
     },
     cup: {
         color: '#E09AAB',
+        side: 'right',
     },
     glasses: {
         color: '#000000',
@@ -52,6 +53,7 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
     phone: {
         frameColor: '#D9D9D9',
         backgroundColor: '#575757',
+        side: 'right',
     },
     'warm-hat': {
         color: '#4A6741',

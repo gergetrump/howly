@@ -14,6 +14,7 @@ const CUSTOMIZATION_COLOR_FIELDS = [
     'backgroundColor',
 ];
 const MAX_CUSTOM_TEXT_LENGTH = 20;
+const ITEM_SIDES = new Set(['left', 'right']);
 
 function sanitizeCustomization(customization = {}) {
     if (!customization || typeof customization !== 'object' || Array.isArray(customization)) {
@@ -39,6 +40,14 @@ function sanitizeCustomization(customization = {}) {
 
         if (text) {
             sanitizedCustomization.text = text;
+        }
+    }
+
+    if (typeof customization.side === 'string') {
+        const side = customization.side.trim().toLowerCase();
+
+        if (ITEM_SIDES.has(side)) {
+            sanitizedCustomization.side = side;
         }
     }
 

@@ -268,6 +268,7 @@ test('users can own customized accessories and shoes', async () => {
             customization: {
                 frameColor: '#DBEAFE',
                 backgroundColor: '#111827',
+                side: 'left',
             },
         })
         .expect(201);
@@ -286,11 +287,43 @@ test('users can own customized accessories and shoes', async () => {
     assert.deepEqual(phoneResponse.body.customization, {
         frameColor: '#DBEAFE',
         backgroundColor: '#111827',
+        side: 'left',
     });
     assert.deepEqual(sneakerResponse.body.customization, {
         color: '#1D4ED8',
     });
     assert.equal(await UserItem.countDocuments({ user: user._id }), 2);
+});
+
+test('users can own the same accessory with different sides', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const cup = await buildItem({ type: 'accessory', assetKey: 'cup', price: 100 });
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                side: 'right',
+            },
+        })
+        .expect(201);
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                side: 'left',
+            },
+        })
+        .expect(201);
+
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: cup._id }), 2);
 });
 
 test('legacy customizable inventory entries count as the default customization', async () => {
