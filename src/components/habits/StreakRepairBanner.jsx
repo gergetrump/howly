@@ -36,7 +36,7 @@ export function StreakRepairBanner() {
             </div>
             <button
                 type="button"
-                onClick={() => navigate('/shop')}
+                onClick={() => navigate('/shop?category=powerUp')}
                 className="shrink-0 rounded-full bg-amber-400 px-4 py-1.5 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-300"
             >
                 Get a freeze
