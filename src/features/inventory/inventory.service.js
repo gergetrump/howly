@@ -2,7 +2,6 @@ import User from '../users/user.model.js';
 import Item from '../items/item.model.js';
 import UserItem from './inventory.model.js';
 import { getPlanForUser, MAX_STREAK_SHIELDS } from '../../config/plans.js';
-import { repairStreaksWithShield } from '../streakFreeze/streakFreeze.service.js';
 
 export const INVENTORY_ERROR_CODES = {
     ITEM_NOT_FOUND: 'ITEM_NOT_FOUND',
@@ -78,8 +77,7 @@ export async function buyItem({ userId, itemId }) {
     return userItem.populate('item');
 }
 
-// Buy the consumable Streak Freeze: +1 shield (capped), repeatable. If a repair
-// window is open, the shield is spent immediately to save the streak.
+// Buy the consumable Streak Freeze: +1 shield (capped), repeatable.
 async function buyStreakFreeze({ user, item }) {
     const plan = getPlanForUser(user);
 
@@ -99,16 +97,12 @@ async function buyStreakFreeze({ user, item }) {
     user.streakShields = (user.streakShields ?? 0) + 1;
     await user.save();
 
-    // If a repair window is open, spend the shield right away to save the streak.
-    const streakRepaired = await repairStreaksWithShield(user._id);
-
     const fresh = await User.findById(user._id).select('coins streakShields');
     return {
         consumable: true,
         assetKey: item.assetKey,
         coins: fresh.coins,
         streakShields: fresh.streakShields,
-        streakRepaired,
     };
 }
 
