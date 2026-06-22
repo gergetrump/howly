@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/confirmation-dialog';
 import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
+import { StreakFreezeCard } from '@/components/shop/StreakFreezeCard.jsx';
 import { buyItem, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
 import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
@@ -50,8 +51,20 @@ export function ShopPage() {
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
+    const [syncedCategoryParam, setSyncedCategoryParam] = useState(null);
     const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
     const [planInfo, setPlanInfo] = useState(null);
+
+    // Select the tab from the ?category= URL param (e.g. the dashboard banner's
+    // "Get a freeze" deep-links to ?category=powerUp). Adjusted during render — not
+    // an effect — so it also applies when navigating to an already-mounted shop.
+    const requestedCategory = searchParams.get('category');
+    if (requestedCategory !== syncedCategoryParam) {
+        setSyncedCategoryParam(requestedCategory);
+        if (requestedCategory && ITEM_CATEGORIES.some((category) => category.value === requestedCategory)) {
+            setActiveCategory(requestedCategory);
+        }
+    }
 
     const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
     const premiumMonthlyCoins = planInfo?.plans?.premium?.monthlyBenefits?.coins;
@@ -235,9 +248,14 @@ export function ShopPage() {
     );
 
     const filteredItems = useMemo(
-        () => activeCategory === 'all'
-            ? items
-            : items.filter((item) => item.type === activeCategory),
+        () => {
+            // Power-ups are consumables shown via their own cards (e.g. StreakFreezeCard),
+            // not the wearable try-on grid — keep them out of it.
+            const wearableItems = items.filter((item) => item.type !== 'powerUp');
+            return activeCategory === 'all'
+                ? wearableItems
+                : wearableItems.filter((item) => item.type === activeCategory);
+        },
         [activeCategory, items],
     );
 
@@ -460,13 +478,17 @@ export function ShopPage() {
                 {!isLoading && !error && items.length === 0 ? (
                     <p className="text-sm text-slate-300">No shop items yet</p>
                 ) : null}
-                {!isLoading && !error && items.length > 0 && filteredItems.length === 0 ? (
+                {!isLoading && !error && items.length > 0 && filteredItems.length === 0 && activeCategory !== 'powerUp' ? (
                     <p className="text-sm text-slate-300">No items in this category yet</p>
                 ) : null}
 
+                {filteredItems.length > 0 || activeCategory === 'all' || activeCategory === 'powerUp' ? (
                 <div className="relative rounded-2xl border border-white/10 bg-white/5 p-3 shadow-xl shadow-slate-950/20">
                     <div className="max-h-[25rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
                         <CardGrid columns={4} className="pb-8">
+                            {activeCategory === 'all' || activeCategory === 'powerUp' ? (
+                                <StreakFreezeCard key="streak-freeze" />
+                            ) : null}
                             {filteredItems.map((item) => (
                                 <div key={item._id} data-shop-item-id={item._id}>
                                     <ItemCard
@@ -502,6 +524,7 @@ export function ShopPage() {
                     </div>
                     <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
                 </div>
+                ) : null}
             </PageSection>
 
             <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
