@@ -15,6 +15,7 @@ export const INVENTORY_ERROR_CODES = {
 };
 
 const SINGLE_EQUIP_ITEM_TYPES = new Set(['clothing', 'shoes']);
+const NON_OWNERSHIP_CUSTOMIZATION_FIELDS = new Set(['side']);
 const CUSTOMIZABLE_ITEM_DEFAULTS = {
     hoodie: {
         color: '#C66E6E',
@@ -93,9 +94,28 @@ function buildCustomizationKey(item, customization = {}) {
 
     return JSON.stringify(
         Object.fromEntries(
-            Object.keys(defaults).map((key) => [key, customization[key]]),
+            Object.keys(defaults)
+                .filter((key) => !NON_OWNERSHIP_CUSTOMIZATION_FIELDS.has(key))
+                .map((key) => [key, customization[key]]),
         ),
     );
+}
+
+function buildLegacyPlacementCustomizationKeys(item, customization = {}) {
+    const defaults = CUSTOMIZABLE_ITEM_DEFAULTS[item.assetKey];
+
+    if (!defaults?.side) {
+        return [];
+    }
+
+    return ['left', 'right'].map((side) => JSON.stringify(
+        Object.fromEntries(
+            Object.keys(defaults).map((key) => [
+                key,
+                key === 'side' ? side : customization[key],
+            ]),
+        ),
+    ));
 }
 
 async function ensureCustomizationIndexes() {
@@ -143,7 +163,12 @@ export async function buyItem({ userId, itemId, customization = {} }) {
     const normalizedCustomization = normalizeCustomizationForItem(item, customization);
     const customizationKey = buildCustomizationKey(item, normalizedCustomization);
     const defaultCustomizationKey = buildCustomizationKey(item, normalizeCustomizationForItem(item, {}));
-    const customizationKeyConditions = [{ customizationKey }];
+    const customizationKeyConditions = [
+        { customizationKey },
+        ...buildLegacyPlacementCustomizationKeys(item, normalizedCustomization).map((legacyCustomizationKey) => ({
+            customizationKey: legacyCustomizationKey,
+        })),
+    ];
 
     if (customizationKey === defaultCustomizationKey || customizationKey === 'default') {
         customizationKeyConditions.push(
@@ -218,7 +243,7 @@ export async function setItemEquipped({ userId, userItemId, equipped }) {
     return userItem;
 }
 
-export async function saveOutfit({ userId, equippedUserItemIds }) {
+export async function saveOutfit({ userId, equippedUserItemIds, customizationUpdates = {} }) {
     const selectedUserItems = await UserItem.find({
         _id: { $in: equippedUserItemIds },
         user: userId,
@@ -243,6 +268,33 @@ export async function saveOutfit({ userId, equippedUserItemIds }) {
 
         selectedSingleTypes.add(itemType);
     });
+
+    const customizationUpdateEntries = Object.entries(customizationUpdates)
+        .filter(([, customization]) => customization && Object.keys(customization).length > 0);
+
+    if (customizationUpdateEntries.length) {
+        const customizationUpdateIds = customizationUpdateEntries.map(([userItemId]) => userItemId);
+        const ownedItemsForCustomization = await UserItem.find({
+            _id: { $in: customizationUpdateIds },
+            user: userId,
+        });
+
+        if (ownedItemsForCustomization.length !== customizationUpdateIds.length) {
+            throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_NOT_OWNED);
+        }
+
+        await Promise.all(ownedItemsForCustomization.map((userItem) => {
+            const nextCustomization = {
+                ...(userItem.customization ?? {}),
+                ...customizationUpdates[userItem._id.toString()],
+            };
+
+            return UserItem.updateOne(
+                { _id: userItem._id, user: userId },
+                { customization: nextCustomization },
+            );
+        }));
+    }
 
     await UserItem.updateMany({ user: userId, equipped: true }, { equipped: false });
 

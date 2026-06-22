@@ -69,6 +69,7 @@ export async function saveOutfit(req, res) {
         const inventory = await inventoryService.saveOutfit({
             userId: req.user.id,
             equippedUserItemIds: value.equippedUserItemIds,
+            customizationUpdates: value.customizationUpdates,
         });
 
         return res.status(200).json(inventory);

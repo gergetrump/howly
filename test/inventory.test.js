@@ -295,7 +295,7 @@ test('users can own customized accessories and shoes', async () => {
     assert.equal(await UserItem.countDocuments({ user: user._id }), 2);
 });
 
-test('users can own the same accessory with different sides', async () => {
+test('users cannot buy the same accessory customization twice by changing only side', async () => {
     const user = await buildUser({ coins: 1000 });
     const cup = await buildItem({ type: 'accessory', assetKey: 'cup', price: 100 });
 
@@ -321,9 +321,78 @@ test('users can own the same accessory with different sides', async () => {
                 side: 'left',
             },
         })
+        .expect(409);
+
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: cup._id }), 1);
+});
+
+test('saving an outfit persists accessory side placement', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const cup = await buildItem({ type: 'accessory', assetKey: 'cup', price: 100 });
+
+    const buyResponse = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                side: 'right',
+            },
+        })
         .expect(201);
 
-    assert.equal(await UserItem.countDocuments({ user: user._id, item: cup._id }), 2);
+    const userItemId = buyResponse.body._id;
+
+    const response = await request(app)
+        .put('/api/inventory/outfit')
+        .set('Authorization', authHeader(user))
+        .send({
+            equippedUserItemIds: [userItemId],
+            customizationUpdates: {
+                [userItemId]: {
+                    side: 'left',
+                    color: '#000000',
+                },
+            },
+        })
+        .expect(200);
+
+    assert.equal(response.body[0].equipped, true);
+    assert.deepEqual(response.body[0].customization, {
+        color: '#E09AAB',
+        side: 'left',
+    });
+});
+
+test('legacy side-based accessory entries still count as owned', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const cup = await buildItem({ type: 'accessory', assetKey: 'cup', price: 100 });
+    const legacyCustomization = {
+        color: '#E09AAB',
+        side: 'right',
+    };
+
+    await UserItem.create({
+        user: user._id,
+        item: cup._id,
+        customization: legacyCustomization,
+        customizationKey: JSON.stringify(legacyCustomization),
+    });
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                side: 'left',
+            },
+        })
+        .expect(409);
+
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: cup._id }), 1);
 });
 
 test('legacy customizable inventory entries count as the default customization', async () => {
