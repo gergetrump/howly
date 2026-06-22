@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
-import { renderShopItemVisual } from '@/components/brand/items/itemRegistry';
+import { getItemDisplayName, renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/authContext';
@@ -11,14 +12,15 @@ import {
     getMyInventory,
     saveOutfit,
 } from '@/services/inventoryApi';
+import { getEquippedItemConfigsFromInventory, itemMatchesCategory } from '@/lib/inventoryItems';
 
 export function InventoryPage() {
+    const navigate = useNavigate();
     const { user, companion } = useAuth();
     const [inventory, setInventory] = useState([]);
     const [draftEquippedItemIds, setDraftEquippedItemIds] = useState(new Set());
     const [isLoading, setIsLoading] = useState(true);
     const [isSavingOutfit, setIsSavingOutfit] = useState(false);
-    const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
 
@@ -58,11 +60,13 @@ export function InventoryPage() {
         };
     }, []);
 
-    const equippedItemKeys = useMemo(
-        () => inventory
-            .filter((entry) => draftEquippedItemIds.has(entry._id))
-            .map((entry) => entry.item?.assetKey)
-            .filter(Boolean),
+    const equippedItemConfigs = useMemo(
+        () => getEquippedItemConfigsFromInventory(
+            inventory.map((entry) => ({
+                ...entry,
+                equipped: draftEquippedItemIds.has(entry._id),
+            })),
+        ),
         [draftEquippedItemIds, inventory],
     );
 
@@ -72,6 +76,7 @@ export function InventoryPage() {
                 ...entry.item,
                 userItemId: entry._id,
                 equipped: draftEquippedItemIds.has(entry._id),
+                customization: entry.customization ?? {},
             }))
             .filter((item) => item?._id),
         [draftEquippedItemIds, inventory],
@@ -89,7 +94,7 @@ export function InventoryPage() {
     const filteredItems = useMemo(
         () => activeCategory === 'all'
             ? ownedItems
-            : ownedItems.filter((item) => item.type === activeCategory),
+            : ownedItems.filter((item) => itemMatchesCategory(item, activeCategory)),
         [activeCategory, ownedItems],
     );
 
@@ -102,7 +107,6 @@ export function InventoryPage() {
     }, [draftEquippedItemIds, savedEquippedItemIds]);
 
     function handleToggleEquipped(item) {
-        setNotice('');
         setError('');
 
         setDraftEquippedItemIds((currentItemIds) => {
@@ -128,7 +132,6 @@ export function InventoryPage() {
 
     async function handleSaveOutfit() {
         setIsSavingOutfit(true);
-        setNotice('');
         setError('');
 
         try {
@@ -140,7 +143,6 @@ export function InventoryPage() {
                     .filter((entry) => entry.equipped)
                     .map((entry) => entry._id),
             ));
-            setNotice('Outfit saved');
             window.dispatchEvent(new Event('howly:outfit-updated'));
         } catch {
             setError('Saving this outfit did not work');
@@ -149,8 +151,23 @@ export function InventoryPage() {
         }
     }
 
+    function renderShopEmptyState() {
+        return (
+            <div className="flex min-h-48 flex-col items-center justify-center gap-4 text-center">
+                <p className="text-sm font-medium text-slate-200">Try on some items at the Shop!</p>
+                <ActionButton
+                    type="button"
+                    className="bg-violet-500 px-5 text-white hover:bg-violet-400"
+                    onClick={() => navigate('/shop')}
+                >
+                    Visit shop
+                </ActionButton>
+            </div>
+        );
+    }
+
     return (
-        <Page theme="forest" className="h-screen overflow-hidden">
+        <Page theme="forest">
             <Heading title="Inventory" subtitle="Equip items for your companion." streakDays={user?.streak ?? 0} />
             <section className="sticky top-24 z-20 flex min-h-72 flex-col items-center justify-end gap-3 text-center">
                 <CompanionAvatar
@@ -158,14 +175,13 @@ export function InventoryPage() {
                     name={companion?.name}
                     size="xl"
                     showName
-                    equippedItemKeys={equippedItemKeys}
+                    equippedItemConfigs={equippedItemConfigs}
                 />
                 <ActionButton
                     type="button"
                     className="h-9 bg-white/10 px-4 text-sm text-white hover:bg-white/20 disabled:text-slate-500"
                     disabled={draftEquippedItemIds.size === 0 || isSavingOutfit}
                     onClick={() => {
-                        setNotice('');
                         setError('');
                         setDraftEquippedItemIds(new Set());
                     }}
@@ -200,38 +216,41 @@ export function InventoryPage() {
                     </ActionButton>
                 </div>
 
-                {isLoading ? <p className="text-sm text-slate-300">Loading your inventory...</p> : null}
-                {notice ? <p className="text-sm text-emerald-300">{notice}</p> : null}
                 {error ? <p className="text-sm text-red-300">{error}</p> : null}
-                {!isLoading && !error && ownedItems.length === 0 ? (
-                    <p className="text-sm text-slate-300">Your inventory is empty</p>
-                ) : null}
-                {!isLoading && !error && ownedItems.length > 0 && filteredItems.length === 0 ? (
-                    <p className="text-sm text-slate-300">No owned items in this category yet</p>
+
+                {isLoading ? (
+                    <div className="flex min-h-48 items-center justify-center text-center">
+                        <p className="text-sm text-slate-300">Loading your inventory...</p>
+                    </div>
                 ) : null}
 
-                <div className="relative rounded-2xl border border-white/10 bg-white/5 p-4 shadow-xl shadow-slate-950/20">
-                    <div className="max-h-[25rem] overflow-y-scroll pr-3 [scrollbar-gutter:stable]">
-                        <CardGrid columns={4} className="gap-4 pb-8">
-                            {filteredItems.map((item) => (
-                                <ItemCard
-                                    key={item.userItemId}
-                                    name={item.name}
-                                    price={item.price}
-                                    premiumOnly={item.premiumOnly}
-                                    equipped={item.equipped}
-                                    showPrice={false}
-                                    dense
-                                    interactive
-                                    disabled={isSavingOutfit}
-                                    visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]')}
-                                    onClick={() => handleToggleEquipped(item)}
-                                />
-                            ))}
-                        </CardGrid>
-                    </div>
-                    <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
-                </div>
+                {!isLoading && !error && ownedItems.length === 0 ? (
+                    renderShopEmptyState()
+                ) : null}
+
+                {!isLoading && !error && ownedItems.length > 0 && filteredItems.length === 0 ? (
+                    renderShopEmptyState()
+                ) : null}
+
+                {!isLoading && !error && filteredItems.length > 0 ? (
+                    <CardGrid columns={4} className="gap-4 pb-8">
+                        {filteredItems.map((item) => (
+                            <ItemCard
+                                key={item.userItemId}
+                                name={getItemDisplayName(item)}
+                                price={item.price}
+                                premiumOnly={item.premiumOnly}
+                                equipped={item.equipped}
+                                showPrice={false}
+                                dense
+                                interactive
+                                disabled={isSavingOutfit}
+                                visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', item.customization)}
+                                onClick={() => handleToggleEquipped(item)}
+                            />
+                        ))}
+                    </CardGrid>
+                ) : null}
             </PageSection>
         </Page>
     );

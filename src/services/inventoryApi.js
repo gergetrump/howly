@@ -4,10 +4,10 @@ export function getMyInventory() {
     return apiRequest('/inventory/me');
 }
 
-export function buyItem(itemId) {
+export function buyItem(itemId, customization = {}) {
     return apiRequest('/inventory/buy', {
         method: 'POST',
-        body: JSON.stringify({ itemId }),
+        body: JSON.stringify({ itemId, customization }),
     });
 }
 
