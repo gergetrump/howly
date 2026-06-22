@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { StreakFreezeIcon } from './StreakFreezeIcon.jsx';
 
 const sizeClasses = {
     sm: 'text-xs gap-1',
@@ -6,12 +7,14 @@ const sizeClasses = {
     lg: 'text-2xl gap-2 font-bold',
 };
 
-// Shows the user's streak-freeze reserve ("shields"). Presentational — pass the
-// count in (e.g. from useAuth().user.streakShields). Reusable on dashboard,
-// shop and profile.
+const iconSizes = {
+    sm: 'h-3.5',
+    md: 'h-4',
+    lg: 'h-7',
+};
 
-
-// PLATZHALTER ICON
+// Shows the user's streak-freeze reserve. Presentational — pass the count in
+// (e.g. from useAuth().user.streakShields). Reusable on dashboard, shop, profile.
 export function StreakShieldBadge({ count = 0, showLabel = true, size = 'md', className }) {
     return (
         <span
@@ -22,7 +25,7 @@ export function StreakShieldBadge({ count = 0, showLabel = true, size = 'md', cl
             )}
             title="Streak freezes"
         >
-            <span aria-hidden="true">🛡️</span>
+            <StreakFreezeIcon className={cn('w-auto', iconSizes[size] ?? iconSizes.md)} />
             {showLabel ? `${count} freeze${count === 1 ? '' : 's'}` : count}
         </span>
     );
