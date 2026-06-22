@@ -13,6 +13,7 @@ import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
 import { NotificationBanner } from '@/components/ui/notification-banner';
 import { Card, CardContent } from '@/components/ui/card';
 import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
+import { applyHabitStreakFreeze } from '@/services/streakFreezeApi';
 import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
 import { getMyInventory } from '@/services/inventoryApi';
 import { getMyActiveStories } from '@/services/storyApi';
@@ -189,6 +190,16 @@ export function DashboardPage() {
         }
     }
 
+    async function handleUseHabitFreeze(habit) {
+        try {
+            const result = await applyHabitStreakFreeze(habit.id);
+            setHabits(prev => prev.map(h => (h.id === habit.id ? { ...h, ...result.habit } : h)));
+            setUser(current => (current ? { ...current, streakShields: result.streakShields } : current));
+        } catch (error) {
+            console.error('Failed to use streak freeze:', error);
+        }
+    }
+
     async function handleHabitCompletion(habit) {
         try {
             const wasCompleted = habit.isCompletedToday;
@@ -275,6 +286,8 @@ export function DashboardPage() {
                 frequency={habit.frequency}
                 streakDays={habit.streakCount}
                 completed={habit.isCompletedToday}
+                atRisk={Boolean(habit.streakRepairDeadline)}
+                onUseFreeze={() => handleUseHabitFreeze(habit)}
                 onEdit={() => handleEdit(habit)}
                 onDelete={() => handleDelete(habit.id)}
                 onShareStory={
