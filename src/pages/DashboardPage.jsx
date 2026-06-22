@@ -8,10 +8,12 @@ import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
 import { CompanionStage } from '@/components/brand';
 import { AddHabitModal } from '@/components/habits/AddHabitModal.jsx';
 import { CompanionChatPanel } from '@/components/habits/CompanionChatPanel.jsx';
+import { StreakRepairBanner } from '@/components/habits/StreakRepairBanner.jsx';
 import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
 import { NotificationBanner } from '@/components/ui/notification-banner';
 import { Card, CardContent } from '@/components/ui/card';
 import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
+import { getCurrentUser } from '@/services/userService';
 import { getMyInventory } from '@/services/inventoryApi';
 import { getMyActiveStories } from '@/services/storyApi';
 import { getCurrentUserPlan } from '@/services/userService';
@@ -76,7 +78,7 @@ function groupHabitsByGoal(list) {
 
 export function DashboardPage() {
     const navigate = useNavigate();
-    const { user, companion } = useAuth();
+    const { user, companion, setUser } = useAuth();
     const [habits, setHabits] = useState([]);
     const [challengeHabits, setChallengeHabits] = useState([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -164,6 +166,18 @@ export function DashboardPage() {
         return () => clearTimeout(timeout);
     }, [pendingMilestoneNotice]);
 
+    // After a check-in the day may be complete → refetch the user so the overall
+    // streak (🔥) in the header updates right away. Uses a direct fetch (not
+    // refreshUser) to avoid the full-screen loading state in ProtectedRoute.
+    async function refreshUserStreak() {
+        try {
+            const freshUser = await getCurrentUser();
+            setUser(freshUser.user ?? freshUser);
+        } catch (error) {
+            console.error('Failed to refresh overall streak:', error);
+        }
+    }
+
     async function handleHabitCompletion(habit) {
         try {
             const wasCompleted = habit.isCompletedToday;
@@ -171,6 +185,11 @@ export function DashboardPage() {
                 ? await uncheckInHabit(habit.id)
                 : await checkInHabit(habit.id);
             setHabits(prev => prev.map(h => h.id === habit.id ? updatedHabit.data : h));
+
+            // A check-in can complete the day → refresh the overall streak (🔥).
+            if (!wasCompleted) {
+                refreshUserStreak();
+            }
 
             // Offer to share a story moment after checking off a habit (if none posted yet)
             if (!wasCompleted && !sharedHabitIds.has(habit.id)) {
@@ -198,6 +217,11 @@ export function DashboardPage() {
 
             const response = await getMyChallengeHabits();
             setChallengeHabits(Array.isArray(response) ? response : []);
+
+            // A check-in can complete the day → refresh the overall streak (🔥).
+            if (!wasCompleted) {
+                refreshUserStreak();
+            }
         } catch (error) {
             console.error('Failed to complete challenge habit:', error);
         }
@@ -320,6 +344,8 @@ export function DashboardPage() {
                     />
                 </div>
             ) : null}
+
+            <StreakRepairBanner />
 
             <PageSection className="mt-6">
                 <DailyProgressCard completed={completedCount} total={totalCount} />
