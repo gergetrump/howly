@@ -99,12 +99,14 @@ async function createMilestoneReaction({ milestonePostId, userId, emoji }) {
   }
 }
 
-function toCompanionResponse(companion, equippedItemKeys = []) {
+function toCompanionResponse(companion, equippedItemConfigs = []) {
   // Fallback for users who do not have a companion document yet
   return {
     id: companion?._id?.toString?.() ?? null,
     name: companion?.name ?? 'Howly',
-    equippedItemKeys,
+    type: companion?.type ?? 'wolf',
+    equippedItemKeys: equippedItemConfigs.map((item) => item.assetKey).filter(Boolean),
+    equippedItemConfigs,
   };
 }
 
@@ -131,7 +133,7 @@ function toMilestonePostResponse(
   post,
   userReactionsByPostId = new Map(),
   companionsByUserId = new Map(),
-  equippedItemKeysByUserId = new Map(),
+  equippedItemsByUserId = new Map(),
   reactionCountsByPostId = new Map(),
   reactionsByPostId = new Map()
 ) {
@@ -147,7 +149,7 @@ function toMilestonePostResponse(
     user: toPublicUser(post.user),
     companion: toCompanionResponse(
       companionsByUserId.get(userId),
-      equippedItemKeysByUserId.get(userId) ?? []
+      equippedItemsByUserId.get(userId) ?? []
     ),
     habit: {
       id: habitId,
@@ -222,7 +224,7 @@ async function getReactionsByPostId(postIds) {
   return reactionsByPostId;
 }
 
-async function getEquippedItemKeysByUserId(userIds) {
+async function getEquippedItemsByUserId(userIds) {
   const uniqueUserIds = [...new Set(userIds.map((userId) => userId?.toString()).filter(Boolean))];
 
   if (!uniqueUserIds.length) {
@@ -235,7 +237,7 @@ async function getEquippedItemKeysByUserId(userIds) {
   })
     .populate('item')
     .lean();
-  const equippedItemKeysByUserId = new Map();
+  const equippedItemsByUserId = new Map();
 
   userItems.forEach((userItem) => {
     const userId = userItem.user.toString();
@@ -245,12 +247,15 @@ async function getEquippedItemKeysByUserId(userIds) {
       return;
     }
 
-    const equippedItemKeys = equippedItemKeysByUserId.get(userId) ?? [];
-    equippedItemKeys.push(assetKey);
-    equippedItemKeysByUserId.set(userId, equippedItemKeys);
+    const equippedItems = equippedItemsByUserId.get(userId) ?? [];
+    equippedItems.push({
+      assetKey,
+      customization: userItem.customization ?? {},
+    });
+    equippedItemsByUserId.set(userId, equippedItems);
   });
 
-  return equippedItemKeysByUserId;
+  return equippedItemsByUserId;
 }
 
 export async function enrichMilestonePost(post, currentUserReaction = null) {
@@ -261,7 +266,7 @@ export async function enrichMilestonePost(post, currentUserReaction = null) {
   const companionsByUserId = companionUserId
     ? new Map([[companionUserId, companion]])
     : new Map();
-  const equippedItemKeysByUserId = await getEquippedItemKeysByUserId([post.user._id ?? post.user]);
+  const equippedItemsByUserId = await getEquippedItemsByUserId([post.user._id ?? post.user]);
   const postId = post._id.toString();
   const currentUserReactions = normalizeReactionList(currentUserReaction);
   const userReactionsByPostId = currentUserReactions.length
@@ -274,7 +279,7 @@ export async function enrichMilestonePost(post, currentUserReaction = null) {
     post,
     userReactionsByPostId,
     companionsByUserId,
-    equippedItemKeysByUserId,
+    equippedItemsByUserId,
     reactionCountsByPostId,
     reactionsByPostId
   );
@@ -365,7 +370,7 @@ export async function getFriendFeed({ userId }) {
   const companionsByUserId = new Map(
     companions.map((companion) => [companion.user.toString(), companion])
   );
-  const equippedItemKeysByUserId = await getEquippedItemKeysByUserId(
+  const equippedItemsByUserId = await getEquippedItemsByUserId(
     posts.map((post) => post.user._id ?? post.user)
   );
 
@@ -374,7 +379,7 @@ export async function getFriendFeed({ userId }) {
       post,
       userReactionsByPostId,
       companionsByUserId,
-      equippedItemKeysByUserId,
+      equippedItemsByUserId,
       reactionCountsByPostId,
       reactionsByPostId
     )

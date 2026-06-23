@@ -69,6 +69,7 @@ export async function saveOutfit(req, res) {
         const inventory = await inventoryService.saveOutfit({
             userId: req.user.id,
             equippedUserItemIds: value.equippedUserItemIds,
+            customizationUpdates: value.customizationUpdates,
         });
 
         return res.status(200).json(inventory);
@@ -95,6 +96,7 @@ export async function buyItem(req, res) {
         const userItem = await inventoryService.buyItem({
             userId: req.user.id,
             itemId: value.itemId,
+            customization: value.customization,
         });
 
         return res.status(201).json(userItem);

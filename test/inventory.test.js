@@ -112,3 +112,373 @@ test('free users can still buy non-premium items', async () => {
     assert.equal(response.body.item._id, item._id.toString());
     assert.equal(await UserItem.countDocuments({ user: user._id, item: item._id }), 1);
 });
+
+test('buying an item stores the selected customization on the inventory entry', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const item = await buildItem({ type: 'clothing', assetKey: 'hoodie', price: 100 });
+    const customization = {
+        color: '#4f772d',
+        stringColor: '#f8fafc',
+        textColor: '#111827',
+        text: 'forest howly',
+    };
+
+    const response = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({ itemId: item._id.toString(), customization })
+        .expect(201);
+
+    assert.deepEqual(response.body.customization, {
+        color: '#4F772D',
+        stringColor: '#F8FAFC',
+        textColor: '#111827',
+        text: 'FOREST HOWLY',
+    });
+
+    const userItem = await UserItem.findOne({ user: user._id, item: item._id }).lean();
+
+    assert.deepEqual(userItem.customization, response.body.customization);
+
+    const inventoryResponse = await request(app)
+        .get('/api/inventory/me')
+        .set('Authorization', authHeader(user))
+        .expect(200);
+
+    assert.deepEqual(inventoryResponse.body[0].customization, response.body.customization);
+});
+
+test('users can own the same hoodie with different customizations', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const item = await buildItem({ type: 'clothing', assetKey: 'hoodie', price: 100 });
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: item._id.toString(),
+            customization: {
+                color: '#C66E6E',
+                stringColor: '#DADADA',
+                textColor: '#FFFFFF',
+                text: 'HOWLY',
+            },
+        })
+        .expect(201);
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: item._id.toString(),
+            customization: {
+                color: '#4F772D',
+                stringColor: '#F8FAFC',
+                textColor: '#111827',
+                text: 'FOREST',
+            },
+        })
+        .expect(201);
+
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: item._id }), 2);
+
+    const updatedUser = await User.findById(user._id).lean();
+
+    assert.equal(updatedUser.coins, 800);
+});
+
+test('users cannot buy the same hoodie customization twice', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const item = await buildItem({ type: 'clothing', assetKey: 'hoodie', price: 100 });
+    const customization = {
+        color: '#4F772D',
+        stringColor: '#F8FAFC',
+        textColor: '#111827',
+        text: 'FOREST',
+    };
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({ itemId: item._id.toString(), customization })
+        .expect(201);
+
+    const response = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({ itemId: item._id.toString(), customization })
+        .expect(409);
+
+    assert.equal(response.body.code, 'ITEM_ALREADY_OWNED');
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: item._id }), 1);
+
+    const updatedUser = await User.findById(user._id).lean();
+
+    assert.equal(updatedUser.coins, 900);
+});
+
+test('users can own different customizations for other customizable clothing items', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const top = await buildItem({ type: 'clothing', assetKey: 'cream-top', price: 100 });
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: top._id.toString(),
+            customization: {
+                color: '#F4EFE5',
+                buttonColor: '#B18167',
+                pocketColor: '#DDCEAF',
+            },
+        })
+        .expect(201);
+
+    const secondResponse = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: top._id.toString(),
+            customization: {
+                color: '#DBEAFE',
+                buttonColor: '#1D4ED8',
+                pocketColor: '#93C5FD',
+            },
+        })
+        .expect(201);
+
+    assert.deepEqual(secondResponse.body.customization, {
+        color: '#DBEAFE',
+        buttonColor: '#1D4ED8',
+        pocketColor: '#93C5FD',
+    });
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: top._id }), 2);
+});
+
+test('users can own customized accessories and shoes', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const phone = await buildItem({ type: 'accessory', assetKey: 'phone', price: 100 });
+    const cup = await buildItem({ type: 'accessory', assetKey: 'cup', price: 100 });
+    const sneaker = await buildItem({ type: 'shoes', assetKey: 'sneaker', price: 100 });
+
+    const phoneResponse = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: phone._id.toString(),
+            customization: {
+                frameColor: '#DBEAFE',
+                backgroundColor: '#111827',
+                side: 'left',
+            },
+        })
+        .expect(201);
+
+    const cupResponse = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                symbol: 'heart',
+                symbolColor: '#3B82F6',
+                side: 'right',
+            },
+        })
+        .expect(201);
+
+    const sneakerResponse = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: sneaker._id.toString(),
+            customization: {
+                color: '#1D4ED8',
+            },
+        })
+        .expect(201);
+
+    assert.deepEqual(phoneResponse.body.customization, {
+        frameColor: '#DBEAFE',
+        backgroundColor: '#111827',
+        side: 'left',
+    });
+    assert.deepEqual(cupResponse.body.customization, {
+        color: '#E09AAB',
+        symbol: 'heart',
+        symbolColor: '#3B82F6',
+        side: 'right',
+    });
+    assert.deepEqual(sneakerResponse.body.customization, {
+        color: '#1D4ED8',
+    });
+    assert.equal(await UserItem.countDocuments({ user: user._id }), 3);
+});
+
+test('users can own the same cup symbol with different colors', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const cup = await buildItem({ type: 'accessory', assetKey: 'cup', price: 100 });
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                symbol: 'heart',
+                symbolColor: '#990000',
+            },
+        })
+        .expect(201);
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                symbol: 'heart',
+                symbolColor: '#3B82F6',
+            },
+        })
+        .expect(201);
+
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: cup._id }), 2);
+});
+
+test('users cannot buy the same accessory customization twice by changing only side', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const cup = await buildItem({ type: 'accessory', assetKey: 'cup', price: 100 });
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                side: 'right',
+            },
+        })
+        .expect(201);
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                side: 'left',
+            },
+        })
+        .expect(409);
+
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: cup._id }), 1);
+});
+
+test('saving an outfit persists accessory side placement', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const cup = await buildItem({ type: 'accessory', assetKey: 'cup', price: 100 });
+
+    const buyResponse = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                side: 'right',
+            },
+        })
+        .expect(201);
+
+    const userItemId = buyResponse.body._id;
+
+    const response = await request(app)
+        .put('/api/inventory/outfit')
+        .set('Authorization', authHeader(user))
+        .send({
+            equippedUserItemIds: [userItemId],
+            customizationUpdates: {
+                [userItemId]: {
+                    side: 'left',
+                    color: '#000000',
+                },
+            },
+        })
+        .expect(200);
+
+    assert.equal(response.body[0].equipped, true);
+    assert.deepEqual(response.body[0].customization, {
+        color: '#E09AAB',
+        symbol: 'eclipse',
+        symbolColor: '#FFFF00',
+        side: 'left',
+    });
+});
+
+test('legacy side-based accessory entries still count as owned', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const cup = await buildItem({ type: 'accessory', assetKey: 'cup', price: 100 });
+    const legacyCustomization = {
+        color: '#E09AAB',
+        side: 'right',
+    };
+
+    await UserItem.create({
+        user: user._id,
+        item: cup._id,
+        customization: legacyCustomization,
+        customizationKey: JSON.stringify(legacyCustomization),
+    });
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                side: 'left',
+            },
+        })
+        .expect(409);
+
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: cup._id }), 1);
+});
+
+test('legacy customizable inventory entries count as the default customization', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const hoodie = await buildItem({ type: 'clothing', assetKey: 'hoodie', price: 100 });
+
+    await UserItem.create({
+        user: user._id,
+        item: hoodie._id,
+    });
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({ itemId: hoodie._id.toString() })
+        .expect(409);
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: hoodie._id.toString(),
+            customization: {
+                color: '#4F772D',
+                stringColor: '#F8FAFC',
+                textColor: '#111827',
+                text: 'FOREST',
+            },
+        })
+        .expect(201);
+
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: hoodie._id }), 2);
+});

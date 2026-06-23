@@ -76,14 +76,10 @@ export async function toggleStoryLike(req, res) {
     return notFound(res);
   }
 
-  if (errorCode === 'CANNOT_LIKE_OWN_STORY') {
-    return badRequest(res, 'You cannot like your own story', errorCode);
-  }
-
   return res.status(200).json({ liked, story });
 }
 
-// GET /api/stories/:storyId/likes — who liked (owner only)
+// GET /api/stories/:storyId/likes — who liked (owner and friends who can view it)
 export async function getStoryLikes(req, res) {
   const { error } = validateStoryId(req.params.storyId);
 
