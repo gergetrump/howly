@@ -1,3 +1,11 @@
+export function HatWithPompomLayer({ transform, ...props }) {
+    return (
+        <g transform={transform} {...props}>
+            <HatWithPompom width="1096" height="723" />
+        </g>
+    );
+}
+
 export default function HatWithPompom({ className, ...props }) {
     return (
         <svg className={className} width="1096" height="723" viewBox="0 0 1096 723" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

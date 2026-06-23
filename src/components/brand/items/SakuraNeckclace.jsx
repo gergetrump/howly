@@ -15,3 +15,11 @@ export default function SakuraNeckclace({ className, ...props }) {
         </svg>
     );
 }
+
+export function SakuraNeckclaceLayer({ transform = 'translate(545 690)', ...props }) {
+    return (
+        <g transform={transform}>
+            <SakuraNeckclace width="440" height="225" {...props} />
+        </g>
+    );
+}

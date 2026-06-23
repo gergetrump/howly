@@ -1,4 +1,4 @@
-import Bag from './Bag';
+import Bag, { BagLayer } from './Bag';
 import { BallerinaLayer, BallerinaPair } from './Ballerina';
 import BambusFlute, { BambusFluteLayer } from './BambusFlute';
 import { BambusShoesLayer, BambusShoesPair } from './BambusShoes';
@@ -6,24 +6,24 @@ import BubbleTea, { BubbleTeaLayer } from './BubbleTea';
 import CozyJacket, { CozyJacketLayer } from './CozyJacket';
 import Cup, { CupLayer } from './Cup';
 import { CuteBallerinasLayer, CuteBallerinasPair } from './CuteBallerinas';
-import CuteHat from './CuteHat';
+import CuteHat, { CuteHatLayer } from './CuteHat';
 import Dress, { DressLayer } from './Dress';
 import DrinkTogo, { DrinkTogoLayer } from './DrinkTogo';
 import { GlassesLayer, GlassesPreview } from './Glasses';
-import Hairpin from './Hairpin';
-import Hat from './Hat';
-import HatWithPompom from './HatWithPompom';
+import Hairpin, { HairpinLayer } from './Hairpin';
+import Hat, { HatLayer } from './Hat';
+import HatWithPompom, { HatWithPompomLayer } from './HatWithPompom';
 import HogwartsCape, { HogwartsCapeLayer } from './HogwartsCape';
 import Hoodie, { HoodieLayer } from './Hoodie';
 import Jersie, { JersieLayer } from './Jersie';
 import MagicWand, { MagicWandLayer } from './MagicWand';
-import Necklace from './Necklace';
-import Nerdglasses from './Nerdglasses';
+import Necklace, { NecklaceLayer } from './Necklace';
+import Nerdglasses, { NerdglassesLayer } from './Nerdglasses';
 import Phone, { PhoneLayer } from './Phone';
-import SakuraNeckclace from './SakuraNeckclace';
+import SakuraNeckclace, { SakuraNeckclaceLayer } from './SakuraNeckclace';
 import SakuraOutfit, { SakuraOutfitLayer } from './SakuraOutfit';
 import SakuraPouch, { SakuraPouchLayer } from './SakuraPouch';
-import Scar from './Scar';
+import Scar, { ScarLayer } from './Scar';
 import { SneakerLayer, SneakerPair } from './Sneaker';
 import Suit, { SuitLayer } from './Suit';
 import Summertop, { SummertopLayer } from './Summertop';
@@ -31,13 +31,20 @@ import Top, { TopLayer } from './Top';
 import TopWarm, { TopWarmLayer } from './TopWarm';
 import { WarmBootsLayer, WarmBootsPair } from './WarmBoots';
 import WarmHat, { WarmHatLayer } from './WarmHat';
-import WarmHat2Pompom from './WarmHat2Pompom';
+import WarmHat2Pompom, { WarmHat2PompomLayer } from './WarmHat2Pompom';
 import WinterJacket, { WinterJacketLayer } from './WinterJacket';
 
 const itemRegistry = {
     bag: {
         type: 'accessory',
+        equipSlot: 'body',
         visual: Bag,
+        layer: BagLayer,
+        transform: 'translate(120 850) scale(1.8 1.8) ',
+        sideTransforms: {
+            right: 'translate(120 850) scale(1.8 1.8)',
+            left: 'translate(1280 850) scale(-1.8 1.8)',
+        },
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },
     ballerina: {
@@ -49,6 +56,7 @@ const itemRegistry = {
     },
     'bambus-flute': {
         type: 'accessory',
+        equipSlot: 'hand',
         visual: BambusFlute,
         layer: BambusFluteLayer,
         transform: 'translate(-80 700)',
@@ -67,6 +75,7 @@ const itemRegistry = {
     },
     'bubble-tea': {
         type: 'accessory',
+        equipSlot: 'hand',
         visual: BubbleTea,
         layer: BubbleTeaLayer,
         transform: 'translate(1250 800)',
@@ -85,6 +94,7 @@ const itemRegistry = {
     },
     'cup': {
         type: 'accessory',
+        equipSlot: 'hand',
         displayName: 'Warm Cup',
         visual: Cup,
         layer: CupLayer,
@@ -104,7 +114,14 @@ const itemRegistry = {
     },
     'cute-hat': {
         type: 'accessory',
+        equipSlot: 'head',
         visual: CuteHat,
+        layer: CuteHatLayer,
+        transform: 'translate(600 -100) ',
+        sideTransforms: {
+            right: 'translate(600 -100) ',
+            left: 'translate(800 -100) scale(-1 1)',
+        },
         previewClassName: 'max-h-[72%] max-w-[82%]',
     },
     dress: {
@@ -116,6 +133,7 @@ const itemRegistry = {
     },
     'drink-togo': {
         type: 'accessory',
+        equipSlot: 'hand',
         visual: DrinkTogo,
         layer: DrinkTogoLayer,
         transform: 'translate(1250 850)',
@@ -127,6 +145,7 @@ const itemRegistry = {
     },
     'glasses': {
         type: 'accessory',
+        equipSlot: 'face',
         visual: GlassesPreview,
         layer: GlassesLayer,
         transform: 'translate(485 550)',
@@ -134,17 +153,30 @@ const itemRegistry = {
     },
     hairpin: {
         type: 'accessory',
+        equipSlot: 'head',
         visual: Hairpin,
+        layer: HairpinLayer,
+        transform: 'translate(190 95)',
+        sideTransforms: {
+            right: 'translate(1200 95) scale(-1 1)',
+            left: 'translate(190 95)',
+        },
         previewClassName: 'max-h-[72%] max-w-[82%]',
     },
     hat: {
         type: 'accessory',
+        equipSlot: 'head',
         visual: Hat,
+        layer: HatLayer,
+        transform: 'translate(20 -115) scale(0.95 0.95)',
         previewClassName: 'max-h-[72%] max-w-[82%]',
     },
     'hat-with-pompom': {
         type: 'accessory',
+        equipSlot: 'head',
         visual: HatWithPompom,
+        layer: HatWithPompomLayer,
+        transform: 'translate(145 -260)',
         previewClassName: 'max-h-[72%] max-w-[82%]',
     },
     'hogwarts-cape': {
@@ -169,6 +201,7 @@ const itemRegistry = {
     },
     'magic-wand': {
         type: 'accessory',
+        equipSlot: 'hand',
         visual: MagicWand,
         layer: MagicWandLayer,
         transform: 'translate(1250 780) ',
@@ -180,16 +213,23 @@ const itemRegistry = {
     },
     necklace: {
         type: 'accessory',
+        equipSlot: 'neck',
         visual: Necklace,
+        layer: NecklaceLayer,
+        transform: 'translate(480 920)',
         previewClassName: 'max-h-[72%] max-w-[82%]',
     },
     nerdglasses: {
         type: 'accessory',
+        equipSlot: 'face',
         visual: Nerdglasses,
+        layer: NerdglassesLayer,
+        transform: 'translate(190 540) scale(2.4 2.4)',
         previewClassName: 'max-h-[64%] max-w-[80%]',
     },
     'phone': {
         type: 'accessory',
+        equipSlot: 'hand',
         visual: Phone,
         layer: PhoneLayer,
         transform: 'translate(1300 835) rotate(18)',
@@ -201,7 +241,10 @@ const itemRegistry = {
     },
     'sakura-neckclace': {
         type: 'accessory',
+        equipSlot: 'neck',
         visual: SakuraNeckclace,
+        layer: SakuraNeckclaceLayer,
+        transform: 'translate(480 920)',
         previewClassName: 'max-h-[72%] max-w-[82%]',
     },
     'sakura-outfit': {
@@ -213,6 +256,7 @@ const itemRegistry = {
     },
     'sakura-pouch': {
         type: 'accessory',
+        equipSlot: 'hand',
         visual: SakuraPouch,
         layer: SakuraPouchLayer,
         transform: 'translate(1200 1000)',
@@ -225,6 +269,12 @@ const itemRegistry = {
     scar: {
         type: 'accessory',
         visual: Scar,
+        layer: ScarLayer,
+        transform: 'translate(290 280)',
+        sideTransforms: {
+            right: 'translate(1090 280) scale(-1 1)',
+            left: 'translate(290 280)',
+        },
         previewClassName: 'max-h-[82%] max-w-[56%]',
     },
     'sneaker': {
@@ -278,6 +328,7 @@ const itemRegistry = {
     },
     'warm-hat': {
         type: 'accessory',
+        equipSlot: 'head',
         visual: WarmHat,
         layer: WarmHatLayer,
         transform: 'translate(145 -110)',
@@ -285,7 +336,10 @@ const itemRegistry = {
     },
     'warm-hat-2-pompom': {
         type: 'accessory',
+        equipSlot: 'head',
         visual: WarmHat2Pompom,
+        layer: WarmHat2PompomLayer,
+        transform: 'translate(145 -260)',
         previewClassName: 'max-h-[72%] max-w-[82%]',
     },
     'winter-jacket': {
@@ -316,6 +370,10 @@ export function renderShopItemVisual(item, className = 'max-h-full max-w-full', 
 
 export function getItemLayerType(assetKey) {
     return getItemRegistryEntry(assetKey)?.type ?? 'accessory';
+}
+
+export function getItemEquipSlot(assetKey) {
+    return getItemRegistryEntry(assetKey)?.equipSlot ?? null;
 }
 
 export function hasItemSideOptions(assetKey) {

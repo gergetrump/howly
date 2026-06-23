@@ -7,3 +7,11 @@ export default function Scar({ className, ...props }) {
         </svg>
     );
 }
+
+export function ScarLayer({ transform = 'translate(700 380) rotate(12)', ...props }) {
+    return (
+        <g transform={transform}>
+            <Scar width="82" height="181" {...props} />
+        </g>
+    );
+}

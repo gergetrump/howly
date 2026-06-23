@@ -10,3 +10,11 @@ export default function Nerdglasses({ className, ...props }) {
         </svg>
     );
 }
+
+export function NerdglassesLayer({ transform = 'translate(485 550)', ...props }) {
+    return (
+        <g transform={transform}>
+            <Nerdglasses width="430" height="129" {...props} />
+        </g>
+    );
+}

@@ -1,3 +1,11 @@
+export function HatLayer({ transform, ...props }) {
+    return (
+        <g transform={transform} {...props}>
+            <Hat width="1430" height="574" />
+        </g>
+    );
+}
+
 export default function Hat({ className, ...props }) {
     return (
         <svg className={className} width="1430" height="574" viewBox="0 0 1430 574" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

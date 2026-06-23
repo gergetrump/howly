@@ -1,3 +1,11 @@
+export function WarmHat2PompomLayer({ transform, ...props }) {
+    return (
+        <g transform={transform} {...props}>
+            <WarmHat2Pompom width="1096" height="684" />
+        </g>
+    );
+}
+
 export default function WarmHat2Pompom({ className, ...props }) {
     return (
         <svg className={className} width="1096" height="684" viewBox="0 0 1096 684" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

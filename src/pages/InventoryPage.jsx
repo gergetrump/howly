@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
-import { getItemDisplayName, hasItemSideOptions, renderShopItemVisual } from '@/components/brand/items/itemRegistry';
+import { getItemDisplayName, getItemEquipSlot, hasItemSideOptions, renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/authContext';
@@ -14,6 +14,8 @@ import {
     saveOutfit,
 } from '@/services/inventoryApi';
 import { getEquippedItemConfigsFromInventory, itemMatchesCategory } from '@/lib/inventoryItems';
+
+const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
 
 export function InventoryPage() {
     const navigate = useNavigate();
@@ -150,12 +152,18 @@ export function InventoryPage() {
 
         let nextSide = null;
 
-        if (hasItemSideOptions(item.assetKey)) {
+        const itemSlot = getItemEquipSlot(item.assetKey);
+
+        if (itemSlot === 'hand' && hasItemSideOptions(item.assetKey)) {
             const preferredSide = draftItemSides[item.userItemId] ?? item.customization?.side ?? 'right';
             const alternateSide = preferredSide === 'right' ? 'left' : 'right';
             const occupiedSides = new Set(
                 inventory
-                    .filter((entry) => nextItemIds.has(entry._id) && hasItemSideOptions(entry.item?.assetKey))
+                    .filter((entry) => (
+                        nextItemIds.has(entry._id)
+                        && getItemEquipSlot(entry.item?.assetKey) === 'hand'
+                        && hasItemSideOptions(entry.item?.assetKey)
+                    ))
                     .map((entry) => draftItemSides[entry._id] ?? entry.customization?.side ?? 'right'),
             );
 
@@ -172,6 +180,14 @@ export function InventoryPage() {
         if (SINGLE_EQUIP_ITEM_TYPES.has(item.type)) {
             inventory.forEach((entry) => {
                 if (entry.item?.type === item.type) {
+                    nextItemIds.delete(entry._id);
+                }
+            });
+        }
+
+        if (SINGLE_EQUIP_SLOTS.has(itemSlot)) {
+            inventory.forEach((entry) => {
+                if (getItemEquipSlot(entry.item?.assetKey) === itemSlot) {
                     nextItemIds.delete(entry._id);
                 }
             });
@@ -233,6 +249,7 @@ export function InventoryPage() {
             const occupiedEntry = inventory.find((entry) => (
                 entry._id !== userItemId
                 && draftEquippedItemIds.has(entry._id)
+                && getItemEquipSlot(entry.item?.assetKey) === getItemEquipSlot(movingEntry.item?.assetKey)
                 && hasItemSideOptions(entry.item?.assetKey)
                 && (currentSides[entry._id] ?? entry.customization?.side ?? 'right') === side
             ));

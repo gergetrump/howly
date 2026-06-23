@@ -15,3 +15,11 @@ export default function Bag({ className, ...props }) {
         </svg>
     );
 }
+
+export function BagLayer({ transform = 'translate(325 690)', ...props }) {
+    return (
+        <g transform={transform}>
+            <Bag width="620" height="267" {...props} />
+        </g>
+    );
+}

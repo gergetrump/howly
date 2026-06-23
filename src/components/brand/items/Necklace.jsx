@@ -10,3 +10,11 @@ export default function Necklace({ className, ...props }) {
         </svg>
     );
 }
+
+export function NecklaceLayer({ transform = 'translate(555 690)', ...props }) {
+    return (
+        <g transform={transform}>
+            <Necklace width="420" height="233" {...props} />
+        </g>
+    );
+}

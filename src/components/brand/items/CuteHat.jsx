@@ -1,3 +1,11 @@
+export function CuteHatLayer({ transform, ...props }) {
+    return (
+        <g transform={transform} {...props}>
+            <CuteHat width="805" height="609" />
+        </g>
+    );
+}
+
 export default function CuteHat({ className, ...props }) {
     return (
         <svg className={className} width="805" height="609" viewBox="0 0 805 609" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

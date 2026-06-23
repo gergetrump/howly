@@ -1,3 +1,11 @@
+export function HairpinLayer({ transform, ...props }) {
+    return (
+        <g transform={transform} {...props}>
+            <Hairpin width="316" height="298" />
+        </g>
+    );
+}
+
 export default function Hairpin({ className, ...props }) {
     return (
         <svg className={className} width="316" height="298" viewBox="0 0 316 298" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
