@@ -1,9 +1,9 @@
-export default function Bag({ className, ...props }) {
+export default function Bag({ className, color = '#F4EFE5', ...props }) {
     return (
         <svg className={className} width="1064" height="458" viewBox="0 0 1064 458" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
             <g id="Group 119">
                 <g id="Group 117">
-                    <rect id="Rectangle 58" x="641.5" y="244.5" width="348" height="212" rx="38.5" fill="#F4EFE5" stroke="#CEB88B" strokeWidth="3"/>
+                    <rect id="Rectangle 58" x="641.5" y="244.5" width="348" height="212" rx="38.5" fill={color} stroke="#CEB88B" strokeWidth="3"/>
                     <path id="Line 97" d="M640.288 313.5C750.324 385.806 900.585 377.801 991.288 315.5" stroke="#CEB88B" strokeWidth="8" strokeLinecap="round"/>
                     <rect id="Rectangle 59" x="777.285" y="230" width="77" height="158" rx="38.5" fill="#D7C6A2"/>
                     <ellipse id="Ellipse 88" cx="815.785" cy="361.5" rx="24.5" ry="21.5" fill="#CEB88B"/>

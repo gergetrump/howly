@@ -1,22 +1,22 @@
 export function WarmHat2PompomLayer({ transform, ...props }) {
     return (
         <g transform={transform} {...props}>
-            <WarmHat2Pompom width="1096" height="684" />
+            <WarmHat2Pompom width="1096" height="684" {...props} />
         </g>
     );
 }
 
-export default function WarmHat2Pompom({ className, ...props }) {
+export default function WarmHat2Pompom({ className, color = '#392E18', ...props }) {
     return (
         <svg className={className} width="1096" height="684" viewBox="0 0 1096 684" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
             <g id="Group 133">
                 <g id="Group 131">
                     <g id="Rectangle 29" filter="url(#filter0_f_179_70)">
-                        <rect x="4" y="515.77" width="1088" height="163.951" rx="20" fill="#392E18"/>
+                        <rect x="4" y="515.77" width="1088" height="163.951" rx="20" fill={color}/>
                         <rect x="6.5" y="518.27" width="1083" height="158.951" rx="17.5" stroke="#0B0904" strokeWidth="5"/>
                     </g>
                     <g id="Ellipse 64" filter="url(#filter1_f_179_70)">
-                        <path d="M1061.25 518.114H36.2148C36.2148 330.551 265.676 178.501 548.732 178.501C831.787 178.501 1061.25 330.551 1061.25 518.114Z" fill="#392E18"/>
+                        <path d="M1061.25 518.114H36.2148C36.2148 330.551 265.676 178.501 548.732 178.501C831.787 178.501 1061.25 330.551 1061.25 518.114Z" fill={color}/>
                         <path d="M548.731 181.001C689.837 181.001 817.471 218.905 909.755 280.056C1001.23 340.668 1057.72 423.922 1058.73 515.614H38.7305C39.7398 423.922 96.2364 340.668 187.708 280.056C279.991 218.905 407.626 181.001 548.731 181.001Z" stroke="#0B0904" strokeWidth="5"/>
                     </g>
                     <g id="Line 60" filter="url(#filter2_f_179_70)">
@@ -81,11 +81,11 @@ export default function WarmHat2Pompom({ className, ...props }) {
                     </g>
                 </g>
                 <g id="Ellipse 93" filter="url(#filter22_f_179_70)">
-                    <ellipse cx="223.5" cy="134.5" rx="144.5" ry="130.5" fill="#392E18"/>
+                    <ellipse cx="223.5" cy="134.5" rx="144.5" ry="130.5" fill={color}/>
                     <path d="M223.5 6.5C302.17 6.5 365.5 64.0411 365.5 134.5C365.5 204.959 302.17 262.5 223.5 262.5C144.83 262.5 81.5 204.959 81.5 134.5C81.5 64.0411 144.83 6.5 223.5 6.5Z" stroke="#0B0904" strokeWidth="5"/>
                 </g>
                 <g id="Ellipse 94" filter="url(#filter23_f_179_70)">
-                    <ellipse cx="866.5" cy="134.5" rx="144.5" ry="130.5" fill="#392E18"/>
+                    <ellipse cx="866.5" cy="134.5" rx="144.5" ry="130.5" fill={color}/>
                     <path d="M866.5 6.5C945.17 6.5 1008.5 64.0411 1008.5 134.5C1008.5 204.959 945.17 262.5 866.5 262.5C787.83 262.5 724.5 204.959 724.5 134.5C724.5 64.0411 787.83 6.5 866.5 6.5Z" stroke="#0B0904" strokeWidth="5"/>
                 </g>
             </g>

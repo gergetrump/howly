@@ -1,9 +1,9 @@
-export default function BubbleTea({ className, ...props }) {
+export default function BubbleTea({ className, color = '#DDCEAF', ...props }) {
     return (
         <svg className={className} width="291" height="417" viewBox="0 0 291 417" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
             <g id="Group 142">
                 <g id="Rectangle 70" filter="url(#filter0_f_179_400)">
-                    <path d="M55.7274 168.733C124.665 203.156 166.086 209.919 242.698 209.675L176.154 393.461L37.2859 362.723L55.7274 168.733Z" fill="#DDCEAF"/>
+                    <path d="M55.7274 168.733C124.665 203.156 166.086 209.919 242.698 209.675L176.154 393.461L37.2859 362.723L55.7274 168.733Z" fill={color}/>
                     <path d="M175.834 392.878L37.8254 362.33L56.1559 169.504C90.3473 186.533 117.81 196.756 146.233 202.693C174.654 208.63 204.013 210.276 241.985 210.176L175.834 392.878Z" stroke="#050505" strokeWidth="2"/>
                 </g>
                 <g id="Rectangle 70_2" filter="url(#filter1_f_179_400)">

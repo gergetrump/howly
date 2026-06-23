@@ -9,42 +9,43 @@ export function WarmBootsLayer({
     transform,
     leftShoeTransform = 'translate(380 1315)',
     rightShoeTransform = 'translate(805 1315)',
+    color,
     ...props
 }) {
     return (
         <g transform={transform} {...props}>
             <g transform={leftShoeTransform}>
-                <WarmBoots width={LAYER_SHOE_WIDTH} height={LAYER_SHOE_HEIGHT} />
+                <WarmBoots width={LAYER_SHOE_WIDTH} height={LAYER_SHOE_HEIGHT} color={color} />
             </g>
             <g transform={rightShoeTransform}>
-                <WarmBoots width={LAYER_SHOE_WIDTH} height={LAYER_SHOE_HEIGHT} />
+                <WarmBoots width={LAYER_SHOE_WIDTH} height={LAYER_SHOE_HEIGHT} color={color} />
             </g>
         </g>
     );
 }
 
-export function WarmBootsPair({ className, ...props }) {
+export function WarmBootsPair({ className, color, ...props }) {
     return (
         <svg className={className} width="520" height="250" viewBox="0 0 520 250" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
             <g transform="translate(45 22)">
-                <WarmBoots width={PREVIEW_SHOE_WIDTH} height={PREVIEW_SHOE_HEIGHT} />
+                <WarmBoots width={PREVIEW_SHOE_WIDTH} height={PREVIEW_SHOE_HEIGHT} color={color} />
             </g>
             <g transform="translate(285 22)">
-                <WarmBoots width={PREVIEW_SHOE_WIDTH} height={PREVIEW_SHOE_HEIGHT} />
+                <WarmBoots width={PREVIEW_SHOE_WIDTH} height={PREVIEW_SHOE_HEIGHT} color={color} />
             </g>
         </svg>
     );
 }
 
-export default function WarmBoots({ className, ...props }) {
+export default function WarmBoots({ className, color = '#392E18', ...props }) {
     return (
         <svg className={className} width="208" height="206" viewBox="0 0 208 206" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
             <g id="Group 136">
-                <path id="Rectangle 62" d="M4 10.879C4 5.02461 9.0296 0.426834 14.8654 0.894002C82.7561 6.32884 125.2 6.68717 193.076 0.954784C198.933 0.46017 204 5.06501 204 10.9425V112.779C204 118.301 199.523 122.779 194 122.779H14C8.47716 122.779 4 118.301 4 112.779V10.879Z" fill="#392E18"/>
+                <path id="Rectangle 62" d="M4 10.879C4 5.02461 9.0296 0.426834 14.8654 0.894002C82.7561 6.32884 125.2 6.68717 193.076 0.954784C198.933 0.46017 204 5.06501 204 10.9425V112.779C204 118.301 199.523 122.779 194 122.779H14C8.47716 122.779 4 118.301 4 112.779V10.879Z" fill={color}/>
                 <g id="Group 134">
                     <g id="Group 78">
                         <g id="Ellipse 34" filter="url(#filter0_f_179_105)">
-                            <path d="M104 74.4344C159.228 74.4344 177 80.1896 204 120.86C204 163.241 159.228 197.597 104 197.597C48.7715 197.597 4 163.241 4 120.86C27.5 80.957 48.7715 74.4344 104 74.4344Z" fill="#392E18"/>
+                            <path d="M104 74.4344C159.228 74.4344 177 80.1896 204 120.86C204 163.241 159.228 197.597 104 197.597C48.7715 197.597 4 163.241 4 120.86C27.5 80.957 48.7715 74.4344 104 74.4344Z" fill={color}/>
                             <path d="M6.50488 121.54C17.9842 102.193 28.7597 91.2368 43.1025 84.9746C57.7359 78.5857 76.3847 76.9346 104 76.9346C131.636 76.9346 149.391 78.3979 163.573 84.6816C177.494 90.8498 188.277 101.813 201.493 121.611C201.232 141.569 190.591 159.784 173.188 173.138C155.565 186.661 131.112 195.097 104 195.097C76.888 195.097 52.4346 186.661 34.8115 173.138C17.3884 159.768 6.74128 141.525 6.50488 121.54Z" stroke="#0B0904" strokeWidth="5"/>
                         </g>
                         <g id="Union" filter="url(#filter1_f_179_105)">

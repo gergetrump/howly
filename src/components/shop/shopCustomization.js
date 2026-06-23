@@ -1,7 +1,29 @@
 export const MAX_CUSTOM_TEXT_LENGTH = 20;
 const NON_OWNERSHIP_CUSTOMIZATION_KEYS = new Set(['side']);
 
+const wholeColorCustomization = (color) => ({
+    defaults: {
+        color,
+    },
+    colorSlots: [
+        { key: 'color', label: 'Whole' },
+    ],
+});
+
 export const ITEM_CUSTOMIZATION_CONFIG = {
+    bag: wholeColorCustomization('#F4EFE5'),
+    ballerina: wholeColorCustomization('#F1EBDF'),
+    'bambus-flute': wholeColorCustomization('#4A6741'),
+    'bambus-shoes': wholeColorCustomization('#E1D3AE'),
+    'bubble-tea': wholeColorCustomization('#DDCEAF'),
+    'cute-ballerinas': wholeColorCustomization('#F1EBDF'),
+    'cute-hat': wholeColorCustomization('#F1EBDF'),
+    dress: wholeColorCustomization('#F2E6FF'),
+    'drink-togo': wholeColorCustomization('#F6F3EB'),
+    hairpin: wholeColorCustomization('#F6BBC7'),
+    hat: wholeColorCustomization('#4C4C4C'),
+    'hat-with-pompom': wholeColorCustomization('#32326F'),
+    'hogwarts-cape': wholeColorCustomization('#1A1A1A'),
     hoodie: {
         defaults: {
             color: '#C66E6E',
@@ -20,6 +42,14 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             placeholder: 'HOWLY',
         },
     },
+    jersie: wholeColorCustomization('#32326F'),
+    'magic-wand': wholeColorCustomization('#D4A373'),
+    necklace: wholeColorCustomization('#990000'),
+    nerdglasses: wholeColorCustomization('#4C4C4C'),
+    'sakura-neckclace': wholeColorCustomization('#F6BBC7'),
+    'sakura-outfit': wholeColorCustomization('#FCE8EC'),
+    'sakura-pouch': wholeColorCustomization('#FCE8EC'),
+    scar: wholeColorCustomization('#555353'),
     'cream-top': {
         defaults: {
             color: '#F4EFE5',
@@ -44,6 +74,8 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             { key: 'pocketColor', label: 'Pockets' },
         ],
     },
+    summertop: wholeColorCustomization('#FFFFFF'),
+    'warm-boots': wholeColorCustomization('#392E18'),
     'cozy-jacket': {
         defaults: {
             jacketColor: '#4A6741',
@@ -118,6 +150,8 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             { key: 'color', label: 'Whole' },
         ],
     },
+    'warm-hat-2-pompom': wholeColorCustomization('#392E18'),
+    'winter-jacket': wholeColorCustomization('#394F32'),
     sneaker: {
         defaults: {
             color: '#1A1A1A',
