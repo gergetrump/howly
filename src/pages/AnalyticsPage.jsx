@@ -170,7 +170,12 @@ function TimeMarker({ minutes, label }) {
 
     return (
         <div className="space-y-2">
-            <div className="relative h-4 rounded-full bg-gradient-to-r from-indigo-300 via-emerald-300 to-amber-200">
+            <div
+                className="relative h-4 rounded-full"
+                style={{
+                    background: 'linear-gradient(90deg, #a5b4fc 0%, #a5b4fc 20%, #6ee7b7 28%, #fde68a 36%, #fde68a 74%, #6ee7b7 82%, #a5b4fc 90%, #a5b4fc 100%)',
+                }}
+            >
                 <div
                     className="absolute top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-slate-950 shadow-lg"
                     style={{ left: `${timePosition(minutes)}%` }}
@@ -309,7 +314,7 @@ function ChallengeTimeAnalytics({ summary, challenges }) {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
                     <Clock3 className="size-5 text-emerald-300" aria-hidden="true" />
-                    Challenge completion time
+                    Average challenge completion time
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -406,14 +411,14 @@ export function AnalyticsPage() {
     ), [challengeAnalytics]);
 
     return (
-        <Page theme="forest">
+        <Page theme="forest" contentClassName="max-w-[1600px]">
             <Heading
                 title="Analytics"
                 subtitle="Understand when your habits stick and where they slip."
                 streakDays={user?.streak ?? 0}
             />
 
-            <PageSection width="lg" title={`${PERIOD_LABELS[period]} overview`}>
+            <PageSection width="full" title={`${PERIOD_LABELS[period]} overview`}>
                 <Tabs value={period} onValueChange={setPeriod}>
                     <TabsList className="w-full border border-white/10 bg-white/10 text-white">
                         <TabsTrigger
@@ -467,14 +472,17 @@ export function AnalyticsPage() {
                             />
                         </div>
 
-                        <CompletionChart habits={habitAnalytics.habits ?? []} />
-                        <TimelineChart dailyTotals={habitAnalytics.dailyTotals ?? []} />
+                        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.85fr)]">
+                            <TimelineChart dailyTotals={habitAnalytics.dailyTotals ?? []} />
+                            <CompletionChart habits={habitAnalytics.habits ?? []} />
+                        </div>
+
                         <TimeAnalytics summary={habitAnalytics.summary} habits={habitAnalytics.habits ?? []} />
                     </>
                 ) : null}
             </PageSection>
 
-            <PageSection width="lg" title="Challenge analytics">
+            <PageSection width="full" title="Challenge analytics">
                 {!isLoading && challengeAnalytics ? (
                     <>
                         <div className="grid gap-4 md:grid-cols-3">
@@ -498,8 +506,11 @@ export function AnalyticsPage() {
                             />
                         </div>
 
-                        <ChallengeProgressChart challenges={challengeAnalytics.challenges ?? []} />
-                        <TimelineChart dailyTotals={challengeAnalytics.dailyTotals ?? []} />
+                        <div className="grid items-start gap-4 xl:grid-cols-[minmax(420px,0.9fr)_minmax(0,1.1fr)]">
+                            <ChallengeProgressChart challenges={challengeAnalytics.challenges ?? []} />
+                            <TimelineChart dailyTotals={challengeAnalytics.dailyTotals ?? []} />
+                        </div>
+
                         <ChallengeTimeAnalytics
                             summary={challengeAnalytics.summary}
                             challenges={challengeAnalytics.challenges ?? []}
