@@ -11,7 +11,6 @@ export function FeedPostCard({
     companionType,
     companionAvatarSrc,
     companionSrc,
-    companionEquippedItemKeys = [],
     companionEquippedItemConfigs = [],
     milestoneTitle,
     children,
@@ -53,7 +52,6 @@ export function FeedPostCard({
                             name={companionName}
                             size="feed"
                             showName={false}
-                            equippedItemKeys={companionEquippedItemKeys}
                             equippedItemConfigs={companionEquippedItemConfigs}
                         />
                     </div>
