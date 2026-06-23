@@ -94,6 +94,7 @@ function CompletionChart({ habits }) {
                                     style={{ width: `${clampPercent(rate)}%` }}
                                 />
                             </div>
+
                         </div>
                     );
                 }) : (
@@ -159,6 +160,45 @@ function TimelineChart({ dailyTotals }) {
     );
 }
 
+function MiniCompletionTrend({ daily }) {
+    const visibleDays = daily ?? [];
+
+    if (!visibleDays.length) {
+        return null;
+    }
+
+    return (
+        <div className="space-y-2">
+            <div className="flex h-16 items-end gap-1.5">
+                {visibleDays.map((day) => {
+                    const expectedHeight = day.expected ? 100 : 8;
+                    const completedHeight = day.completed ? expectedHeight : 0;
+
+                    return (
+                        <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                            <div className="relative flex h-12 w-full items-end justify-center rounded-t-md bg-slate-950/30">
+                                <div
+                                    className="absolute bottom-0 w-3/5 rounded-t-md border border-slate-300/25 bg-slate-400/25"
+                                    style={{ height: `${expectedHeight}%` }}
+                                    title={`${day.label}: ${day.expected ? 'scheduled' : 'not scheduled'}`}
+                                />
+                                <div
+                                    className="absolute bottom-0 w-3/5 rounded-t-md bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.25)]"
+                                    style={{ height: `${completedHeight}%` }}
+                                    title={`${day.label}: ${day.completed ? 'completed' : 'not completed'}`}
+                                />
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+            <div className="flex justify-between text-[11px] text-slate-400">
+                <span>{visibleDays[0]?.label}</span>
+                <span>{visibleDays[visibleDays.length - 1]?.label}</span>
+            </div>
+        </div>
+    );
+}
 function TimeMarker({ minutes, label }) {
     if (!label) {
         return (
@@ -215,7 +255,7 @@ function TimeAnalytics({ summary, habits }) {
                     />
                 </div>
 
-                <div className="space-y-3">
+                <div className="grid gap-3 xl:grid-cols-2">
                     {timedHabits.length ? timedHabits.map((item) => (
                         <div key={item.habit.id} className="grid gap-3 rounded-xl border border-white/10 bg-white/5 p-3 sm:grid-cols-[180px_1fr_64px] sm:items-center">
                             <div className="flex min-w-0 items-center gap-2">
@@ -252,7 +292,7 @@ function ChallengeProgressChart({ challenges }) {
                     Challenge progress
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className={visibleChallenges.length ? "grid gap-4 xl:grid-cols-2" : "space-y-4"}>
                 {visibleChallenges.length ? visibleChallenges.map((item) => {
                     const periodRate = item.completionRate;
                     const totalRate = item.progressRate;
@@ -294,6 +334,7 @@ function ChallengeProgressChart({ challenges }) {
                                     />
                                 </div>
                             </div>
+                            <MiniCompletionTrend daily={item.daily ?? []} />
                         </div>
                     );
                 }) : (
@@ -331,7 +372,7 @@ function ChallengeTimeAnalytics({ summary, challenges }) {
                     />
                 </div>
 
-                <div className="space-y-3">
+                <div className="grid gap-3 xl:grid-cols-2">
                     {timedChallenges.length ? timedChallenges.map((item) => (
                         <div key={item.participant.id} className="grid gap-3 rounded-xl border border-white/10 bg-white/5 p-3 sm:grid-cols-[220px_1fr_64px] sm:items-center">
                             <div className="min-w-0">
@@ -471,12 +512,8 @@ export function AnalyticsPage() {
                                 helper={bestHabit ? `${percent(bestHabit.completionRate)} completed` : 'Complete habits to compare'}
                             />
                         </div>
-
-                        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.85fr)]">
-                            <TimelineChart dailyTotals={habitAnalytics.dailyTotals ?? []} />
-                            <CompletionChart habits={habitAnalytics.habits ?? []} />
-                        </div>
-
+                        <TimelineChart dailyTotals={habitAnalytics.dailyTotals ?? []} />
+                        <CompletionChart habits={habitAnalytics.habits ?? []} />
                         <TimeAnalytics summary={habitAnalytics.summary} habits={habitAnalytics.habits ?? []} />
                     </>
                 ) : null}
@@ -505,12 +542,7 @@ export function AnalyticsPage() {
                                 helper={bestChallenge ? `Best: ${bestChallenge.challenge.title}` : 'Complete challenges to compare'}
                             />
                         </div>
-
-                        <div className="grid items-start gap-4 xl:grid-cols-[minmax(420px,0.9fr)_minmax(0,1.1fr)]">
-                            <ChallengeProgressChart challenges={challengeAnalytics.challenges ?? []} />
-                            <TimelineChart dailyTotals={challengeAnalytics.dailyTotals ?? []} />
-                        </div>
-
+                        <ChallengeProgressChart challenges={challengeAnalytics.challenges ?? []} />
                         <ChallengeTimeAnalytics
                             summary={challengeAnalytics.summary}
                             challenges={challengeAnalytics.challenges ?? []}
