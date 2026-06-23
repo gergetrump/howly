@@ -74,6 +74,7 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
         defaults: {
             color: '#E09AAB',
             symbol: 'eclipse',
+            symbolColor: '#FFFF00',
             side: 'right',
         },
         colorSlots: [
@@ -81,11 +82,12 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
         ],
         symbol: {
             key: 'symbol',
+            colorKey: 'symbolColor',
             label: 'Symbol',
             options: [
-                { value: 'eclipse', label: 'Eclipse' },
-                { value: 'heart', label: 'Heart' },
-                { value: 'flower', label: 'Flower' },
+                { value: 'eclipse', label: 'Eclipse', defaultColor: '#FFFF00' },
+                { value: 'heart', label: 'Heart', defaultColor: '#990000' },
+                { value: 'flower', label: 'Flower', defaultColor: '#F6BBC7' },
             ],
         },
     },

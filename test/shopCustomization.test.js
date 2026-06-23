@@ -19,6 +19,7 @@ test('cup customization includes symbol in ownership signature', () => {
 
 test('cup customization defaults to eclipse symbol', () => {
     assert.equal(normalizeItemCustomization('cup', {}).symbol, 'eclipse');
+    assert.equal(normalizeItemCustomization('cup', {}).symbolColor, '#FFFF00');
 });
 
 test('cup customization can store no symbol', () => {
@@ -33,5 +34,17 @@ test('cup customization can store no symbol', () => {
     assert.notEqual(
         getItemOwnershipSignature(cup, { color: '#E09AAB', symbol: '' }),
         getItemOwnershipSignature(cup, { color: '#E09AAB', symbol: 'eclipse' }),
+    );
+});
+
+test('cup customization includes symbol color in ownership signature', () => {
+    const cup = {
+        _id: 'cup-item-id',
+        assetKey: 'cup',
+    };
+
+    assert.notEqual(
+        getItemOwnershipSignature(cup, { color: '#E09AAB', symbol: 'heart', symbolColor: '#990000' }),
+        getItemOwnershipSignature(cup, { color: '#E09AAB', symbol: 'heart', symbolColor: '#3B82F6' }),
     );
 });
