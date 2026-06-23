@@ -11,18 +11,13 @@ const wholeColorCustomization = (color) => ({
 });
 
 export const ITEM_CUSTOMIZATION_CONFIG = {
-    bag: wholeColorCustomization('#F4EFE5'),
     ballerina: wholeColorCustomization('#F1EBDF'),
     'bambus-flute': wholeColorCustomization('#4A6741'),
     'bambus-shoes': wholeColorCustomization('#E1D3AE'),
-    'bubble-tea': wholeColorCustomization('#DDCEAF'),
     'cute-ballerinas': wholeColorCustomization('#F1EBDF'),
-    'cute-hat': wholeColorCustomization('#F1EBDF'),
     dress: wholeColorCustomization('#F2E6FF'),
-    'drink-togo': wholeColorCustomization('#F6F3EB'),
     hairpin: wholeColorCustomization('#F6BBC7'),
     hat: wholeColorCustomization('#4C4C4C'),
-    'hat-with-pompom': wholeColorCustomization('#32326F'),
     'hogwarts-cape': wholeColorCustomization('#1A1A1A'),
     hoodie: {
         defaults: {
@@ -45,11 +40,17 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
     jersie: wholeColorCustomization('#32326F'),
     'magic-wand': wholeColorCustomization('#D4A373'),
     necklace: wholeColorCustomization('#990000'),
-    nerdglasses: wholeColorCustomization('#4C4C4C'),
-    'sakura-neckclace': wholeColorCustomization('#F6BBC7'),
     'sakura-outfit': wholeColorCustomization('#FCE8EC'),
     'sakura-pouch': wholeColorCustomization('#FCE8EC'),
-    scar: wholeColorCustomization('#555353'),
+    scar: {
+        defaults: {
+            color: '#555353',
+            side: 'right',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+        ],
+    },
     'cream-top': {
         defaults: {
             color: '#F4EFE5',
@@ -62,6 +63,71 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             { key: 'pocketColor', label: 'Pockets' },
         ],
     },
+    'bubble-tea': {
+        defaults: {
+            color: '#DDCEAF',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Drink' },
+            { key: 'strawColor', label: 'Straw' }
+        ],
+    },
+    'drink-togo': {
+        defaults: {
+            color: '#F6F3EB',
+            holderColor: '#DDCEAF'
+        },
+        colorSlots: [
+            { key: 'color', label: 'Cup' },
+            { key: 'holderColor', label: 'Holder' }
+        ],
+    },
+    'bag': {
+        defaults: {
+            color: '#F4EFE5',
+            strapColor: '#DDCEAF',
+            lockColor: '#CEB88B',
+            flapClosureColor: '#D7C6A2'
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'strapColor', label: 'Strap' },
+            { key: 'lockColor', label: 'Lock' },
+            { key: 'flapClosureColor', label: 'Closure' }
+        ],
+    },
+    'cute-hat': {
+        defaults: {
+            color: '#F1EBDF',
+            stripeColor: '#B3A6C1',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'stripeColor', label: 'Stripe' },
+        ],
+    },
+    'hat-with-pompom': {
+        defaults: {
+            color: '#32326F',
+            pompomColor: '#32326F',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'pompomColor', label: 'Pompom' },
+        ],
+    },
+    'sakura-neckclace': {
+        defaults: {
+            color: '#F6BBC7',
+            pompomColor: '#32326F',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'pompomColor', label: 'Pompom' },
+        ],
+    },
+
+
     'warm-top': {
         defaults: {
             color: '#F4EFE5',
@@ -128,7 +194,15 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             color: '#000000',
         },
         colorSlots: [
-            { key: 'color', label: 'Whole' },
+            { key: 'color', label: 'Frame' },
+        ],
+    },
+    nerdglasses: {
+        defaults: {
+            color: '#4C4C4C',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Frame' },
         ],
     },
     phone: {
@@ -151,7 +225,18 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
         ],
     },
     'warm-hat-2-pompom': wholeColorCustomization('#392E18'),
-    'winter-jacket': wholeColorCustomization('#394F32'),
+    'winter-jacket': {
+        defaults: {
+            jacketColor: '#392E18',
+            shirtColor: '#394F32',
+            furColor: '#E1D3AE',
+        },
+        colorSlots: [
+            { key: 'jacketColor', label: 'Jacket' },
+            { key: 'shirtColor', label: 'Shirt' },
+            { key: 'furColor', label: 'Fur' },
+        ],
+    },
     sneaker: {
         defaults: {
             color: '#1A1A1A',
@@ -181,10 +266,12 @@ export function normalizeItemCustomization(itemOrAssetKey, customization = {}) {
         return {};
     }
 
-    return {
+    const normalizedCustomization = {
         ...config.defaults,
         ...customization,
     };
+
+    return normalizedCustomization;
 }
 
 export function getItemOwnershipSignature(item, customization = {}) {

@@ -6,7 +6,7 @@ export function HatWithPompomLayer({ transform, ...props }) {
     );
 }
 
-export default function HatWithPompom({ className, color = '#32326F', ...props }) {
+export default function HatWithPompom({ className, color = '#32326F', pompomColor =  '#32326F', ...props }) {
     return (
         <svg className={className} width="1096" height="723" viewBox="0 0 1096 723" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
             <g id="Group 132">
@@ -81,7 +81,7 @@ export default function HatWithPompom({ className, color = '#32326F', ...props }
                     </g>
                 </g>
                 <g id="Ellipse 92" filter="url(#filter22_f_179_69)">
-                    <ellipse cx="547.5" cy="134.5" rx="144.5" ry="130.5" fill={color}/>
+                    <ellipse cx="547.5" cy="134.5" rx="144.5" ry="130.5" fill={pompomColor}/>
                     <path d="M547.5 6.5C626.17 6.5 689.5 64.0411 689.5 134.5C689.5 204.959 626.17 262.5 547.5 262.5C468.83 262.5 405.5 204.959 405.5 134.5C405.5 64.0411 468.83 6.5 547.5 6.5Z" stroke="#22301E" strokeWidth="5"/>
                 </g>
             </g>

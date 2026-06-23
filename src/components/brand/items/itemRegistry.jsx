@@ -59,7 +59,7 @@ const itemRegistry = {
         equipSlot: 'hand',
         visual: BambusFlute,
         layer: BambusFluteLayer,
-        transform: 'translate(-80 700)',
+        transform: 'translate(1480 700) scale(-1 1)',
         sideTransforms: {
             right: 'translate(1480 700) scale(-1 1)',
             left: 'translate(-80 700)',
@@ -409,7 +409,8 @@ export function renderCompanionItemLayer(assetKey, customization = {}) {
 
     const Layer = itemEntry.layer;
     const { side, ...layerCustomization } = customization;
-    const transform = itemEntry.sideTransforms?.[side] ?? itemEntry.transform;
+    const resolvedSide = side ?? (itemEntry.sideTransforms ? 'right' : undefined);
+    const transform = itemEntry.sideTransforms?.[resolvedSide] ?? itemEntry.transform;
 
     return <Layer transform={transform} {...itemEntry.layerProps} {...layerCustomization} />;
 }

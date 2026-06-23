@@ -1,4 +1,4 @@
-export default function BubbleTea({ className, color = '#DDCEAF', ...props }) {
+export default function BubbleTea({ className, color = '#DDCEAF', strawColor= '#F4EFE5',...props }) {
     return (
         <svg className={className} width="291" height="417" viewBox="0 0 291 417" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
             <g id="Group 142">
@@ -18,7 +18,7 @@ export default function BubbleTea({ className, color = '#DDCEAF', ...props }) {
                     <path d="M174.617 75.6529C203.41 82.0264 228.769 90.9175 246.49 100.13C255.353 104.738 262.28 109.412 266.771 113.874C271.283 118.356 273.227 122.508 272.431 126.103C271.635 129.698 268.12 132.642 262.139 134.801C256.185 136.95 247.932 138.266 237.952 138.703C217.998 139.576 191.257 136.934 162.463 130.56C133.67 124.187 108.311 115.297 90.5907 106.084C81.7272 101.477 74.8014 96.8008 70.3105 92.3394C65.7989 87.8575 63.8549 83.7055 64.6507 80.1104C65.4466 76.5154 68.9612 73.5716 74.9427 71.4124C80.8969 69.2631 89.149 67.9479 99.1289 67.5112C119.082 66.6381 145.824 69.2795 174.617 75.6529Z" stroke="#050505" strokeWidth="2"/>
                 </g>
                 <g id="Rectangle 69" filter="url(#filter4_f_179_400)">
-                    <rect width="24.1555" height="346.237" transform="matrix(0.953317 0.301971 -0.314496 0.949259 207.993 27.917)" fill="#F4EFE5"/>
+                    <rect width="24.1555" height="346.237" transform="matrix(0.953317 0.301971 -0.314496 0.949259 207.993 27.917)" fill={strawColor}/>
                     <rect x="0.319411" y="0.625615" width="23.1555" height="345.237" transform="matrix(0.953317 0.301971 -0.314496 0.949259 208.205 27.8523)" stroke="#050505" strokeWidth="2"/>
                 </g>
                 <g id="Ellipse 102" filter="url(#filter5_f_179_400)">
