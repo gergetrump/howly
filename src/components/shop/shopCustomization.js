@@ -73,11 +73,21 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
     cup: {
         defaults: {
             color: '#E09AAB',
+            symbol: 'eclipse',
             side: 'right',
         },
         colorSlots: [
             { key: 'color', label: 'Whole' },
         ],
+        symbol: {
+            key: 'symbol',
+            label: 'Symbol',
+            options: [
+                { value: 'eclipse', label: 'Eclipse' },
+                { value: 'heart', label: 'Heart' },
+                { value: 'flower', label: 'Flower' },
+            ],
+        },
     },
     glasses: {
         defaults: {

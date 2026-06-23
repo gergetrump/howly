@@ -442,6 +442,16 @@ export function ShopPage() {
         }));
     }
 
+    function handleItemSymbolChange(assetKey, symbolKey, symbol) {
+        setItemCustomizations((currentCustomizations) => ({
+            ...currentCustomizations,
+            [assetKey]: {
+                ...normalizeItemCustomization(assetKey, currentCustomizations[assetKey]),
+                [symbolKey]: symbol,
+            },
+        }));
+    }
+
     async function handleBuyItems(entriesForPurchase) {
         setBuyingItemId('cart');
         setError('');
@@ -611,6 +621,7 @@ export function ShopPage() {
                     }))}
                     onColorChange={(slot, color) => handleItemColorChange(selectedCustomItem.assetKey, slot, color)}
                     onTextChange={(textKey, text) => handleItemTextChange(selectedCustomItem.assetKey, textKey, text)}
+                    onSymbolChange={(symbolKey, symbol) => handleItemSymbolChange(selectedCustomItem.assetKey, symbolKey, symbol)}
                     onAddToCart={() => handleAddCurrentItemToCart(selectedCustomItem)}
                 />
             </div>
