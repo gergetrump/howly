@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CompanionAvatar } from '@/components/brand/companionAvatar';
+import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
 import { appCardClassName } from '@/components/cards/cardStyles';
 
 export function FeedPostCard({
@@ -8,9 +8,11 @@ export function FeedPostCard({
     authorAvatarSrc,
     meta,
     companionName,
+    companionType,
     companionAvatarSrc,
     companionSrc,
     companionEquippedItemKeys = [],
+    companionEquippedItemConfigs = [],
     milestoneTitle,
     children,
 }) {
@@ -47,17 +49,19 @@ export function FeedPostCard({
                     <div className="flex justify-center sm:w-44 sm:shrink-0">
                         <CompanionAvatar
                             src={resolvedCompanionSrc}
+                            type={companionType}
                             name={companionName}
                             size="feed"
                             showName={false}
                             equippedItemKeys={companionEquippedItemKeys}
+                            equippedItemConfigs={companionEquippedItemConfigs}
                         />
                     </div>
 
-                    <div className="relative flex min-w-0 flex-1 items-center gap-4 rounded-lg bg-white/5 p-4 before:absolute before:left-[-14px] before:top-1/2 before:h-0 before:w-0 before:-translate-y-1/2 before:border-y-[12px] before:border-r-[14px] before:border-y-transparent before:border-r-white/5">
+                    <div className="relative flex min-w-0 w-fit max-w-full items-center gap-4 rounded-lg bg-white/5 p-4 before:absolute before:left-[-14px] before:top-1/2 before:h-0 before:w-0 before:-translate-y-1/2 before:border-y-[12px] before:border-r-[14px] before:border-y-transparent before:border-r-white/5">
                         <div className="min-w-0">
                             {milestoneTitle ? (
-                                <p className="relative text-base font-semibold text-white sm:text-lg">{milestoneTitle}</p>
+                                <p className="relative text-base font-semibold text-white">{milestoneTitle}</p>
                             ) : null}
                         </div>
                     </div>

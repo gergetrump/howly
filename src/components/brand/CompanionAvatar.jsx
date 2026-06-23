@@ -1,4 +1,4 @@
-import { orderCompanionItemKeys, renderCompanionItemLayer } from '@/components/brand/items/itemRegistry';
+import { getItemLayerType, renderCompanionItemLayer } from '@/components/brand/items/itemRegistry';
 import { WolfSkin } from '@/components/brand/companions/WolfSkin';
 import { PandaSkin } from '@/components/brand/companions/PandaSkin';
 import { BearSkin } from '@/components/brand/companions/BearSkin';
@@ -31,8 +31,40 @@ const X_OFFSET = {
     bear: 48,
 };
 
-function CompanionItemLayer({ itemKey }) {
-    return renderCompanionItemLayer(itemKey);
+function CompanionItemLayer({ item }) {
+    return renderCompanionItemLayer(item.assetKey, item.customization);
+}
+
+function toCompanionItem(item) {
+    if (!item) {
+        return null;
+    }
+
+    if (typeof item === 'string') {
+        return { assetKey: item, customization: {} };
+    }
+
+    return {
+        renderKey: item.renderKey ?? item.userItemId ?? item._id,
+        assetKey: item.assetKey,
+        customization: item.customization ?? {},
+    };
+}
+
+function orderCompanionItems(items = []) {
+    const layerOrder = {
+        shoes: 0,
+        clothing: 1,
+        accessory: 2,
+        powerUp: 3,
+    };
+
+    return [...items].sort((firstItem, secondItem) => {
+        const firstType = getItemLayerType(firstItem.assetKey);
+        const secondType = getItemLayerType(secondItem.assetKey);
+
+        return (layerOrder[firstType] ?? 99) - (layerOrder[secondType] ?? 99);
+    });
 }
 
 export function CompanionAvatar({
@@ -42,10 +74,15 @@ export function CompanionAvatar({
                                     showName = false,
                                     previewItemKey,
                                     previewItemKeys = [],
+                                    previewItemConfigs = [],
                                     equippedItemKeys = [],
+                                    equippedItemConfigs = [],
                                     className,
                                 }) {
-    const itemKeys = orderCompanionItemKeys([...equippedItemKeys, ...previewItemKeys, previewItemKey].filter(Boolean));
+    const companionItems = [...equippedItemKeys, ...equippedItemConfigs, ...previewItemKeys, previewItemKey, ...previewItemConfigs]
+        .map(toCompanionItem)
+        .filter((item) => item?.assetKey);
+    const orderedItems = orderCompanionItems(companionItems);
     const Skin = SKINS[type] ?? WolfSkin;
     const offsetX = X_OFFSET[type] ?? 0;
 
@@ -62,8 +99,8 @@ export function CompanionAvatar({
                     <Skin part="back" />
 
                     {/* Equipped items (shared across all companion types) */}
-                    {itemKeys.map((itemKey) => (
-                        <CompanionItemLayer key={itemKey} itemKey={itemKey} />
+                    {orderedItems.map((item, index) => (
+                        <CompanionItemLayer key={item.renderKey ?? `${item.assetKey}-${index}`} item={item} />
                     ))}
 
                     {/* Nose, drawn on top of the items */}

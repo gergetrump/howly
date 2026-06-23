@@ -16,7 +16,7 @@ import {
     sendFriendRequest,
 } from '@/services/socialApi';
 import { searchUsers } from '@/services/userApi';
-import { toggleStoryLike, deleteStory } from '@/services/storyApi';
+import { deleteStory, getStoryLikes, toggleStoryLike } from '@/services/storyApi';
 import { useAuth } from '@/context/authContext';
 
 const SOCIAL_REFRESH_INTERVAL_MS = 10000;
@@ -40,8 +40,16 @@ export function SocialPage() {
     const [selectedReaction, setSelectedReaction] = useState(null);
     const [selectedProfileUser, setSelectedProfileUser] = useState(null);
     const pendingFriendRequestCount = requests.incoming?.length ?? 0;
+    const selectedFeedPost = selectedReaction?.post?.id
+        ? feed.find((post) => post.id === selectedReaction.post.id)
+        : null;
     const selectedReactionPost = selectedReaction?.post?.id
-        ? feed.find((post) => post.id === selectedReaction.post.id) ?? selectedReaction.post
+        ? {
+            ...(selectedFeedPost ?? selectedReaction.post),
+            reactions: selectedReaction.post.reactions
+                ?? selectedFeedPost?.reactions
+                ?? [],
+        }
         : null;
 
     function getProfileRelationship(profileUser) {
@@ -316,12 +324,66 @@ export function SocialPage() {
 
         try {
             const response = await toggleStoryLike(post.id);
+            const updatedStory = { type: 'story', ...response.story };
 
             setFeed((currentFeed) =>
                 currentFeed.map((feedPost) =>
-                    feedPost.id === post.id ? { type: 'story', ...response.story } : feedPost,
+                    feedPost.id === post.id ? updatedStory : feedPost,
                 ),
             );
+            setSelectedReaction((currentReaction) => {
+                if (currentReaction?.post?.id !== post.id) {
+                    return currentReaction;
+                }
+
+                const currentUserId = user?.id ?? user?._id;
+                const currentReactions = currentReaction.post.reactions ?? [];
+                const nextReactions = response.liked
+                    ? currentReactions.some((reaction) => sameId(reaction.user?.id, currentUserId))
+                        ? currentReactions
+                        : [...currentReactions, {
+                            emoji: '💜',
+                            user: { ...user, id: currentUserId },
+                        }]
+                    : currentReactions.filter((reaction) => !sameId(reaction.user?.id, currentUserId));
+
+                return {
+                    post: {
+                        ...updatedStory,
+                        reactions: nextReactions,
+                    },
+                };
+            });
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setBusyPostId(null);
+        }
+    }
+
+    async function handleOpenStoryLikes(post, loadedLikers = []) {
+        if (!post.likeCount) {
+            return;
+        }
+
+        setBusyPostId(post.id);
+        setError('');
+
+        try {
+            const likers = loadedLikers.length === post.likeCount
+                ? loadedLikers
+                : await getStoryLikes(post.id);
+
+            setSelectedReaction({
+                post: {
+                    ...post,
+                    type: 'story',
+                    reactions: (likers ?? []).map((liker) => ({
+                        emoji: '💜',
+                        user: liker,
+                    })),
+                },
+            });
         } catch (err) {
             setError(getSocialErrorMessage(err));
         } finally {
@@ -362,11 +424,20 @@ export function SocialPage() {
         }
     }
 
+    async function handleReactFromDialog(post, emoji) {
+        if (post.type === 'story') {
+            await handleToggleStoryLike(post);
+            return;
+        }
+
+        await handleReactToMilestone(post, emoji);
+    }
+
     return (
-        <Page theme="forest">
+        <Page theme="forest" contentClassName="max-w-[112rem]">
             <Heading title="Social" subtitle="See what your friends are building." streakDays={user?.streak ?? 0} />
 
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,22rem)] lg:items-start xl:gap-12">
                 <SocialFeed
                     feed={feed}
                     isLoading={isLoading}
@@ -375,6 +446,7 @@ export function SocialPage() {
                     onReact={handleReactToMilestone}
                     onOpenReactions={(feedPost) => setSelectedReaction({ post: feedPost })}
                     onToggleStoryLike={handleToggleStoryLike}
+                    onOpenStoryLikes={handleOpenStoryLikes}
                     onDeleteStory={handleDeleteStory}
                 />
 
@@ -414,7 +486,7 @@ export function SocialPage() {
                     setSelectedProfileUser(reactionUser);
                 }}
                 onAddFriend={handleSendProfileFriendRequest}
-                onReact={handleReactToMilestone}
+                onReact={handleReactFromDialog}
                 getRelationship={getProfileRelationship}
             />
             <UserPreviewDialog

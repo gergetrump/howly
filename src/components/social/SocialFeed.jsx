@@ -28,10 +28,11 @@ export function SocialFeed({
     onReact,
     onOpenReactions,
     onToggleStoryLike,
+    onOpenStoryLikes,
     onDeleteStory,
 }) {
     return (
-        <PageSection title="Feed" className="min-w-0">
+        <PageSection title="Feed" className="min-w-0 lg:max-w-[64rem]">
             {isLoading ? (
                 <EmptyState>Loading feed</EmptyState>
             ) : feed.length ? (
@@ -42,19 +43,19 @@ export function SocialFeed({
                                 key={`story-${post.id}`}
                                 authorName={getDisplayName(post.user)}
                                 authorAvatarSrc={post.user?.profilePictureUrl}
+                                meta={formatRelativeTime(post.createdAt)}
                                 story={post}
                                 isOwn={post.user?.id === currentUserId}
                                 onDelete={onDeleteStory}
+                                onOpenLikes={(_, likers) => onOpenStoryLikes?.(post, likers)}
                             >
-                                {post.user?.id !== currentUserId ? (
-                                    <ReactionButton
-                                        liked={post.likedByCurrentUser}
-                                        count={post.likeCount}
-                                        label="Like story"
-                                        disabled={busyPostId === post.id}
-                                        onClick={() => onToggleStoryLike?.(post)}
-                                    />
-                                ) : null}
+                                <ReactionButton
+                                    liked={post.likedByCurrentUser}
+                                    count={post.likeCount}
+                                    label="Like story"
+                                    disabled={busyPostId === post.id}
+                                    onClick={() => onToggleStoryLike?.(post)}
+                                />
                             </StoryFeedCard>
                         ) : (
                             <FeedPostCard
@@ -64,7 +65,9 @@ export function SocialFeed({
                                 authorAvatarSrc={post.user?.profilePictureUrl}
                                 meta={formatRelativeTime(post.createdAt)}
                                 companionName={post.companion?.name || 'Howly'}
+                                companionType={post.companion?.type || 'wolf'}
                                 companionEquippedItemKeys={post.companion?.equippedItemKeys ?? []}
+                                companionEquippedItemConfigs={post.companion?.equippedItemConfigs ?? []}
                                 milestoneTitle={buildMilestoneTitle(post)}
                             >
                                 <MilestoneReactionPicker

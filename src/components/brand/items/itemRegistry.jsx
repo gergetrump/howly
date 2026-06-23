@@ -1,6 +1,5 @@
 import CozyJacket, { CozyJacketLayer } from './CozyJacket';
 import Cup, { CupLayer } from './Cup';
-import CupBrown, { CupBrownLayer } from './CupBrown';
 import { GlassesLayer, GlassesPreview } from './Glasses';
 import Hoodie, { HoodieLayer } from './Hoodie';
 import Phone, { PhoneLayer } from './Phone';
@@ -20,23 +19,21 @@ const itemRegistry = {
     },
     'cup': {
         type: 'accessory',
+        displayName: 'Warm Cup',
         visual: Cup,
         layer: CupLayer,
         transform: 'translate(1300 750)',
-        previewClassName: 'max-h-[85%] max-w-[50%]',
-    },
-    'brown-cup': {
-        type: 'accessory',
-        visual: CupBrown,
-        layer: CupBrownLayer,
-        transform: 'translate(1300 750)',
+        sideTransforms: {
+            right: 'translate(1300 750)',
+            left: 'translate(90 750) scale(-1 1)',
+        },
         previewClassName: 'max-h-[85%] max-w-[50%]',
     },
     'glasses': {
         type: 'accessory',
         visual: GlassesPreview,
         layer: GlassesLayer,
-        transform: 'translate(480 550)',
+        transform: 'translate(485 550)',
         previewClassName: 'max-h-[64%] max-w-[80%]',
     },
     'hoodie': {
@@ -50,6 +47,10 @@ const itemRegistry = {
         visual: Phone,
         layer: PhoneLayer,
         transform: 'translate(1300 835) rotate(18)',
+        sideTransforms: {
+            right: 'translate(1300 835) rotate(18)',
+            left: 'translate(90 835) rotate(-18) scale(-1 1)',
+        },
         previewClassName: 'max-h-[78%] max-w-[55%]',
     },
     'sneaker': {
@@ -96,15 +97,25 @@ export function getItemRegistryEntry(assetKey) {
     return itemRegistry[assetKey?.trim()] ?? null;
 }
 
-export function renderShopItemVisual(item, className = 'max-h-full max-w-full') {
+export function getItemDisplayName(item) {
+    const itemEntry = getItemRegistryEntry(item?.assetKey);
+
+    return itemEntry?.displayName ?? item?.name ?? '';
+}
+
+export function renderShopItemVisual(item, className = 'max-h-full max-w-full', customization = {}) {
     const itemEntry = getItemRegistryEntry(item.assetKey);
     const Visual = itemEntry?.visual;
 
-    return Visual ? <Visual className={itemEntry.previewClassName ?? className} aria-hidden="true" /> : null;
+    return Visual ? <Visual className={itemEntry.previewClassName ?? className} aria-hidden="true" {...customization} /> : null;
 }
 
 export function getItemLayerType(assetKey) {
     return getItemRegistryEntry(assetKey)?.type ?? 'accessory';
+}
+
+export function hasItemSideOptions(assetKey) {
+    return Boolean(getItemRegistryEntry(assetKey)?.sideTransforms);
 }
 
 export function orderCompanionItemKeys(itemKeys = []) {
@@ -123,7 +134,7 @@ export function orderCompanionItemKeys(itemKeys = []) {
     });
 }
 
-export function renderCompanionItemLayer(assetKey) {
+export function renderCompanionItemLayer(assetKey, customization = {}) {
     const itemEntry = getItemRegistryEntry(assetKey);
 
     if (!itemEntry?.layer) {
@@ -131,6 +142,8 @@ export function renderCompanionItemLayer(assetKey) {
     }
 
     const Layer = itemEntry.layer;
+    const { side, ...layerCustomization } = customization;
+    const transform = itemEntry.sideTransforms?.[side] ?? itemEntry.transform;
 
-    return <Layer transform={itemEntry.transform} {...itemEntry.layerProps} />;
+    return <Layer transform={transform} {...itemEntry.layerProps} {...layerCustomization} />;
 }
