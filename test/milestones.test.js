@@ -13,6 +13,7 @@ import Habit from '../src/features/habits/habit.model.js';
 import config from '../config.js';
 import { Friendship } from '../src/features/social/social.model.js';
 import {
+  MILESTONE_VISIBLE_HOURS,
   MilestoneLike,
   MilestonePost,
 } from '../src/features/milestones/milestone.model.js';
@@ -411,7 +412,7 @@ test('milestone creation only creates posts at 10-day streak intervals', async (
   assert.deepEqual(storedPosts.map((post) => post.streakDays), [10, 20]);
 });
 
-// Tests that reusing an old milestone refreshes its 24-hour feed visibility
+// Tests that reusing an old milestone refreshes its 7-day feed visibility
 test('milestone creation refreshes visibility for an existing milestone post', async () => {
   const viewer = await buildUser({ username: 'refresh_viewer', email: 'refresh-viewer@example.com' });
   const author = await buildUser({ username: 'refresh_author', email: 'refresh-author@example.com' });
@@ -430,6 +431,10 @@ test('milestone creation refreshes visibility for an existing milestone post', a
 
   assert.equal(refreshedResult.milestonePost._id.toString(), expiredMilestonePost._id.toString());
   assert.ok(refreshedResult.milestonePost.visibleUntil > new Date());
+  assert.ok(
+    refreshedResult.milestonePost.visibleUntil.getTime() - Date.now()
+      >= (MILESTONE_VISIBLE_HOURS - 1) * 60 * 60 * 1000,
+  );
 
   const feedResponse = await request(app)
     .get('/api/milestones/feed')
