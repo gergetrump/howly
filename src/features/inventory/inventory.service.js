@@ -15,13 +15,53 @@ export const INVENTORY_ERROR_CODES = {
 };
 
 const SINGLE_EQUIP_ITEM_TYPES = new Set(['clothing', 'shoes']);
+const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
+const EQUIP_SLOTS_BY_ASSET_KEY = {
+    bag: 'body',
+    'bambus-flute': 'hand',
+    'bubble-tea': 'hand',
+    cup: 'hand',
+    'cute-hat': 'head',
+    'drink-togo': 'hand',
+    glasses: 'face',
+    hairpin: 'head',
+    hat: 'head',
+    'hat-with-pompom': 'head',
+    'magic-wand': 'hand',
+    necklace: 'neck',
+    nerdglasses: 'face',
+    phone: 'hand',
+    'sakura-neckclace': 'neck',
+    'sakura-pouch': 'hand',
+    'warm-hat': 'head',
+    'warm-hat-2-pompom': 'head',
+};
 const NON_OWNERSHIP_CUSTOMIZATION_FIELDS = new Set(['side']);
+const wholeColorCustomization = (color) => ({ color });
 const CUSTOMIZABLE_ITEM_DEFAULTS = {
+    ballerina: wholeColorCustomization('#F1EBDF'),
+    'bambus-flute': wholeColorCustomization('#4A6741'),
+    'bambus-shoes': wholeColorCustomization('#E1D3AE'),
+    'cute-ballerinas': wholeColorCustomization('#F1EBDF'),
+    dress: wholeColorCustomization('#F2E6FF'),
+    hairpin: wholeColorCustomization('#F6BBC7'),
+    hat: wholeColorCustomization('#4C4C4C'),
+    'hogwarts-cape': wholeColorCustomization('#1A1A1A'),
     hoodie: {
         color: '#C66E6E',
         stringColor: '#DADADA',
         textColor: '#FFFFFF',
         text: 'HOWLY',
+    },
+    jersie: wholeColorCustomization('#32326F'),
+    'magic-wand': wholeColorCustomization('#D4A373'),
+    necklace: wholeColorCustomization('#990000'),
+    'sakura-neckclace': wholeColorCustomization('#F6BBC7'),
+    'sakura-outfit': wholeColorCustomization('#FCE8EC'),
+    'sakura-pouch': wholeColorCustomization('#FCE8EC'),
+    scar: {
+        color: '#555353',
+        side: 'right',
     },
     'cream-top': {
         color: '#F4EFE5',
@@ -33,6 +73,8 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
         buttonColor: '#B18167',
         pocketColor: '#DDCEAF',
     },
+    summertop: wholeColorCustomization('#FFFFFF'),
+    'warm-boots': wholeColorCustomization('#392E18'),
     'cozy-jacket': {
         jacketColor: '#4A6741',
         stringColor: '#DADADA',
@@ -53,6 +95,33 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
     glasses: {
         color: '#000000',
     },
+    nerdglasses: {
+        defaults: {
+            color: '#4C4C4C',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Frame' },
+        ],
+    },
+    'bubble-tea': {
+        defaults: {
+            color: '#DDCEAF',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Drink' },
+            { key: 'strawColor', label: 'Straw' }
+        ],
+    },
+    'drink-togo': {
+        defaults: {
+            color: '#F6F3EB',
+            holderColor: '#DDCEAF'
+        },
+        colorSlots: [
+            { key: 'color', label: 'Cup' },
+            { key: 'holderColor', label: 'Holder' }
+        ],
+    },
     phone: {
         frameColor: '#D9D9D9',
         backgroundColor: '#575757',
@@ -60,6 +129,46 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
     },
     'warm-hat': {
         color: '#4A6741',
+    },
+    'warm-hat-2-pompom': wholeColorCustomization('#392E18'),
+    'winter-jacket': {
+        jacketColor: '#392E18',
+        shirtColor: '#4A6741',
+        furColor: '#E1D3AE',
+    },
+    'bag': {
+        defaults: {
+            color: '#F4EFE5',
+            strapColor: '#DDCEAF',
+            lockColor: '#CEB88B',
+            flapClosureColor: '#D7C6A2'
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'strapColor', label: 'Strap' },
+            { key: 'lockColor', label: 'Lock' },
+            { key: 'flapClosureColor', label: 'Closure' }
+        ],
+    },
+    'cute-hat': {
+        defaults: {
+            color: '#F1EBDF',
+            stripeColor: '#B3A6C1',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'stripeColor', label: 'Stripe' },
+        ],
+    },
+    'hat-with-pompom': {
+        defaults: {
+            color: '#32326F',
+            pompomColor: '#32326F',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'pompomColor', label: 'Pompom' },
+        ],
     },
     sneaker: {
         color: '#1A1A1A',
@@ -81,10 +190,12 @@ function normalizeCustomizationForItem(item, customization = {}) {
         return {};
     }
 
-    return {
+    const normalizedCustomization = {
         ...defaults,
         ...customization,
     };
+
+    return normalizedCustomization;
 }
 
 function buildCustomizationKey(item, customization = {}) {
@@ -267,18 +378,42 @@ export async function saveOutfit({ userId, equippedUserItemIds, customizationUpd
     }
 
     const selectedSingleTypes = new Set();
+    const selectedSingleSlots = new Set();
+    const selectedHandSides = new Set();
 
     selectedUserItems.forEach((userItem) => {
         const itemType = userItem.item?.type;
+        const itemSlot = EQUIP_SLOTS_BY_ASSET_KEY[userItem.item?.assetKey];
+        const effectiveCustomization = {
+            ...(userItem.customization ?? {}),
+            ...(customizationUpdates[userItem._id.toString()] ?? {}),
+        };
 
         if (!SINGLE_EQUIP_ITEM_TYPES.has(itemType)) {
+            if (SINGLE_EQUIP_SLOTS.has(itemSlot)) {
+                if (selectedSingleSlots.has(itemSlot)) {
+                    throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT);
+                }
+
+                selectedSingleSlots.add(itemSlot);
+            }
+
+            if (itemSlot === 'hand') {
+                const side = effectiveCustomization.side === 'left' ? 'left' : 'right';
+
+                if (selectedHandSides.has(side)) {
+                    throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT);
+                }
+
+                selectedHandSides.add(side);
+            }
+
             return;
         }
 
         if (selectedSingleTypes.has(itemType)) {
             throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT);
         }
-
         selectedSingleTypes.add(itemType);
     });
 

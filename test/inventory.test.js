@@ -421,6 +421,82 @@ test('saving an outfit persists accessory side placement', async () => {
     });
 });
 
+test('saving an outfit rejects two items in the same single accessory slot', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const necklace = await buildItem({ type: 'accessory', assetKey: 'necklace', price: 100 });
+    const sakuraNecklace = await buildItem({ type: 'accessory', assetKey: 'sakura-neckclace', price: 100 });
+    const [necklaceEntry, sakuraEntry] = await UserItem.create([
+        { user: user._id, item: necklace._id },
+        { user: user._id, item: sakuraNecklace._id },
+    ]);
+
+    const response = await request(app)
+        .put('/api/inventory/outfit')
+        .set('Authorization', authHeader(user))
+        .send({
+            equippedUserItemIds: [
+                necklaceEntry._id.toString(),
+                sakuraEntry._id.toString(),
+            ],
+        })
+        .expect(400);
+
+    assert.equal(response.body.code, 'OUTFIT_ITEM_TYPE_CONFLICT');
+});
+
+test('saving an outfit rejects two head accessories', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const warmHat = await buildItem({ type: 'accessory', assetKey: 'warm-hat', price: 100 });
+    const cuteHat = await buildItem({ type: 'accessory', assetKey: 'cute-hat', price: 100 });
+    const [warmHatEntry, cuteHatEntry] = await UserItem.create([
+        { user: user._id, item: warmHat._id },
+        { user: user._id, item: cuteHat._id },
+    ]);
+
+    const response = await request(app)
+        .put('/api/inventory/outfit')
+        .set('Authorization', authHeader(user))
+        .send({
+            equippedUserItemIds: [
+                warmHatEntry._id.toString(),
+                cuteHatEntry._id.toString(),
+            ],
+        })
+        .expect(400);
+
+    assert.equal(response.body.code, 'OUTFIT_ITEM_TYPE_CONFLICT');
+});
+
+test('saving an outfit allows slotless accessories like scar to stack', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const glasses = await buildItem({ type: 'accessory', assetKey: 'glasses', price: 100 });
+    const scar = await buildItem({ type: 'accessory', assetKey: 'scar', price: 100 });
+    const [glassesEntry, scarEntry] = await UserItem.create([
+        { user: user._id, item: glasses._id },
+        { user: user._id, item: scar._id },
+    ]);
+
+    const response = await request(app)
+        .put('/api/inventory/outfit')
+        .set('Authorization', authHeader(user))
+        .send({
+            equippedUserItemIds: [
+                glassesEntry._id.toString(),
+                scarEntry._id.toString(),
+            ],
+        })
+        .expect(200);
+
+    const equippedIds = new Set(
+        response.body
+            .filter((entry) => entry.equipped)
+            .map((entry) => entry._id),
+    );
+
+    assert.equal(equippedIds.has(glassesEntry._id.toString()), true);
+    assert.equal(equippedIds.has(scarEntry._id.toString()), true);
+});
+
 test('legacy side-based accessory entries still count as owned', async () => {
     const user = await buildUser({ coins: 1000 });
     const cup = await buildItem({ type: 'accessory', assetKey: 'cup', price: 100 });
