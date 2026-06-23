@@ -1,4 +1,4 @@
-import { orderCompanionItemKeys, renderCompanionItemLayer } from '@/components/brand/items/itemRegistry';
+import { getItemLayerType, renderCompanionItemLayer } from '@/components/brand/items/itemRegistry';
 import { WolfSkin } from '@/components/brand/companions/WolfSkin';
 import { PandaSkin } from '@/components/brand/companions/PandaSkin';
 import { BearSkin } from '@/components/brand/companions/BearSkin';
@@ -45,9 +45,26 @@ function toCompanionItem(item) {
     }
 
     return {
+        renderKey: item.renderKey ?? item.userItemId ?? item._id,
         assetKey: item.assetKey,
         customization: item.customization ?? {},
     };
+}
+
+function orderCompanionItems(items = []) {
+    const layerOrder = {
+        shoes: 0,
+        clothing: 1,
+        accessory: 2,
+        powerUp: 3,
+    };
+
+    return [...items].sort((firstItem, secondItem) => {
+        const firstType = getItemLayerType(firstItem.assetKey);
+        const secondType = getItemLayerType(secondItem.assetKey);
+
+        return (layerOrder[firstType] ?? 99) - (layerOrder[secondType] ?? 99);
+    });
 }
 
 export function CompanionAvatar({
@@ -65,9 +82,7 @@ export function CompanionAvatar({
     const companionItems = [...equippedItemKeys, ...equippedItemConfigs, ...previewItemKeys, previewItemKey, ...previewItemConfigs]
         .map(toCompanionItem)
         .filter((item) => item?.assetKey);
-    const companionItemsByKey = new Map(companionItems.map((item) => [item.assetKey, item]));
-    const itemKeys = orderCompanionItemKeys([...companionItemsByKey.keys()]);
-    const orderedItems = itemKeys.map((itemKey) => companionItemsByKey.get(itemKey));
+    const orderedItems = orderCompanionItems(companionItems);
     const Skin = SKINS[type] ?? WolfSkin;
     const offsetX = X_OFFSET[type] ?? 0;
 
@@ -84,8 +99,8 @@ export function CompanionAvatar({
                     <Skin part="back" />
 
                     {/* Equipped items (shared across all companion types) */}
-                    {orderedItems.map((item) => (
-                        <CompanionItemLayer key={item.assetKey} item={item} />
+                    {orderedItems.map((item, index) => (
+                        <CompanionItemLayer key={item.renderKey ?? `${item.assetKey}-${index}`} item={item} />
                     ))}
 
                     {/* Nose, drawn on top of the items */}

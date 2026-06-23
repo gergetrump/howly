@@ -14,9 +14,17 @@ export function itemMatchesCategory(item, category) {
 export function getEquippedItemConfigsFromInventory(inventory = []) {
     return (inventory ?? [])
         .filter((entry) => entry.equipped)
-        .map((entry) => ({
-            assetKey: entry.item?.assetKey,
-            customization: entry.customization ?? {},
-        }))
+        .map((entry) => {
+            const itemConfig = {
+                assetKey: entry.item?.assetKey,
+                customization: entry.customization ?? {},
+            };
+
+            if (entry._id) {
+                itemConfig.renderKey = entry._id;
+            }
+
+            return itemConfig;
+        })
         .filter((item) => item.assetKey);
 }
