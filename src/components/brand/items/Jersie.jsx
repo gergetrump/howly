@@ -1,3 +1,20 @@
+const WOLF_BODY_WIDTH = 1300;
+const JERSIE_WIDTH = 1230;
+const JERSIE_HEIGHT = 550;
+const JERSIE_HEIGHT_AT_WOLF_WIDTH = (WOLF_BODY_WIDTH / JERSIE_WIDTH) * JERSIE_HEIGHT;
+
+export function JersieLayer({ transform, ...props }) {
+    return (
+        <g transform={transform}>
+            <Jersie
+                width={WOLF_BODY_WIDTH}
+                height={JERSIE_HEIGHT_AT_WOLF_WIDTH}
+                {...props}
+            />
+        </g>
+    );
+}
+
 export default function Jersie({ className, ...props }) {
     return (
         <svg className={className} width="1297" height="523" viewBox="0 0 1297 523" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

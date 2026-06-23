@@ -1,3 +1,20 @@
+const WOLF_BODY_WIDTH = 1280;
+const DRESS_WIDTH = 1375;
+const DRESS_HEIGHT = 550;
+const DRESS_HEIGHT_AT_WOLF_WIDTH = (WOLF_BODY_WIDTH / DRESS_WIDTH) * DRESS_HEIGHT;
+
+export function DressLayer({ transform, ...props }) {
+    return (
+        <g transform={transform}>
+            <Dress
+                width={WOLF_BODY_WIDTH}
+                height={DRESS_HEIGHT_AT_WOLF_WIDTH}
+                {...props}
+            />
+        </g>
+    );
+}
+
 export default function Dress({ className, ...props }) {
     return (
         <svg className={className} width="1375" height="550" viewBox="0 0 1375 550" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

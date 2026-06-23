@@ -1,3 +1,41 @@
+const WARM_BOOTS_WIDTH = 208;
+const WARM_BOOTS_HEIGHT = 206;
+const PREVIEW_SHOE_WIDTH = 190;
+const LAYER_SHOE_WIDTH = 205;
+const PREVIEW_SHOE_HEIGHT = (PREVIEW_SHOE_WIDTH / WARM_BOOTS_WIDTH) * WARM_BOOTS_HEIGHT;
+const LAYER_SHOE_HEIGHT = (LAYER_SHOE_WIDTH / WARM_BOOTS_WIDTH) * WARM_BOOTS_HEIGHT;
+
+export function WarmBootsLayer({
+    transform,
+    leftShoeTransform = 'translate(380 1315)',
+    rightShoeTransform = 'translate(805 1315)',
+    ...props
+}) {
+    return (
+        <g transform={transform} {...props}>
+            <g transform={leftShoeTransform}>
+                <WarmBoots width={LAYER_SHOE_WIDTH} height={LAYER_SHOE_HEIGHT} />
+            </g>
+            <g transform={rightShoeTransform}>
+                <WarmBoots width={LAYER_SHOE_WIDTH} height={LAYER_SHOE_HEIGHT} />
+            </g>
+        </g>
+    );
+}
+
+export function WarmBootsPair({ className, ...props }) {
+    return (
+        <svg className={className} width="520" height="250" viewBox="0 0 520 250" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+            <g transform="translate(45 22)">
+                <WarmBoots width={PREVIEW_SHOE_WIDTH} height={PREVIEW_SHOE_HEIGHT} />
+            </g>
+            <g transform="translate(285 22)">
+                <WarmBoots width={PREVIEW_SHOE_WIDTH} height={PREVIEW_SHOE_HEIGHT} />
+            </g>
+        </svg>
+    );
+}
+
 export default function WarmBoots({ className, ...props }) {
     return (
         <svg className={className} width="208" height="206" viewBox="0 0 208 206" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

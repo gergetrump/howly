@@ -1,38 +1,38 @@
 import Bag from './Bag';
-import Ballerina from './Ballerina';
+import { BallerinaLayer, BallerinaPair } from './Ballerina';
 import BambusFlute from './BambusFlute';
-import BambusShoes from './BambusShoes';
+import { BambusShoesLayer, BambusShoesPair } from './BambusShoes';
 import BubbleTea from './BubbleTea';
 import CozyJacket, { CozyJacketLayer } from './CozyJacket';
 import Cup, { CupLayer } from './Cup';
-import CuteBallerinas from './CuteBallerinas';
+import { CuteBallerinasLayer, CuteBallerinasPair } from './CuteBallerinas';
 import CuteHat from './CuteHat';
-import Dress from './Dress';
+import Dress, { DressLayer } from './Dress';
 import DrinkTogo from './DrinkTogo';
 import { GlassesLayer, GlassesPreview } from './Glasses';
 import Hairpin from './Hairpin';
 import Hat from './Hat';
 import HatWithPompom from './HatWithPompom';
-import HogwartsCape from './HogwartsCape';
+import HogwartsCape, { HogwartsCapeLayer } from './HogwartsCape';
 import Hoodie, { HoodieLayer } from './Hoodie';
-import Jersie from './Jersie';
+import Jersie, { JersieLayer } from './Jersie';
 import MagicWand from './MagicWand';
 import Necklace from './Necklace';
 import Nerdglasses from './Nerdglasses';
 import Phone, { PhoneLayer } from './Phone';
 import SakuraNeckclace from './SakuraNeckclace';
-import SakuraOutfit from './SakuraOutfit';
+import SakuraOutfit, { SakuraOutfitLayer } from './SakuraOutfit';
 import SakuraPouch from './SakuraPouch';
 import Scar from './Scar';
 import { SneakerLayer, SneakerPair } from './Sneaker';
 import Suit, { SuitLayer } from './Suit';
-import Summertop from './Summertop';
+import Summertop, { SummertopLayer } from './Summertop';
 import Top, { TopLayer } from './Top';
 import TopWarm, { TopWarmLayer } from './TopWarm';
-import WarmBoots from './WarmBoots';
+import { WarmBootsLayer, WarmBootsPair } from './WarmBoots';
 import WarmHat, { WarmHatLayer } from './WarmHat';
 import WarmHat2Pompom from './WarmHat2Pompom';
-import WinterJacket from './WinterJacket';
+import WinterJacket, { WinterJacketLayer } from './WinterJacket';
 
 const itemRegistry = {
     bag: {
@@ -42,7 +42,9 @@ const itemRegistry = {
     },
     ballerina: {
         type: 'shoes',
-        visual: Ballerina,
+        visual: BallerinaPair,
+        layer: BallerinaLayer,
+        transform: 'translate(0 0)',
         previewClassName: 'max-h-[68%] max-w-[76%]',
     },
     'bambus-flute': {
@@ -52,7 +54,9 @@ const itemRegistry = {
     },
     'bambus-shoes': {
         type: 'shoes',
-        visual: BambusShoes,
+        visual: BambusShoesPair,
+        layer: BambusShoesLayer,
+        transform: 'translate(0 0)',
         previewClassName: 'max-h-[68%] max-w-[76%]',
     },
     'bubble-tea': {
@@ -81,7 +85,9 @@ const itemRegistry = {
     },
     'cute-ballerinas': {
         type: 'shoes',
-        visual: CuteBallerinas,
+        visual: CuteBallerinasPair,
+        layer: CuteBallerinasLayer,
+        transform: 'translate(0 0)',
         previewClassName: 'max-h-[68%] max-w-[76%]',
     },
     'cute-hat': {
@@ -92,6 +98,8 @@ const itemRegistry = {
     dress: {
         type: 'clothing',
         visual: Dress,
+        layer: DressLayer,
+        transform: 'translate(26 860) scale(1.05 1)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },
     'drink-togo': {
@@ -124,6 +132,8 @@ const itemRegistry = {
     'hogwarts-cape': {
         type: 'clothing',
         visual: HogwartsCape,
+        layer: HogwartsCapeLayer,
+        transform: 'translate(10 805) scale(1.08 1)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },
     'hoodie': {
@@ -135,6 +145,8 @@ const itemRegistry = {
     jersie: {
         type: 'clothing',
         visual: Jersie,
+        layer: JersieLayer,
+        transform: 'translate(45 835)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },
     'magic-wand': {
@@ -171,6 +183,8 @@ const itemRegistry = {
     'sakura-outfit': {
         type: 'clothing',
         visual: SakuraOutfit,
+        layer: SakuraOutfitLayer,
+        transform: 'translate(26 845) scale(1.05 1)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },
     'sakura-pouch': {
@@ -217,11 +231,19 @@ const itemRegistry = {
     summertop: {
         type: 'clothing',
         visual: Summertop,
+        layer: SummertopLayer,
+        transform: 'translate(37 820)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },
     'warm-boots': {
         type: 'shoes',
-        visual: WarmBoots,
+        visual: WarmBootsPair,
+        layer: WarmBootsLayer,
+        transform: 'translate(0 0)',
+        layerProps: {
+            leftShoeTransform: 'translate(372 1370) scale(1.1 1)',
+            rightShoeTransform: 'translate(792 1370) scale(1.1 1)',
+        },
         previewClassName: 'max-h-[68%] max-w-[76%]',
     },
     'warm-hat': {
@@ -239,6 +261,8 @@ const itemRegistry = {
     'winter-jacket': {
         type: 'clothing',
         visual: WinterJacket,
+        layer: WinterJacketLayer,
+        transform: 'translate(26 805) scale(1.05 1)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },
 };

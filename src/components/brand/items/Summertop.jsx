@@ -1,3 +1,20 @@
+const WOLF_BODY_WIDTH = 1320;
+const SUMMERTOP_WIDTH = 1300;
+const SUMMERTOP_HEIGHT = 618;
+const SUMMERTOP_HEIGHT_AT_WOLF_WIDTH = (WOLF_BODY_WIDTH / SUMMERTOP_WIDTH) * SUMMERTOP_HEIGHT;
+
+export function SummertopLayer({ transform, ...props }) {
+    return (
+        <g transform={transform}>
+            <Summertop
+                width={WOLF_BODY_WIDTH}
+                height={SUMMERTOP_HEIGHT_AT_WOLF_WIDTH}
+                {...props}
+            />
+        </g>
+    );
+}
+
 export default function Summertop({ className, ...props }) {
     return (
         <svg className={className} width="1346" height="618" viewBox="0 0 1346 618" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

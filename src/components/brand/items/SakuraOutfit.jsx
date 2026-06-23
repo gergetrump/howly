@@ -1,3 +1,20 @@
+const WOLF_BODY_WIDTH = 1280;
+const SAKURA_OUTFIT_WIDTH = 1308;
+const SAKURA_OUTFIT_HEIGHT = 596;
+const SAKURA_OUTFIT_HEIGHT_AT_WOLF_WIDTH = (WOLF_BODY_WIDTH / SAKURA_OUTFIT_WIDTH) * SAKURA_OUTFIT_HEIGHT;
+
+export function SakuraOutfitLayer({ transform, ...props }) {
+    return (
+        <g transform={transform}>
+            <SakuraOutfit
+                width={WOLF_BODY_WIDTH}
+                height={SAKURA_OUTFIT_HEIGHT_AT_WOLF_WIDTH}
+                {...props}
+            />
+        </g>
+    );
+}
+
 export default function SakuraOutfit({ className, ...props }) {
     return (
         <svg className={className} width="1308" height="596" viewBox="0 0 1308 596" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

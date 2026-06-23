@@ -1,3 +1,20 @@
+const WOLF_BODY_WIDTH = 1280;
+const HOGWARTS_CAPE_WIDTH = 1352;
+const HOGWARTS_CAPE_HEIGHT = 628;
+const HOGWARTS_CAPE_HEIGHT_AT_WOLF_WIDTH = (WOLF_BODY_WIDTH / HOGWARTS_CAPE_WIDTH) * HOGWARTS_CAPE_HEIGHT;
+
+export function HogwartsCapeLayer({ transform, ...props }) {
+    return (
+        <g transform={transform}>
+            <HogwartsCape
+                width={WOLF_BODY_WIDTH}
+                height={HOGWARTS_CAPE_HEIGHT_AT_WOLF_WIDTH}
+                {...props}
+            />
+        </g>
+    );
+}
+
 export default function HogwartsCape({ className, ...props }) {
     return (
         <svg className={className} width="1352" height="628" viewBox="0 0 1352 628" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

@@ -1,3 +1,41 @@
+const BALLERINA_WIDTH = 209;
+const BALLERINA_HEIGHT = 125;
+const PREVIEW_SHOE_WIDTH = 208;
+const LAYER_SHOE_WIDTH = 230;
+const PREVIEW_SHOE_HEIGHT = (PREVIEW_SHOE_WIDTH / BALLERINA_WIDTH) * BALLERINA_HEIGHT;
+const LAYER_SHOE_HEIGHT = (LAYER_SHOE_WIDTH / BALLERINA_WIDTH) * BALLERINA_HEIGHT;
+
+export function BallerinaLayer({
+    transform,
+    leftShoeTransform = 'translate(370 1390)',
+    rightShoeTransform = 'translate(795 1390)',
+    ...props
+}) {
+    return (
+        <g transform={transform} {...props}>
+            <g transform={leftShoeTransform}>
+                <Ballerina width={LAYER_SHOE_WIDTH} height={LAYER_SHOE_HEIGHT} />
+            </g>
+            <g transform={rightShoeTransform}>
+                <Ballerina width={LAYER_SHOE_WIDTH} height={LAYER_SHOE_HEIGHT} />
+            </g>
+        </g>
+    );
+}
+
+export function BallerinaPair({ className, ...props }) {
+    return (
+        <svg className={className} width="520" height="230" viewBox="0 0 520 230" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+            <g transform="translate(35 52)">
+                <Ballerina width={PREVIEW_SHOE_WIDTH} height={PREVIEW_SHOE_HEIGHT} />
+            </g>
+            <g transform="translate(277 52)">
+                <Ballerina width={PREVIEW_SHOE_WIDTH} height={PREVIEW_SHOE_HEIGHT} />
+            </g>
+        </svg>
+    );
+}
+
 export default function Ballerina({ className, ...props }) {
     return (
         <svg className={className} width="209" height="125" viewBox="0 0 209 125" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

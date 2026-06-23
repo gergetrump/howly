@@ -1,3 +1,41 @@
+const BAMBUS_SHOE_WIDTH = 214;
+const BAMBUS_SHOE_HEIGHT = 126;
+const PREVIEW_SHOE_WIDTH = 208;
+const LAYER_SHOE_WIDTH = 230;
+const PREVIEW_SHOE_HEIGHT = (PREVIEW_SHOE_WIDTH / BAMBUS_SHOE_WIDTH) * BAMBUS_SHOE_HEIGHT;
+const LAYER_SHOE_HEIGHT = (LAYER_SHOE_WIDTH / BAMBUS_SHOE_WIDTH) * BAMBUS_SHOE_HEIGHT;
+
+export function BambusShoesLayer({
+    transform,
+    leftShoeTransform = 'translate(370 1390)',
+    rightShoeTransform = 'translate(795 1390)',
+    ...props
+}) {
+    return (
+        <g transform={transform} {...props}>
+            <g transform={leftShoeTransform}>
+                <BambusShoes width={LAYER_SHOE_WIDTH} height={LAYER_SHOE_HEIGHT} />
+            </g>
+            <g transform={rightShoeTransform}>
+                <BambusShoes width={LAYER_SHOE_WIDTH} height={LAYER_SHOE_HEIGHT} />
+            </g>
+        </g>
+    );
+}
+
+export function BambusShoesPair({ className, ...props }) {
+    return (
+        <svg className={className} width="520" height="230" viewBox="0 0 520 230" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+            <g transform="translate(35 52)">
+                <BambusShoes width={PREVIEW_SHOE_WIDTH} height={PREVIEW_SHOE_HEIGHT} />
+            </g>
+            <g transform="translate(277 52)">
+                <BambusShoes width={PREVIEW_SHOE_WIDTH} height={PREVIEW_SHOE_HEIGHT} />
+            </g>
+        </svg>
+    );
+}
+
 export default function BambusShoes({ className, ...props }) {
     return (
         <svg className={className} width="214" height="126" viewBox="0 0 214 126" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
