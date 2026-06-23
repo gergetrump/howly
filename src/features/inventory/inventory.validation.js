@@ -12,9 +12,11 @@ const CUSTOMIZATION_COLOR_FIELDS = [
     'tieStripeColor',
     'frameColor',
     'backgroundColor',
+    'symbolColor',
 ];
 const MAX_CUSTOM_TEXT_LENGTH = 20;
 const ITEM_SIDES = new Set(['left', 'right']);
+const CUP_SYMBOLS = new Set(['eclipse', 'heart', 'flower', '']);
 
 function sanitizeCustomization(customization = {}) {
     if (!customization || typeof customization !== 'object' || Array.isArray(customization)) {
@@ -48,6 +50,14 @@ function sanitizeCustomization(customization = {}) {
 
         if (ITEM_SIDES.has(side)) {
             sanitizedCustomization.side = side;
+        }
+    }
+
+    if (typeof customization.symbol === 'string') {
+        const symbol = customization.symbol.trim().toLowerCase();
+
+        if (CUP_SYMBOLS.has(symbol)) {
+            sanitizedCustomization.symbol = symbol;
         }
     }
 

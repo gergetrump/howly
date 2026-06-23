@@ -258,6 +258,7 @@ test('users can own different customizations for other customizable clothing ite
 test('users can own customized accessories and shoes', async () => {
     const user = await buildUser({ coins: 1000 });
     const phone = await buildItem({ type: 'accessory', assetKey: 'phone', price: 100 });
+    const cup = await buildItem({ type: 'accessory', assetKey: 'cup', price: 100 });
     const sneaker = await buildItem({ type: 'shoes', assetKey: 'sneaker', price: 100 });
 
     const phoneResponse = await request(app)
@@ -269,6 +270,20 @@ test('users can own customized accessories and shoes', async () => {
                 frameColor: '#DBEAFE',
                 backgroundColor: '#111827',
                 side: 'left',
+            },
+        })
+        .expect(201);
+
+    const cupResponse = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                symbol: 'heart',
+                symbolColor: '#3B82F6',
+                side: 'right',
             },
         })
         .expect(201);
@@ -289,10 +304,49 @@ test('users can own customized accessories and shoes', async () => {
         backgroundColor: '#111827',
         side: 'left',
     });
+    assert.deepEqual(cupResponse.body.customization, {
+        color: '#E09AAB',
+        symbol: 'heart',
+        symbolColor: '#3B82F6',
+        side: 'right',
+    });
     assert.deepEqual(sneakerResponse.body.customization, {
         color: '#1D4ED8',
     });
-    assert.equal(await UserItem.countDocuments({ user: user._id }), 2);
+    assert.equal(await UserItem.countDocuments({ user: user._id }), 3);
+});
+
+test('users can own the same cup symbol with different colors', async () => {
+    const user = await buildUser({ coins: 1000 });
+    const cup = await buildItem({ type: 'accessory', assetKey: 'cup', price: 100 });
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                symbol: 'heart',
+                symbolColor: '#990000',
+            },
+        })
+        .expect(201);
+
+    await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({
+            itemId: cup._id.toString(),
+            customization: {
+                color: '#E09AAB',
+                symbol: 'heart',
+                symbolColor: '#3B82F6',
+            },
+        })
+        .expect(201);
+
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: cup._id }), 2);
 });
 
 test('users cannot buy the same accessory customization twice by changing only side', async () => {
@@ -361,6 +415,8 @@ test('saving an outfit persists accessory side placement', async () => {
     assert.equal(response.body[0].equipped, true);
     assert.deepEqual(response.body[0].customization, {
         color: '#E09AAB',
+        symbol: 'eclipse',
+        symbolColor: '#FFFF00',
         side: 'left',
     });
 });
