@@ -9,3 +9,11 @@ export default function BambusFlute({ className, ...props }) {
         </svg>
     );
 }
+
+export function BambusFluteLayer({ transform = 'translate(90 750) scale(-1 1)', ...props }) {
+    return (
+        <g transform={transform}>
+            <BambusFlute width="260" height="494" {...props} />
+        </g>
+    );
+}

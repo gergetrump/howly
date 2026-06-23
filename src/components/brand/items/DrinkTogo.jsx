@@ -20,3 +20,11 @@ export default function DrinkTogo({ className, ...props }) {
         </svg>
     );
 }
+
+export function DrinkTogoLayer({ transform = 'translate(1300 750)', ...props }) {
+    return (
+        <g transform={transform}>
+            <DrinkTogo width="320" height="414" {...props} />
+        </g>
+    );
+}

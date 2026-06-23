@@ -45,3 +45,11 @@ export default function MagicWand({ className, ...props }) {
         </svg>
     );
 }
+
+export function MagicWandLayer({ transform = 'translate(1300 800) rotate(18)', ...props }) {
+    return (
+        <g transform={transform}>
+            <MagicWand width="260" height="353" {...props} />
+        </g>
+    );
+}

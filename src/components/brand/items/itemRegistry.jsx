@@ -1,14 +1,14 @@
 import Bag from './Bag';
 import { BallerinaLayer, BallerinaPair } from './Ballerina';
-import BambusFlute from './BambusFlute';
+import BambusFlute, { BambusFluteLayer } from './BambusFlute';
 import { BambusShoesLayer, BambusShoesPair } from './BambusShoes';
-import BubbleTea from './BubbleTea';
+import BubbleTea, { BubbleTeaLayer } from './BubbleTea';
 import CozyJacket, { CozyJacketLayer } from './CozyJacket';
 import Cup, { CupLayer } from './Cup';
 import { CuteBallerinasLayer, CuteBallerinasPair } from './CuteBallerinas';
 import CuteHat from './CuteHat';
 import Dress, { DressLayer } from './Dress';
-import DrinkTogo from './DrinkTogo';
+import DrinkTogo, { DrinkTogoLayer } from './DrinkTogo';
 import { GlassesLayer, GlassesPreview } from './Glasses';
 import Hairpin from './Hairpin';
 import Hat from './Hat';
@@ -16,13 +16,13 @@ import HatWithPompom from './HatWithPompom';
 import HogwartsCape, { HogwartsCapeLayer } from './HogwartsCape';
 import Hoodie, { HoodieLayer } from './Hoodie';
 import Jersie, { JersieLayer } from './Jersie';
-import MagicWand from './MagicWand';
+import MagicWand, { MagicWandLayer } from './MagicWand';
 import Necklace from './Necklace';
 import Nerdglasses from './Nerdglasses';
 import Phone, { PhoneLayer } from './Phone';
 import SakuraNeckclace from './SakuraNeckclace';
 import SakuraOutfit, { SakuraOutfitLayer } from './SakuraOutfit';
-import SakuraPouch from './SakuraPouch';
+import SakuraPouch, { SakuraPouchLayer } from './SakuraPouch';
 import Scar from './Scar';
 import { SneakerLayer, SneakerPair } from './Sneaker';
 import Suit, { SuitLayer } from './Suit';
@@ -50,6 +50,12 @@ const itemRegistry = {
     'bambus-flute': {
         type: 'accessory',
         visual: BambusFlute,
+        layer: BambusFluteLayer,
+        transform: 'translate(-80 700)',
+        sideTransforms: {
+            right: 'translate(90 700) scale(-1 1)',
+            left: 'translate(-80 700)',
+        },
         previewClassName: 'max-h-[82%] max-w-[56%]',
     },
     'bambus-shoes': {
@@ -62,6 +68,12 @@ const itemRegistry = {
     'bubble-tea': {
         type: 'accessory',
         visual: BubbleTea,
+        layer: BubbleTeaLayer,
+        transform: 'translate(1250 800)',
+        sideTransforms: {
+            right: 'translate(1250 800)',
+            left: 'translate(90 800) scale(-1 1)',
+        },
         previewClassName: 'max-h-[82%] max-w-[56%]',
     },
     'cozy-jacket': {
@@ -105,6 +117,12 @@ const itemRegistry = {
     'drink-togo': {
         type: 'accessory',
         visual: DrinkTogo,
+        layer: DrinkTogoLayer,
+        transform: 'translate(1250 850)',
+        sideTransforms: {
+            right: 'translate(1250 850)',
+            left: 'translate(90 850) scale(-1 1)',
+        },
         previewClassName: 'max-h-[82%] max-w-[56%]',
     },
     'glasses': {
@@ -152,6 +170,12 @@ const itemRegistry = {
     'magic-wand': {
         type: 'accessory',
         visual: MagicWand,
+        layer: MagicWandLayer,
+        transform: 'translate(1250 780) ',
+        sideTransforms: {
+            right: 'translate(1250 780)',
+            left: 'translate(90 780) scale(-1 1)',
+        },
         previewClassName: 'max-h-[82%] max-w-[56%]',
     },
     necklace: {
@@ -190,6 +214,12 @@ const itemRegistry = {
     'sakura-pouch': {
         type: 'accessory',
         visual: SakuraPouch,
+        layer: SakuraPouchLayer,
+        transform: 'translate(1200 1000)',
+        sideTransforms: {
+            right: 'translate(1200 1000)',
+            left: 'translate(90 1000) scale(-1 1)',
+        },
         previewClassName: 'max-h-[82%] max-w-[56%]',
     },
     scar: {

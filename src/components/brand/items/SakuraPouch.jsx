@@ -91,3 +91,11 @@ export default function SakuraPouch({ className, ...props }) {
         </svg>
     );
 }
+
+export function SakuraPouchLayer({ transform = 'translate(1300 750)', ...props }) {
+    return (
+        <g transform={transform}>
+            <SakuraPouch width="300" height="469" {...props} />
+        </g>
+    );
+}
