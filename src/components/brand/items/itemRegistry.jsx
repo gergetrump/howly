@@ -53,7 +53,7 @@ const itemRegistry = {
         layer: BambusFluteLayer,
         transform: 'translate(-80 700)',
         sideTransforms: {
-            right: 'translate(90 700) scale(-1 1)',
+            right: 'translate(1480 700) scale(-1 1)',
             left: 'translate(-80 700)',
         },
         previewClassName: 'max-h-[82%] max-w-[56%]',
@@ -72,7 +72,7 @@ const itemRegistry = {
         transform: 'translate(1250 800)',
         sideTransforms: {
             right: 'translate(1250 800)',
-            left: 'translate(90 800) scale(-1 1)',
+            left: 'translate(150 800) scale(-1 1)',
         },
         previewClassName: 'max-h-[82%] max-w-[56%]',
     },
@@ -121,7 +121,7 @@ const itemRegistry = {
         transform: 'translate(1250 850)',
         sideTransforms: {
             right: 'translate(1250 850)',
-            left: 'translate(90 850) scale(-1 1)',
+            left: 'translate(150 850) scale(-1 1)',
         },
         previewClassName: 'max-h-[82%] max-w-[56%]',
     },
@@ -174,7 +174,7 @@ const itemRegistry = {
         transform: 'translate(1250 780) ',
         sideTransforms: {
             right: 'translate(1250 780)',
-            left: 'translate(90 780) scale(-1 1)',
+            left: 'translate(150 780) scale(-1 1)',
         },
         previewClassName: 'max-h-[82%] max-w-[56%]',
     },
@@ -218,7 +218,7 @@ const itemRegistry = {
         transform: 'translate(1200 1000)',
         sideTransforms: {
             right: 'translate(1200 1000)',
-            left: 'translate(90 1000) scale(-1 1)',
+            left: 'translate(180 1000) scale(-1 1)',
         },
         previewClassName: 'max-h-[82%] max-w-[56%]',
     },
