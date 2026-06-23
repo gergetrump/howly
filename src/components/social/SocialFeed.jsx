@@ -28,6 +28,7 @@ export function SocialFeed({
     onReact,
     onOpenReactions,
     onToggleStoryLike,
+    onOpenStoryLikes,
     onDeleteStory,
 }) {
     return (
@@ -42,19 +43,19 @@ export function SocialFeed({
                                 key={`story-${post.id}`}
                                 authorName={getDisplayName(post.user)}
                                 authorAvatarSrc={post.user?.profilePictureUrl}
+                                meta={formatRelativeTime(post.createdAt)}
                                 story={post}
                                 isOwn={post.user?.id === currentUserId}
                                 onDelete={onDeleteStory}
+                                onOpenLikes={(_, likers) => onOpenStoryLikes?.(post, likers)}
                             >
-                                {post.user?.id !== currentUserId ? (
-                                    <ReactionButton
-                                        liked={post.likedByCurrentUser}
-                                        count={post.likeCount}
-                                        label="Like story"
-                                        disabled={busyPostId === post.id}
-                                        onClick={() => onToggleStoryLike?.(post)}
-                                    />
-                                ) : null}
+                                <ReactionButton
+                                    liked={post.likedByCurrentUser}
+                                    count={post.likeCount}
+                                    label="Like story"
+                                    disabled={busyPostId === post.id}
+                                    onClick={() => onToggleStoryLike?.(post)}
+                                />
                             </StoryFeedCard>
                         ) : (
                             <FeedPostCard
