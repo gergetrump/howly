@@ -268,6 +268,7 @@ const itemRegistry = {
     },
     scar: {
         type: 'accessory',
+        layerPriority: -10,
         visual: Scar,
         layer: ScarLayer,
         transform: 'translate(290 280)',
@@ -376,23 +377,26 @@ export function getItemEquipSlot(assetKey) {
     return getItemRegistryEntry(assetKey)?.equipSlot ?? null;
 }
 
+export function getItemLayerPriority(assetKey) {
+    const itemEntry = getItemRegistryEntry(assetKey);
+    const layerOrder = {
+        shoes: 0,
+        clothing: 100,
+        accessory: 200,
+        powerUp: 300,
+    };
+    const slotPriority = itemEntry?.equipSlot === 'head' ? 10 : 0;
+
+    return (layerOrder[itemEntry?.type] ?? 990) + (itemEntry?.layerPriority ?? slotPriority);
+}
+
 export function hasItemSideOptions(assetKey) {
     return Boolean(getItemRegistryEntry(assetKey)?.sideTransforms);
 }
 
 export function orderCompanionItemKeys(itemKeys = []) {
-    const layerOrder = {
-        shoes: 0,
-        clothing: 1,
-        accessory: 2,
-        powerUp: 3,
-    };
-
     return [...itemKeys].sort((firstKey, secondKey) => {
-        const firstType = getItemLayerType(firstKey);
-        const secondType = getItemLayerType(secondKey);
-
-        return (layerOrder[firstType] ?? 99) - (layerOrder[secondType] ?? 99);
+        return getItemLayerPriority(firstKey) - getItemLayerPriority(secondKey);
     });
 }
 
