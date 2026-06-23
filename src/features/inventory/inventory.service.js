@@ -46,6 +46,8 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
     },
     cup: {
         color: '#E09AAB',
+        symbol: 'eclipse',
+        symbolColor: '#FFFF00',
         side: 'right',
     },
     glasses: {
@@ -108,7 +110,7 @@ function buildLegacyPlacementCustomizationKeys(item, customization = {}) {
         return [];
     }
 
-    return ['left', 'right'].map((side) => JSON.stringify(
+    const legacyKeys = ['left', 'right'].map((side) => JSON.stringify(
         Object.fromEntries(
             Object.keys(defaults).map((key) => [
                 key,
@@ -116,6 +118,17 @@ function buildLegacyPlacementCustomizationKeys(item, customization = {}) {
             ]),
         ),
     ));
+
+    if (item.assetKey === 'cup') {
+        legacyKeys.push(
+            ...['left', 'right'].map((side) => JSON.stringify({
+                color: customization.color,
+                side,
+            })),
+        );
+    }
+
+    return legacyKeys;
 }
 
 async function ensureCustomizationIndexes() {

@@ -121,7 +121,17 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
       },
     },
     { user: author._id, item: glasses._id, equipped: true },
-    { user: author._id, item: cup._id, equipped: false },
+    {
+      user: author._id,
+      item: cup._id,
+      equipped: true,
+      customization: {
+        color: '#E09AAB',
+        symbol: 'heart',
+        symbolColor: '#3B82F6',
+        side: 'right',
+      },
+    },
   ]);
 
   await Friendship.create({
@@ -151,7 +161,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(feedResponse.body[0].companion.id, companion._id.toString());
   assert.equal(feedResponse.body[0].companion.name, 'Luna');
   assert.equal(feedResponse.body[0].companion.type, 'bear');
-  assert.deepEqual(feedResponse.body[0].companion.equippedItemKeys.sort(), ['glasses', 'hoodie']);
+  assert.deepEqual(feedResponse.body[0].companion.equippedItemKeys.sort(), ['cup', 'glasses', 'hoodie']);
   assert.deepEqual(
     feedResponse.body[0].companion.equippedItemConfigs.find((item) => item.assetKey === 'hoodie'),
     {
@@ -161,6 +171,18 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
         stringColor: '#F8FAFC',
         textColor: '#111827',
         text: 'LUNA',
+      },
+    },
+  );
+  assert.deepEqual(
+    feedResponse.body[0].companion.equippedItemConfigs.find((item) => item.assetKey === 'cup'),
+    {
+      assetKey: 'cup',
+      customization: {
+        color: '#E09AAB',
+        symbol: 'heart',
+        symbolColor: '#3B82F6',
+        side: 'right',
       },
     },
   );
@@ -191,10 +213,14 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(firstReactionResponse.body.milestonePost.habit.icon, '🎯');
   assert.equal(firstReactionResponse.body.milestonePost.companion.name, 'Luna');
   assert.equal(firstReactionResponse.body.milestonePost.companion.type, 'bear');
-  assert.deepEqual(firstReactionResponse.body.milestonePost.companion.equippedItemKeys.sort(), ['glasses', 'hoodie']);
+  assert.deepEqual(firstReactionResponse.body.milestonePost.companion.equippedItemKeys.sort(), ['cup', 'glasses', 'hoodie']);
   assert.equal(
     firstReactionResponse.body.milestonePost.companion.equippedItemConfigs.find((item) => item.assetKey === 'hoodie').customization.text,
     'LUNA',
+  );
+  assert.equal(
+    firstReactionResponse.body.milestonePost.companion.equippedItemConfigs.find((item) => item.assetKey === 'cup').customization.symbolColor,
+    '#3B82F6',
   );
 
   // Choosing another emoji changes the user's single reaction
@@ -228,7 +254,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(removedReactionResponse.body.milestonePost.habit.frequency, 'Daily');
   assert.equal(removedReactionResponse.body.milestonePost.habit.icon, '🎯');
   assert.equal(removedReactionResponse.body.milestonePost.companion.name, 'Luna');
-  assert.deepEqual(removedReactionResponse.body.milestonePost.companion.equippedItemKeys.sort(), ['glasses', 'hoodie']);
+  assert.deepEqual(removedReactionResponse.body.milestonePost.companion.equippedItemKeys.sort(), ['cup', 'glasses', 'hoodie']);
 });
 
 // Tests that picker emojis outside the preset list are accepted, while text is rejected
