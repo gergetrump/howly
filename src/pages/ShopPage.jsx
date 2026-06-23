@@ -227,7 +227,7 @@ export function ShopPage() {
         .filter((item) => getCustomizationConfig(item.assetKey))
         .map((item) => ({
             assetKey: item.assetKey,
-            customization: getItemCustomization(item),
+            customization: getShopPreviewCustomization(item),
         }));
 
     const cartItemsToBuy = cartItems.filter((entry) => !isPurchaseEntryOwned(entry));
@@ -250,6 +250,28 @@ export function ShopPage() {
     const selectedActiveColorSlot = selectedCustomItem
         ? activeColorSlots[selectedCustomItem.assetKey] ?? selectedCustomizationConfig?.colorSlots[0]?.key
         : '';
+
+    const isFixedHandPreviewItem = useCallback((item) => (
+        hasItemSideOptions(item?.assetKey)
+    ), []);
+
+    const addSelectedItem = useCallback((currentItems, item) => {
+        if (isFixedHandPreviewItem(item)) {
+            return [
+                ...currentItems.filter((currentItem) => !isFixedHandPreviewItem(currentItem)),
+                item,
+            ];
+        }
+
+        if (SINGLE_EQUIP_ITEM_TYPES.has(item.type)) {
+            return [
+                ...currentItems.filter((currentItem) => currentItem.type !== item.type),
+                item,
+            ];
+        }
+
+        return [...currentItems, item];
+    }, [isFixedHandPreviewItem]);
 
     useEffect(() => {
         if (!premiumReturnItemId || items.length === 0) {
@@ -276,7 +298,7 @@ export function ShopPage() {
         }, 0);
 
         return () => window.clearTimeout(restoreTimerId);
-    }, [items, premiumReturnItemId]);
+    }, [addSelectedItem, items, premiumReturnItemId]);
 
     function getPurchaseEntryItem(entry) {
         return entry?.item ?? entry;
@@ -324,17 +346,6 @@ export function ShopPage() {
 
     function isItemOwned(item) {
         return ownedItemSignatures.has(getItemOwnershipSignature(item, getItemCustomization(item)));
-    }
-
-    function addSelectedItem(currentItems, item) {
-        if (SINGLE_EQUIP_ITEM_TYPES.has(item.type)) {
-            return [
-                ...currentItems.filter((currentItem) => currentItem.type !== item.type),
-                item,
-            ];
-        }
-
-        return [...currentItems, item];
     }
 
     function addCartEntry(currentCartItems, item) {
@@ -403,6 +414,14 @@ export function ShopPage() {
         return normalizeItemCustomization(item, itemCustomizations[item.assetKey]);
     }
 
+    function getShopPreviewCustomization(item) {
+        const customization = getItemCustomization(item);
+
+        return hasItemSideOptions(item.assetKey)
+            ? { ...customization, side: 'right' }
+            : customization;
+    }
+
     function handleItemColorChange(assetKey, slot, color) {
         setItemCustomizations((currentCustomizations) => ({
             ...currentCustomizations,
@@ -423,12 +442,12 @@ export function ShopPage() {
         }));
     }
 
-    function handleItemSideChange(assetKey, side) {
+    function handleItemSymbolChange(assetKey, symbolKey, symbol) {
         setItemCustomizations((currentCustomizations) => ({
             ...currentCustomizations,
             [assetKey]: {
                 ...normalizeItemCustomization(assetKey, currentCustomizations[assetKey]),
-                side,
+                [symbolKey]: symbol,
             },
         }));
     }
@@ -602,9 +621,8 @@ export function ShopPage() {
                     }))}
                     onColorChange={(slot, color) => handleItemColorChange(selectedCustomItem.assetKey, slot, color)}
                     onTextChange={(textKey, text) => handleItemTextChange(selectedCustomItem.assetKey, textKey, text)}
-                    onSideChange={(side) => handleItemSideChange(selectedCustomItem.assetKey, side)}
+                    onSymbolChange={(symbolKey, symbol) => handleItemSymbolChange(selectedCustomItem.assetKey, symbolKey, symbol)}
                     onAddToCart={() => handleAddCurrentItemToCart(selectedCustomItem)}
-                    canChangeSide={hasItemSideOptions(selectedCustomItem?.assetKey)}
                 />
             </div>
 

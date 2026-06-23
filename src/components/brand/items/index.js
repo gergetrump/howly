@@ -1,6 +1,9 @@
 export { default as CozyJacket } from './CozyJacket';
 export { default as Cup } from './Cup';
+export { default as Eclipse } from './Eclipse';
+export { default as Flower } from './Flower';
 export { default as Glasses } from './Glasses';
+export { default as Heart } from './Heart';
 export { default as Hoodie } from './Hoodie';
 export { default as Phone } from './Phone';
 export { default as Sneaker, SneakerPair } from './Sneaker';

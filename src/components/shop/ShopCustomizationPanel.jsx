@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, ChevronDown, Palette } from 'lucide-react';
 import { ActionButton } from '@/components/common';
+import Eclipse from '@/components/brand/items/Eclipse';
+import Flower from '@/components/brand/items/Flower';
+import Heart from '@/components/brand/items/Heart';
 import { getItemDisplayName } from '@/components/brand/items/itemRegistry';
 import {
     MAX_CUSTOM_TEXT_LENGTH,
@@ -17,6 +20,20 @@ const PALETTE_COLORS = [
     '#FED7AA', '#FDBA74', '#FB923C', '#F97316', '#EA580C', '#C2410C', '#7C2D12', '#FCA5A5', '#EF4444', '#B91C1C',
     '#DD9CC0', '#C084FC', '#1E293B', '#4A6741',
 ];
+
+const SYMBOL_COLORS = ['#FFFF00', '#990000', '#F6BBC7', '#FFFFFF', '#A78BFA', '#38BDF8', '#22C55E', '#F97316'];
+
+const SYMBOL_VISUALS = {
+    eclipse: Eclipse,
+    heart: Heart,
+    flower: Flower,
+};
+
+const SYMBOL_PREVIEW_CLASSES = {
+    eclipse: 'h-full max-h-10 max-w-12 overflow-visible',
+    heart: 'h-full max-h-10 max-w-12 overflow-visible',
+    flower: 'h-5 max-h-8 max-w-10 overflow-visible',
+};
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -98,6 +115,7 @@ export function ShopCustomizationPanel({
     onActiveSlotChange,
     onColorChange,
     onTextChange,
+    onSymbolChange,
     onSideChange,
     onAddToCart,
     addToCartLabel,
@@ -118,6 +136,7 @@ export function ShopCustomizationPanel({
     }
 
     const textConfig = customizationConfig.text;
+    const symbolConfig = customizationConfig.symbol;
     const selectedSide = customization.side === 'left' ? 'left' : 'right';
     const markerDistance = selectedHsl.saturation * 0.48;
     const markerAngle = (selectedHsl.hue - 90) * (Math.PI / 180);
@@ -129,6 +148,14 @@ export function ShopCustomizationPanel({
 
         if (normalizedColor) {
             onColorChange(activeSlot, normalizedColor);
+        }
+    }
+
+    function handleSymbolHexInputChange(event) {
+        const normalizedColor = normalizeHexInput(event.target.value);
+
+        if (normalizedColor) {
+            onColorChange(symbolConfig.colorKey, normalizedColor);
         }
     }
 
@@ -285,6 +312,72 @@ export function ShopCustomizationPanel({
                             onChange={handleTextChange}
                         />
                     </label>
+                ) : null}
+
+                {symbolConfig ? (
+                    <div className="grid min-w-0 gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">{symbolConfig.label}</p>
+                        {symbolConfig.colorKey ? (
+                            <div className="grid min-w-0 gap-2 rounded-xl bg-white/8 p-2">
+                                <div className="flex min-w-0 items-center gap-2">
+                                    <span
+                                        className="h-9 w-12 shrink-0 rounded-lg border border-white/15"
+                                        style={{ backgroundColor: customization[symbolConfig.colorKey] }}
+                                        aria-hidden="true"
+                                    />
+                                    <input
+                                        key={customization[symbolConfig.colorKey]}
+                                        defaultValue={(customization[symbolConfig.colorKey] ?? '').replace('#', '')}
+                                        className="min-w-0 flex-1 border-b border-white/60 bg-transparent text-sm font-bold uppercase tracking-wide text-white outline-none"
+                                        aria-label={`${getItemDisplayName(item)} symbol color hex code`}
+                                        onChange={handleSymbolHexInputChange}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-8 gap-1.5">
+                                    {SYMBOL_COLORS.map((color) => (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            className={`aspect-square rounded-md border transition hover:scale-110 ${customization[symbolConfig.colorKey]?.toUpperCase() === color ? 'border-white shadow-[0_0_0_2px_rgba(255,255,255,0.35)]' : 'border-white/15'}`}
+                                            style={{ backgroundColor: color }}
+                                            aria-label={`Use symbol color ${color}`}
+                                            onClick={() => onColorChange(symbolConfig.colorKey, color)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
+                        <div className="grid min-w-0 grid-cols-3 gap-2 rounded-xl bg-white/8 p-2">
+                            {symbolConfig.options.map((symbolOption) => {
+                                const SymbolVisual = SYMBOL_VISUALS[symbolOption.value];
+                                const isSelected = customization[symbolConfig.key] === symbolOption.value;
+                                const symbolPreviewColor = isSelected
+                                    ? customization[symbolConfig.colorKey]
+                                    : symbolOption.defaultColor;
+
+                                return (
+                                    <button
+                                        key={symbolOption.value}
+                                        type="button"
+                                        className={`grid min-w-0 gap-1 rounded-xl border px-2 py-2 text-center text-xs font-semibold transition ${isSelected ? 'border-violet-200 bg-violet-400/35 text-white' : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'}`}
+                                        aria-pressed={isSelected}
+                                        onClick={() => onSymbolChange(symbolConfig.key, isSelected ? '' : symbolOption.value)}
+                                    >
+                                        <span className="flex h-10 min-w-0 items-center justify-center overflow-visible">
+                                            {SymbolVisual ? (
+                                                <SymbolVisual
+                                                    className={SYMBOL_PREVIEW_CLASSES[symbolOption.value]}
+                                                    color={symbolPreviewColor}
+                                                    aria-hidden="true"
+                                                />
+                                            ) : null}
+                                        </span>
+                                        <span className="truncate">{symbolOption.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
                 ) : null}
 
                 {canChangeSide ? (

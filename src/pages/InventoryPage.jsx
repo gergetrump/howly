@@ -24,7 +24,9 @@ export function InventoryPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSavingOutfit, setIsSavingOutfit] = useState(false);
     const [error, setError] = useState('');
+    const [companionMessage, setCompanionMessage] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
+    const handsFullMessage = 'My hands are full! Remove at least one item from either hand.';
 
     const getInventorySides = useCallback((inventoryEntries) => (
         Object.fromEntries(
@@ -136,31 +138,60 @@ export function InventoryPage() {
 
     function handleToggleEquipped(item) {
         setError('');
+        setCompanionMessage('');
 
-        setDraftEquippedItemIds((currentItemIds) => {
-            const nextItemIds = new Set(currentItemIds);
+        const nextItemIds = new Set(draftEquippedItemIds);
 
-            if (nextItemIds.has(item.userItemId)) {
-                nextItemIds.delete(item.userItemId);
-                return nextItemIds;
+        if (nextItemIds.has(item.userItemId)) {
+            nextItemIds.delete(item.userItemId);
+            setDraftEquippedItemIds(nextItemIds);
+            return;
+        }
+
+        let nextSide = null;
+
+        if (hasItemSideOptions(item.assetKey)) {
+            const preferredSide = draftItemSides[item.userItemId] ?? item.customization?.side ?? 'right';
+            const alternateSide = preferredSide === 'right' ? 'left' : 'right';
+            const occupiedSides = new Set(
+                inventory
+                    .filter((entry) => nextItemIds.has(entry._id) && hasItemSideOptions(entry.item?.assetKey))
+                    .map((entry) => draftItemSides[entry._id] ?? entry.customization?.side ?? 'right'),
+            );
+
+            if (!occupiedSides.has(preferredSide)) {
+                nextSide = preferredSide;
+            } else if (!occupiedSides.has(alternateSide)) {
+                nextSide = alternateSide;
+            } else {
+                setCompanionMessage(handsFullMessage);
+                return;
             }
+        }
 
-            if (SINGLE_EQUIP_ITEM_TYPES.has(item.type)) {
-                inventory.forEach((entry) => {
-                    if (entry.item?.type === item.type) {
-                        nextItemIds.delete(entry._id);
-                    }
-                });
-            }
+        if (SINGLE_EQUIP_ITEM_TYPES.has(item.type)) {
+            inventory.forEach((entry) => {
+                if (entry.item?.type === item.type) {
+                    nextItemIds.delete(entry._id);
+                }
+            });
+        }
 
-            nextItemIds.add(item.userItemId);
-            return nextItemIds;
-        });
+        nextItemIds.add(item.userItemId);
+        setDraftEquippedItemIds(nextItemIds);
+
+        if (nextSide) {
+            setDraftItemSides((currentSides) => ({
+                ...currentSides,
+                [item.userItemId]: nextSide,
+            }));
+        }
     }
 
     async function handleSaveOutfit() {
         setIsSavingOutfit(true);
         setError('');
+        setCompanionMessage('');
 
         try {
             const customizationUpdates = Object.fromEntries(
@@ -187,10 +218,38 @@ export function InventoryPage() {
 
     function handleSideChange(userItemId, side) {
         setError('');
-        setDraftItemSides((currentSides) => ({
-            ...currentSides,
-            [userItemId]: side,
-        }));
+        setCompanionMessage('');
+        setDraftItemSides((currentSides) => {
+            const movingEntry = inventory.find((entry) => entry._id === userItemId);
+
+            if (!movingEntry || !draftEquippedItemIds.has(userItemId)) {
+                return {
+                    ...currentSides,
+                    [userItemId]: side,
+                };
+            }
+
+            const currentSide = currentSides[userItemId] ?? movingEntry.customization?.side ?? 'right';
+            const occupiedEntry = inventory.find((entry) => (
+                entry._id !== userItemId
+                && draftEquippedItemIds.has(entry._id)
+                && hasItemSideOptions(entry.item?.assetKey)
+                && (currentSides[entry._id] ?? entry.customization?.side ?? 'right') === side
+            ));
+
+            if (!occupiedEntry) {
+                return {
+                    ...currentSides,
+                    [userItemId]: side,
+                };
+            }
+
+            return {
+                ...currentSides,
+                [userItemId]: side,
+                [occupiedEntry._id]: currentSide,
+            };
+        });
     }
 
     function renderSideControls(item) {
@@ -244,7 +303,7 @@ export function InventoryPage() {
     return (
         <Page theme="forest">
             <Heading title="Inventory" subtitle="Equip items for your companion." streakDays={user?.streak ?? 0} />
-            <section className="sticky top-24 z-20 flex min-h-72 flex-col items-center justify-end gap-3 text-center">
+            <section className="sticky top-24 z-20 flex min-h-72 flex-col items-center justify-end gap-3 text-center relative">
                 <CompanionAvatar
                     type={companion?.type}
                     name={companion?.name}
@@ -252,12 +311,18 @@ export function InventoryPage() {
                     showName
                     equippedItemConfigs={equippedItemConfigs}
                 />
+                {companionMessage ? (
+                    <div className="absolute left-1/2 top-8 ml-28 max-w-64 rounded-2xl bg-white/10 px-4 py-3 text-left text-sm font-semibold text-white shadow-xl shadow-slate-950/30 ring-1 ring-white/15 before:absolute before:left-[-12px] before:top-1/2 before:h-0 before:w-0 before:-translate-y-1/2 before:border-y-[10px] before:border-r-[12px] before:border-y-transparent before:border-r-white/10">
+                        {companionMessage}
+                    </div>
+                ) : null}
                 <ActionButton
                     type="button"
                     className="h-9 bg-white/10 px-4 text-sm text-white hover:bg-white/20 disabled:text-slate-500"
                     disabled={draftEquippedItemIds.size === 0 || isSavingOutfit}
                     onClick={() => {
                         setError('');
+                        setCompanionMessage('');
                         setDraftEquippedItemIds(new Set());
                     }}
                 >
