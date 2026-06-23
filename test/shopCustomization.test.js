@@ -20,3 +20,18 @@ test('cup customization includes symbol in ownership signature', () => {
 test('cup customization defaults to eclipse symbol', () => {
     assert.equal(normalizeItemCustomization('cup', {}).symbol, 'eclipse');
 });
+
+test('cup customization can store no symbol', () => {
+    const cup = {
+        _id: 'cup-item-id',
+        assetKey: 'cup',
+    };
+
+    const noSymbolCustomization = normalizeItemCustomization('cup', { symbol: '' });
+
+    assert.equal(noSymbolCustomization.symbol, '');
+    assert.notEqual(
+        getItemOwnershipSignature(cup, { color: '#E09AAB', symbol: '' }),
+        getItemOwnershipSignature(cup, { color: '#E09AAB', symbol: 'eclipse' }),
+    );
+});

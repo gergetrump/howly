@@ -318,7 +318,7 @@ export function ShopCustomizationPanel({
                                         type="button"
                                         className={`grid min-w-0 gap-1 rounded-xl border px-2 py-2 text-center text-xs font-semibold transition ${isSelected ? 'border-violet-200 bg-violet-400/35 text-white' : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'}`}
                                         aria-pressed={isSelected}
-                                        onClick={() => onSymbolChange(symbolConfig.key, symbolOption.value)}
+                                        onClick={() => onSymbolChange(symbolConfig.key, isSelected ? '' : symbolOption.value)}
                                     >
                                         <span className="flex h-10 min-w-0 items-center justify-center overflow-visible">
                                             {SymbolVisual ? (
