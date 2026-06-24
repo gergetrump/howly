@@ -15,8 +15,6 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
     'bambus-flute': wholeColorCustomization('#4A6741'),
     'bambus-shoes': wholeColorCustomization('#E1D3AE'),
     'cute-ballerinas': wholeColorCustomization('#F1EBDF'),
-    dress: wholeColorCustomization('#F2E6FF'),
-    hairpin: wholeColorCustomization('#F6BBC7'),
     hat: wholeColorCustomization('#4C4C4C'),
     'hogwarts-cape': wholeColorCustomization('#1A1A1A'),
     hoodie: {
@@ -37,11 +35,20 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             placeholder: 'HOWLY',
         },
     },
-    jersie: wholeColorCustomization('#32326F'),
+    jersie: {
+        defaults: {
+            color: '#32326F',
+            line : '#FFFFFF'
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'line', label: 'Lines' },
+        ],
+    },
+
     'magic-wand': wholeColorCustomization('#D4A373'),
     necklace: wholeColorCustomization('#990000'),
     'sakura-outfit': wholeColorCustomization('#FCE8EC'),
-    'sakura-pouch': wholeColorCustomization('#FCE8EC'),
     scar: {
         defaults: {
             color: '#555353',
@@ -119,15 +126,58 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
     'sakura-neckclace': {
         defaults: {
             color: '#F6BBC7',
-            pompomColor: '#32326F',
+            chainColor: '#CEB88B',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Pendant' },
+            { key: 'chainColor', label: 'Chain' },
+        ],
+    },
+    'sakura-pouch': {
+        defaults: {
+            color: '#FCE8EC',
+            holderColor: '#E1D3AE',
+            tapeColor: '#E1D3AE',
+            flowerSet1Color: '#F6BBC7',
+            flowerSet2Color: '#FFFFFF',
+
         },
         colorSlots: [
             { key: 'color', label: 'Whole' },
-            { key: 'pompomColor', label: 'Pompom' },
+            { key: 'holderColor', label: 'Holder' },
+            { key: 'tapeColor', label: 'Tape' },
+            { key: 'flowerSet1Color', label: 'Flower Set 1' },
+            { key: 'flowerSet2Color', label: 'Flower Set 2' },
+        ],
+    },
+    hairpin: {
+        defaults: {
+            color: '#FCE8EC',
+            holder: '#EFE7D3'
+
+        },
+        colorSlots: [
+            { key: 'color', label: 'Pendant' },
+            { key: 'holderColor', label: 'Holder' },
         ],
     },
 
-
+    dress: {
+        defaults: {
+            color: '#F2E6FF',
+            lacesColor: '#F1EBDF',
+            flowerSet1Color: '#DDCEAF',
+            flowerSet2Color: '#FFFFFF',
+            buttonColor: '#D9CAAA',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'lacesColor', label: 'Laces' },
+            { key: 'flowerSet1Color', label: 'Flower Set 1' },
+            { key: 'flowerSet2Color', label: 'Flower Set 2' },
+            {key: 'buttonColor', label: 'Buttons' },
+        ],
+    },
     'warm-top': {
         defaults: {
             color: '#F4EFE5',
@@ -140,7 +190,20 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             { key: 'pocketColor', label: 'Pockets' },
         ],
     },
-    summertop: wholeColorCustomization('#FFFFFF'),
+    summertop: {
+        defaults: {
+            shirtColor: '#FFFFFF',
+            jacket: '#4B6942',
+            stripeColor: '#FFFFFF',
+        },
+        colorSlots: [
+            { key: 'shirtColor', label: 'Shirt' },
+            { key: 'jacket', label: 'Jacket' },
+            { key: 'stripeColor', label: 'Stripe' },
+        ],
+    },
+
+
     'warm-boots': wholeColorCustomization('#392E18'),
     'cozy-jacket': {
         defaults: {
@@ -224,7 +287,18 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             { key: 'color', label: 'Whole' },
         ],
     },
-    'warm-hat-2-pompom': wholeColorCustomization('#392E18'),
+    'warm-hat-2-pompom': {
+    defaults: {
+        color: '#392E18',
+        pompom1Color: '#392E18',
+        pompom2Color: '#392E18',
+    },
+    colorSlots: [
+        { key: 'color', label: 'Whole' },
+        { key: 'pompom1Color', label: 'Pompom 1' },
+        { key: 'pompom2Color', label: 'Pompom 2' },
+    ],
+},
     'winter-jacket': {
         defaults: {
             jacketColor: '#392E18',

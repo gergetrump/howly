@@ -1,14 +1,4 @@
-function lightenColor(hexColor, amount = 0.55) {
-    const cleanHex = hexColor.replace('#', '');
-    const red = parseInt(cleanHex.slice(0, 2), 16);
-    const green = parseInt(cleanHex.slice(2, 4), 16);
-    const blue = parseInt(cleanHex.slice(4, 6), 16);
-    const lighten = (channel) => Math.min(255, Math.round(channel + (255 - channel) * amount));
-
-    return `#${[lighten(red), lighten(green), lighten(blue)]
-        .map((channel) => channel.toString(16).padStart(2, '0'))
-        .join('')}`;
-}
+import { lightenColor } from '@/lib/colorUtils';
 
 export default function Flower({ className, color = '#F6BBC7', ...props }) {
     const innerColor = lightenColor(color, 0.55);

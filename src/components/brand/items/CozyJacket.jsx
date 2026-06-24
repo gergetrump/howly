@@ -1,3 +1,5 @@
+import { darkenColor } from '@/lib/colorUtils';
+
 const WOLF_BODY_WIDTH = 1280;
 const COZY_JACKET_WIDTH = 1292;
 const COZY_JACKET_HEIGHT = 554;
@@ -5,23 +7,6 @@ const COZY_JACKET_HEIGHT_AT_WOLF_WIDTH = (WOLF_BODY_WIDTH / COZY_JACKET_WIDTH) *
 const DEFAULT_JACKET_COLOR = '#4A6741';
 const DEFAULT_STRING_COLOR = '#DADADA';
 const DEFAULT_SHIRT_COLOR = '#F4EFE5';
-
-function clampColorChannel(value) {
-    return Math.max(0, Math.min(255, Math.round(value)));
-}
-
-function darkenColor(hexColor, amount) {
-    const normalizedColor = hexColor.replace('#', '');
-
-    if (normalizedColor.length !== 6) {
-        return hexColor;
-    }
-
-    const channels = normalizedColor.match(/.{2}/g).map((channel) => parseInt(channel, 16));
-    const nextChannels = channels.map((channel) => clampColorChannel(channel * (1 - amount)));
-
-    return `#${nextChannels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
-}
 
 export function CozyJacketLayer({ transform, jacketColor, stringColor, shirtColor, ...props }) {
     return (

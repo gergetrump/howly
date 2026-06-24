@@ -1,17 +1,7 @@
+import { darkenColor } from '@/lib/colorUtils';
+
 const DEFAULT_PHONE_FRAME_COLOR = '#D9D9D9';
 const DEFAULT_PHONE_BACKGROUND_COLOR = '#575757';
-
-function darkenColor(hexColor, amount = 0.18) {
-    const cleanHex = hexColor.replace('#', '');
-    const red = parseInt(cleanHex.slice(0, 2), 16);
-    const green = parseInt(cleanHex.slice(2, 4), 16);
-    const blue = parseInt(cleanHex.slice(4, 6), 16);
-    const darken = (channel) => Math.max(0, Math.round(channel * (1 - amount)));
-
-    return `#${[darken(red), darken(green), darken(blue)]
-        .map((channel) => channel.toString(16).padStart(2, '0'))
-        .join('')}`;
-}
 
 export function PhoneLayer({ transform, frameColor, backgroundColor, ...props }) {
     return (

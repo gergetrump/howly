@@ -1,8 +1,8 @@
-export default function SakuraNeckclace({ className, color = '#F6BBC7', ...props }) {
+export default function SakuraNeckclace({ className, color = '#F6BBC7', chainColor = '#CEB88B', ...props }) {
     return (
         <svg className={className} width="325" height="166" viewBox="0 0 325 166" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
             <g id="Group 121">
-                <path id="Line 103" d="M2.5 2.5C129.698 151.319 199.705 148.79 322.502 2.5" stroke="#CEB88B" strokeWidth="5" strokeLinecap="round"/>
+                <path id="Line 103" d="M2.5 2.5C129.698 151.319 199.705 148.79 322.502 2.5" stroke={chainColor} strokeWidth="5" strokeLinecap="round"/>
                 <g id="Group 118">
                     <ellipse id="Ellipse 40" cx="12.4357" cy="4.52758" rx="12.4357" ry="4.52758" transform="matrix(-0.614725 -0.773479 -0.827295 0.583848 164.978 123.66)" fill={color}/>
                     <ellipse id="Ellipse 41" cx="12.4679" cy="4.51512" rx="12.4679" ry="4.51512" transform="matrix(-1.00501 -0.103008 -0.0908639 0.984681 159.235 125.816)" fill={color}/>
