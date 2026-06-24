@@ -16,6 +16,7 @@ export const INVENTORY_ERROR_CODES = {
 
 const SINGLE_EQUIP_ITEM_TYPES = new Set(['clothing', 'shoes']);
 const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
+const SIDEABLE_HEAD_ITEM_KEYS = new Set(['cute-hat', 'hairpin']);
 const EQUIP_SLOTS_BY_ASSET_KEY = {
     bag: 'body',
     'bambus-flute': 'hand',
@@ -38,6 +39,11 @@ const EQUIP_SLOTS_BY_ASSET_KEY = {
 };
 const NON_OWNERSHIP_CUSTOMIZATION_FIELDS = new Set(['side']);
 const wholeColorCustomization = (color) => ({ color });
+
+function isSideableHeadItem(assetKey) {
+    return SIDEABLE_HEAD_ITEM_KEYS.has(assetKey);
+}
+
 const CUSTOMIZABLE_ITEM_DEFAULTS = {
     ballerina: wholeColorCustomization('#F1EBDF'),
     'bambus-flute': wholeColorCustomization('#4A6741'),
@@ -47,15 +53,8 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
         stripeColor: '#B3A6C1',
     },
     hairpin: {
-        defaults: {
-            color: '#FCE8EC',
-            holder: '#EFE7D3'
-
-        },
-        colorSlots: [
-            { key: 'color', label: 'Pendant' },
-            { key: 'holderColor', label: 'Holder' },
-        ],
+        color: '#FCE8EC',
+        holderColor: '#EFE7D3',
     },
     hat: wholeColorCustomization('#4C4C4C'),
     'hogwarts-cape': wholeColorCustomization('#1A1A1A'),
@@ -65,14 +64,24 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
         textColor: '#FFFFFF',
         text: 'HOWLY',
     },
-    jersie: wholeColorCustomization('#32326F'),
+    jersie: {
+        color: '#32326F',
+        line: '#FFFFFF',
+        textColor: '#FFFFFF',
+        text: 'HOWLY',
+    },
     'magic-wand': wholeColorCustomization('#D4A373'),
-    necklace: wholeColorCustomization('#990000'),
+    necklace: {
+        color: '#990000',
+        symbol: 'heart',
+        symbolColor: '#990000',
+    },
     'sakura-outfit': {
         color: '#FCE8EC',
         cordColor: '#E1D3AE',
         flowerSet1Color: '#F6BBC7',
         flowerSet2Color: '#FFFFFF',
+        symbol: 'flower',
     },
     scar: {
         color: '#555353',
@@ -89,16 +98,9 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
         pocketColor: '#DDCEAF',
     },
     summertop: {
-        defaults: {
-            shirtColor: '#FFFFFF',
-            jacket: '#4B6942',
-            stripeColor: '#FFFFFF',
-        },
-        colorSlots: [
-            { key: 'shirtColor', label: 'Shirt' },
-            { key: 'jacket', label: 'Jacket' },
-            { key: 'stripeColor', label: 'Stripe' },
-        ],
+        shirtColor: '#FFFFFF',
+        jacket: '#4B6942',
+        stripeColor: '#FFFFFF',
     },
     'warm-boots': wholeColorCustomization('#392E18'),
     'cozy-jacket': {
@@ -107,33 +109,17 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
         shirtColor: '#F4EFE5',
     },
     'sakura-pouch': {
-        defaults: {
-            color: '#FCE8EC',
-            holderColor: '#E1D3AE',
-            tapeColor: '#E1D3AE',
-            flowerSet1Color: '#F6BBC7',
-            flowerSet2Color: '#FFFFFF',
-
-        },
-        colorSlots: [
-            { key: 'color', label: 'Whole' },
-            { key: 'holderColor', label: 'Holder' },
-            { key: 'tapeColor', label: 'Tape' },
-            { key: 'flowerSet1Color', label: 'Flower Set 1' },
-            { key: 'flowerSet2Color', label: 'Flower Set 2' },
-        ],
+        color: '#FCE8EC',
+        holderColor: '#E1D3AE',
+        tapeColor: '#E1D3AE',
+        flowerSet1Color: '#F6BBC7',
+        flowerSet2Color: '#FFFFFF',
+        symbol: 'flower',
     },
     'warm-hat-2-pompom': {
-        defaults: {
-            color: '#392E18',
-            pompom1Color: '#392E18',
-            pompom2Color: '#392E18',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Whole' },
-            { key: 'pompom1Color', label: 'Pompom 1' },
-            { key: 'pompom2Color', label: 'Pompom 2' },
-        ],
+        color: '#392E18',
+        pompom1Color: '#392E18',
+        pompom2Color: '#392E18',
     },
     suit: {
         jacketColor: '#392E18',
@@ -151,57 +137,28 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
         color: '#000000',
     },
     nerdglasses: {
-        defaults: {
-            color: '#4C4C4C',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Frame' },
-        ],
+        color: '#4C4C4C',
     },
     'sakura-neckclace': {
-        defaults: {
-            color: '#F6BBC7',
-            chainColor: '#CEB88B',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Pendant' },
-            { key: 'chainColor', label: 'Chain' },
-        ],
+        color: '#F6BBC7',
+        chainColor: '#CEB88B',
     },
     dress: {
-        defaults: {
-            color: '#F2E6FF',
-            lacesColor: '#F1EBDF',
-            flowerSet1Color: '#DDCEAF',
-            flowerSet2Color: '#FFFFFF',
-            buttonColor: '#D9CAAA',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Whole' },
-            { key: 'lacesColor', label: 'Laces' },
-            { key: 'flowerSet1Color', label: 'Flower Set 1' },
-            { key: 'flowerSet2Color', label: 'Flower Set 2' },
-            {key: 'buttonColor', label: 'Buttons' },
-        ],
+        color: '#F2E6FF',
+        lacesColor: '#F1EBDF',
+        flowerSet1Color: '#DDCEAF',
+        flowerSet2Color: '#FFFFFF',
+        buttonColor: '#D9CAAA',
+        symbol: 'flower',
     },
     'bubble-tea': {
-        defaults: {
-            color: '#DDCEAF',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Drink' },
-            { key: 'strawColor', label: 'Straw' }
-        ],
+        color: '#DDCEAF',
+        strawColor: '#F4EFE5',
+        symbol: 'bubble',
     },
     'drink-togo': {
-        defaults: {
-            color: '#F6F3EB',
-            holderColor: '#DDCEAF'
-        },
-        colorSlots: [
-            { key: 'color', label: 'Cup' },
-            { key: 'holderColor', label: 'Holder' }
-        ],
+        color: '#F6F3EB',
+        holderColor: '#DDCEAF',
     },
     phone: {
         frameColor: '#D9D9D9',
@@ -217,38 +174,18 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
         furColor: '#E1D3AE',
     },
     'bag': {
-        defaults: {
-            color: '#F4EFE5',
-            strapColor: '#DDCEAF',
-            lockColor: '#CEB88B',
-            flapClosureColor: '#D7C6A2'
-        },
-        colorSlots: [
-            { key: 'color', label: 'Whole' },
-            { key: 'strapColor', label: 'Strap' },
-            { key: 'lockColor', label: 'Lock' },
-            { key: 'flapClosureColor', label: 'Closure' }
-        ],
+        color: '#F4EFE5',
+        strapColor: '#DDCEAF',
+        lockColor: '#CEB88B',
+        flapClosureColor: '#D7C6A2',
     },
     'cute-hat': {
-        defaults: {
-            color: '#F1EBDF',
-            stripeColor: '#B3A6C1',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Whole' },
-            { key: 'stripeColor', label: 'Stripe' },
-        ],
+        color: '#F1EBDF',
+        stripeColor: '#B3A6C1',
     },
     'hat-with-pompom': {
-        defaults: {
-            color: '#32326F',
-            pompomColor: '#32326F',
-        },
-        colorSlots: [
-            { key: 'color', label: 'Whole' },
-            { key: 'pompomColor', label: 'Pompom' },
-        ],
+        color: '#32326F',
+        pompomColor: '#32326F',
     },
     sneaker: {
         color: '#1A1A1A',
@@ -460,6 +397,7 @@ export async function saveOutfit({ userId, equippedUserItemIds, customizationUpd
     const selectedSingleTypes = new Set();
     const selectedSingleSlots = new Set();
     const selectedHandSides = new Set();
+    const selectedHeadSides = new Set();
 
     selectedUserItems.forEach((userItem) => {
         const itemType = userItem.item?.type;
@@ -470,7 +408,22 @@ export async function saveOutfit({ userId, equippedUserItemIds, customizationUpd
         };
 
         if (!SINGLE_EQUIP_ITEM_TYPES.has(itemType)) {
+            if (itemSlot === 'head' && isSideableHeadItem(userItem.item?.assetKey)) {
+                const side = effectiveCustomization.side === 'left' ? 'left' : 'right';
+
+                if (selectedSingleSlots.has('head') || selectedHeadSides.has(side)) {
+                    throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT);
+                }
+
+                selectedHeadSides.add(side);
+                return;
+            }
+
             if (SINGLE_EQUIP_SLOTS.has(itemSlot)) {
+                if (itemSlot === 'head' && selectedHeadSides.size > 0) {
+                    throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT);
+                }
+
                 if (selectedSingleSlots.has(itemSlot)) {
                     throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT);
                 }
