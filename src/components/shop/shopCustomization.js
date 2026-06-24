@@ -42,6 +42,16 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
     },
     hat: wholeColorCustomization('#4C4C4C'),
     'hogwarts-cape': wholeColorCustomization('#1A1A1A'),
+    'hogwarts-scarf': {
+        defaults: {
+            color: '#822121',
+            stripeColor: '#D19B26',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Main Color' },
+            { key: 'stripeColor', label: 'Stripe Color' },
+        ],
+    },
     hoodie: {
         defaults: {
             color: '#C66E6E',

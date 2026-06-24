@@ -238,6 +238,7 @@ export function ProfilePage() {
             <section className="rounded-2xl bg-slate-800/80 px-6 py-8 text-center shadow-lg">
                 <div className="mx-auto flex flex-col items-center gap-3">
                     <div className="relative">
+
                         <div className={`flex size-24 items-center justify-center overflow-hidden rounded-full bg-slate-700 ${isPremium ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-800' : ''}`}>
                             {user?.profilePictureUrl ? (
                                 <img
@@ -249,16 +250,6 @@ export function ProfilePage() {
                                 <span className="text-5xl">🦊</span>
                             )}
                         </div>
-
-                        {isPremium && (
-                            <span
-                                className="absolute -right-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 shadow-lg shadow-amber-500/40 ring-2 ring-slate-800"
-                                aria-label="Premium member"
-                                title="Premium member"
-                            >
-                                <Crown className="h-3.5 w-3.5 text-slate-900" aria-hidden="true" />
-                            </span>
-                        )}
                     </div>
 
                     <div className="flex items-center justify-center gap-3">

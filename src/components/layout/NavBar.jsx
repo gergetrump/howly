@@ -136,36 +136,30 @@ export function NavBar({
                 <div className="flex shrink-0 items-center gap-2">
                     <MoonCoin amount={coinAmount} compact />
                     {profileItem ? (
-                        <NavLink
-                            to={profileItem.to}
-                            className={({ isActive }) =>
-                                cn(
-                                    'relative flex size-12 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white',
-                                    isActive && 'bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-300/20',
-                                    isPremium && !isActive && 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950',
-                                )
-                            }
-                            aria-label="Profile"
-                        >
-                            {navProfilePictureUrl ? (
-                                <img
-                                    src={navProfilePictureUrl}
-                                    alt="Profile"
-                                    className="size-full rounded-full object-cover"
-                                />
-                            ) : (
-                                <UserRound className="size-6" aria-hidden="true" />
-                            )}
-                            {isPremium && (
-                                <span
-                                    className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 shadow-md shadow-amber-500/40 ring-2 ring-slate-950"
-                                    aria-label="Premium member"
-                                    title="Premium member"
-                                >
-                                    <Crown className="h-2.5 w-2.5 text-slate-900" aria-hidden="true" />
-                                </span>
-                            )}
-                        </NavLink>
+                        <div className="relative">
+
+                            <NavLink
+                                to={profileItem.to}
+                                className={({ isActive }) =>
+                                    cn(
+                                        'relative flex size-12 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white',
+                                        isActive && 'bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-300/20',
+                                        isPremium && !isActive && 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950',
+                                    )
+                                }
+                                aria-label="Profile"
+                            >
+                                {navProfilePictureUrl ? (
+                                    <img
+                                        src={navProfilePictureUrl}
+                                        alt="Profile"
+                                        className="size-full rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <UserRound className="size-6" aria-hidden="true" />
+                                )}
+                            </NavLink>
+                        </div>
                     ) : null}
                 </div>
             </div>

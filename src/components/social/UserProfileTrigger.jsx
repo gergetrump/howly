@@ -15,6 +15,7 @@ export function UserAvatar({ user, className = 'size-12' }) {
 
     return (
         <div className="relative shrink-0">
+
             <div className={`flex ${className} items-center justify-center overflow-hidden rounded-full bg-slate-300 text-lg font-bold text-slate-950 ${isPremium ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-800' : ''}`}>
                 {user?.profilePictureUrl ? (
                     <img src={user.profilePictureUrl} alt="" className="h-full w-full object-cover" />
@@ -22,15 +23,6 @@ export function UserAvatar({ user, className = 'size-12' }) {
                     initial
                 )}
             </div>
-            {isPremium && (
-                <span
-                    className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 shadow-md shadow-amber-500/40 ring-2 ring-slate-800"
-                    aria-label="Premium member"
-                    title="Premium member"
-                >
-                    <Crown className="h-2.5 w-2.5 text-slate-900" aria-hidden="true" />
-                </span>
-            )}
         </div>
     );
 }

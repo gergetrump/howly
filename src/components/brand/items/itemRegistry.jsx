@@ -14,6 +14,7 @@ import Hairpin, { HairpinLayer } from './Hairpin';
 import Hat, { HatLayer } from './Hat';
 import HatWithPompom, { HatWithPompomLayer } from './HatWithPompom';
 import HogwartsCape, { HogwartsCapeLayer } from './HogwartsCape';
+import HogwartsScarf, { HogwartsScarfLayer } from './HogwartsScarf';
 import Hoodie, { HoodieLayer } from './Hoodie';
 import Jersie, { JersieLayer } from './Jersie';
 import MagicWand, { MagicWandLayer } from './MagicWand';
@@ -185,6 +186,18 @@ const itemRegistry = {
         layer: HogwartsCapeLayer,
         transform: 'translate(10 805) scale(1.08 1)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'hogwarts-scarf': {
+        type: 'accessory',
+        equipSlot: 'neck',
+        visual: HogwartsScarf,
+        layer: HogwartsScarfLayer,
+        transform: 'translate(70 790) scale(0.98 0.98)',
+        sideTransforms: {
+            right: 'translate(70 790)  scale(0.98 0.98)',
+            left: 'translate(1340 790) scale(-0.98 0.98)',
+        },
+        previewClassName: 'max-h-[72%] max-w-[82%]',
     },
     'hoodie': {
         type: 'clothing',

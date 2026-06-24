@@ -15,15 +15,6 @@ export function PostAuthorAvatar({ avatarSrc, name, isPremium }) {
                     initial
                 )}
             </div>
-            {isPremium && (
-                <span
-                    className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 shadow-md shadow-amber-500/40 ring-2 ring-slate-800"
-                    aria-label="Premium member"
-                    title="Premium member"
-                >
-                    <Crown className="h-2.5 w-2.5 text-slate-900" aria-hidden="true" />
-                </span>
-            )}
         </div>
     );
 }

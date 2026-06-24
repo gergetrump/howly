@@ -19,6 +19,7 @@ export { default as Hat, HatLayer } from './Hat';
 export { default as HatWithPompom, HatWithPompomLayer } from './HatWithPompom';
 export { default as Heart } from './Heart';
 export { default as HogwartsCape, HogwartsCapeLayer } from './HogwartsCape';
+export { default as HogwartsScarf, HogwartsScarfLayer } from './HogwartsScarf';
 export { default as Hoodie, HoodieLayer } from './Hoodie';
 export { default as Jersie, JersieLayer } from './Jersie';
 export { default as MagicWand, MagicWandLayer } from './MagicWand';
