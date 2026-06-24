@@ -14,7 +14,16 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
     ballerina: wholeColorCustomization('#F1EBDF'),
     'bambus-flute': wholeColorCustomization('#4A6741'),
     'bambus-shoes': wholeColorCustomization('#E1D3AE'),
-    'cute-ballerinas': wholeColorCustomization('#F1EBDF'),
+    'cute-ballerinas': {
+        defaults: {
+            color: '#F1EBDF',
+            stripeColor: '#B3A6C1',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'stripeColor', label: 'Stripe' },
+        ],
+    },
     hat: wholeColorCustomization('#4C4C4C'),
     'hogwarts-cape': wholeColorCustomization('#1A1A1A'),
     hoodie: {
@@ -48,7 +57,20 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
 
     'magic-wand': wholeColorCustomization('#D4A373'),
     necklace: wholeColorCustomization('#990000'),
-    'sakura-outfit': wholeColorCustomization('#FCE8EC'),
+    'sakura-outfit': {
+        defaults: {
+            color: '#FCE8EC',
+            cordColor: '#E1D3AE',
+            flowerSet1Color: '#F6BBC7',
+            flowerSet2Color: '#FFFFFF',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'cordColor', label: 'Cord' },
+            { key: 'flowerSet1Color', label: 'Flower Set 1' },
+            { key: 'flowerSet2Color', label: 'Flower Set 2' },
+        ],
+    },
     scar: {
         defaults: {
             color: '#555353',

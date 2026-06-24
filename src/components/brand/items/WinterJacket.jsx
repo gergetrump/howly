@@ -1,3 +1,5 @@
+import { adjustColor } from '@/lib/colorUtils';
+
 const WOLF_BODY_WIDTH = 1280;
 const WINTER_JACKET_WIDTH = 1347;
 const WINTER_JACKET_HEIGHT = 657;
@@ -23,12 +25,14 @@ export default function WinterJacket({
     furColor = '#E1D3AE',
     ...props
 }) {
+    const shirtStrokeColor = adjustColor(shirtColor, 2, 'darken');
+
     return (
         <svg className={className} width="1347" height="657" viewBox="0 0 1347 657" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
             <g id="Group 151">
                 <g id="Rectangle 9" filter="url(#filter0_d_233_56)">
                     <path d="M195 168.47C195 109.977 255.723 71.2597 308.755 95.9398L639.477 249.854C660.591 259.679 684.937 259.818 706.161 250.232L1052.07 94.0037C1105.02 70.0892 1165 108.813 1165 166.912V496C1165 540.183 1129.18 576 1085 576H275C230.817 576 195 540.183 195 496V168.47Z" fill={shirtColor}/>
-                    <path d="M1052.69 95.3711C1104.65 71.905 1163.5 109.902 1163.5 166.912V496C1163.5 539.354 1128.35 574.5 1085 574.5H275C231.646 574.5 196.5 539.354 196.5 496V168.47C196.5 111.074 256.085 73.0825 308.122 97.2998L638.845 251.214C660.354 261.224 685.157 261.365 706.778 251.6L1052.69 95.3711Z" stroke="#CEB88B" strokeWidth="3"/>
+                    <path d="M1052.69 95.3711C1104.65 71.905 1163.5 109.902 1163.5 166.912V496C1163.5 539.354 1128.35 574.5 1085 574.5H275C231.646 574.5 196.5 539.354 196.5 496V168.47C196.5 111.074 256.085 73.0825 308.122 97.2998L638.845 251.214C660.354 261.224 685.157 261.365 706.778 251.6L1052.69 95.3711Z" stroke={shirtStrokeColor} strokeWidth="3"/>
                 </g>
                 <g id="Group 129">
                     <foreignObject x="538" y="564.001" width="251" height="90.8604"><div xmlns="http://www.w3.org/1999/xhtml" style={{ backdropFilter: 'blur(2px)', clipPath: 'url(#bgblur_0_233_56_clip_path)', height: '100%', width: '100%' }}></div></foreignObject><path id="Rectangle 46" data-figma-bg-blur-radius="4" d="M542 568.001H785V643.001C690.11 653.596 636.893 653.367 542 643.001V568.001Z" fill="#141414"/>
@@ -46,7 +50,7 @@ export default function WinterJacket({
                         <ellipse id="Ellipse 65_2" cx="88.5" cy="89" rx="88.5" ry="89" transform="matrix(-1 0 0 1 1274.93 19.2246)" fill={furColor}/>
                         <path id="Polygon 12_2" d="M767.437 251.165C765.519 252.289 766.591 255.235 768.783 254.862L1214.89 179.077C1222.33 177.814 1225.74 169.092 1221.14 163.118L1179.06 108.458L1127.91 42.0194C1127.29 41.2213 1126.18 41.0047 1125.31 41.5138L767.437 251.165Z" fill={furColor}/>
                     </g>
-                </g>x
+                </g>
             </g>
             <defs>
                 <filter id="filter0_d_233_56" x="191" y="86.8203" width="978" height="497.18" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
