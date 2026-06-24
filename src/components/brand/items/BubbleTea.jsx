@@ -1,4 +1,6 @@
-export default function BubbleTea({ className, color = '#DDCEAF', strawColor= '#F4EFE5',...props }) {
+export default function BubbleTea({ className, color = '#DDCEAF', strawColor= '#F4EFE5', symbol = 'bubble', ...props }) {
+    const bubbleVisibility = symbol === '' ? 'hidden' : 'visible';
+
     return (
         <svg className={className} width="291" height="417" viewBox="0 0 291 417" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
             <g id="Group 142">
@@ -24,6 +26,7 @@ export default function BubbleTea({ className, color = '#DDCEAF', strawColor= '#
                 <g id="Ellipse 102" filter="url(#filter5_f_179_400)">
                     <path d="M181.809 109.833C176.354 109.956 172.404 111.463 171.831 114.052C170.951 118.026 178.365 123.048 188.39 125.267C198.416 127.486 207.132 126.477 208.012 122.502C208.436 120.588 206.935 118.43 204.145 116.46" stroke="#050505" strokeWidth="2"/>
                 </g>
+                <g visibility={bubbleVisibility}>
                 <g id="Ellipse 108">
                     <g filter="url(#filter6_i_179_400)">
                         <ellipse cx="94.5198" cy="312.772" rx="10.2257" ry="9.10584" transform="rotate(12.4813 94.5198 312.772)" fill="#0F0F0F"/>
@@ -83,6 +86,7 @@ export default function BubbleTea({ className, color = '#DDCEAF', strawColor= '#
                         <ellipse cx="63.2556" cy="312.07" rx="10.2257" ry="9.10584" transform="rotate(12.4813 63.2556 312.07)" fill="#0F0F0F"/>
                     </g>
                     <path d="M65.1155 303.668C70.4145 304.841 73.7669 309.583 72.7514 314.172C71.7356 318.761 66.6948 321.646 61.3956 320.473C56.0965 319.3 52.7441 314.557 53.7599 309.968C54.7758 305.379 59.8165 302.495 65.1155 303.668Z" stroke="#050505" strokeWidth="1.5"/>
+                </g>
                 </g>
             </g>
             <defs>

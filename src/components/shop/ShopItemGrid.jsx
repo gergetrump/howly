@@ -30,7 +30,7 @@ export function ShopItemGrid({
                     <CardGrid columns={3} className="pb-8">
                         {filteredItems.map((item) => {
                             return (
-                                <div key={item._id} data-shop-item-id={item._id}>
+                                <div key={item._id} className="h-full" data-shop-item-id={item._id}>
                                     <ItemCard
                                         name={getItemDisplayName(item)}
                                         price={item.price}
@@ -38,6 +38,8 @@ export function ShopItemGrid({
                                         owned={isItemOwned(item)}
                                         equipped={isItemPreviewed(item._id)}
                                         showOwnedBadge={false}
+                                        reserveBadgeSpace
+                                        className="h-full"
                                         dense
                                         interactive
                                         onClick={() => onTryOnItem(item._id)}

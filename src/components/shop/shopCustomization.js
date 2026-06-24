@@ -10,6 +10,22 @@ const wholeColorCustomization = (color) => ({
     ],
 });
 
+const flowerSymbolToggle = {
+    key: 'symbol',
+    label: 'Flower',
+    options: [
+        { value: 'flower', label: 'Flower', defaultColor: '#F6BBC7' },
+    ],
+};
+
+const bubbleSymbolToggle = {
+    key: 'symbol',
+    label: 'Bubble',
+    options: [
+        { value: 'bubble', label: 'Bubble', defaultColor: '#0F0F0F' },
+    ],
+};
+
 export const ITEM_CUSTOMIZATION_CONFIG = {
     ballerina: wholeColorCustomization('#F1EBDF'),
     'bambus-flute': wholeColorCustomization('#4A6741'),
@@ -47,22 +63,52 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
     jersie: {
         defaults: {
             color: '#32326F',
-            line : '#FFFFFF'
+            line: '#FFFFFF',
+            textColor: '#FFFFFF',
+            text: 'HOWLY',
         },
         colorSlots: [
             { key: 'color', label: 'Whole' },
             { key: 'line', label: 'Lines' },
+            { key: 'textColor', label: 'Text' },
         ],
+        text: {
+            key: 'text',
+            label: 'Jersey text',
+            placeholder: 'HOWLY',
+        },
     },
 
     'magic-wand': wholeColorCustomization('#D4A373'),
-    necklace: wholeColorCustomization('#990000'),
+    necklace: {
+        defaults: {
+            color: '#990000',
+            symbol: 'heart',
+            symbolColor: '#990000',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Pendant' },
+        ],
+        symbol: {
+            key: 'symbol',
+            label: 'Symbol',
+            allowEmpty: false,
+            colorKey: 'symbolColor',
+            selectionColorKey: 'symbolColor',
+            options: [
+                { value: 'heart', label: 'Heart', defaultColor: '#990000' },
+                { value: 'moon', label: 'Moon', defaultColor: '#FACC15' },
+                { value: 'diamond', label: 'Diamond', defaultColor: '#90D5FF' },
+            ],
+        },
+    },
     'sakura-outfit': {
         defaults: {
             color: '#FCE8EC',
             cordColor: '#E1D3AE',
             flowerSet1Color: '#F6BBC7',
             flowerSet2Color: '#FFFFFF',
+            symbol: 'flower',
         },
         colorSlots: [
             { key: 'color', label: 'Whole' },
@@ -70,6 +116,7 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             { key: 'flowerSet1Color', label: 'Flower Set 1' },
             { key: 'flowerSet2Color', label: 'Flower Set 2' },
         ],
+        symbol: flowerSymbolToggle,
     },
     scar: {
         defaults: {
@@ -95,11 +142,14 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
     'bubble-tea': {
         defaults: {
             color: '#DDCEAF',
+            strawColor: '#F4EFE5',
+            symbol: 'bubble',
         },
         colorSlots: [
             { key: 'color', label: 'Drink' },
             { key: 'strawColor', label: 'Straw' }
         ],
+        symbol: bubbleSymbolToggle,
     },
     'drink-togo': {
         defaults: {
@@ -162,7 +212,7 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             tapeColor: '#E1D3AE',
             flowerSet1Color: '#F6BBC7',
             flowerSet2Color: '#FFFFFF',
-
+            symbol: 'flower',
         },
         colorSlots: [
             { key: 'color', label: 'Whole' },
@@ -171,12 +221,12 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             { key: 'flowerSet1Color', label: 'Flower Set 1' },
             { key: 'flowerSet2Color', label: 'Flower Set 2' },
         ],
+        symbol: flowerSymbolToggle,
     },
     hairpin: {
         defaults: {
             color: '#FCE8EC',
-            holder: '#EFE7D3'
-
+            holderColor: '#EFE7D3',
         },
         colorSlots: [
             { key: 'color', label: 'Pendant' },
@@ -191,6 +241,7 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             flowerSet1Color: '#DDCEAF',
             flowerSet2Color: '#FFFFFF',
             buttonColor: '#D9CAAA',
+            symbol: 'flower',
         },
         colorSlots: [
             { key: 'color', label: 'Whole' },
@@ -199,6 +250,7 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             { key: 'flowerSet2Color', label: 'Flower Set 2' },
             {key: 'buttonColor', label: 'Buttons' },
         ],
+        symbol: flowerSymbolToggle,
     },
     'warm-top': {
         defaults: {
@@ -267,6 +319,7 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             key: 'symbol',
             colorKey: 'symbolColor',
             label: 'Symbol',
+            selectionColorKey: 'symbolColor',
             options: [
                 { value: 'eclipse', label: 'Eclipse', defaultColor: '#FFFF00' },
                 { value: 'heart', label: 'Heart', defaultColor: '#990000' },

@@ -220,7 +220,10 @@ export function ShopPage() {
     }, []);
 
     const previewItemKeys = useMemo(
-        () => previewItems.map((item) => item.assetKey).filter(Boolean),
+        () => previewItems
+            .filter((item) => !getCustomizationConfig(item.assetKey))
+            .map((item) => item.assetKey)
+            .filter(Boolean),
         [previewItems],
     );
 
@@ -441,12 +444,15 @@ export function ShopPage() {
         }));
     }
 
-    function handleItemSymbolChange(assetKey, symbolKey, symbol) {
+    function handleItemSymbolChange(assetKey, symbolKey, symbol, selectedSymbolColor = null) {
         setItemCustomizations((currentCustomizations) => ({
             ...currentCustomizations,
             [assetKey]: {
                 ...normalizeItemCustomization(assetKey, currentCustomizations[assetKey]),
                 [symbolKey]: symbol,
+                ...(selectedSymbolColor?.colorKey && symbol
+                    ? { [selectedSymbolColor.colorKey]: selectedSymbolColor.color }
+                    : {}),
             },
         }));
     }
@@ -620,7 +626,7 @@ export function ShopPage() {
                     }))}
                     onColorChange={(slot, color) => handleItemColorChange(selectedCustomItem.assetKey, slot, color)}
                     onTextChange={(textKey, text) => handleItemTextChange(selectedCustomItem.assetKey, textKey, text)}
-                    onSymbolChange={(symbolKey, symbol) => handleItemSymbolChange(selectedCustomItem.assetKey, symbolKey, symbol)}
+                    onSymbolChange={(symbolKey, symbol, selectedSymbolColor) => handleItemSymbolChange(selectedCustomItem.assetKey, symbolKey, symbol, selectedSymbolColor)}
                     onAddToCart={() => handleAddCurrentItemToCart(selectedCustomItem)}
                 />
             </div>

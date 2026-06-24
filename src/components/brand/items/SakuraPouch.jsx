@@ -6,11 +6,16 @@ export default function SakuraPouch({ className,
                                         tapeColor = '#E1D3AE',
                                         flowerSet1Color =  '#F6BBC7',
                                         flowerSet2Color=  '#FFFFFF',
+                                        symbol = 'flower',
                                         ...props }) {
 
     const colorStroke = adjustColor(color, 2, 'darken');
     const holderStroke = adjustColor(holderColor, 2, 'darken');
     const tapeStroke = adjustColor(tapeColor, 2, 'darken');
+    if (symbol === '') {
+        flowerSet1Color = 'transparent';
+        flowerSet2Color = 'transparent';
+    }
 
     return (
         <svg className={className} width="285" height="446" viewBox="0 0 285 446" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

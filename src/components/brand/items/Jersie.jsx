@@ -4,6 +4,19 @@ const WOLF_BODY_WIDTH = 1300;
 const JERSIE_WIDTH = 1230;
 const JERSIE_HEIGHT = 550;
 const JERSIE_HEIGHT_AT_WOLF_WIDTH = (WOLF_BODY_WIDTH / JERSIE_WIDTH) * JERSIE_HEIGHT;
+const DEFAULT_JERSIE_TEXT = 'HOWLY';
+const MIN_JERSIE_TEXT_WIDTH = 250;
+const MAX_JERSIE_TEXT_WIDTH = 620;
+const JERSIE_TEXT_WIDTH_PER_EXTRA_CHARACTER = 24;
+
+function getJersieTextWidth(text) {
+    const extraCharacters = Math.max(0, text.length - DEFAULT_JERSIE_TEXT.length);
+
+    return Math.min(
+        MAX_JERSIE_TEXT_WIDTH,
+        MIN_JERSIE_TEXT_WIDTH + extraCharacters * JERSIE_TEXT_WIDTH_PER_EXTRA_CHARACTER,
+    );
+}
 
 export function JersieLayer({ transform, ...props }) {
     return (
@@ -20,10 +33,14 @@ export function JersieLayer({ transform, ...props }) {
 export default function Jersie({ className,
                                    color = '#32326F',
                                    line = '#FFFFFF',
+                                   textColor = '#FFFFFF',
+                                   text = DEFAULT_JERSIE_TEXT,
                                    ...props }) {
 
     const colorStroke = adjustColor(color,2, 'darken')
     const colorStroke2 = adjustColor(color,3, 'darken')
+    const jersieText = text?.trim() || DEFAULT_JERSIE_TEXT;
+    const jersieTextWidth = getJersieTextWidth(jersieText);
 
     return (
         <svg className={className} width="1297" height="523" viewBox="0 0 1297 523" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -46,7 +63,20 @@ export default function Jersie({ className,
                             <path d="M1029.5 28.1504C890.325 78.6801 779.42 103.768 673.717 106.135L654.687 154.414C768.574 153.154 883.417 125.34 1029.5 70.125V28.1504Z" stroke={colorStroke2} strokeWidth="5"/>
                         </g>
                     </g>
-                    <path id="Howly" d="M525.12 249H539.968V254.12H535.488V270.44H555.2V254.12H550.72V249H565.568V254.12H561.088V291.88H565.568V297H550.72V291.88H555.2V275.56H535.488V291.88H539.968V297H525.12V291.88H529.6V254.12H525.12V249ZM582.464 297L575.808 289.96V262.44L582.464 255.4H600.512L607.168 262.44V289.96L600.512 297H582.464ZM584.96 291.496H597.952L601.28 288.104V264.296L598.016 260.904H585.024L581.696 264.296V288.104L584.96 291.496ZM627.673 297L616.793 260.52H613.593V255.4H627.161V260.52H622.681L631.705 290.92L640.793 260.52H638.233V255.4H652.057V260.52H649.497L658.521 290.92L667.609 260.52H663.129V255.4H676.697V260.52H673.497L662.617 297H654.745L645.145 264.808L635.545 297H627.673ZM683.12 255.4H698.608V260.52H693.488V291.88H707.44V284.456H712.304V297H683.12V291.88H687.6V260.52H683.12V255.4ZM739.16 297H721.752V291.88H727.512V283.944L716.376 260.52H712.28V255.4H725.848V260.52H722.008L730.392 278.248L738.84 260.52H735V255.4H748.568V260.52H744.472L733.4 283.816V291.88H739.16V297Z" fill="white"/>
+                    <text
+                        x="637"
+                        y="292"
+                        fill={textColor}
+                        fontFamily="Georgia, 'Times New Roman', serif"
+                        fontSize="50"
+                        fontWeight="700"
+                        letterSpacing="3"
+                        textAnchor="middle"
+                        textLength={jersieText.length > DEFAULT_JERSIE_TEXT.length ? jersieTextWidth : undefined}
+                        lengthAdjust="spacingAndGlyphs"
+                    >
+                        {jersieText}
+                    </text>
                 </g>
                 <g id="Line 110" filter="url(#filter3_f_233_55)">
                     <line x1="39.411" y1="116.93" x2="116.93" y2="252.589" stroke={line} strokeWidth="5" strokeLinecap="round"/>

@@ -10,7 +10,8 @@ export function HairpinLayer({ transform, ...props }) {
 
 export default function Hairpin({ className,
                                     color = '#FCE8EC',
-                                    holder =  '#EFE7D3',
+                                    holder,
+                                    holderColor = holder ?? '#EFE7D3',
                                     ...props }) {
     const strokeColor = adjustColor(color, 2, 'darken')
 
@@ -18,7 +19,7 @@ export default function Hairpin({ className,
         <svg className={className} width="316" height="298" viewBox="0 0 316 298" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
             <g id="Group 71">
                 <g id="Group 70">
-                    <ellipse id="Ellipse 46" cx="92.0506" cy="17.7442" rx="92.0506" ry="17.7442" transform="matrix(-0.803928 0.594727 -0.496319 -0.86814 167.647 169.135)" fill={holder}/>
+                    <ellipse id="Ellipse 46" cx="92.0506" cy="17.7442" rx="92.0506" ry="17.7442" transform="matrix(-0.803928 0.594727 -0.496319 -0.86814 167.647 169.135)" fill={holderColor}/>
                     <ellipse id="Ellipse 40" cx="59.4742" cy="21.9349" rx="59.4742" ry="21.9349" transform="matrix(0.872147 0.489244 0.507642 -0.861568 174.483 171.103)" fill={strokeColor}/>
                     <ellipse id="Ellipse 41" cx="59.5619" cy="21.9014" rx="59.5619" ry="21.9014" transform="matrix(0.955466 -0.295102 -0.312707 -0.949849 195.234 150.684)" fill={strokeColor}/>
                     <ellipse id="Ellipse 43" cx="59.4742" cy="21.9349" rx="59.4742" ry="21.9349" transform="matrix(-0.930985 0.365057 -0.384731 -0.923029 166.786 175.432)" fill={strokeColor}/>

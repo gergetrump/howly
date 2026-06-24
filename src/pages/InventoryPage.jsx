@@ -16,6 +16,11 @@ import {
 import { getEquippedItemConfigsFromInventory, itemMatchesCategory } from '@/lib/inventoryItems';
 
 const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
+const SIDEABLE_HEAD_ITEM_KEYS = new Set(['cute-hat', 'hairpin']);
+
+function isSideableHeadItem(assetKey) {
+    return SIDEABLE_HEAD_ITEM_KEYS.has(assetKey);
+}
 
 export function InventoryPage() {
     const navigate = useNavigate();
@@ -154,15 +159,16 @@ export function InventoryPage() {
 
         const itemSlot = getItemEquipSlot(item.assetKey);
 
-        if (itemSlot === 'hand' && hasItemSideOptions(item.assetKey)) {
+        if ((itemSlot === 'hand' || isSideableHeadItem(item.assetKey)) && hasItemSideOptions(item.assetKey)) {
             const preferredSide = draftItemSides[item.userItemId] ?? item.customization?.side ?? 'right';
             const alternateSide = preferredSide === 'right' ? 'left' : 'right';
             const occupiedSides = new Set(
                 inventory
                     .filter((entry) => (
                         nextItemIds.has(entry._id)
-                        && getItemEquipSlot(entry.item?.assetKey) === 'hand'
+                        && getItemEquipSlot(entry.item?.assetKey) === itemSlot
                         && hasItemSideOptions(entry.item?.assetKey)
+                        && (itemSlot !== 'head' || isSideableHeadItem(entry.item?.assetKey))
                     ))
                     .map((entry) => draftItemSides[entry._id] ?? entry.customization?.side ?? 'right'),
             );
@@ -187,7 +193,12 @@ export function InventoryPage() {
 
         if (SINGLE_EQUIP_SLOTS.has(itemSlot)) {
             inventory.forEach((entry) => {
-                if (getItemEquipSlot(entry.item?.assetKey) === itemSlot) {
+                const entrySlot = getItemEquipSlot(entry.item?.assetKey);
+                const shouldKeepSideableHeadPair = itemSlot === 'head'
+                    && isSideableHeadItem(item.assetKey)
+                    && isSideableHeadItem(entry.item?.assetKey);
+
+                if (entrySlot === itemSlot && !shouldKeepSideableHeadPair) {
                     nextItemIds.delete(entry._id);
                 }
             });
@@ -319,96 +330,103 @@ export function InventoryPage() {
 
     return (
         <Page theme="forest">
-            <Heading title="Inventory" subtitle="Equip items for your companion." streakDays={user?.streak ?? 0} />
-            <section className="sticky top-24 z-20 flex min-h-72 flex-col items-center justify-end gap-3 text-center relative">
-                <CompanionAvatar
-                    type={companion?.type}
-                    name={companion?.name}
-                    size="xl"
-                    showName
-                    equippedItemConfigs={equippedItemConfigs}
-                />
-                {companionMessage ? (
-                    <div className="absolute left-1/2 top-8 ml-28 max-w-64 rounded-2xl bg-white/10 px-4 py-3 text-left text-sm font-semibold text-white shadow-xl shadow-slate-950/30 ring-1 ring-white/15 before:absolute before:left-[-12px] before:top-1/2 before:h-0 before:w-0 before:-translate-y-1/2 before:border-y-[10px] before:border-r-[12px] before:border-y-transparent before:border-r-white/10">
-                        {companionMessage}
-                    </div>
-                ) : null}
-                <ActionButton
-                    type="button"
-                    className="h-9 bg-white/10 px-4 text-sm text-white hover:bg-white/20 disabled:text-slate-500"
-                    disabled={draftEquippedItemIds.size === 0 || isSavingOutfit}
-                    onClick={() => {
-                        setError('');
-                        setCompanionMessage('');
-                        setDraftEquippedItemIds(new Set());
-                    }}
-                >
-                    Unequip all
-                </ActionButton>
-            </section>
-
-            <PageSection title="Owned Items" className="min-w-0">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-                        <TabsList className="h-auto flex-wrap border border-white/10 bg-white/10 p-1 text-slate-300">
-                            {ITEM_CATEGORIES.map((category) => (
-                                <TabsTrigger
-                                    key={category.value}
-                                    value={category.value}
-                                    className="px-3 py-1.5 text-slate-300 data-active:bg-white data-active:text-slate-950"
-                                >
-                                    {category.label}
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </Tabs>
-
+            <div className="space-y-5">
+                <Heading title="Inventory" subtitle="Equip items for your companion." streakDays={user?.streak ?? 0} />
+                <section className="relative flex min-h-72 flex-col items-center justify-end gap-3 text-center">
+                    <CompanionAvatar
+                        type={companion?.type}
+                        name={companion?.name}
+                        size="xl"
+                        showName
+                        equippedItemConfigs={equippedItemConfigs}
+                    />
+                    {companionMessage ? (
+                        <div className="absolute left-1/2 top-8 ml-28 max-w-64 rounded-2xl bg-white/10 px-4 py-3 text-left text-sm font-semibold text-white shadow-xl shadow-slate-950/30 ring-1 ring-white/15 before:absolute before:left-[-12px] before:top-1/2 before:h-0 before:w-0 before:-translate-y-1/2 before:border-y-[10px] before:border-r-[12px] before:border-y-transparent before:border-r-white/10">
+                            {companionMessage}
+                        </div>
+                    ) : null}
                     <ActionButton
                         type="button"
-                        className="bg-violet-500 px-5 text-white hover:bg-violet-400 disabled:bg-white/10 disabled:text-slate-400"
-                        disabled={!hasUnsavedOutfitChanges || isSavingOutfit}
-                        onClick={handleSaveOutfit}
+                        className="h-9 bg-white/10 px-4 text-sm text-white hover:bg-white/20 disabled:text-slate-500"
+                        disabled={draftEquippedItemIds.size === 0 || isSavingOutfit}
+                        onClick={() => {
+                            setError('');
+                            setCompanionMessage('');
+                            setDraftEquippedItemIds(new Set());
+                        }}
                     >
-                        {isSavingOutfit ? 'Saving...' : 'Save Outfit'}
+                        Unequip all
                     </ActionButton>
-                </div>
+                </section>
 
-                {error ? <p className="text-sm text-red-300">{error}</p> : null}
+                <div className="min-w-0 space-y-3">
+                    <h2 className="text-xl font-semibold text-white">Owned Items</h2>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+                            <TabsList className="h-auto flex-wrap border border-white/10 bg-white/10 p-1 text-slate-300">
+                                {ITEM_CATEGORIES.map((category) => (
+                                    <TabsTrigger
+                                        key={category.value}
+                                        value={category.value}
+                                        className="px-3 py-1.5 text-slate-300 data-active:bg-white data-active:text-slate-950"
+                                    >
+                                        {category.label}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                        </Tabs>
 
-                {isLoading ? (
-                    <div className="flex min-h-48 items-center justify-center text-center">
-                        <p className="text-sm text-slate-300">Loading your inventory...</p>
+                        <ActionButton
+                            type="button"
+                            className="bg-violet-500 px-5 text-white hover:bg-violet-400 disabled:bg-white/10 disabled:text-slate-400"
+                            disabled={!hasUnsavedOutfitChanges || isSavingOutfit}
+                            onClick={handleSaveOutfit}
+                        >
+                            {isSavingOutfit ? 'Saving...' : 'Save Outfit'}
+                        </ActionButton>
                     </div>
-                ) : null}
+                </div>
+            </div>
 
-                {!isLoading && !error && ownedItems.length === 0 ? (
-                    renderShopEmptyState()
-                ) : null}
+            <PageSection className="min-w-0">
+                <div className="max-h-[31rem] overflow-y-auto pr-2 [scrollbar-gutter:stable]">
+                    {error ? <p className="text-sm text-red-300">{error}</p> : null}
 
-                {!isLoading && !error && ownedItems.length > 0 && filteredItems.length === 0 ? (
-                    renderShopEmptyState()
-                ) : null}
+                    {isLoading ? (
+                        <div className="flex min-h-48 items-center justify-center text-center">
+                            <p className="text-sm text-slate-300">Loading your inventory...</p>
+                        </div>
+                    ) : null}
 
-                {!isLoading && !error && filteredItems.length > 0 ? (
-                    <CardGrid columns={4} className="gap-4 pb-8">
-                        {filteredItems.map((item) => (
-                            <ItemCard
-                                key={item.userItemId}
-                                name={getItemDisplayName(item)}
-                                price={item.price}
-                                premiumOnly={item.premiumOnly}
-                                equipped={item.equipped}
-                                showPrice={false}
-                                dense
-                                interactive
-                                disabled={isSavingOutfit}
-                                titleAction={renderSideControls(item)}
-                                visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', item.customization)}
-                                onClick={() => handleToggleEquipped(item)}
-                            />
-                        ))}
-                    </CardGrid>
-                ) : null}
+                    {!isLoading && !error && ownedItems.length === 0 ? (
+                        renderShopEmptyState()
+                    ) : null}
+
+                    {!isLoading && !error && ownedItems.length > 0 && filteredItems.length === 0 ? (
+                        renderShopEmptyState()
+                    ) : null}
+
+                    {!isLoading && !error && filteredItems.length > 0 ? (
+                        <CardGrid columns={4} className="gap-4 pb-8">
+                            {filteredItems.map((item) => (
+                                <ItemCard
+                                    key={item.userItemId}
+                                    name={getItemDisplayName(item)}
+                                    price={item.price}
+                                    premiumOnly={item.premiumOnly}
+                                    equipped={item.equipped}
+                                    showPrice={false}
+                                    dense
+                                    interactive
+                                    disabled={isSavingOutfit}
+                                    titleAction={renderSideControls(item)}
+                                    visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', item.customization)}
+                                    onClick={() => handleToggleEquipped(item)}
+                                />
+                            ))}
+                        </CardGrid>
+                    ) : null}
+                </div>
             </PageSection>
         </Page>
     );

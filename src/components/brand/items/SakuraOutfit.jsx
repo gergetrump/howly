@@ -23,12 +23,17 @@ export default function SakuraOutfit({
     cordColor = '#E1D3AE',
     flowerSet1Color = '#F6BBC7',
     flowerSet2Color = '#FFFFFF',
+    symbol = 'flower',
     ...props
 }) {
     const outfitStrokeColor = adjustColor(color, 2, 'darken');
     const cordStrokeColor = adjustColor(cordColor, 2, 'darken');
     const verticalLineColor = adjustColor(cordColor, 2, 'darken');
     const verticalLineColorStroke = adjustColor(verticalLineColor, 2, 'darken');
+    if (symbol === '') {
+        flowerSet1Color = 'transparent';
+        flowerSet2Color = 'transparent';
+    }
 
     return (
         <svg className={className} width="1308" height="596" viewBox="0 0 1308 596" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

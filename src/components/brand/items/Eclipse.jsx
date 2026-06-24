@@ -6,6 +6,7 @@ export default function Eclipse({ className, color = '#FFFF00', ...props }) {
             height="160"
             viewBox="0 0 143 160"
             fill="none"
+            overflow="visible"
             preserveAspectRatio="xMidYMid meet"
             xmlns="http://www.w3.org/2000/svg"
             {...props}
