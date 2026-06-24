@@ -42,7 +42,10 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
     ballerina: wholeColorCustomization('#F1EBDF'),
     'bambus-flute': wholeColorCustomization('#4A6741'),
     'bambus-shoes': wholeColorCustomization('#E1D3AE'),
-    'cute-ballerinas': wholeColorCustomization('#F1EBDF'),
+    'cute-ballerinas': {
+        color: '#F1EBDF',
+        stripeColor: '#B3A6C1',
+    },
     hairpin: {
         defaults: {
             color: '#FCE8EC',
@@ -65,7 +68,12 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
     jersie: wholeColorCustomization('#32326F'),
     'magic-wand': wholeColorCustomization('#D4A373'),
     necklace: wholeColorCustomization('#990000'),
-    'sakura-outfit': wholeColorCustomization('#FCE8EC'),
+    'sakura-outfit': {
+        color: '#FCE8EC',
+        cordColor: '#E1D3AE',
+        flowerSet1Color: '#F6BBC7',
+        flowerSet2Color: '#FFFFFF',
+    },
     scar: {
         color: '#555353',
         side: 'right',
