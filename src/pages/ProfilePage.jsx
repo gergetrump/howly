@@ -237,15 +237,27 @@ export function ProfilePage() {
 
             <section className="rounded-2xl bg-slate-800/80 px-6 py-8 text-center shadow-lg">
                 <div className="mx-auto flex flex-col items-center gap-3">
-                    <div className="flex size-24 items-center justify-center overflow-hidden rounded-full bg-slate-700">
-                        {user?.profilePictureUrl ? (
-                            <img
-                                src={user.profilePictureUrl}
-                                alt={`${fullName}'s profile`}
-                                className="size-full object-cover"
-                            />
-                        ) : (
-                            <span className="text-5xl">🦊</span>
+                    <div className="relative">
+                        <div className={`flex size-24 items-center justify-center overflow-hidden rounded-full bg-slate-700 ${isPremium ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-800' : ''}`}>
+                            {user?.profilePictureUrl ? (
+                                <img
+                                    src={user.profilePictureUrl}
+                                    alt={`${fullName}'s profile`}
+                                    className="size-full object-cover"
+                                />
+                            ) : (
+                                <span className="text-5xl">🦊</span>
+                            )}
+                        </div>
+
+                        {isPremium && (
+                            <span
+                                className="absolute -right-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 shadow-lg shadow-amber-500/40 ring-2 ring-slate-800"
+                                aria-label="Premium member"
+                                title="Premium member"
+                            >
+                                <Crown className="h-3.5 w-3.5 text-slate-900" aria-hidden="true" />
+                            </span>
                         )}
                     </div>
 
@@ -286,6 +298,15 @@ export function ProfilePage() {
                 <h2 className="mt-5 text-2xl font-bold text-white">{fullName}</h2>
                 <p className="mt-1 text-sm text-slate-400">@{username}</p>
 
+                {isPremium && (
+                    <div className="mt-2 flex justify-center">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400/20 to-yellow-500/20 px-3 py-1 text-xs font-semibold text-amber-300 ring-1 ring-amber-400/30">
+                            <Crown className="h-3 w-3" aria-hidden="true" />
+                            Premium
+                        </span>
+                    </div>
+                )}
+
                 <div className="mt-6 flex items-center justify-center gap-10">
                     <div>
                         <div className="flex items-center justify-center gap-2 text-lg font-semibold text-white">
@@ -304,6 +325,7 @@ export function ProfilePage() {
                     </div>
                 </div>
             </section>
+
 
             {/* TEMP: companion type tester — remove once verified */}
             <PageSection title="Companion (test)">

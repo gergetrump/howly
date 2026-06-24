@@ -13,6 +13,7 @@ import {
     getItemOwnershipSignature,
     ITEM_CUSTOMIZATION_CONFIG,
     normalizeItemCustomization,
+    PremiumRequiredDialog,
     PurchaseConfirmationDialog,
     ShopCustomizationPanel,
     ShopItemGrid,
@@ -40,6 +41,7 @@ export function ShopPage() {
     const [buyingItemId, setBuyingItemId] = useState(null);
     const [itemsToBuy, setItemsToBuy] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [isPremiumDialogOpen, setIsPremiumDialogOpen] = useState(false);
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
     const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
@@ -364,7 +366,15 @@ export function ShopPage() {
         return [...currentCartItems, nextEntry];
     }
 
+    function handlePremiumRequired() {
+        setIsPremiumDialogOpen(true);
+    }
+
     function handleAddCurrentItemToCart(item) {
+        if (isFreeUser && item?.premiumOnly) {
+            handlePremiumRequired();
+            return;
+        }
         setError('');
         setCartItems((currentCartItems) => addCartEntry(currentCartItems, item));
     }
@@ -592,6 +602,8 @@ export function ShopPage() {
                         openBuyConfirmation={openBuyConfirmation}
                         createPurchaseEntry={createPurchaseEntry}
                         buyingItemId={buyingItemId}
+                        isFreeUser={isFreeUser}
+                        onPremiumRequired={handlePremiumRequired}
                     />
 
                     <div className="mt-4 flex justify-end">
@@ -629,7 +641,13 @@ export function ShopPage() {
                     onSymbolChange={(symbolKey, symbol, selectedSymbolColor) => handleItemSymbolChange(selectedCustomItem.assetKey, symbolKey, symbol, selectedSymbolColor)}
                     onAddToCart={() => handleAddCurrentItemToCart(selectedCustomItem)}
                 />
+
             </div>
+
+            <PremiumRequiredDialog
+                isOpen={isPremiumDialogOpen}
+                onClose={() => setIsPremiumDialogOpen(false)}
+            />
 
             <CartDialog
                 isOpen={isCartOpen}

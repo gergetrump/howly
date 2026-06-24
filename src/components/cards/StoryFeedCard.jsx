@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PostAuthorAvatar } from '@/components/cards/FeedPostCard';
 import { appCardClassName } from '@/components/cards/cardStyles';
 import { getStoryLikes } from '@/services/storyApi';
 
@@ -56,6 +56,7 @@ function buildLikeSummary(likers, likeCount) {
 export function StoryFeedCard({
     authorName,
     authorAvatarSrc,
+    authorIsPremium,
     meta,
     story,
     isOwn = false,
@@ -68,7 +69,6 @@ export function StoryFeedCard({
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState('');
     const displayName = isOwn ? 'You' : authorName;
-    const authorInitial = displayName?.trim()?.charAt(0)?.toUpperCase() || '?';
 
     useEffect(() => {
         if (!story.likeCount) {
@@ -109,12 +109,11 @@ export function StoryFeedCard({
             <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 items-start gap-3">
-                        <Avatar size="lg" className="bg-slate-300 text-slate-950">
-                            {authorAvatarSrc ? <AvatarImage src={authorAvatarSrc} alt="" /> : null}
-                            <AvatarFallback className="bg-slate-300 font-bold text-slate-950">
-                                {authorInitial}
-                            </AvatarFallback>
-                        </Avatar>
+                        <PostAuthorAvatar
+                            avatarSrc={authorAvatarSrc}
+                            name={displayName}
+                            isPremium={authorIsPremium}
+                        />
                         <div className="min-w-0">
                             <CardTitle className="truncate">{displayName}</CardTitle>
                             <p className={`mt-1 truncate text-sm ${SOURCE_TYPE_COLORS[story.sourceType] ?? 'text-slate-300'}`}>

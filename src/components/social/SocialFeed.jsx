@@ -43,6 +43,7 @@ export function SocialFeed({
                                 key={`story-${post.id}`}
                                 authorName={getDisplayName(post.user)}
                                 authorAvatarSrc={post.user?.profilePictureUrl}
+                                authorIsPremium={post.user?.isPremium === true || post.user?.role === 'admin'}
                                 meta={formatRelativeTime(post.createdAt)}
                                 story={post}
                                 isOwn={post.user?.id === currentUserId}
@@ -63,6 +64,7 @@ export function SocialFeed({
                                 authorName={getDisplayName(post.user)}
                                 authorUsername={getUsername(post.user)}
                                 authorAvatarSrc={post.user?.profilePictureUrl}
+                                authorIsPremium={post.user?.isPremium === true || post.user?.role === 'admin'}
                                 meta={formatRelativeTime(post.createdAt)}
                                 companionName={post.companion?.name || 'Howly'}
                                 companionType={post.companion?.type || 'wolf'}

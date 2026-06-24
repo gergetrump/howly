@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Dumbbell, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
+import { Crown, Dumbbell, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import { getFriendRequests } from '@/services/socialApi';
 import howlyIcon from '@/assets/wolf.svg';
@@ -44,6 +44,7 @@ export function NavBar({
     const navigationItems = items.filter((item) => item.to !== '/profile');
     const coinAmount = user?.coins ?? 0;
     const navProfilePictureUrl = user?.profilePictureUrl;
+    const isPremium = user?.isPremium === true || user?.role === 'admin';
     const displayedPendingFriendRequestCount = user ? pendingFriendRequestCount : 0;
 
     useEffect(() => {
@@ -139,8 +140,9 @@ export function NavBar({
                             to={profileItem.to}
                             className={({ isActive }) =>
                                 cn(
-                                    'flex size-12 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white',
+                                    'relative flex size-12 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white',
                                     isActive && 'bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-300/20',
+                                    isPremium && !isActive && 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950',
                                 )
                             }
                             aria-label="Profile"
@@ -153,6 +155,15 @@ export function NavBar({
                                 />
                             ) : (
                                 <UserRound className="size-6" aria-hidden="true" />
+                            )}
+                            {isPremium && (
+                                <span
+                                    className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 shadow-md shadow-amber-500/40 ring-2 ring-slate-950"
+                                    aria-label="Premium member"
+                                    title="Premium member"
+                                >
+                                    <Crown className="h-2.5 w-2.5 text-slate-900" aria-hidden="true" />
+                                </span>
                             )}
                         </NavLink>
                     ) : null}
