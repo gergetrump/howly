@@ -30,6 +30,7 @@ const EQUIP_SLOTS_BY_ASSET_KEY = {
     'hat-with-pompom': 'head',
     'magic-wand': 'hand',
     necklace: 'neck',
+    'hogwarts-scarf': 'neck',
     nerdglasses: 'face',
     phone: 'hand',
     'sakura-neckclace': 'neck',
@@ -58,6 +59,10 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
     },
     hat: wholeColorCustomization('#4C4C4C'),
     'hogwarts-cape': wholeColorCustomization('#1A1A1A'),
+    'hogwarts-scarf': {
+        color: '#822121',
+        stripeColor: '#D19B26',
+    },
     hoodie: {
         color: '#C66E6E',
         stringColor: '#DADADA',
