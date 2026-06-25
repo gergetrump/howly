@@ -62,51 +62,6 @@ function SummaryCard({ icon: Icon, label, value, helper }) {
     );
 }
 
-function CompletionChart({ habits }) {
-    const visibleHabits = habits.filter((item) => item.expected > 0 || item.completed > 0);
-
-    return (
-        <Card className={appCardClassName}>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                    <BarChart3 className="size-5 text-emerald-300" aria-hidden="true" />
-                    Habit follow-through
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {visibleHabits.length ? visibleHabits.map((item) => {
-                    const rate = item.completionRate;
-
-                    return (
-                        <div key={item.habit.id} className="space-y-2">
-                            <div className="flex items-center justify-between gap-3">
-                                <div className="flex min-w-0 items-center gap-2">
-                                    <span className="text-lg" aria-hidden="true">{item.habit.icon}</span>
-                                    <span className="truncate font-semibold text-white">{item.habit.title}</span>
-                                </div>
-                                <span className="shrink-0 text-sm text-slate-300">
-                                    {item.completed}/{item.expected} · {percent(rate)}
-                                </span>
-                            </div>
-                            <div className="h-3 overflow-hidden rounded-full bg-white/10">
-                                <div
-                                    className={cn('h-full rounded-full transition-all', getCompletionTone(rate))}
-                                    style={{ width: `${clampPercent(rate)}%` }}
-                                />
-                            </div>
-
-                        </div>
-                    );
-                }) : (
-                    <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
-                        Complete a habit to start seeing follow-through analytics.
-                    </p>
-                )}
-            </CardContent>
-        </Card>
-    );
-}
-
 function TimelineChart({ dailyTotals }) {
     const maxExpected = Math.max(1, ...dailyTotals.map((day) => day.expected));
     const labelInterval = dailyTotals.length > 14 ? 5 : 1;
@@ -213,7 +168,7 @@ function TimeMarker({ minutes, label }) {
             <div
                 className="relative h-4 rounded-full"
                 style={{
-                    background: 'linear-gradient(90deg, #a5b4fc 0%, #a5b4fc 20%, #6ee7b7 28%, #fde68a 36%, #fde68a 74%, #6ee7b7 82%, #a5b4fc 90%, #a5b4fc 100%)',
+                    background: 'linear-gradient(90deg, #818cf8 0%, #a5b4fc 20%, #fef3c7 34%, #facc15 50%, #fef3c7 66%, #c7d2fe 82%, #818cf8 100%)',
                 }}
             >
                 <div
@@ -230,24 +185,28 @@ function TimeMarker({ minutes, label }) {
     );
 }
 
-function TimeAnalytics({ summary, habits }) {
-    const timedHabits = habits.filter((item) => item.averageCompletionTime?.label);
+function HabitPerformance({ summary, habits }) {
+    const visibleHabits = habits.filter((item) => (
+        item.expected > 0
+        || item.completed > 0
+        || item.averageCompletionTime?.label
+    ));
 
     return (
         <Card className={appCardClassName}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
-                    <Clock3 className="size-5 text-emerald-300" aria-hidden="true" />
-                    Average completion time
+                    <BarChart3 className="size-5 text-emerald-300" aria-hidden="true" />
+                    Habit performance
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="space-y-3 rounded-xl bg-white/5 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                        <span className="font-semibold text-white">Overall</span>
-                        <span className="text-lg font-bold text-emerald-100">
+            <CardContent className="space-y-4">
+                <div className="grid gap-4 rounded-xl bg-white/5 p-4 md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)] md:items-center">
+                    <div>
+                        <p className="text-sm text-slate-300">Overall average completion time</p>
+                        <p className="text-xl font-bold text-emerald-100">
                             {summary.averageCompletionTime?.label ?? 'No data'}
-                        </span>
+                        </p>
                     </div>
                     <TimeMarker
                         minutes={summary.averageCompletionTime?.minutes}
@@ -255,89 +214,164 @@ function TimeAnalytics({ summary, habits }) {
                     />
                 </div>
 
-                <div className="grid gap-3 xl:grid-cols-2">
-                    {timedHabits.length ? timedHabits.map((item) => (
-                        <div key={item.habit.id} className="grid gap-3 rounded-xl border border-white/10 bg-white/5 p-3 sm:grid-cols-[180px_1fr_64px] sm:items-center">
-                            <div className="flex min-w-0 items-center gap-2">
-                                <span className="text-lg" aria-hidden="true">{item.habit.icon}</span>
-                                <span className="truncate text-sm font-semibold text-white">{item.habit.title}</span>
-                            </div>
-                            <TimeMarker
-                                minutes={item.averageCompletionTime.minutes}
-                                label={item.averageCompletionTime.label}
-                            />
-                            <span className="text-right text-sm font-semibold text-emerald-100">
-                                {item.averageCompletionTime.label}
-                            </span>
-                        </div>
-                    )) : (
-                        <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
-                            Complete habits to see average times per habit.
-                        </p>
-                    )}
-                </div>
+                {visibleHabits.length ? (
+                    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-3">
+                        {visibleHabits.map((item) => {
+                            const rate = item.completionRate;
+                            const averageTime = item.averageCompletionTime;
+
+                            return (
+                                <div
+                                    key={item.habit.id}
+                                    className="flex flex-col gap-4 rounded-xl border border-white/10 bg-white/5 p-4"
+                                >
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <span
+                                                className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}
+                                                aria-hidden="true"
+                                            >
+                                                {item.habit.icon}
+                                            </span>
+                                            <p className="truncate font-semibold text-white">{item.habit.title}</p>
+                                        </div>
+                                        <div className="shrink-0 text-right">
+                                            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                                                Ø Time
+                                            </p>
+                                            <p className="text-lg font-bold text-emerald-100">
+                                                {averageTime?.label ?? 'No data'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-auto space-y-2">
+                                        <div className="flex items-center justify-between gap-3 text-sm">
+                                            <span className="text-slate-400">Follow-through</span>
+                                            <span className="shrink-0 font-medium text-slate-200">
+                                                {item.completed}/{item.expected} · {percent(rate)}
+                                            </span>
+                                        </div>
+                                        <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                                            <div
+                                                className={cn('h-full rounded-full transition-all', getCompletionTone(rate))}
+                                                style={{ width: `${clampPercent(rate)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
+                        Complete a habit to start seeing performance analytics.
+                    </p>
+                )}
             </CardContent>
         </Card>
     );
 }
 
-function ChallengeProgressChart({ challenges }) {
-    const visibleChallenges = challenges.filter((item) => item.expected > 0 || item.completed > 0 || item.participant.daysCompleted > 0);
+function ChallengePerformance({ summary, challenges }) {
+    const visibleChallenges = challenges.filter((item) => (
+        item.expected > 0
+        || item.completed > 0
+        || item.participant.daysCompleted > 0
+        || item.averageCompletionTime?.label
+    ));
 
     return (
         <Card className={appCardClassName}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
                     <Trophy className="size-5 text-emerald-300" aria-hidden="true" />
-                    Challenge progress
+                    Challenge performance
                 </CardTitle>
             </CardHeader>
-            <CardContent className={visibleChallenges.length ? "grid gap-4 xl:grid-cols-2" : "space-y-4"}>
-                {visibleChallenges.length ? visibleChallenges.map((item) => {
-                    const periodRate = item.completionRate;
-                    const totalRate = item.progressRate;
+            <CardContent className="space-y-4">
+                <div className="grid gap-4 rounded-xl bg-white/5 p-4 md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)] md:items-center">
+                    <div>
+                        <p className="text-sm text-slate-300">Overall average completion time</p>
+                        <p className="text-xl font-bold text-emerald-100">
+                            {summary.averageCompletionTime?.label ?? 'No data'}
+                        </p>
+                    </div>
+                    <TimeMarker
+                        minutes={summary.averageCompletionTime?.minutes}
+                        label={summary.averageCompletionTime?.label}
+                    />
+                </div>
 
-                    return (
-                        <div key={item.participant.id} className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                    <p className="truncate font-semibold text-white">{item.challenge.title}</p>
-                                    <p className="truncate text-sm text-emerald-100">{item.habit.title}</p>
+                {visibleChallenges.length ? (
+                    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] gap-4">
+                        {visibleChallenges.map((item) => {
+                            const periodRate = item.completionRate;
+                            const totalRate = item.progressRate;
+                            const averageTime = item.averageCompletionTime;
+
+                            return (
+                                <div
+                                    key={item.participant.id}
+                                    className="flex flex-col gap-4 rounded-xl border border-white/10 bg-white/5 p-4"
+                                >
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <p className="truncate font-semibold text-white">{item.challenge.title}</p>
+                                            <p className="truncate text-sm text-emerald-100">{item.habit.title}</p>
+                                        </div>
+                                        <div className="shrink-0 text-right">
+                                            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                                                Ø Time
+                                            </p>
+                                            <p className="text-lg font-bold text-emerald-100">
+                                                {averageTime?.label ?? 'No data'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex">
+                                        <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-slate-200">
+                                            {item.participant.status}
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between gap-3 text-sm text-slate-300">
+                                            <span>Selected period</span>
+                                            <span className="shrink-0">{item.completed}/{item.expected} · {percent(periodRate)}</span>
+                                        </div>
+                                        <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                                            <div
+                                                className={cn('h-full rounded-full transition-all', getCompletionTone(periodRate))}
+                                                style={{ width: `${clampPercent(periodRate)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between gap-3 text-sm text-slate-300">
+                                            <span>Total progress</span>
+                                            <span className="shrink-0">
+                                                {item.participant.daysCompleted}/{item.challenge.durationDays} days · {percent(totalRate)}
+                                            </span>
+                                        </div>
+                                        <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                                            <div
+                                                className="h-full rounded-full bg-emerald-300"
+                                                style={{ width: `${clampPercent(totalRate)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-auto">
+                                        <MiniCompletionTrend daily={item.daily ?? []} />
+                                    </div>
                                 </div>
-                                <span className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-slate-200">
-                                    {item.participant.status}
-                                </span>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm text-slate-300">
-                                    <span>Selected period</span>
-                                    <span>{item.completed}/{item.expected} · {percent(periodRate)}</span>
-                                </div>
-                                <div className="h-3 overflow-hidden rounded-full bg-white/10">
-                                    <div
-                                        className={cn('h-full rounded-full transition-all', getCompletionTone(periodRate))}
-                                        style={{ width: `${clampPercent(periodRate)}%` }}
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm text-slate-300">
-                                    <span>Total progress</span>
-                                    <span>
-                                        {item.participant.daysCompleted}/{item.challenge.durationDays} days · {percent(totalRate)}
-                                    </span>
-                                </div>
-                                <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                                    <div
-                                        className="h-full rounded-full bg-emerald-300"
-                                        style={{ width: `${clampPercent(totalRate)}%` }}
-                                    />
-                                </div>
-                            </div>
-                            <MiniCompletionTrend daily={item.daily ?? []} />
-                        </div>
-                    );
-                }) : (
+                            );
+                        })}
+                    </div>
+                ) : (
                     <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
                         Join a challenge and check off its habit to see challenge analytics.
                     </p>
@@ -346,58 +380,6 @@ function ChallengeProgressChart({ challenges }) {
         </Card>
     );
 }
-
-function ChallengeTimeAnalytics({ summary, challenges }) {
-    const timedChallenges = challenges.filter((item) => item.averageCompletionTime?.label);
-
-    return (
-        <Card className={appCardClassName}>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                    <Clock3 className="size-5 text-emerald-300" aria-hidden="true" />
-                    Average challenge completion time
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="space-y-3 rounded-xl bg-white/5 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                        <span className="font-semibold text-white">Overall</span>
-                        <span className="text-lg font-bold text-emerald-100">
-                            {summary.averageCompletionTime?.label ?? 'No data'}
-                        </span>
-                    </div>
-                    <TimeMarker
-                        minutes={summary.averageCompletionTime?.minutes}
-                        label={summary.averageCompletionTime?.label}
-                    />
-                </div>
-
-                <div className="grid gap-3 xl:grid-cols-2">
-                    {timedChallenges.length ? timedChallenges.map((item) => (
-                        <div key={item.participant.id} className="grid gap-3 rounded-xl border border-white/10 bg-white/5 p-3 sm:grid-cols-[220px_1fr_64px] sm:items-center">
-                            <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-white">{item.challenge.title}</p>
-                                <p className="truncate text-xs text-emerald-100">{item.habit.title}</p>
-                            </div>
-                            <TimeMarker
-                                minutes={item.averageCompletionTime.minutes}
-                                label={item.averageCompletionTime.label}
-                            />
-                            <span className="text-right text-sm font-semibold text-emerald-100">
-                                {item.averageCompletionTime.label}
-                            </span>
-                        </div>
-                    )) : (
-                        <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
-                            Complete challenge habits to see average times per challenge.
-                        </p>
-                    )}
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
-
 export function AnalyticsPage() {
     const { user } = useAuth();
     const [period, setPeriod] = useState('week');
@@ -452,7 +434,7 @@ export function AnalyticsPage() {
     ), [challengeAnalytics]);
 
     return (
-        <Page theme="forest" contentClassName="max-w-[1600px]">
+        <Page theme="forest" contentClassName="max-w-[1400px]">
             <Heading
                 title="Analytics"
                 subtitle="Understand when your habits stick and where they slip."
@@ -513,8 +495,7 @@ export function AnalyticsPage() {
                             />
                         </div>
                         <TimelineChart dailyTotals={habitAnalytics.dailyTotals ?? []} />
-                        <CompletionChart habits={habitAnalytics.habits ?? []} />
-                        <TimeAnalytics summary={habitAnalytics.summary} habits={habitAnalytics.habits ?? []} />
+                        <HabitPerformance summary={habitAnalytics.summary} habits={habitAnalytics.habits ?? []} />
                     </>
                 ) : null}
             </PageSection>
@@ -542,8 +523,7 @@ export function AnalyticsPage() {
                                 helper={bestChallenge ? `Best: ${bestChallenge.challenge.title}` : 'Complete challenges to compare'}
                             />
                         </div>
-                        <ChallengeProgressChart challenges={challengeAnalytics.challenges ?? []} />
-                        <ChallengeTimeAnalytics
+                        <ChallengePerformance
                             summary={challengeAnalytics.summary}
                             challenges={challengeAnalytics.challenges ?? []}
                         />
