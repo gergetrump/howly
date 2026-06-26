@@ -1,6 +1,7 @@
 import Eclipse from './Eclipse';
 import Flower from './Flower';
 import Heart from './Heart';
+import { darkenColor } from '@/lib/colorUtils';
 
 const DEFAULT_CUP_COLOR = '#E09AAB';
 
@@ -33,18 +34,6 @@ const CUP_SYMBOLS = {
         },
     },
 };
-
-function darkenColor(hexColor, amount = 0.15) {
-    const cleanHex = hexColor.replace('#', '');
-    const red = parseInt(cleanHex.slice(0, 2), 16);
-    const green = parseInt(cleanHex.slice(2, 4), 16);
-    const blue = parseInt(cleanHex.slice(4, 6), 16);
-    const darken = (channel) => Math.max(0, Math.round(channel * (1 - amount)));
-
-    return `#${[darken(red), darken(green), darken(blue)]
-        .map((channel) => channel.toString(16).padStart(2, '0'))
-        .join('')}`;
-}
 
 function CupSymbol({ symbol, color }) {
     const symbolEntry = CUP_SYMBOLS[symbol];

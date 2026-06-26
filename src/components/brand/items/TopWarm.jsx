@@ -1,3 +1,5 @@
+import { darkenColor } from '@/lib/colorUtils';
+
 const WOLF_BODY_WIDTH = 1250;
 const TOP_WARM_WIDTH = 1289;
 const TOP_WARM_HEIGHT = 541;
@@ -5,18 +7,6 @@ const TOP_WARM_HEIGHT_AT_WOLF_WIDTH = (WOLF_BODY_WIDTH / TOP_WARM_WIDTH) * TOP_W
 const DEFAULT_TOP_WARM_COLOR = '#F4EFE5';
 const DEFAULT_TOP_WARM_BUTTON_COLOR = '#B18167';
 const DEFAULT_TOP_WARM_POCKET_COLOR = '#DDCEAF';
-
-function darkenColor(hexColor, amount = 0.15) {
-    const cleanHex = hexColor.replace('#', '');
-    const red = parseInt(cleanHex.slice(0, 2), 16);
-    const green = parseInt(cleanHex.slice(2, 4), 16);
-    const blue = parseInt(cleanHex.slice(4, 6), 16);
-    const darken = (channel) => Math.max(0, Math.round(channel * (1 - amount)));
-
-    return `#${[darken(red), darken(green), darken(blue)]
-        .map((channel) => channel.toString(16).padStart(2, '0'))
-        .join('')}`;
-}
 
 export function TopWarmLayer({ transform, color, buttonColor, pocketColor, ...props }) {
     return (
