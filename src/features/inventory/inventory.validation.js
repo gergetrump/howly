@@ -7,16 +7,34 @@ const CUSTOMIZATION_COLOR_FIELDS = [
     'buttonColor',
     'pocketColor',
     'jacketColor',
+    'cordColor',
     'shirtColor',
     'tieColor',
     'tieStripeColor',
     'frameColor',
     'backgroundColor',
     'symbolColor',
+    'flowerSet1Color',
+    'flowerSet2Color',
+    'furColor',
+    'holderColor',
+    'tapeColor',
+    'strawColor',
+    'strapColor',
+    'lockColor',
+    'flapClosureColor',
+    'chainColor',
+    'lacesColor',
+    'stripeColor',
+    'pompomColor',
+    'pompom1Color',
+    'pompom2Color',
+    'line',
+    'jacket',
 ];
 const MAX_CUSTOM_TEXT_LENGTH = 20;
 const ITEM_SIDES = new Set(['left', 'right']);
-const CUP_SYMBOLS = new Set(['eclipse', 'heart', 'flower', '']);
+const ITEM_SYMBOLS = new Set(['bubble', 'diamond', 'eclipse', 'flower', 'heart', 'moon', '']);
 
 function sanitizeCustomization(customization = {}) {
     if (!customization || typeof customization !== 'object' || Array.isArray(customization)) {
@@ -56,7 +74,7 @@ function sanitizeCustomization(customization = {}) {
     if (typeof customization.symbol === 'string') {
         const symbol = customization.symbol.trim().toLowerCase();
 
-        if (CUP_SYMBOLS.has(symbol)) {
+        if (ITEM_SYMBOLS.has(symbol)) {
             sanitizedCustomization.symbol = symbol;
         }
     }

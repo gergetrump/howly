@@ -15,13 +15,82 @@ export const INVENTORY_ERROR_CODES = {
 };
 
 const SINGLE_EQUIP_ITEM_TYPES = new Set(['clothing', 'shoes']);
+const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
+const SIDEABLE_HEAD_ITEM_KEYS = new Set(['cute-hat', 'hairpin']);
+const EQUIP_SLOTS_BY_ASSET_KEY = {
+    bag: 'body',
+    'bambus-flute': 'hand',
+    'bubble-tea': 'hand',
+    cup: 'hand',
+    'cute-hat': 'head',
+    'drink-togo': 'hand',
+    glasses: 'face',
+    hairpin: 'head',
+    hat: 'head',
+    'hat-with-pompom': 'head',
+    'magic-wand': 'hand',
+    necklace: 'neck',
+    'hogwarts-scarf': 'neck',
+    nerdglasses: 'face',
+    phone: 'hand',
+    'sakura-neckclace': 'neck',
+    'sakura-pouch': 'hand',
+    'warm-hat': 'head',
+    'warm-hat-2-pompom': 'head',
+};
 const NON_OWNERSHIP_CUSTOMIZATION_FIELDS = new Set(['side']);
+const wholeColorCustomization = (color) => ({ color });
+
+function isSideableHeadItem(assetKey) {
+    return SIDEABLE_HEAD_ITEM_KEYS.has(assetKey);
+}
+
 const CUSTOMIZABLE_ITEM_DEFAULTS = {
+    ballerina: wholeColorCustomization('#F1EBDF'),
+    'bambus-flute': wholeColorCustomization('#4A6741'),
+    'bambus-shoes': wholeColorCustomization('#E1D3AE'),
+    'cute-ballerinas': {
+        color: '#F1EBDF',
+        stripeColor: '#B3A6C1',
+    },
+    hairpin: {
+        color: '#FCE8EC',
+        holderColor: '#EFE7D3',
+    },
+    hat: wholeColorCustomization('#4C4C4C'),
+    'hogwarts-cape': wholeColorCustomization('#1A1A1A'),
+    'hogwarts-scarf': {
+        color: '#822121',
+        stripeColor: '#D19B26',
+    },
     hoodie: {
         color: '#C66E6E',
         stringColor: '#DADADA',
         textColor: '#FFFFFF',
         text: 'HOWLY',
+    },
+    jersie: {
+        color: '#32326F',
+        line: '#FFFFFF',
+        textColor: '#FFFFFF',
+        text: 'HOWLY',
+    },
+    'magic-wand': wholeColorCustomization('#D4A373'),
+    necklace: {
+        color: '#990000',
+        symbol: 'heart',
+        symbolColor: '#990000',
+    },
+    'sakura-outfit': {
+        color: '#FCE8EC',
+        cordColor: '#E1D3AE',
+        flowerSet1Color: '#F6BBC7',
+        flowerSet2Color: '#FFFFFF',
+        symbol: 'flower',
+    },
+    scar: {
+        color: '#555353',
+        side: 'right',
     },
     'cream-top': {
         color: '#F4EFE5',
@@ -33,10 +102,29 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
         buttonColor: '#B18167',
         pocketColor: '#DDCEAF',
     },
+    summertop: {
+        shirtColor: '#FFFFFF',
+        jacket: '#4B6942',
+        stripeColor: '#FFFFFF',
+    },
+    'warm-boots': wholeColorCustomization('#392E18'),
     'cozy-jacket': {
         jacketColor: '#4A6741',
         stringColor: '#DADADA',
         shirtColor: '#F4EFE5',
+    },
+    'sakura-pouch': {
+        color: '#FCE8EC',
+        holderColor: '#E1D3AE',
+        tapeColor: '#E1D3AE',
+        flowerSet1Color: '#F6BBC7',
+        flowerSet2Color: '#FFFFFF',
+        symbol: 'flower',
+    },
+    'warm-hat-2-pompom': {
+        color: '#392E18',
+        pompom1Color: '#392E18',
+        pompom2Color: '#392E18',
     },
     suit: {
         jacketColor: '#392E18',
@@ -53,6 +141,30 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
     glasses: {
         color: '#000000',
     },
+    nerdglasses: {
+        color: '#4C4C4C',
+    },
+    'sakura-neckclace': {
+        color: '#F6BBC7',
+        chainColor: '#CEB88B',
+    },
+    dress: {
+        color: '#F2E6FF',
+        lacesColor: '#F1EBDF',
+        flowerSet1Color: '#DDCEAF',
+        flowerSet2Color: '#FFFFFF',
+        buttonColor: '#D9CAAA',
+        symbol: 'flower',
+    },
+    'bubble-tea': {
+        color: '#DDCEAF',
+        strawColor: '#F4EFE5',
+        symbol: 'bubble',
+    },
+    'drink-togo': {
+        color: '#F6F3EB',
+        holderColor: '#DDCEAF',
+    },
     phone: {
         frameColor: '#D9D9D9',
         backgroundColor: '#575757',
@@ -60,6 +172,25 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
     },
     'warm-hat': {
         color: '#4A6741',
+    },
+    'winter-jacket': {
+        jacketColor: '#392E18',
+        shirtColor: '#4A6741',
+        furColor: '#E1D3AE',
+    },
+    'bag': {
+        color: '#F4EFE5',
+        strapColor: '#DDCEAF',
+        lockColor: '#CEB88B',
+        flapClosureColor: '#D7C6A2',
+    },
+    'cute-hat': {
+        color: '#F1EBDF',
+        stripeColor: '#B3A6C1',
+    },
+    'hat-with-pompom': {
+        color: '#32326F',
+        pompomColor: '#32326F',
     },
     sneaker: {
         color: '#1A1A1A',
@@ -81,10 +212,12 @@ function normalizeCustomizationForItem(item, customization = {}) {
         return {};
     }
 
-    return {
+    const normalizedCustomization = {
         ...defaults,
         ...customization,
     };
+
+    return normalizedCustomization;
 }
 
 function buildCustomizationKey(item, customization = {}) {
@@ -267,18 +400,58 @@ export async function saveOutfit({ userId, equippedUserItemIds, customizationUpd
     }
 
     const selectedSingleTypes = new Set();
+    const selectedSingleSlots = new Set();
+    const selectedHandSides = new Set();
+    const selectedHeadSides = new Set();
 
     selectedUserItems.forEach((userItem) => {
         const itemType = userItem.item?.type;
+        const itemSlot = EQUIP_SLOTS_BY_ASSET_KEY[userItem.item?.assetKey];
+        const effectiveCustomization = {
+            ...(userItem.customization ?? {}),
+            ...(customizationUpdates[userItem._id.toString()] ?? {}),
+        };
 
         if (!SINGLE_EQUIP_ITEM_TYPES.has(itemType)) {
+            if (itemSlot === 'head' && isSideableHeadItem(userItem.item?.assetKey)) {
+                const side = effectiveCustomization.side === 'left' ? 'left' : 'right';
+
+                if (selectedSingleSlots.has('head') || selectedHeadSides.has(side)) {
+                    throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT);
+                }
+
+                selectedHeadSides.add(side);
+                return;
+            }
+
+            if (SINGLE_EQUIP_SLOTS.has(itemSlot)) {
+                if (itemSlot === 'head' && selectedHeadSides.size > 0) {
+                    throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT);
+                }
+
+                if (selectedSingleSlots.has(itemSlot)) {
+                    throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT);
+                }
+
+                selectedSingleSlots.add(itemSlot);
+            }
+
+            if (itemSlot === 'hand') {
+                const side = effectiveCustomization.side === 'left' ? 'left' : 'right';
+
+                if (selectedHandSides.has(side)) {
+                    throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT);
+                }
+
+                selectedHandSides.add(side);
+            }
+
             return;
         }
 
         if (selectedSingleTypes.has(itemType)) {
             throw inventoryError(INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT);
         }
-
         selectedSingleTypes.add(itemType);
     });
 
