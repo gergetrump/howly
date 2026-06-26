@@ -1,35 +1,49 @@
+import { Crown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
 import { appCardClassName } from '@/components/cards/cardStyles';
+
+export function PostAuthorAvatar({ avatarSrc, name, isPremium }) {
+    const initial = name?.trim()?.charAt(0)?.toUpperCase() || '?';
+
+    return (
+        <div className="relative shrink-0">
+            <div className={`flex size-12 items-center justify-center overflow-hidden rounded-full bg-slate-300 text-lg font-bold text-slate-950 ${isPremium ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-800' : ''}`}>
+                {avatarSrc ? (
+                    <img src={avatarSrc} alt="" className="h-full w-full object-cover" />
+                ) : (
+                    initial
+                )}
+            </div>
+        </div>
+    );
+}
 
 export function FeedPostCard({
     authorName,
     authorUsername,
     authorAvatarSrc,
+    authorIsPremium,
     meta,
     companionName,
     companionType,
     companionAvatarSrc,
     companionSrc,
-    companionEquippedItemKeys = [],
     companionEquippedItemConfigs = [],
     milestoneTitle,
     children,
 }) {
     const resolvedCompanionSrc = companionAvatarSrc ?? companionSrc;
-    const authorInitial = authorName?.trim()?.charAt(0)?.toUpperCase() || '?';
 
     return (
         <Card className={`${appCardClassName} gap-5 p-5`}>
             <CardHeader className="px-0">
                 <div className="flex min-w-0 items-start gap-3">
-                    <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-300 text-lg font-bold text-slate-950">
-                        {authorAvatarSrc ? (
-                            <img src={authorAvatarSrc} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                            authorInitial
-                        )}
-                    </div>
+                    <PostAuthorAvatar
+                        avatarSrc={authorAvatarSrc}
+                        name={authorName}
+                        isPremium={authorIsPremium}
+                    />
                     <div className="min-w-0 flex-1">
                         <CardTitle className="truncate text-lg text-white">{authorName}</CardTitle>
                         <div className="flex min-w-0 items-center gap-3">
@@ -53,7 +67,6 @@ export function FeedPostCard({
                             name={companionName}
                             size="feed"
                             showName={false}
-                            equippedItemKeys={companionEquippedItemKeys}
                             equippedItemConfigs={companionEquippedItemConfigs}
                         />
                     </div>

@@ -1,3 +1,5 @@
+import { darkenColor } from '@/lib/colorUtils';
+
 const WOLF_BODY_WIDTH = 1000;
 const TOP_WIDTH = 800;
 const TOP_HEIGHT = 541;
@@ -5,23 +7,6 @@ const TOP_HEIGHT_AT_WOLF_WIDTH = (WOLF_BODY_WIDTH / TOP_WIDTH) * TOP_HEIGHT;
 const DEFAULT_TOP_COLOR = '#F4EFE5';
 const DEFAULT_TOP_BUTTON_COLOR = '#B18167';
 const DEFAULT_TOP_POCKET_COLOR = '#DDCEAF';
-
-function clampColorChannel(value) {
-    return Math.max(0, Math.min(255, Math.round(value)));
-}
-
-function darkenColor(hexColor, amount) {
-    const normalizedColor = hexColor.replace('#', '');
-
-    if (normalizedColor.length !== 6) {
-        return hexColor;
-    }
-
-    const channels = normalizedColor.match(/.{2}/g).map((channel) => parseInt(channel, 16));
-    const nextChannels = channels.map((channel) => clampColorChannel(channel * (1 - amount)));
-
-    return `#${nextChannels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
-}
 
 export function TopLayer({ transform, color, buttonColor, pocketColor, ...props }) {
     return (

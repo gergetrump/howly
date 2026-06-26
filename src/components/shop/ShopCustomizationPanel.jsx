@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, ChevronDown, Palette } from 'lucide-react';
 import { ActionButton } from '@/components/common';
+import BubbleSymbol from '@/components/brand/items/BubbleSymbol';
+import Diamond from '@/components/brand/items/Diamond';
 import Eclipse from '@/components/brand/items/Eclipse';
 import Flower from '@/components/brand/items/Flower';
 import Heart from '@/components/brand/items/Heart';
@@ -24,15 +26,21 @@ const PALETTE_COLORS = [
 const SYMBOL_COLORS = ['#FFFF00', '#990000', '#F6BBC7', '#FFFFFF', '#A78BFA', '#38BDF8', '#22C55E', '#F97316'];
 
 const SYMBOL_VISUALS = {
+    bubble: BubbleSymbol,
+    diamond: Diamond,
     eclipse: Eclipse,
     heart: Heart,
     flower: Flower,
+    moon: Eclipse,
 };
 
 const SYMBOL_PREVIEW_CLASSES = {
+    bubble: 'h-full max-h-10 max-w-12 overflow-visible',
+    diamond: 'h-full max-h-10 max-w-12 overflow-visible',
     eclipse: 'h-full max-h-10 max-w-12 overflow-visible',
     heart: 'h-full max-h-10 max-w-12 overflow-visible',
     flower: 'h-5 max-h-8 max-w-10 overflow-visible',
+    moon: 'h-full max-h-10 max-w-12 overflow-visible',
 };
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
@@ -351,8 +359,8 @@ export function ShopCustomizationPanel({
                             {symbolConfig.options.map((symbolOption) => {
                                 const SymbolVisual = SYMBOL_VISUALS[symbolOption.value];
                                 const isSelected = customization[symbolConfig.key] === symbolOption.value;
-                                const symbolPreviewColor = isSelected
-                                    ? customization[symbolConfig.colorKey]
+                                const symbolPreviewColor = isSelected && symbolConfig.colorKey
+                                    ? customization[symbolConfig.colorKey] ?? symbolOption.defaultColor
                                     : symbolOption.defaultColor;
 
                                 return (
@@ -361,7 +369,13 @@ export function ShopCustomizationPanel({
                                         type="button"
                                         className={`grid min-w-0 gap-1 rounded-xl border px-2 py-2 text-center text-xs font-semibold transition ${isSelected ? 'border-violet-200 bg-violet-400/35 text-white' : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'}`}
                                         aria-pressed={isSelected}
-                                        onClick={() => onSymbolChange(symbolConfig.key, isSelected ? '' : symbolOption.value)}
+                                        onClick={() => onSymbolChange(
+                                            symbolConfig.key,
+                                            isSelected && symbolConfig.allowEmpty !== false ? '' : symbolOption.value,
+                                            symbolConfig.selectionColorKey
+                                                ? { colorKey: symbolConfig.selectionColorKey, color: symbolOption.defaultColor }
+                                                : null,
+                                        )}
                                     >
                                         <span className="flex h-10 min-w-0 items-center justify-center overflow-visible">
                                             {SymbolVisual ? (

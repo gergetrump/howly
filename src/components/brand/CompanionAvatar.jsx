@@ -1,4 +1,4 @@
-import { getItemLayerType, renderCompanionItemLayer } from '@/components/brand/items/itemRegistry';
+import { getItemLayerPriority, renderCompanionItemLayer } from '@/components/brand/items/itemRegistry';
 import { WolfSkin } from '@/components/brand/companions/WolfSkin';
 import { PandaSkin } from '@/components/brand/companions/PandaSkin';
 import { BearSkin } from '@/components/brand/companions/BearSkin';
@@ -52,18 +52,8 @@ function toCompanionItem(item) {
 }
 
 function orderCompanionItems(items = []) {
-    const layerOrder = {
-        shoes: 0,
-        clothing: 1,
-        accessory: 2,
-        powerUp: 3,
-    };
-
     return [...items].sort((firstItem, secondItem) => {
-        const firstType = getItemLayerType(firstItem.assetKey);
-        const secondType = getItemLayerType(secondItem.assetKey);
-
-        return (layerOrder[firstType] ?? 99) - (layerOrder[secondType] ?? 99);
+        return getItemLayerPriority(firstItem.assetKey) - getItemLayerPriority(secondItem.assetKey);
     });
 }
 
