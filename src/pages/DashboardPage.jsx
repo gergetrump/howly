@@ -12,6 +12,8 @@ import { StreakRepairBanner } from '@/components/habits/StreakRepairBanner.jsx';
 import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
 import { NotificationBanner } from '@/components/ui/notification-banner';
 import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
 import { applyHabitStreakFreeze } from '@/services/streakFreezeApi';
 import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
@@ -91,6 +93,7 @@ export function DashboardPage() {
     const [milestoneNotice, setMilestoneNotice] = useState(null);
     const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
     const [storyHabit, setStoryHabit] = useState(null);
+    const [riskConfirmHabit, setRiskConfirmHabit] = useState(null);
     const [equippedItemConfigs, setEquippedItemConfigs] = useState([]);
     const [limitPrompt, setLimitPrompt] = useState(null);
     const [planInfo, setPlanInfo] = useState(null);
@@ -200,6 +203,14 @@ export function DashboardPage() {
         }
     }
 
+    function handleCompletionClick(habit) {
+        if (!habit.isCompletedToday && habit.streakRepairDeadline) {
+            setRiskConfirmHabit(habit);
+            return;
+        }
+        handleHabitCompletion(habit);
+    }
+
     async function handleHabitCompletion(habit) {
         try {
             const wasCompleted = habit.isCompletedToday;
@@ -299,7 +310,7 @@ export function DashboardPage() {
                 {withCompletion ? (
                     <CompletionCircle
                         completed={habit.isCompletedToday}
-                        onClick={() => handleHabitCompletion(habit)}
+                        onClick={() => handleCompletionClick(habit)}
                         aria-label={`Mark ${habit.title} as completed`}
                     />
                 ) : null}
@@ -526,6 +537,47 @@ export function DashboardPage() {
                 title={limitPrompt?.title}
                 message={limitPrompt?.message}
             />
+
+            <Dialog open={Boolean(riskConfirmHabit)} onOpenChange={(open) => { if (!open) setRiskConfirmHabit(null); }}>
+                <DialogContent className="rounded-3xl border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl sm:max-w-md">
+                    <DialogHeader className="space-y-3 pt-4 text-left">
+                        <DialogTitle className="text-2xl font-bold tracking-tight">Your streak is at risk</DialogTitle>
+                        <DialogDescription className="text-base leading-relaxed text-slate-300">
+                            Completing “{riskConfirmHabit?.title}” now starts a new streak at 1. Your current {riskConfirmHabit?.streakCount}-day streak can still be saved with a freeze.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-7 flex w-full flex-col gap-3">
+                        {(user?.streakShields ?? 0) > 0 ? (
+                            <Button
+                                className="h-14 w-full rounded-full bg-amber-400 text-lg font-semibold text-amber-950 shadow-lg shadow-amber-900/20 hover:bg-amber-300"
+                                onClick={() => { const target = riskConfirmHabit; setRiskConfirmHabit(null); handleUseHabitFreeze(target); }}
+                            >
+                                Save streak
+                            </Button>
+                        ) : (
+                            <Button
+                                className="h-14 w-full rounded-full bg-amber-400 text-lg font-semibold text-amber-950 shadow-lg shadow-amber-900/20 hover:bg-amber-300"
+                                onClick={() => { setRiskConfirmHabit(null); navigate('/shop?category=powerUp'); }}
+                            >
+                                Get a freeze
+                            </Button>
+                        )}
+                        <Button
+                            className="h-14 w-full rounded-full border border-slate-700/50 bg-[#2a2746] text-lg font-semibold text-white hover:bg-[#343155] hover:text-white"
+                            onClick={() => { const target = riskConfirmHabit; setRiskConfirmHabit(null); handleHabitCompletion(target); }}
+                        >
+                            Complete & restart
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            className="h-12 w-full rounded-full text-slate-300 hover:bg-white/5 hover:text-white"
+                            onClick={() => setRiskConfirmHabit(null)}
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Page>
     );
 }
