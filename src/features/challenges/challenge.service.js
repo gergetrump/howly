@@ -324,7 +324,6 @@ function serializeChallengeHabit(habit) {
         category: habit.category ?? null,
         source: habit.source ?? 'challenge',
         challengeId: habit.challengeId ? habit.challengeId.toString() : null,
-        streakCount: habit.streakCount,
         isCompletedToday: isCompletedForPeriod(habit),
         createdAt: habit.createdAt,
         updatedAt: habit.updatedAt,
