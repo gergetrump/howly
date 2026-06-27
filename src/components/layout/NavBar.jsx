@@ -13,6 +13,7 @@ const defaultItems = [
     { label: 'Shop', to: '/shop', icon: ShoppingBag },
     { label: 'Inventory', to: '/inventory', icon: PackageOpen },
     { label: 'Challenges', to: '/challenges', icon: Trophy },
+    { label: 'Analytics', to: '/analytics', icon: BarChart3 },
     { label: 'Profile', to: '/profile', icon: UserRound },
 ];
 
