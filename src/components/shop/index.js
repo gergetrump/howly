@@ -1,4 +1,5 @@
 export { CartDialog } from './CartDialog.jsx';
+export { PremiumRequiredDialog } from './PremiumRequiredDialog.jsx';
 export { PurchaseConfirmationDialog } from './PurchaseConfirmationDialog.jsx';
 export { ShopCustomizationPanel } from './ShopCustomizationPanel.jsx';
 export { ShopItemGrid } from './ShopItemGrid.jsx';

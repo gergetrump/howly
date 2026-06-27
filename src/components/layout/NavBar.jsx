@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Dumbbell, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
+import { Crown, Dumbbell, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import { StreakShieldBadge } from '@/components/brand/StreakShieldBadge.jsx';
 import { getFriendRequests } from '@/services/socialApi';
@@ -14,6 +14,7 @@ const defaultItems = [
     { label: 'Shop', to: '/shop', icon: ShoppingBag },
     { label: 'Inventory', to: '/inventory', icon: PackageOpen },
     { label: 'Challenges', to: '/challenges', icon: Trophy },
+    { label: 'Analytics', to: '/analytics', icon: BarChart3 },
     { label: 'Profile', to: '/profile', icon: UserRound },
 ];
 
@@ -45,6 +46,7 @@ export function NavBar({
     const navigationItems = items.filter((item) => item.to !== '/profile');
     const coinAmount = user?.coins ?? 0;
     const navProfilePictureUrl = user?.profilePictureUrl;
+    const isPremium = user?.isPremium === true || user?.role === 'admin';
     const displayedPendingFriendRequestCount = user ? pendingFriendRequestCount : 0;
 
     useEffect(() => {
@@ -137,26 +139,30 @@ export function NavBar({
                     <MoonCoin amount={coinAmount} compact />
                     <StreakShieldBadge count={user?.streakShields ?? 0} showLabel={false} size="sm" />
                     {profileItem ? (
-                        <NavLink
-                            to={profileItem.to}
-                            className={({ isActive }) =>
-                                cn(
-                                    'flex size-12 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white',
-                                    isActive && 'bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-300/20',
-                                )
-                            }
-                            aria-label="Profile"
-                        >
-                            {navProfilePictureUrl ? (
-                                <img
-                                    src={navProfilePictureUrl}
-                                    alt="Profile"
-                                    className="size-full rounded-full object-cover"
-                                />
-                            ) : (
-                                <UserRound className="size-6" aria-hidden="true" />
-                            )}
-                        </NavLink>
+                        <div className="relative">
+
+                            <NavLink
+                                to={profileItem.to}
+                                className={({ isActive }) =>
+                                    cn(
+                                        'relative flex size-12 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white',
+                                        isActive && 'bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-300/20',
+                                        isPremium && !isActive && 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950',
+                                    )
+                                }
+                                aria-label="Profile"
+                            >
+                                {navProfilePictureUrl ? (
+                                    <img
+                                        src={navProfilePictureUrl}
+                                        alt="Profile"
+                                        className="size-full rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <UserRound className="size-6" aria-hidden="true" />
+                                )}
+                            </NavLink>
+                        </div>
                     ) : null}
                 </div>
             </div>

@@ -17,7 +17,25 @@ export function ShopItemGrid({
     createPurchaseEntry,
     buyingItemId,
     leadingCard = null,
+    isFreeUser,
+    onPremiumRequired,
 }) {
+    function handleAddToCart(item) {
+        if (isFreeUser && item.premiumOnly) {
+            onPremiumRequired?.();
+            return;
+        }
+        onAddCurrentItemToCart(item);
+    }
+
+    function handleBuy(item) {
+        if (isFreeUser && item.premiumOnly) {
+            onPremiumRequired?.();
+            return;
+        }
+        openBuyConfirmation([createPurchaseEntry(item)]);
+    }
+
     return (
         <div className="relative rounded-2xl border border-white/10 bg-white/5 p-3 shadow-xl shadow-slate-950/20">
             <div className="h-[34rem] max-h-[34rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
@@ -32,7 +50,7 @@ export function ShopItemGrid({
                         {leadingCard}
                         {filteredItems.map((item) => {
                             return (
-                                <div key={item._id} data-shop-item-id={item._id}>
+                                <div key={item._id} className="h-full" data-shop-item-id={item._id}>
                                     <ItemCard
                                         name={getItemDisplayName(item)}
                                         price={item.price}
@@ -40,6 +58,8 @@ export function ShopItemGrid({
                                         owned={isItemOwned(item)}
                                         equipped={isItemPreviewed(item._id)}
                                         showOwnedBadge={false}
+                                        reserveBadgeSpace
+                                        className="h-full"
                                         dense
                                         interactive
                                         onClick={() => onTryOnItem(item._id)}
@@ -50,7 +70,7 @@ export function ShopItemGrid({
                                             fullWidth
                                             className="h-8 px-3 text-xs"
                                             disabled={isItemOwned(item) || isCurrentItemInCart(item)}
-                                            onClick={() => onAddCurrentItemToCart(item)}
+                                            onClick={(e) => { e.stopPropagation(); handleAddToCart(item); }}
                                         >
                                             {isItemOwned(item) ? 'Owned' : isCurrentItemInCart(item) ? 'In cart' : 'Add to cart'}
                                         </ActionButton>
@@ -59,7 +79,7 @@ export function ShopItemGrid({
                                             fullWidth
                                             className="h-8 px-3 text-xs"
                                             disabled={isItemOwned(item) || buyingItemId === item._id}
-                                            onClick={() => openBuyConfirmation([createPurchaseEntry(item)])}
+                                            onClick={(e) => { e.stopPropagation(); handleBuy(item); }}
                                         >
                                             {isItemOwned(item) ? 'Owned' : 'Buy'}
                                         </ActionButton>

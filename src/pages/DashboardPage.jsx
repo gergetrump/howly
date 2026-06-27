@@ -94,7 +94,7 @@ export function DashboardPage() {
     const [equippedItemConfigs, setEquippedItemConfigs] = useState([]);
     const [limitPrompt, setLimitPrompt] = useState(null);
     const [planInfo, setPlanInfo] = useState(null);
-    // Habit ids that already have an active (< 24h) story
+    // Habit ids that already have an active story in the 7-day feed window
     const [sharedHabitIds, setSharedHabitIds] = useState(new Set());
     const planLimits = planInfo?.currentPlan?.limits;
     const isPremiumUser = planInfo?.currentPlanKey === 'premium' || user?.role === 'admin' || user?.isPremium === true;
@@ -463,7 +463,7 @@ export function DashboardPage() {
                 )}
             </div>
 
-            <PageSection title="My Challenges" width="sm">
+            <PageSection title="My Challenges">
                 <CardGrid columns={challengeHabits.length === 1 ? 1 : 2}>
                     {challengeHabits.map((item) => (
                         <DashboardChallengeHabitCard

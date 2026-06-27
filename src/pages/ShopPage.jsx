@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import { ActionButton } from '@/components/common';
 import { CompanionAvatar } from '@/components/brand';
-import { getItemDisplayName, hasItemSideOptions } from '@/components/brand/items/itemRegistry';
+import { getItemDisplayName, getItemEquipSlot, hasItemSideOptions } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -13,6 +13,7 @@ import {
     getItemOwnershipSignature,
     ITEM_CUSTOMIZATION_CONFIG,
     normalizeItemCustomization,
+    PremiumRequiredDialog,
     PurchaseConfirmationDialog,
     ShopCustomizationPanel,
     ShopItemGrid,
@@ -27,6 +28,7 @@ import { confirmCheckoutSession } from '@/services/paymentService';
 import { itemMatchesCategory } from '@/lib/inventoryItems';
 
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
+const SINGLE_PREVIEW_SLOTS = new Set(['body', 'face', 'hand', 'head', 'neck']);
 
 export function ShopPage() {
     const navigate = useNavigate();
@@ -40,6 +42,7 @@ export function ShopPage() {
     const [buyingItemId, setBuyingItemId] = useState(null);
     const [itemsToBuy, setItemsToBuy] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [isPremiumDialogOpen, setIsPremiumDialogOpen] = useState(false);
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
     const [syncedCategoryParam, setSyncedCategoryParam] = useState(null);
@@ -221,7 +224,10 @@ export function ShopPage() {
     }, []);
 
     const previewItemKeys = useMemo(
-        () => previewItems.map((item) => item.assetKey).filter(Boolean),
+        () => previewItems
+            .filter((item) => !getCustomizationConfig(item.assetKey))
+            .map((item) => item.assetKey)
+            .filter(Boolean),
         [previewItems],
     );
 
@@ -229,7 +235,7 @@ export function ShopPage() {
         .filter((item) => getCustomizationConfig(item.assetKey))
         .map((item) => ({
             assetKey: item.assetKey,
-            customization: getItemCustomization(item),
+            customization: getShopPreviewCustomization(item),
         }));
 
     const cartItemsToBuy = cartItems.filter((entry) => !isPurchaseEntryOwned(entry));
@@ -269,6 +275,26 @@ export function ShopPage() {
         ? activeColorSlots[selectedCustomItem.assetKey] ?? selectedCustomizationConfig?.colorSlots[0]?.key
         : '';
 
+    const addSelectedItem = useCallback((currentItems, item) => {
+        const itemSlot = getItemEquipSlot(item?.assetKey);
+
+        if (SINGLE_PREVIEW_SLOTS.has(itemSlot)) {
+            return [
+                ...currentItems.filter((currentItem) => getItemEquipSlot(currentItem?.assetKey) !== itemSlot),
+                item,
+            ];
+        }
+
+        if (SINGLE_EQUIP_ITEM_TYPES.has(item.type)) {
+            return [
+                ...currentItems.filter((currentItem) => currentItem.type !== item.type),
+                item,
+            ];
+        }
+
+        return [...currentItems, item];
+    }, []);
+
     useEffect(() => {
         if (!premiumReturnItemId || items.length === 0) {
             return undefined;
@@ -294,7 +320,7 @@ export function ShopPage() {
         }, 0);
 
         return () => window.clearTimeout(restoreTimerId);
-    }, [items, premiumReturnItemId]);
+    }, [addSelectedItem, items, premiumReturnItemId]);
 
     function getPurchaseEntryItem(entry) {
         return entry?.item ?? entry;
@@ -344,17 +370,6 @@ export function ShopPage() {
         return ownedItemSignatures.has(getItemOwnershipSignature(item, getItemCustomization(item)));
     }
 
-    function addSelectedItem(currentItems, item) {
-        if (SINGLE_EQUIP_ITEM_TYPES.has(item.type)) {
-            return [
-                ...currentItems.filter((currentItem) => currentItem.type !== item.type),
-                item,
-            ];
-        }
-
-        return [...currentItems, item];
-    }
-
     function addCartEntry(currentCartItems, item) {
         const nextEntry = createPurchaseEntry(item);
 
@@ -369,7 +384,15 @@ export function ShopPage() {
         return [...currentCartItems, nextEntry];
     }
 
+    function handlePremiumRequired() {
+        setIsPremiumDialogOpen(true);
+    }
+
     function handleAddCurrentItemToCart(item) {
+        if (isFreeUser && item?.premiumOnly) {
+            handlePremiumRequired();
+            return;
+        }
         setError('');
         setCartItems((currentCartItems) => addCartEntry(currentCartItems, item));
     }
@@ -421,6 +444,14 @@ export function ShopPage() {
         return normalizeItemCustomization(item, itemCustomizations[item.assetKey]);
     }
 
+    function getShopPreviewCustomization(item) {
+        const customization = getItemCustomization(item);
+
+        return hasItemSideOptions(item.assetKey)
+            ? { ...customization, side: 'right' }
+            : customization;
+    }
+
     function handleItemColorChange(assetKey, slot, color) {
         setItemCustomizations((currentCustomizations) => ({
             ...currentCustomizations,
@@ -441,12 +472,15 @@ export function ShopPage() {
         }));
     }
 
-    function handleItemSideChange(assetKey, side) {
+    function handleItemSymbolChange(assetKey, symbolKey, symbol, selectedSymbolColor = null) {
         setItemCustomizations((currentCustomizations) => ({
             ...currentCustomizations,
             [assetKey]: {
                 ...normalizeItemCustomization(assetKey, currentCustomizations[assetKey]),
-                side,
+                [symbolKey]: symbol,
+                ...(selectedSymbolColor?.colorKey && symbol
+                    ? { [selectedSymbolColor.colorKey]: selectedSymbolColor.color }
+                    : {}),
             },
         }));
     }
@@ -589,6 +623,8 @@ export function ShopPage() {
                         leadingCard={activeCategory === 'all' || activeCategory === 'powerUp' ? (
                             <StreakFreezeCard key="streak-freeze" />
                         ) : null}
+                        isFreeUser={isFreeUser}
+                        onPremiumRequired={handlePremiumRequired}
                     />
 
                     <div className="mt-4 flex justify-end">
@@ -623,11 +659,16 @@ export function ShopPage() {
                     }))}
                     onColorChange={(slot, color) => handleItemColorChange(selectedCustomItem.assetKey, slot, color)}
                     onTextChange={(textKey, text) => handleItemTextChange(selectedCustomItem.assetKey, textKey, text)}
-                    onSideChange={(side) => handleItemSideChange(selectedCustomItem.assetKey, side)}
+                    onSymbolChange={(symbolKey, symbol, selectedSymbolColor) => handleItemSymbolChange(selectedCustomItem.assetKey, symbolKey, symbol, selectedSymbolColor)}
                     onAddToCart={() => handleAddCurrentItemToCart(selectedCustomItem)}
-                    canChangeSide={hasItemSideOptions(selectedCustomItem?.assetKey)}
                 />
+
             </div>
+
+            <PremiumRequiredDialog
+                isOpen={isPremiumDialogOpen}
+                onClose={() => setIsPremiumDialogOpen(false)}
+            />
 
             <CartDialog
                 isOpen={isCartOpen}

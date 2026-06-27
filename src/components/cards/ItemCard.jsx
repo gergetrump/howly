@@ -18,6 +18,8 @@ export function ItemCard({
     dense = false,
     interactive = false,
     disabled = false,
+    reserveBadgeSpace = false,
+    className,
     titleAction,
     children,
     onClick,
@@ -49,6 +51,7 @@ export function ItemCard({
                 interactive && 'cursor-pointer transition hover:border-violet-300/40 hover:ring-violet-300/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/70',
                 equipped && 'border-violet-300/90 ring-2 ring-inset ring-violet-300/45 shadow-lg shadow-violet-950/25',
                 disabled && 'cursor-wait opacity-80',
+                className,
             )}
             role={interactive ? 'button' : undefined}
             tabIndex={interactive && !disabled ? 0 : undefined}
@@ -90,8 +93,8 @@ export function ItemCard({
                             ) : null}
                         </div>
                     ) : null}
-                    {hasBadges ? (
-                        <div className="flex flex-wrap gap-1">
+                    {hasBadges || reserveBadgeSpace ? (
+                        <div className="flex min-h-7 flex-wrap gap-1">
                             {premiumOnly ? <Badge className="bg-amber-300 text-slate-950">Premium</Badge> : null}
                             {showOwnedBadge && owned ? <Badge className="bg-emerald-400 text-slate-950">Owned</Badge> : null}
                         </div>

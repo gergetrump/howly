@@ -19,6 +19,7 @@ export function ReactionUsersDialog({
     getRelationship,
 }) {
     const users = reaction?.post?.reactions ?? [];
+    const isStory = reaction?.post?.type === 'story';
     const sortedUsers = [...users].sort((firstReaction, secondReaction) => {
         const firstIsCurrentUser = sameId(firstReaction.user?.id, currentUserId);
         const secondIsCurrentUser = sameId(secondReaction.user?.id, currentUserId);
@@ -38,7 +39,7 @@ export function ReactionUsersDialog({
                         Reactions
                     </DialogTitle>
                     <DialogDescription className="text-slate-300">
-                        People who reacted to this milestone
+                        {isStory ? 'People who liked this picture post' : 'People who reacted to this milestone'}
                     </DialogDescription>
                 </DialogHeader>
 

@@ -22,6 +22,7 @@ import { SocialPage } from '@/pages/SocialPage.jsx';
 import { ShopPage } from '@/pages/shopPage';
 import { InventoryPage } from '@/pages/InventoryPage.jsx';
 import { ChallengesPage } from '@/pages/ChallengesPage.jsx';
+import { AnalyticsPage } from '@/pages/AnalyticsPage.jsx';
 import { ProfilePage } from '@/pages/profilePage';
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
@@ -53,6 +54,7 @@ export function AppRoutes() {
                     <Route path="/shop" element={<ShopPage />} />
                     <Route path="/inventory" element={<InventoryPage />} />
                     <Route path="/challenges" element={<ChallengesPage />} />
+                    <Route path="/analytics" element={<AnalyticsPage />} />
                     <Route path="/premium" element={<PremiumPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                 </Route>

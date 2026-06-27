@@ -1,16 +1,6 @@
+import {adjustColor, darkenColor} from '@/lib/colorUtils';
+
 const DEFAULT_WARM_HAT_COLOR = '#4A6741';
-
-function darkenColor(hexColor, amount = 0.45) {
-    const cleanHex = hexColor.replace('#', '');
-    const red = parseInt(cleanHex.slice(0, 2), 16);
-    const green = parseInt(cleanHex.slice(2, 4), 16);
-    const blue = parseInt(cleanHex.slice(4, 6), 16);
-    const darken = (channel) => Math.max(0, Math.round(channel * (1 - amount)));
-
-    return `#${[darken(red), darken(green), darken(blue)]
-        .map((channel) => channel.toString(16).padStart(2, '0'))
-        .join('')}`;
-}
 
 export function WarmHatLayer({ transform, color, ...props }) {
     return (
@@ -27,7 +17,7 @@ export default function WarmHat({
     color = DEFAULT_WARM_HAT_COLOR,
     ...props
 }) {
-    const seamColor = darkenColor(color, 0.45);
+    const seamColor = adjustColor(color, 2, 'darken');
 
     return (
         <svg

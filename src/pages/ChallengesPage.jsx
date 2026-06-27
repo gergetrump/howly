@@ -417,7 +417,7 @@ export function ChallengesPage() {
             <Heading title="Challenges" subtitle="Join friendly habit challenges." streakDays={user?.streakCount ?? user?.streak ?? 0} />
 
             <PageSection
-                width="lg"
+                width="full"
                 align="center"
                 title={currentTabLabel}
                 actionLabel="Create challenge"

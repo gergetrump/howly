@@ -48,19 +48,13 @@ export function formatRelativeTime(dateValue) {
         return `${elapsedHours} hours ago`;
     }
 
-    const elapsedDays = Math.floor(elapsedHours / 24);
+    const elapsedDays = Math.min(Math.floor(elapsedHours / 24), 6);
 
     if (elapsedDays === 1) {
-        return '1 day ago';
+        return '1 day';
     }
 
-    if (elapsedDays < 7) {
-        return `${elapsedDays} days ago`;
-    }
-
-    const elapsedWeeks = Math.floor(elapsedDays / 7);
-
-    return elapsedWeeks === 1 ? '1 week ago' : `${elapsedWeeks} weeks ago`;
+    return `${elapsedDays} days`;
 }
 
 export function getSocialErrorMessage(error, user) {
@@ -85,8 +79,6 @@ export function getSocialErrorMessage(error, user) {
             return 'Premium users can react with up to 5 emojis';
         case 'CANNOT_LIKE_OWN_MILESTONE':
             return 'You cannot like your own milestone';
-        case 'CANNOT_LIKE_OWN_STORY':
-            return 'You cannot like your own story';
         case 'STORY_NOT_FOUND':
             return 'That story is no longer available';
         default:

@@ -41,3 +41,33 @@ test('equipped companion configs keep customization data for dashboard rendering
         },
     ]);
 });
+
+test('equipped companion configs keep duplicate asset keys separate', () => {
+    const inventory = [
+        {
+            _id: 'first-cup',
+            equipped: true,
+            item: { assetKey: 'cup' },
+            customization: { color: '#E09AAB', side: 'right' },
+        },
+        {
+            _id: 'second-cup',
+            equipped: true,
+            item: { assetKey: 'cup' },
+            customization: { color: '#C084FC', side: 'left' },
+        },
+    ];
+
+    assert.deepEqual(getEquippedItemConfigsFromInventory(inventory), [
+        {
+            renderKey: 'first-cup',
+            assetKey: 'cup',
+            customization: { color: '#E09AAB', side: 'right' },
+        },
+        {
+            renderKey: 'second-cup',
+            assetKey: 'cup',
+            customization: { color: '#C084FC', side: 'left' },
+        },
+    ]);
+});

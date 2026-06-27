@@ -28,6 +28,7 @@ export function SocialFeed({
     onReact,
     onOpenReactions,
     onToggleStoryLike,
+    onOpenStoryLikes,
     onDeleteStory,
 }) {
     return (
@@ -42,19 +43,20 @@ export function SocialFeed({
                                 key={`story-${post.id}`}
                                 authorName={getDisplayName(post.user)}
                                 authorAvatarSrc={post.user?.profilePictureUrl}
+                                authorIsPremium={post.user?.isPremium === true || post.user?.role === 'admin'}
+                                meta={formatRelativeTime(post.createdAt)}
                                 story={post}
                                 isOwn={post.user?.id === currentUserId}
                                 onDelete={onDeleteStory}
+                                onOpenLikes={(_, likers) => onOpenStoryLikes?.(post, likers)}
                             >
-                                {post.user?.id !== currentUserId ? (
-                                    <ReactionButton
-                                        liked={post.likedByCurrentUser}
-                                        count={post.likeCount}
-                                        label="Like story"
-                                        disabled={busyPostId === post.id}
-                                        onClick={() => onToggleStoryLike?.(post)}
-                                    />
-                                ) : null}
+                                <ReactionButton
+                                    liked={post.likedByCurrentUser}
+                                    count={post.likeCount}
+                                    label="Like story"
+                                    disabled={busyPostId === post.id}
+                                    onClick={() => onToggleStoryLike?.(post)}
+                                />
                             </StoryFeedCard>
                         ) : (
                             <FeedPostCard
@@ -62,10 +64,10 @@ export function SocialFeed({
                                 authorName={getDisplayName(post.user)}
                                 authorUsername={getUsername(post.user)}
                                 authorAvatarSrc={post.user?.profilePictureUrl}
+                                authorIsPremium={post.user?.isPremium === true || post.user?.role === 'admin'}
                                 meta={formatRelativeTime(post.createdAt)}
                                 companionName={post.companion?.name || 'Howly'}
                                 companionType={post.companion?.type || 'wolf'}
-                                companionEquippedItemKeys={post.companion?.equippedItemKeys ?? []}
                                 companionEquippedItemConfigs={post.companion?.equippedItemConfigs ?? []}
                                 milestoneTitle={buildMilestoneTitle(post)}
                             >

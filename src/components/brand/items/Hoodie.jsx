@@ -1,3 +1,5 @@
+import { darkenColor } from '@/lib/colorUtils';
+
 const WOLF_BODY_WIDTH = 1200;
 const HOODIE_NEW_WIDTH = 1211;
 const HOODIE_NEW_HEIGHT = 578;
@@ -17,23 +19,6 @@ function getHoodieTextWidth(text) {
         MAX_HOODIE_TEXT_WIDTH,
         MIN_HOODIE_TEXT_WIDTH + extraCharacters * HOODIE_TEXT_WIDTH_PER_EXTRA_CHARACTER,
     );
-}
-
-function clampColorChannel(value) {
-    return Math.max(0, Math.min(255, Math.round(value)));
-}
-
-function darkenColor(hexColor, amount) {
-    const normalizedColor = hexColor.replace('#', '');
-
-    if (normalizedColor.length !== 6) {
-        return hexColor;
-    }
-
-    const channels = normalizedColor.match(/.{2}/g).map((channel) => parseInt(channel, 16));
-    const nextChannels = channels.map((channel) => clampColorChannel(channel * (1 - amount)));
-
-    return `#${nextChannels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
 }
 
 export function HoodieLayer({ transform, color, stringColor, textColor, text, ...props }) {

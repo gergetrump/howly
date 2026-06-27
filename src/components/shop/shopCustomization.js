@@ -1,7 +1,57 @@
 export const MAX_CUSTOM_TEXT_LENGTH = 20;
 const NON_OWNERSHIP_CUSTOMIZATION_KEYS = new Set(['side']);
 
+const wholeColorCustomization = (color) => ({
+    defaults: {
+        color,
+    },
+    colorSlots: [
+        { key: 'color', label: 'Whole' },
+    ],
+});
+
+const flowerSymbolToggle = {
+    key: 'symbol',
+    label: 'Flower',
+    options: [
+        { value: 'flower', label: 'Flower', defaultColor: '#F6BBC7' },
+    ],
+};
+
+const bubbleSymbolToggle = {
+    key: 'symbol',
+    label: 'Bubble',
+    options: [
+        { value: 'bubble', label: 'Bubble', defaultColor: '#0F0F0F' },
+    ],
+};
+
 export const ITEM_CUSTOMIZATION_CONFIG = {
+    ballerina: wholeColorCustomization('#F1EBDF'),
+    'bambus-flute': wholeColorCustomization('#4A6741'),
+    'bambus-shoes': wholeColorCustomization('#E1D3AE'),
+    'cute-ballerinas': {
+        defaults: {
+            color: '#F1EBDF',
+            stripeColor: '#B3A6C1',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'stripeColor', label: 'Stripe' },
+        ],
+    },
+    hat: wholeColorCustomization('#4C4C4C'),
+    'hogwarts-cape': wholeColorCustomization('#1A1A1A'),
+    'hogwarts-scarf': {
+        defaults: {
+            color: '#822121',
+            stripeColor: '#D19B26',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Main Color' },
+            { key: 'stripeColor', label: 'Stripe Color' },
+        ],
+    },
     hoodie: {
         defaults: {
             color: '#C66E6E',
@@ -20,6 +70,73 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             placeholder: 'HOWLY',
         },
     },
+    jersie: {
+        defaults: {
+            color: '#32326F',
+            line: '#FFFFFF',
+            textColor: '#FFFFFF',
+            text: 'HOWLY',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'line', label: 'Lines' },
+            { key: 'textColor', label: 'Text' },
+        ],
+        text: {
+            key: 'text',
+            label: 'Jersey text',
+            placeholder: 'HOWLY',
+        },
+    },
+
+    'magic-wand': wholeColorCustomization('#D4A373'),
+    necklace: {
+        defaults: {
+            color: '#990000',
+            symbol: 'heart',
+            symbolColor: '#990000',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Pendant' },
+        ],
+        symbol: {
+            key: 'symbol',
+            label: 'Symbol',
+            allowEmpty: false,
+            colorKey: 'symbolColor',
+            selectionColorKey: 'symbolColor',
+            options: [
+                { value: 'heart', label: 'Heart', defaultColor: '#990000' },
+                { value: 'moon', label: 'Moon', defaultColor: '#FACC15' },
+                { value: 'diamond', label: 'Diamond', defaultColor: '#90D5FF' },
+            ],
+        },
+    },
+    'sakura-outfit': {
+        defaults: {
+            color: '#FCE8EC',
+            cordColor: '#E1D3AE',
+            flowerSet1Color: '#F6BBC7',
+            flowerSet2Color: '#FFFFFF',
+            symbol: 'flower',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'cordColor', label: 'Cord' },
+            { key: 'flowerSet1Color', label: 'Flower Set 1' },
+            { key: 'flowerSet2Color', label: 'Flower Set 2' },
+        ],
+        symbol: flowerSymbolToggle,
+    },
+    scar: {
+        defaults: {
+            color: '#555353',
+            side: 'right',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+        ],
+    },
     'cream-top': {
         defaults: {
             color: '#F4EFE5',
@@ -31,6 +148,119 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             { key: 'buttonColor', label: 'Buttons' },
             { key: 'pocketColor', label: 'Pockets' },
         ],
+    },
+    'bubble-tea': {
+        defaults: {
+            color: '#DDCEAF',
+            strawColor: '#F4EFE5',
+            symbol: 'bubble',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Drink' },
+            { key: 'strawColor', label: 'Straw' }
+        ],
+        symbol: bubbleSymbolToggle,
+    },
+    'drink-togo': {
+        defaults: {
+            color: '#F6F3EB',
+            holderColor: '#DDCEAF'
+        },
+        colorSlots: [
+            { key: 'color', label: 'Cup' },
+            { key: 'holderColor', label: 'Holder' }
+        ],
+    },
+    'bag': {
+        defaults: {
+            color: '#F4EFE5',
+            strapColor: '#DDCEAF',
+            lockColor: '#CEB88B',
+            flapClosureColor: '#D7C6A2'
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'strapColor', label: 'Strap' },
+            { key: 'lockColor', label: 'Lock' },
+            { key: 'flapClosureColor', label: 'Closure' }
+        ],
+    },
+    'cute-hat': {
+        defaults: {
+            color: '#F1EBDF',
+            stripeColor: '#B3A6C1',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'stripeColor', label: 'Stripe' },
+        ],
+    },
+    'hat-with-pompom': {
+        defaults: {
+            color: '#32326F',
+            pompomColor: '#32326F',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'pompomColor', label: 'Pompom' },
+        ],
+    },
+    'sakura-neckclace': {
+        defaults: {
+            color: '#F6BBC7',
+            chainColor: '#CEB88B',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Pendant' },
+            { key: 'chainColor', label: 'Chain' },
+        ],
+    },
+    'sakura-pouch': {
+        defaults: {
+            color: '#FCE8EC',
+            holderColor: '#E1D3AE',
+            tapeColor: '#E1D3AE',
+            flowerSet1Color: '#F6BBC7',
+            flowerSet2Color: '#FFFFFF',
+            symbol: 'flower',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'holderColor', label: 'Holder' },
+            { key: 'tapeColor', label: 'Tape' },
+            { key: 'flowerSet1Color', label: 'Flower Set 1' },
+            { key: 'flowerSet2Color', label: 'Flower Set 2' },
+        ],
+        symbol: flowerSymbolToggle,
+    },
+    hairpin: {
+        defaults: {
+            color: '#FCE8EC',
+            holderColor: '#EFE7D3',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Pendant' },
+            { key: 'holderColor', label: 'Holder' },
+        ],
+    },
+
+    dress: {
+        defaults: {
+            color: '#F2E6FF',
+            lacesColor: '#F1EBDF',
+            flowerSet1Color: '#DDCEAF',
+            flowerSet2Color: '#FFFFFF',
+            buttonColor: '#D9CAAA',
+            symbol: 'flower',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'lacesColor', label: 'Laces' },
+            { key: 'flowerSet1Color', label: 'Flower Set 1' },
+            { key: 'flowerSet2Color', label: 'Flower Set 2' },
+            {key: 'buttonColor', label: 'Buttons' },
+        ],
+        symbol: flowerSymbolToggle,
     },
     'warm-top': {
         defaults: {
@@ -44,6 +274,21 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             { key: 'pocketColor', label: 'Pockets' },
         ],
     },
+    summertop: {
+        defaults: {
+            shirtColor: '#FFFFFF',
+            jacket: '#4B6942',
+            stripeColor: '#FFFFFF',
+        },
+        colorSlots: [
+            { key: 'shirtColor', label: 'Shirt' },
+            { key: 'jacket', label: 'Jacket' },
+            { key: 'stripeColor', label: 'Stripe' },
+        ],
+    },
+
+
+    'warm-boots': wholeColorCustomization('#392E18'),
     'cozy-jacket': {
         defaults: {
             jacketColor: '#4A6741',
@@ -73,18 +318,39 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
     cup: {
         defaults: {
             color: '#E09AAB',
+            symbol: 'eclipse',
+            symbolColor: '#FFFF00',
             side: 'right',
         },
         colorSlots: [
             { key: 'color', label: 'Whole' },
         ],
+        symbol: {
+            key: 'symbol',
+            colorKey: 'symbolColor',
+            label: 'Symbol',
+            selectionColorKey: 'symbolColor',
+            options: [
+                { value: 'eclipse', label: 'Eclipse', defaultColor: '#FFFF00' },
+                { value: 'heart', label: 'Heart', defaultColor: '#990000' },
+                { value: 'flower', label: 'Flower', defaultColor: '#F6BBC7' },
+            ],
+        },
     },
     glasses: {
         defaults: {
             color: '#000000',
         },
         colorSlots: [
-            { key: 'color', label: 'Whole' },
+            { key: 'color', label: 'Frame' },
+        ],
+    },
+    nerdglasses: {
+        defaults: {
+            color: '#4C4C4C',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Frame' },
         ],
     },
     phone: {
@@ -104,6 +370,30 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
         },
         colorSlots: [
             { key: 'color', label: 'Whole' },
+        ],
+    },
+    'warm-hat-2-pompom': {
+    defaults: {
+        color: '#392E18',
+        pompom1Color: '#392E18',
+        pompom2Color: '#392E18',
+    },
+    colorSlots: [
+        { key: 'color', label: 'Whole' },
+        { key: 'pompom1Color', label: 'Pompom 1' },
+        { key: 'pompom2Color', label: 'Pompom 2' },
+    ],
+},
+    'winter-jacket': {
+        defaults: {
+            jacketColor: '#392E18',
+            shirtColor: '#394F32',
+            furColor: '#E1D3AE',
+        },
+        colorSlots: [
+            { key: 'jacketColor', label: 'Jacket' },
+            { key: 'shirtColor', label: 'Shirt' },
+            { key: 'furColor', label: 'Fur' },
         ],
     },
     sneaker: {
@@ -135,10 +425,12 @@ export function normalizeItemCustomization(itemOrAssetKey, customization = {}) {
         return {};
     }
 
-    return {
+    const normalizedCustomization = {
         ...config.defaults,
         ...customization,
     };
+
+    return normalizedCustomization;
 }
 
 export function getItemOwnershipSignature(item, customization = {}) {
