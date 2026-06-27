@@ -425,7 +425,7 @@ export function DashboardPage() {
                 )}
             </div>
 
-            <PageSection title="My Challenges" width="sm">
+            <PageSection title="My Challenges">
                 <CardGrid columns={challengeHabits.length === 1 ? 1 : 2}>
                     {challengeHabits.map((item) => (
                         <DashboardChallengeHabitCard
