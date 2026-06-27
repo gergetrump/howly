@@ -5,6 +5,10 @@ import {
     enrichMilestonePost,
 } from '../milestones/milestone.service.js';
 import { recordProgressForHabit } from '../challenges/challenge.service.js';
+import {
+    recordHabitCheckIn,
+    removeHabitCheckInForCurrentPeriod,
+} from '../analytics/analytics.service.js';
 import User from '../users/user.model.js';
 import { PLAN_KEYS, getPlanForUser } from '../../config/plans.js';
 
@@ -293,6 +297,7 @@ export async function completeHabit(habitId, userId) {
     if (habit.source === 'challenge') {
         habit.lastCompletedAt = new Date();
         await habit.save();
+        await recordHabitCheckIn({ userId, habit, completedAt: habit.lastCompletedAt });
         await recordProgressForHabit({ userId, habitId: habit._id });
 
         return {
@@ -313,6 +318,7 @@ export async function completeHabit(habitId, userId) {
 
     habit.lastCompletedAt = new Date();
     await habit.save();
+    await recordHabitCheckIn({ userId, habit, completedAt: habit.lastCompletedAt });
     const { milestonePost } = await createMilestonePostForHabit(habit);
     const enrichedMilestonePost = milestonePost
         ? await enrichMilestonePost(milestonePost)
@@ -341,6 +347,7 @@ export async function uncompleteHabit(habitId, userId) {
     }
 
     if (habit.source === 'challenge') {
+        await removeHabitCheckInForCurrentPeriod({ userId, habit });
         habit.lastCompletedAt = null;
         await habit.save();
         await recordProgressForHabit({ userId, habitId: habit._id, days: -1 });
@@ -354,6 +361,7 @@ export async function uncompleteHabit(habitId, userId) {
     // Approximate previous completion date to yesterday so streak can continue tomorrow
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
+    await removeHabitCheckInForCurrentPeriod({ userId, habit });
     habit.lastCompletedAt = habit.streakCount > 0 ? yesterday : null;
 
     await habit.save();
