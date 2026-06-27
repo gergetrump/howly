@@ -19,12 +19,21 @@ const userItemSchema = new Schema(
             type: Boolean,
             default: false,
         },
+        customization: {
+            type: Schema.Types.Mixed,
+            default: {},
+        },
+        customizationKey: {
+            type: String,
+            required: true,
+            default: 'default',
+        },
     },
     {
         timestamps: true,
     },
 );
 
-userItemSchema.index({ user: 1, item: 1 }, { unique: true });
+userItemSchema.index({ user: 1, item: 1, customizationKey: 1 }, { unique: true });
 
 export default mongoose.model('UserItem', userItemSchema);

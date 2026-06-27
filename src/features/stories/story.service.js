@@ -126,7 +126,7 @@ export async function createStory({ userId, sourceType, sourceId, caption, image
   return { story: toStoryResponse(story) };
 }
 
-// Stories from the user and their friends, still visible in the feed (< 24h old)
+// Stories from the user and their friends that are still inside the 7-day feed window
 export async function getFriendFeedStories({ userId }) {
   const friendships = await Friendship.find({
     $or: [{ userA: userId }, { userB: userId }],
@@ -183,11 +183,7 @@ export async function toggleStoryLike({ userId, storyId }) {
     return { errorCode: 'STORY_NOT_FOUND' };
   }
 
-  if (sameId(story.user, userId)) {
-    return { errorCode: 'CANNOT_LIKE_OWN_STORY' };
-  }
-
-  if (!(await areFriends(userId, story.user))) {
+  if (!sameId(story.user, userId) && !(await areFriends(userId, story.user))) {
     return { errorCode: 'STORY_NOT_FOUND' };
   }
 
@@ -222,11 +218,15 @@ export async function toggleStoryLike({ userId, storyId }) {
   return { liked: true, story: toStoryResponse(story, new Set([storyId])) };
 }
 
-// Who liked a story — only the story owner may see this
+// Who liked a story — available to the owner and friends who can see the story
 export async function getStoryLikes({ userId, storyId }) {
   const story = await Story.findById(storyId).lean();
 
-  if (!story || !sameId(story.user, userId)) {
+  if (
+    !story
+    || story.feedExpiresAt <= new Date()
+    || (!sameId(story.user, userId) && !(await areFriends(userId, story.user)))
+  ) {
     return { errorCode: 'STORY_NOT_FOUND' };
   }
 

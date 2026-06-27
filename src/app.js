@@ -14,6 +14,7 @@ import companionRoutes from './features/companion/companion.routes.js';
 import { errorMiddleware } from './middleware/error.middleware.js';
 import challengeRoutes from './features/challenges/challenge.routes.js';
 import storyRoutes from './features/stories/story.routes.js';
+import analyticsRoutes from './features/analytics/analytics.routes.js';
 import { handleStripeWebhook } from './payment/payment.controller.js';
 import paymentRoutes from './payment/payment.routes.js';
 
@@ -66,6 +67,7 @@ export default function createApp() {
     app.use('/api/payments', paymentRoutes);
     app.use('/api/stories', storyRoutes);
     app.use('/api/companions', companionRoutes);
+    app.use('/api/analytics', analyticsRoutes);
 
     // Central error handling
     app.use(errorMiddleware);

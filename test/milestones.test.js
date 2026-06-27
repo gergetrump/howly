@@ -13,6 +13,7 @@ import Habit from '../src/features/habits/habit.model.js';
 import config from '../config.js';
 import { Friendship } from '../src/features/social/social.model.js';
 import {
+  MILESTONE_VISIBLE_HOURS,
   MilestoneLike,
   MilestonePost,
 } from '../src/features/milestones/milestone.model.js';
@@ -87,7 +88,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   const author = await buildUser({ username: 'author', email: 'author@example.com' });
   const friend = await buildUser({ username: 'friend', email: 'friend@example.com' });
   const habit = await buildHabit(author, { title: 'Chess', streakCount: 10 });
-  const companion = await Companion.create({ user: author._id, name: 'Luna' });
+  const companion = await Companion.create({ user: author._id, name: 'Luna', type: 'bear' });
   const hoodie = await Item.create({
     name: 'Cozy Hoodie',
     type: 'clothing',
@@ -106,11 +107,63 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
     price: 120,
     assetKey: 'cup',
   });
+  const scar = await Item.create({
+    name: 'Scar',
+    type: 'accessory',
+    price: 120,
+    assetKey: 'scar',
+  });
+  const sakuraOutfit = await Item.create({
+    name: 'Sakura Outfit',
+    type: 'clothing',
+    price: 500,
+    assetKey: 'sakura-outfit',
+  });
 
   await UserItem.create([
-    { user: author._id, item: hoodie._id, equipped: true },
+    {
+      user: author._id,
+      item: hoodie._id,
+      equipped: true,
+      customization: {
+        color: '#4F772D',
+        stringColor: '#F8FAFC',
+        textColor: '#111827',
+        text: 'LUNA',
+      },
+    },
     { user: author._id, item: glasses._id, equipped: true },
-    { user: author._id, item: cup._id, equipped: false },
+    {
+      user: author._id,
+      item: cup._id,
+      equipped: true,
+      customization: {
+        color: '#E09AAB',
+        symbol: 'heart',
+        symbolColor: '#3B82F6',
+        side: 'right',
+      },
+    },
+    {
+      user: author._id,
+      item: scar._id,
+      equipped: true,
+      customization: {
+        color: '#7F1D1D',
+      },
+    },
+    {
+      user: author._id,
+      item: sakuraOutfit._id,
+      equipped: true,
+      customization: {
+        color: '#FCE8EC',
+        cordColor: '#A16207',
+        flowerSet1Color: '#F472B6',
+        flowerSet2Color: '#DBEAFE',
+        symbol: 'flower',
+      },
+    },
   ]);
 
   await Friendship.create({
@@ -139,7 +192,54 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(feedResponse.body[0].habit.icon, '🎯');
   assert.equal(feedResponse.body[0].companion.id, companion._id.toString());
   assert.equal(feedResponse.body[0].companion.name, 'Luna');
-  assert.deepEqual(feedResponse.body[0].companion.equippedItemKeys.sort(), ['glasses', 'hoodie']);
+  assert.equal(feedResponse.body[0].companion.type, 'bear');
+  assert.deepEqual(feedResponse.body[0].companion.equippedItemKeys.sort(), ['cup', 'glasses', 'hoodie', 'sakura-outfit', 'scar']);
+  assert.deepEqual(
+    feedResponse.body[0].companion.equippedItemConfigs.find((item) => item.assetKey === 'hoodie'),
+    {
+      assetKey: 'hoodie',
+      customization: {
+        color: '#4F772D',
+        stringColor: '#F8FAFC',
+        textColor: '#111827',
+        text: 'LUNA',
+      },
+    },
+  );
+  assert.deepEqual(
+    feedResponse.body[0].companion.equippedItemConfigs.find((item) => item.assetKey === 'cup'),
+    {
+      assetKey: 'cup',
+      customization: {
+        color: '#E09AAB',
+        symbol: 'heart',
+        symbolColor: '#3B82F6',
+        side: 'right',
+      },
+    },
+  );
+  assert.deepEqual(
+    feedResponse.body[0].companion.equippedItemConfigs.find((item) => item.assetKey === 'scar'),
+    {
+      assetKey: 'scar',
+      customization: {
+        color: '#7F1D1D',
+      },
+    },
+  );
+  assert.deepEqual(
+    feedResponse.body[0].companion.equippedItemConfigs.find((item) => item.assetKey === 'sakura-outfit'),
+    {
+      assetKey: 'sakura-outfit',
+      customization: {
+        color: '#FCE8EC',
+        cordColor: '#A16207',
+        flowerSet1Color: '#F472B6',
+        flowerSet2Color: '#DBEAFE',
+        symbol: 'flower',
+      },
+    },
+  );
   assert.equal(feedResponse.body[0].likedByCurrentUser, false);
   assert.equal(feedResponse.body[0].currentUserReaction, null);
   assert.deepEqual(feedResponse.body[0].reactionCounts, []);
@@ -166,7 +266,16 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(firstReactionResponse.body.milestonePost.habit.frequency, 'Daily');
   assert.equal(firstReactionResponse.body.milestonePost.habit.icon, '🎯');
   assert.equal(firstReactionResponse.body.milestonePost.companion.name, 'Luna');
-  assert.deepEqual(firstReactionResponse.body.milestonePost.companion.equippedItemKeys.sort(), ['glasses', 'hoodie']);
+  assert.equal(firstReactionResponse.body.milestonePost.companion.type, 'bear');
+  assert.deepEqual(firstReactionResponse.body.milestonePost.companion.equippedItemKeys.sort(), ['cup', 'glasses', 'hoodie', 'sakura-outfit', 'scar']);
+  assert.equal(
+    firstReactionResponse.body.milestonePost.companion.equippedItemConfigs.find((item) => item.assetKey === 'hoodie').customization.text,
+    'LUNA',
+  );
+  assert.equal(
+    firstReactionResponse.body.milestonePost.companion.equippedItemConfigs.find((item) => item.assetKey === 'cup').customization.symbolColor,
+    '#3B82F6',
+  );
 
   // Choosing another emoji changes the user's single reaction
   const changedReactionResponse = await request(app)
@@ -199,7 +308,7 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   assert.equal(removedReactionResponse.body.milestonePost.habit.frequency, 'Daily');
   assert.equal(removedReactionResponse.body.milestonePost.habit.icon, '🎯');
   assert.equal(removedReactionResponse.body.milestonePost.companion.name, 'Luna');
-  assert.deepEqual(removedReactionResponse.body.milestonePost.companion.equippedItemKeys.sort(), ['glasses', 'hoodie']);
+  assert.deepEqual(removedReactionResponse.body.milestonePost.companion.equippedItemKeys.sort(), ['cup', 'glasses', 'hoodie', 'sakura-outfit', 'scar']);
 });
 
 // Tests that picker emojis outside the preset list are accepted, while text is rejected
@@ -383,7 +492,7 @@ test('milestone creation only creates posts at 10-day streak intervals', async (
   assert.deepEqual(storedPosts.map((post) => post.streakDays), [10, 20]);
 });
 
-// Tests that reusing an old milestone refreshes its 24-hour feed visibility
+// Tests that reusing an old milestone refreshes its 7-day feed visibility
 test('milestone creation refreshes visibility for an existing milestone post', async () => {
   const viewer = await buildUser({ username: 'refresh_viewer', email: 'refresh-viewer@example.com' });
   const author = await buildUser({ username: 'refresh_author', email: 'refresh-author@example.com' });
@@ -402,6 +511,10 @@ test('milestone creation refreshes visibility for an existing milestone post', a
 
   assert.equal(refreshedResult.milestonePost._id.toString(), expiredMilestonePost._id.toString());
   assert.ok(refreshedResult.milestonePost.visibleUntil > new Date());
+  assert.ok(
+    refreshedResult.milestonePost.visibleUntil.getTime() - Date.now()
+      >= (MILESTONE_VISIBLE_HOURS - 1) * 60 * 60 * 1000,
+  );
 
   const feedResponse = await request(app)
     .get('/api/milestones/feed')
