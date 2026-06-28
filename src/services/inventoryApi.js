@@ -18,6 +18,13 @@ export function saveOutfit(equippedUserItemIds, customizationUpdates = {}) {
     });
 }
 
+export function useInventoryItem(userItemId, habitId) {
+    return apiRequest(`/inventory/${userItemId}/use`, {
+        method: 'POST',
+        body: JSON.stringify({ habitId }),
+    });
+}
+
 export function equipInventoryItem(userItemId) {
     return apiRequest(`/inventory/${userItemId}/equip`, {
         method: 'POST',

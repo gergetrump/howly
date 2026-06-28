@@ -18,7 +18,10 @@ export function PurchaseConfirmationDialog({
     onOpenChange,
     onBuyItems,
     getPurchaseEntryItem,
+    getPurchaseEntryQuantity,
 }) {
+    const itemCount = itemsToBuy.reduce((total, entry) => total + getPurchaseEntryQuantity(entry), 0);
+
     return (
         <ConfirmationDialog open={itemsToBuy.length > 0} onOpenChange={onOpenChange}>
             <ConfirmationDialogContent className="overflow-hidden rounded-3xl border border-violet-300/20 bg-[#1e1b3a] p-0 text-white shadow-2xl shadow-violet-950/40 sm:max-w-md">
@@ -34,7 +37,7 @@ export function PurchaseConfirmationDialog({
 
                     <ConfirmationDialogHeader className="space-y-0 text-center">
                         <ConfirmationDialogTitle className="mx-auto max-w-sm text-xl font-bold leading-tight">
-                            Buy {itemsToBuy.length === 1 ? getItemDisplayName(getPurchaseEntryItem(itemsToBuy[0])) : `${itemsToBuy.length} items`}?
+                            Buy {itemCount === 1 ? getItemDisplayName(getPurchaseEntryItem(itemsToBuy[0])) : `${itemCount} items`}?
                         </ConfirmationDialogTitle>
                         <ConfirmationDialogDescription className="sr-only">
                             Confirm that these items should be added to your inventory.

@@ -219,6 +219,10 @@ export function DashboardPage() {
                 : await checkInHabit(habit.id);
             setHabits(prev => prev.map(h => h.id === habit.id ? updatedHabit.data : h));
 
+            if (!wasCompleted && updatedHabit.boostReward?.coins !== undefined) {
+                setUser(current => (current ? { ...current, coins: updatedHabit.boostReward.coins } : current));
+            }
+
             // A check-in can complete the day → refresh the overall streak (🔥).
             if (!wasCompleted) {
                 refreshUserStreak();
@@ -244,9 +248,13 @@ export function DashboardPage() {
     async function handleChallengeHabitCompletion(item) {
         try {
             const wasCompleted = item.habit.isCompletedToday;
-            await (wasCompleted
+            const updatedHabit = await (wasCompleted
                 ? uncheckInHabit(item.habit.id)
                 : checkInHabit(item.habit.id));
+
+            if (!wasCompleted && updatedHabit.boostReward?.coins !== undefined) {
+                setUser(current => (current ? { ...current, coins: updatedHabit.boostReward.coins } : current));
+            }
 
             const response = await getMyChallengeHabits();
             setChallengeHabits(Array.isArray(response) ? response : []);

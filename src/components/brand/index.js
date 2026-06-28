@@ -1,6 +1,9 @@
 export { Background } from './background';
+export { BigBoost } from './BigBoost.jsx';
 export { Companion } from './Companion';
 export { CompanionAvatar } from './CompanionAvatar';
 export { CompanionStage } from './CompanionStage';
+export { MediumBoost } from './MediumBoost.jsx';
 export { MoonCoin } from './MoonCoin.jsx';
+export { SmallBoost } from './SmallBoost.jsx';
 export { StreakBadge } from './StreakBadge.jsx';

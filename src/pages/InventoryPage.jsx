@@ -12,7 +12,9 @@ import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCatego
 import {
     getMyInventory,
     saveOutfit,
+    useInventoryItem,
 } from '@/services/inventoryApi';
+import { getMyHabits } from '@/services/habitService';
 import { getEquippedItemConfigsFromInventory, itemMatchesCategory } from '@/lib/inventoryItems';
 
 const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
@@ -24,10 +26,14 @@ function isSideableHeadItem(assetKey) {
 
 export function InventoryPage() {
     const navigate = useNavigate();
-    const { user, companion } = useAuth();
+    const { user, setUser, companion } = useAuth();
     const [inventory, setInventory] = useState([]);
+    const [habits, setHabits] = useState([]);
     const [draftEquippedItemIds, setDraftEquippedItemIds] = useState(new Set());
     const [draftItemSides, setDraftItemSides] = useState({});
+    const [selectedBoostHabitIds, setSelectedBoostHabitIds] = useState({});
+    const [usingBoostItemId, setUsingBoostItemId] = useState('');
+    const [boostMessageByItemId, setBoostMessageByItemId] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [isSavingOutfit, setIsSavingOutfit] = useState(false);
     const [error, setError] = useState('');
@@ -62,10 +68,14 @@ export function InventoryPage() {
             setError('');
 
             try {
-                const nextInventory = await getMyInventory();
+                const [nextInventory, nextHabits] = await Promise.all([
+                    getMyInventory(),
+                    getMyHabits({ limit: 100 }),
+                ]);
 
                 if (isCurrent) {
                     setInventory(nextInventory);
+                    setHabits(nextHabits?.data ?? []);
                     setDraftEquippedItemIds(new Set(
                         nextInventory
                             .filter((entry) => entry.equipped)
@@ -107,6 +117,7 @@ export function InventoryPage() {
             .map((entry) => ({
                 ...entry.item,
                 userItemId: entry._id,
+                quantity: entry.quantity ?? 1,
                 equipped: draftEquippedItemIds.has(entry._id),
                 customization: getDraftCustomization(entry),
             }))
@@ -144,6 +155,10 @@ export function InventoryPage() {
     }, [draftEquippedItemIds, draftItemSides, savedEquippedItemIds, savedItemSides]);
 
     function handleToggleEquipped(item) {
+        if (item.type === 'powerUp') {
+            return;
+        }
+
         setError('');
         setCompanionMessage('');
 
@@ -328,6 +343,102 @@ export function InventoryPage() {
         );
     }
 
+    function getSelectedBoostHabitId(userItemId) {
+        return selectedBoostHabitIds[userItemId] || habits[0]?.id || '';
+    }
+
+    async function handleUseBoost(item) {
+        const habitId = getSelectedBoostHabitId(item.userItemId);
+
+        if (!habitId || usingBoostItemId) {
+            return;
+        }
+
+        setUsingBoostItemId(item.userItemId);
+        setError('');
+        setBoostMessageByItemId((currentMessages) => ({
+            ...currentMessages,
+            [item.userItemId]: '',
+        }));
+
+        try {
+            const result = await useInventoryItem(item.userItemId, habitId);
+
+            setInventory((currentInventory) => {
+                if ((result?.quantity ?? 0) <= 0) {
+                    return currentInventory.filter((entry) => entry._id !== item.userItemId);
+                }
+
+                return currentInventory.map((entry) => (
+                    entry._id === item.userItemId
+                        ? { ...entry, quantity: result.quantity }
+                        : entry
+                ));
+            });
+            setUser((currentUser) => (currentUser && result?.coins !== undefined
+                ? { ...currentUser, coins: result.coins }
+                : currentUser));
+            setBoostMessageByItemId((currentMessages) => ({
+                ...currentMessages,
+                [item.userItemId]: `Active for ${result?.boost?.habitTitle ?? 'this habit'}`,
+            }));
+        } catch (boostError) {
+            const message = boostError.code === 'BOOST_ALREADY_ACTIVE'
+                ? 'This habit already has an active boost'
+                : boostError.code === 'BOOST_HABIT_NOT_FOUND'
+                    ? 'Choose one of your habits'
+                    : 'Boost could not be used';
+
+            setBoostMessageByItemId((currentMessages) => ({
+                ...currentMessages,
+                [item.userItemId]: message,
+            }));
+        } finally {
+            setUsingBoostItemId('');
+        }
+    }
+
+    function renderBoostControls(item) {
+        const selectedHabitId = getSelectedBoostHabitId(item.userItemId);
+        const isUsing = usingBoostItemId === item.userItemId;
+
+        return (
+            <>
+                <select
+                    className="col-span-2 min-w-0 rounded-lg border border-white/15 bg-white px-2 py-1 text-xs font-semibold text-slate-950 outline-none"
+                    value={selectedHabitId}
+                    disabled={habits.length === 0 || isUsing}
+                    aria-label={`Choose habit for ${getItemDisplayName(item)}`}
+                    onChange={(event) => {
+                        setSelectedBoostHabitIds((currentIds) => ({
+                            ...currentIds,
+                            [item.userItemId]: event.target.value,
+                        }));
+                    }}
+                >
+                    {habits.length === 0 ? <option value="">No habits yet</option> : null}
+                    {habits.map((habit) => (
+                        <option key={habit.id} value={habit.id}>
+                            {habit.title}
+                        </option>
+                    ))}
+                </select>
+                <p className="col-span-2 min-h-4 truncate text-[10px] font-semibold text-slate-300">
+                    {boostMessageByItemId[item.userItemId] || `${item.quantity} available`}
+                </p>
+                <ActionButton
+                    type="button"
+                    fullWidth
+                    className="col-span-2 h-8 px-3 text-xs"
+                    disabled={!selectedHabitId || isUsing}
+                    onClick={() => handleUseBoost(item)}
+                >
+                    {isUsing ? 'Using...' : 'Use'}
+                </ActionButton>
+            </>
+        );
+    }
+
     return (
         <Page theme="forest">
             <div className="space-y-5">
@@ -417,12 +528,18 @@ export function InventoryPage() {
                                     equipped={item.equipped}
                                     showPrice={false}
                                     dense
-                                    interactive
+                                    interactive={item.type !== 'powerUp'}
                                     disabled={isSavingOutfit}
-                                    titleAction={renderSideControls(item)}
+                                    titleAction={item.type === 'powerUp' ? (
+                                        <span className="rounded-full border border-white/10 bg-white/10 px-2 py-1 text-[10px] font-bold text-white">
+                                            x{item.quantity}
+                                        </span>
+                                    ) : renderSideControls(item)}
                                     visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', item.customization)}
                                     onClick={() => handleToggleEquipped(item)}
-                                />
+                                >
+                                    {item.type === 'powerUp' ? renderBoostControls(item) : null}
+                                </ItemCard>
                             ))}
                         </CardGrid>
                     ) : null}
