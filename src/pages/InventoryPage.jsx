@@ -25,6 +25,7 @@ import {
 } from '@/services/inventoryApi';
 import { getMyHabits } from '@/services/habitService';
 import { getEquippedItemConfigsFromInventory, itemMatchesCategory } from '@/lib/inventoryItems';
+import { cn } from '@/lib/utils';
 
 const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
 const SIDEABLE_HEAD_ITEM_KEYS = new Set(['cute-hat', 'hairpin']);
@@ -566,11 +567,15 @@ export function InventoryPage() {
                     </p>
                 </div>
 
-                {boostDialogError ? (
-                    <p className="mb-4 rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-                        {boostDialogError}
-                    </p>
-                ) : null}
+                <div 
+                    className={cn(
+                        "mb-4 rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm text-red-100 transition-opacity duration-200",
+                        boostDialogError ? "opacity-100" : "opacity-0 pointer-events-none select-none"
+                    )}
+                    aria-hidden={!boostDialogError}
+                >
+                    {boostDialogError || '\u00A0'}
+                </div>
 
                 <div className="space-y-2.5">
                     <Label className="text-sm font-medium text-white">Habit</Label>

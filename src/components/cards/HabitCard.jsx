@@ -56,7 +56,7 @@ export function HabitCard({
                             {activeBoost ? (
                                 <Badge className="bg-slate-700 hover:bg-slate-800 text-white border-0 font-medium capitalize text-[10px] py-0 h-5 px-1.5 flex gap-1 items-center">
                                     {renderShopItemVisual(activeBoost, 'h-3 w-3')}
-                                    {activeBoost.assetKey.replace('-', ' ')}
+                                    {activeBoost.assetKey.replace('-', ' ')} &bull; {activeBoost.remainingCompletions} left
                                 </Badge>
                             ) : null}
                         </div>
