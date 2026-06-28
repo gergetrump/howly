@@ -44,7 +44,7 @@ function isYesterday(date) {
 /**
  * Checks if a date falls within the current calendar period based on habit frequency.
  */
-function isCompletedForPeriod(habit) {
+export function isCompletedForPeriod(habit) {
     const date = habit.lastCompletedAt;
     if (!date) return false;
     const now = new Date();
@@ -64,6 +64,14 @@ function isCompletedForPeriod(habit) {
     
     // Custom specific days acts exactly like Daily (must be completed today)
     return isToday(date);
+}
+
+function isDueToday(habit) {
+    if (habit.frequency === 'Custom' && habit.customDays && habit.customDays.length > 0) {
+        const currentDay = new Date().getDay() || 7; // 1-7 (Mon-Sun)
+        return habit.customDays.includes(currentDay);
+    }
+    return true;
 }
 
 function getPreviousScheduledDate(customDays) {
@@ -96,7 +104,7 @@ function getPreviousScheduledDate(customDays) {
 /**
  * Checks if a date falls strictly in the PREVIOUS calendar period for streak calculation.
  */
-function isPreviousPeriod(habit, date) {
+export function isPreviousPeriod(habit, date) {
     if (!date) return false;
     const now = new Date();
     const frequency = habit.frequency;
@@ -146,6 +154,7 @@ function toHabitDto(habit) {
         source: habit.source ?? 'manual',
         challengeId: habit.challengeId ? habit.challengeId.toString() : null,
         streakCount: habit.streakCount,
+        streakRepairDeadline: habit.streakRepairDeadline ?? null,
         isCompletedToday: isCompletedForPeriod(habit),
         createdAt: habit.createdAt.toISOString(),
     };
@@ -296,6 +305,7 @@ export async function completeHabit(habitId, userId) {
 
     if (habit.source === 'challenge') {
         habit.lastCompletedAt = new Date();
+        habit.streakRepairDeadline = null;
         await habit.save();
         await recordHabitCheckIn({ userId, habit, completedAt: habit.lastCompletedAt });
         await recordProgressForHabit({ userId, habitId: habit._id });
@@ -317,6 +327,7 @@ export async function completeHabit(habitId, userId) {
     }
 
     habit.lastCompletedAt = new Date();
+    habit.streakRepairDeadline = null;
     await habit.save();
     await recordHabitCheckIn({ userId, habit, completedAt: habit.lastCompletedAt });
     const { milestonePost } = await createMilestonePostForHabit(habit);
@@ -324,6 +335,7 @@ export async function completeHabit(habitId, userId) {
         ? await enrichMilestonePost(milestonePost)
         : null;
     await recordProgressForHabit({ userId, habitId: habit._id });
+    await creditOverallStreak(userId);
 
     return {
         habit: toHabitDto(habit),
@@ -367,4 +379,36 @@ export async function uncompleteHabit(habitId, userId) {
     await habit.save();
 
     return toHabitDto(habit);
+}
+
+
+async function creditOverallStreak(userId) {
+    const user = await User.findById(userId).select('streak streakLastDay');
+    if (!user) return null;
+
+    // Already credited today → nothing to do.
+    if (user.streakLastDay && isToday(user.streakLastDay)) {
+        return { streak: user.streak, creditedToday: true };
+    }
+
+    // Challenge habits are excluded
+    const habits = await Habit.find({ ownerId: userId, source: { $ne: 'challenge' } })
+        .select('frequency lastCompletedAt customDays');
+    const dueToday = habits.filter(isDueToday);
+
+    // A complete day = every habit due today is done (and there is at least one).
+    if (dueToday.length === 0 || !dueToday.every((habit) => isCompletedForPeriod(habit))) {
+        return { streak: user.streak, creditedToday: false };
+    }
+
+    // Continue the streak if yesterday was kept, otherwise start a fresh one.
+    if (user.streakLastDay && isYesterday(user.streakLastDay)) {
+        user.streak += 1;
+    } else {
+        user.streak = 1;
+    }
+    user.streakLastDay = new Date();
+    await user.save();
+
+    return { streak: user.streak, creditedToday: true };
 }

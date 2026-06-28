@@ -88,6 +88,10 @@ const habitSchema = new Schema(
             type: Date,
             default: null,
         },
+        streakRepairDeadline: {
+            type: Date,
+            default: null,
+        },
     },
     {
         timestamps: true,

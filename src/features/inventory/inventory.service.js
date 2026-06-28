@@ -1,7 +1,7 @@
 import User from '../users/user.model.js';
 import Item from '../items/item.model.js';
 import UserItem from './inventory.model.js';
-import { getPlanForUser } from '../../config/plans.js';
+import { getPlanForUser, MAX_STREAK_SHIELDS } from '../../config/plans.js';
 
 export const INVENTORY_ERROR_CODES = {
     ITEM_NOT_FOUND: 'ITEM_NOT_FOUND',
@@ -12,7 +12,11 @@ export const INVENTORY_ERROR_CODES = {
     USER_NOT_FOUND: 'USER_NOT_FOUND',
     OUTFIT_ITEM_NOT_OWNED: 'OUTFIT_ITEM_NOT_OWNED',
     OUTFIT_ITEM_TYPE_CONFLICT: 'OUTFIT_ITEM_TYPE_CONFLICT',
+    SHIELDS_AT_MAX: 'SHIELDS_AT_MAX',
 };
+
+// Consumable power-up in the catalog: buying it grants a streak shield instead
+export const STREAK_FREEZE_ASSET_KEY = 'streak-freeze';
 
 const SINGLE_EQUIP_ITEM_TYPES = new Set(['clothing', 'shoes']);
 const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
@@ -304,6 +308,10 @@ export async function buyItem({ userId, itemId, customization = {} }) {
         throw inventoryError(INVENTORY_ERROR_CODES.USER_NOT_FOUND);
     }
 
+    if (item.assetKey === STREAK_FREEZE_ASSET_KEY) {
+        return buyStreakFreeze({ user, item });
+    }
+
     await ensureCustomizationIndexes();
 
     const normalizedCustomization = normalizeCustomizationForItem(item, customization);
@@ -367,6 +375,35 @@ export async function buyItem({ userId, itemId, customization = {} }) {
     }
 
     return userItem.populate('item');
+}
+
+// Buy the consumable Streak Freeze: +1 shield (capped), repeatable.
+async function buyStreakFreeze({ user, item }) {
+    const plan = getPlanForUser(user);
+
+    if (item.premiumOnly && !plan.permissions.canBuyPremiumItems) {
+        throw inventoryError(INVENTORY_ERROR_CODES.PREMIUM_REQUIRED);
+    }
+
+    if ((user.streakShields ?? 0) >= MAX_STREAK_SHIELDS) {
+        throw inventoryError(INVENTORY_ERROR_CODES.SHIELDS_AT_MAX);
+    }
+
+    if (user.coins < item.price) {
+        throw inventoryError(INVENTORY_ERROR_CODES.NOT_ENOUGH_COINS);
+    }
+
+    user.coins -= item.price;
+    user.streakShields = (user.streakShields ?? 0) + 1;
+    await user.save();
+
+    const fresh = await User.findById(user._id).select('coins streakShields');
+    return {
+        consumable: true,
+        assetKey: item.assetKey,
+        coins: fresh.coins,
+        streakShields: fresh.streakShields,
+    };
 }
 
 export async function setItemEquipped({ userId, userItemId, equipped }) {
