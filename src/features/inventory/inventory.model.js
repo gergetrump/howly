@@ -19,6 +19,11 @@ const userItemSchema = new Schema(
             type: Boolean,
             default: false,
         },
+        quantity: {
+            type: Number,
+            default: 1,
+            min: 0,
+        },
         customization: {
             type: Schema.Types.Mixed,
             default: {},

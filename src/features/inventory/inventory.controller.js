@@ -3,6 +3,7 @@ import { INVENTORY_ERROR_CODES } from './inventory.service.js';
 import {
     validateBuyItemInput,
     validateSaveOutfitInput,
+    validateUseInventoryItemInput,
     validateUserItemId,
 } from './inventory.validation.js';
 
@@ -16,6 +17,10 @@ const statusByErrorCode = {
     [INVENTORY_ERROR_CODES.OUTFIT_ITEM_NOT_OWNED]: 400,
     [INVENTORY_ERROR_CODES.OUTFIT_ITEM_TYPE_CONFLICT]: 400,
     [INVENTORY_ERROR_CODES.SHIELDS_AT_MAX]: 400,
+    [INVENTORY_ERROR_CODES.BOOST_NOT_AVAILABLE]: 400,
+    [INVENTORY_ERROR_CODES.BOOST_HABIT_REQUIRED]: 400,
+    [INVENTORY_ERROR_CODES.BOOST_HABIT_NOT_FOUND]: 404,
+    [INVENTORY_ERROR_CODES.BOOST_ALREADY_ACTIVE]: 409,
 };
 
 export async function listMyInventory(req, res) {
@@ -101,6 +106,39 @@ export async function buyItem(req, res) {
         });
 
         return res.status(201).json(userItem);
+    } catch (serviceError) {
+        if (serviceError.code && statusByErrorCode[serviceError.code]) {
+            return res.status(statusByErrorCode[serviceError.code]).json({
+                message: 'Inventory action failed',
+                code: serviceError.code,
+            });
+        }
+
+        throw serviceError;
+    }
+}
+
+export async function useInventoryItem(req, res) {
+    const { error: userItemIdError, value: userItemId } = validateUserItemId(req.params.userItemId);
+
+    if (userItemIdError) {
+        return res.status(400).json({ message: userItemIdError });
+    }
+
+    const { error, value } = validateUseInventoryItemInput(req.body);
+
+    if (error) {
+        return res.status(400).json({ message: error });
+    }
+
+    try {
+        const result = await inventoryService.useInventoryItem({
+            userId: req.user.id,
+            userItemId,
+            habitId: value.habitId,
+        });
+
+        return res.status(200).json(result);
     } catch (serviceError) {
         if (serviceError.code && statusByErrorCode[serviceError.code]) {
             return res.status(statusByErrorCode[serviceError.code]).json({

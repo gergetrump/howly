@@ -2,6 +2,11 @@ import User from '../users/user.model.js';
 import Item from '../items/item.model.js';
 import UserItem from './inventory.model.js';
 import { getPlanForUser, MAX_STREAK_SHIELDS } from '../../config/plans.js';
+import {
+    activateHabitBoost,
+    BOOST_ERROR_CODES,
+    isBoostAssetKey,
+} from '../boosts/habitBoost.service.js';
 
 export const INVENTORY_ERROR_CODES = {
     ITEM_NOT_FOUND: 'ITEM_NOT_FOUND',
@@ -13,6 +18,8 @@ export const INVENTORY_ERROR_CODES = {
     OUTFIT_ITEM_NOT_OWNED: 'OUTFIT_ITEM_NOT_OWNED',
     OUTFIT_ITEM_TYPE_CONFLICT: 'OUTFIT_ITEM_TYPE_CONFLICT',
     SHIELDS_AT_MAX: 'SHIELDS_AT_MAX',
+    BOOST_NOT_AVAILABLE: 'BOOST_NOT_AVAILABLE',
+    ...BOOST_ERROR_CODES,
 };
 
 // Consumable power-up in the catalog: buying it grants a streak shield instead
@@ -289,7 +296,13 @@ async function ensureCustomizationIndexes() {
 }
 
 export async function listUserItems({ userId }) {
-    return UserItem.find({ user: userId })
+    return UserItem.find({
+        user: userId,
+        $or: [
+            { quantity: { $gt: 0 } },
+            { quantity: { $exists: false } },
+        ],
+    })
         .populate('item')
         .sort({ createdAt: -1 });
 }
@@ -310,6 +323,10 @@ export async function buyItem({ userId, itemId, customization = {} }) {
 
     if (item.assetKey === STREAK_FREEZE_ASSET_KEY) {
         return buyStreakFreeze({ user, item });
+    }
+
+    if (isBoostAssetKey(item.assetKey)) {
+        return buyBoostPowerUp({ user, item });
     }
 
     await ensureCustomizationIndexes();
@@ -375,6 +392,85 @@ export async function buyItem({ userId, itemId, customization = {} }) {
     }
 
     return userItem.populate('item');
+}
+
+async function buyBoostPowerUp({ user, item }) {
+    const plan = getPlanForUser(user);
+
+    if (item.premiumOnly && !plan.permissions.canBuyPremiumItems) {
+        throw inventoryError(INVENTORY_ERROR_CODES.PREMIUM_REQUIRED);
+    }
+
+    if (user.coins < item.price) {
+        throw inventoryError(INVENTORY_ERROR_CODES.NOT_ENOUGH_COINS);
+    }
+
+    user.coins -= item.price;
+    await user.save();
+
+    try {
+        await ensureCustomizationIndexes();
+
+        const existingUserItem = await UserItem.findOne({
+            user: user._id,
+            item: item._id,
+            customizationKey: 'default',
+        });
+
+        if (existingUserItem) {
+            existingUserItem.quantity = (existingUserItem.quantity ?? 1) + 1;
+            return existingUserItem.save().then((savedItem) => savedItem.populate('item'));
+        }
+
+        const userItem = await UserItem.create({
+            user: user._id,
+            item: item._id,
+            quantity: 1,
+            customization: {},
+            customizationKey: 'default',
+        });
+
+        return userItem.populate('item');
+    } catch (error) {
+        user.coins += item.price;
+        await user.save();
+        throw error;
+    }
+}
+
+export async function useInventoryItem({ userId, userItemId, habitId }) {
+    const userItem = await UserItem.findOne({
+        _id: userItemId,
+        user: userId,
+    }).populate('item');
+
+    if (!userItem) {
+        throw inventoryError(INVENTORY_ERROR_CODES.USER_ITEM_NOT_FOUND);
+    }
+
+    if (!isBoostAssetKey(userItem.item?.assetKey) || (userItem.quantity ?? 1) <= 0) {
+        throw inventoryError(INVENTORY_ERROR_CODES.BOOST_NOT_AVAILABLE);
+    }
+
+    const result = await activateHabitBoost({
+        userId,
+        item: userItem.item,
+        habitId,
+    });
+
+    userItem.quantity = Math.max(0, (userItem.quantity ?? 1) - 1);
+
+    if (userItem.quantity === 0) {
+        await UserItem.deleteOne({ _id: userItem._id, user: userId });
+    } else {
+        await userItem.save();
+    }
+
+    return {
+        ...result,
+        inventoryItemId: userItem._id.toString(),
+        quantity: userItem.quantity,
+    };
 }
 
 // Buy the consumable Streak Freeze: +1 shield (capped), repeatable.

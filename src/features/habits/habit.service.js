@@ -11,6 +11,7 @@ import {
 } from '../analytics/analytics.service.js';
 import User from '../users/user.model.js';
 import { PLAN_KEYS, getPlanForUser } from '../../config/plans.js';
+import { applyHabitBoostReward } from '../boosts/habitBoost.service.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -309,10 +310,12 @@ export async function completeHabit(habitId, userId) {
         await habit.save();
         await recordHabitCheckIn({ userId, habit, completedAt: habit.lastCompletedAt });
         await recordProgressForHabit({ userId, habitId: habit._id });
+        const boostReward = await applyHabitBoostReward({ userId, habit });
 
         return {
             habit: toHabitDto(habit),
             milestonePost: null,
+            boostReward,
         };
     }
 
@@ -335,11 +338,13 @@ export async function completeHabit(habitId, userId) {
         ? await enrichMilestonePost(milestonePost)
         : null;
     await recordProgressForHabit({ userId, habitId: habit._id });
+    const boostReward = await applyHabitBoostReward({ userId, habit });
     await creditOverallStreak(userId);
 
     return {
         habit: toHabitDto(habit),
         milestonePost: enrichedMilestonePost,
+        boostReward,
     };
 }
 
