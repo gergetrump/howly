@@ -119,8 +119,15 @@ export function HabitCard({
                             </div>
                             <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-4 text-center">
                                 <ConfirmationDialogTitle className="text-2xl font-bold tracking-tight text-center">Delete this habit?</ConfirmationDialogTitle>
-                                <ConfirmationDialogDescription className="text-base text-slate-300 text-center">
-                                    Your streak and all progress for <strong className="text-white font-semibold">{title}</strong> will be lost forever. This can't be undone.
+                                <ConfirmationDialogDescription className="text-base text-slate-300 text-center flex flex-col gap-2">
+                                    <span>
+                                        Your streak and all progress for <strong className="text-white font-semibold">{title}</strong> will be lost forever. This can't be undone.
+                                    </span>
+                                    {activeBoost && (
+                                        <span className="text-red-400 font-medium bg-red-400/10 p-2 rounded-lg mt-1 border border-red-400/20 text-sm">
+                                            Warning: You will also lose the currently active boost and it cannot be used anymore.
+                                        </span>
+                                    )}
                                 </ConfirmationDialogDescription>
                             </ConfirmationDialogHeader>
                             <ConfirmationDialogFooter className="flex-col w-full gap-3 mt-8 sm:flex-col sm:space-x-0">
