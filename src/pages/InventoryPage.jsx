@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, AlertTriangle } from 'lucide-react';
 import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
@@ -21,7 +21,7 @@ import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCatego
 import {
     getMyInventory,
     saveOutfit,
-    useInventoryItem,
+    consumeInventoryItem,
 } from '@/services/inventoryApi';
 import { getMyHabits } from '@/services/habitService';
 import { getEquippedItemConfigsFromInventory, itemMatchesCategory } from '@/lib/inventoryItems';
@@ -384,7 +384,7 @@ export function InventoryPage() {
         setBoostDialogError('');
 
         try {
-            const result = await useInventoryItem(item.userItemId, habitId);
+            const result = await consumeInventoryItem(item.userItemId, habitId);
 
             setInventory((currentInventory) => {
                 if ((result?.quantity ?? 0) <= 0) {
@@ -420,8 +420,7 @@ export function InventoryPage() {
         return (
             <ActionButton
                 type="button"
-                fullWidth
-                className="col-span-2 h-8 px-3 text-xs"
+                className="col-span-2 ml-auto h-8 w-1/2 px-3 text-xs"
                 disabled={habits.length === 0 || isUsing}
                 onClick={() => openBoostDialog(item)}
             >
@@ -559,6 +558,13 @@ export function InventoryPage() {
                 <p className="mb-6 text-center text-sm text-slate-300">
                     Choose a habit for {boostDialogItem ? getItemDisplayName(boostDialogItem) : 'this boost'}
                 </p>
+
+                <div className="mb-6 flex gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-left">
+                    <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400" />
+                    <p className="text-xs leading-relaxed text-amber-100/90">
+                        If the selected habit is deleted later on, the boost cannot be further used.
+                    </p>
+                </div>
 
                 {boostDialogError ? (
                     <p className="mb-4 rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">

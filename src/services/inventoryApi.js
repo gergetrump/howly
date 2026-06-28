@@ -18,7 +18,7 @@ export function saveOutfit(equippedUserItemIds, customizationUpdates = {}) {
     });
 }
 
-export function useInventoryItem(userItemId, habitId) {
+export function consumeInventoryItem(userItemId, habitId) {
     return apiRequest(`/inventory/${userItemId}/use`, {
         method: 'POST',
         body: JSON.stringify({ habitId }),

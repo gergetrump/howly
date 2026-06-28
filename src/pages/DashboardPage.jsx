@@ -223,6 +223,10 @@ export function DashboardPage() {
                 setUser(current => (current ? { ...current, coins: updatedHabit.boostReward.coins } : current));
             }
 
+            if (wasCompleted && updatedHabit.boostReverted?.coins !== undefined) {
+                setUser(current => (current ? { ...current, coins: updatedHabit.boostReverted.coins } : current));
+            }
+
             // A check-in can complete the day → refresh the overall streak (🔥).
             if (!wasCompleted) {
                 refreshUserStreak();
@@ -254,6 +258,10 @@ export function DashboardPage() {
 
             if (!wasCompleted && updatedHabit.boostReward?.coins !== undefined) {
                 setUser(current => (current ? { ...current, coins: updatedHabit.boostReward.coins } : current));
+            }
+
+            if (wasCompleted && updatedHabit.boostReverted?.coins !== undefined) {
+                setUser(current => (current ? { ...current, coins: updatedHabit.boostReverted.coins } : current));
             }
 
             const response = await getMyChallengeHabits();
@@ -309,6 +317,7 @@ export function DashboardPage() {
                 onUseFreeze={() => handleUseHabitFreeze(habit)}
                 onEdit={() => handleEdit(habit)}
                 onDelete={() => handleDelete(habit.id)}
+                activeBoost={habit.activeBoost}
                 onShareStory={
                     habit.isCompletedToday && !sharedHabitIds.has(habit.id)
                         ? () => setStoryHabit(habit)
