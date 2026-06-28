@@ -8,13 +8,17 @@ import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
 import { CompanionStage } from '@/components/brand';
 import { AddHabitModal } from '@/components/habits/AddHabitModal.jsx';
 import { CompanionChatPanel } from '@/components/habits/CompanionChatPanel.jsx';
+import { StreakRepairBanner } from '@/components/habits/StreakRepairBanner.jsx';
 import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
 import { NotificationBanner } from '@/components/ui/notification-banner';
 import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
+import { applyHabitStreakFreeze } from '@/services/streakFreezeApi';
+import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
 import { getMyInventory } from '@/services/inventoryApi';
 import { getMyActiveStories } from '@/services/storyApi';
-import { getCurrentUserPlan } from '@/services/userService';
 import { getMyChallengeHabits } from '@/services/challengeService';
 import { useAuth } from '@/context/authContext';
 import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
@@ -77,7 +81,7 @@ function groupHabitsByGoal(list) {
 
 export function DashboardPage() {
     const navigate = useNavigate();
-    const { user, companion } = useAuth();
+    const { user, companion, setUser } = useAuth();
     const [habits, setHabits] = useState([]);
     const [challengeHabits, setChallengeHabits] = useState([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -89,6 +93,7 @@ export function DashboardPage() {
     const [milestoneNotice, setMilestoneNotice] = useState(null);
     const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
     const [storyHabit, setStoryHabit] = useState(null);
+    const [riskConfirmHabit, setRiskConfirmHabit] = useState(null);
     const [equippedItemConfigs, setEquippedItemConfigs] = useState([]);
     const [limitPrompt, setLimitPrompt] = useState(null);
     const [planInfo, setPlanInfo] = useState(null);
@@ -176,6 +181,36 @@ export function DashboardPage() {
         return () => clearTimeout(timeout);
     }, [pendingMilestoneNotice]);
 
+    // After a check-in the day may be complete → refetch the user so the overall
+    // streak (🔥) in the header updates right away. Uses a direct fetch (not
+    // refreshUser) to avoid the full-screen loading state in ProtectedRoute.
+    async function refreshUserStreak() {
+        try {
+            const freshUser = await getCurrentUser();
+            setUser(freshUser.user ?? freshUser);
+        } catch (error) {
+            console.error('Failed to refresh overall streak:', error);
+        }
+    }
+
+    async function handleUseHabitFreeze(habit) {
+        try {
+            const result = await applyHabitStreakFreeze(habit.id);
+            setHabits(prev => prev.map(h => (h.id === habit.id ? { ...h, ...result.habit } : h)));
+            setUser(current => (current ? { ...current, streakShields: result.streakShields } : current));
+        } catch (error) {
+            console.error('Failed to use streak freeze:', error);
+        }
+    }
+
+    function handleCompletionClick(habit) {
+        if (!habit.isCompletedToday && habit.streakRepairDeadline) {
+            setRiskConfirmHabit(habit);
+            return;
+        }
+        handleHabitCompletion(habit);
+    }
+
     async function handleHabitCompletion(habit) {
         try {
             const wasCompleted = habit.isCompletedToday;
@@ -183,6 +218,11 @@ export function DashboardPage() {
                 ? await uncheckInHabit(habit.id)
                 : await checkInHabit(habit.id);
             setHabits(prev => prev.map(h => h.id === habit.id ? updatedHabit.data : h));
+
+            // A check-in can complete the day → refresh the overall streak (🔥).
+            if (!wasCompleted) {
+                refreshUserStreak();
+            }
 
             // Offer to share a story moment after checking off a habit (if none posted yet)
             if (!wasCompleted && !sharedHabitIds.has(habit.id)) {
@@ -210,6 +250,11 @@ export function DashboardPage() {
 
             const response = await getMyChallengeHabits();
             setChallengeHabits(Array.isArray(response) ? response : []);
+
+            // A check-in can complete the day → refresh the overall streak (🔥).
+            if (!wasCompleted) {
+                refreshUserStreak();
+            }
         } catch (error) {
             console.error('Failed to complete challenge habit:', error);
         }
@@ -252,6 +297,8 @@ export function DashboardPage() {
                 frequency={habit.frequency}
                 streakDays={habit.streakCount}
                 completed={habit.isCompletedToday}
+                atRisk={Boolean(habit.streakRepairDeadline)}
+                onUseFreeze={() => handleUseHabitFreeze(habit)}
                 onEdit={() => handleEdit(habit)}
                 onDelete={() => handleDelete(habit.id)}
                 onShareStory={
@@ -263,7 +310,7 @@ export function DashboardPage() {
                 {withCompletion ? (
                     <CompletionCircle
                         completed={habit.isCompletedToday}
-                        onClick={() => handleHabitCompletion(habit)}
+                        onClick={() => handleCompletionClick(habit)}
                         aria-label={`Mark ${habit.title} as completed`}
                     />
                 ) : null}
@@ -332,6 +379,8 @@ export function DashboardPage() {
                     />
                 </div>
             ) : null}
+
+            <StreakRepairBanner />
 
             <PageSection className="mt-6">
                 <DailyProgressCard completed={completedCount} total={totalCount} />
@@ -488,6 +537,47 @@ export function DashboardPage() {
                 title={limitPrompt?.title}
                 message={limitPrompt?.message}
             />
+
+            <Dialog open={Boolean(riskConfirmHabit)} onOpenChange={(open) => { if (!open) setRiskConfirmHabit(null); }}>
+                <DialogContent className="rounded-3xl border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl sm:max-w-md">
+                    <DialogHeader className="space-y-3 pt-4 text-left">
+                        <DialogTitle className="text-2xl font-bold tracking-tight">Your streak is at risk</DialogTitle>
+                        <DialogDescription className="text-base leading-relaxed text-slate-300">
+                            Completing “{riskConfirmHabit?.title}” now starts a new streak at 1. Your current {riskConfirmHabit?.streakCount}-day streak can still be saved with a freeze.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-7 flex w-full flex-col gap-3">
+                        {(user?.streakShields ?? 0) > 0 ? (
+                            <Button
+                                className="h-14 w-full rounded-full bg-amber-400 text-lg font-semibold text-amber-950 shadow-lg shadow-amber-900/20 hover:bg-amber-300"
+                                onClick={() => { const target = riskConfirmHabit; setRiskConfirmHabit(null); handleUseHabitFreeze(target); }}
+                            >
+                                Save streak
+                            </Button>
+                        ) : (
+                            <Button
+                                className="h-14 w-full rounded-full bg-amber-400 text-lg font-semibold text-amber-950 shadow-lg shadow-amber-900/20 hover:bg-amber-300"
+                                onClick={() => { setRiskConfirmHabit(null); navigate('/shop?category=powerUp'); }}
+                            >
+                                Get a freeze
+                            </Button>
+                        )}
+                        <Button
+                            className="h-14 w-full rounded-full border border-slate-700/50 bg-[#2a2746] text-lg font-semibold text-white hover:bg-[#343155] hover:text-white"
+                            onClick={() => { const target = riskConfirmHabit; setRiskConfirmHabit(null); handleHabitCompletion(target); }}
+                        >
+                            Complete & restart
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            className="h-12 w-full rounded-full text-slate-300 hover:bg-white/5 hover:text-white"
+                            onClick={() => setRiskConfirmHabit(null)}
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Page>
     );
 }

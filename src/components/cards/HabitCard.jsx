@@ -18,6 +18,7 @@ import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
+import { StreakFreezeIcon } from '@/components/brand/StreakFreezeIcon.jsx';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,8 @@ export function HabitCard({
     frequency,
     streakDays = 0,
     completed = false,
+    atRisk = false,
+    onUseFreeze,
     onEdit,
     onDelete,
     onShareStory,
@@ -37,7 +40,7 @@ export function HabitCard({
     const hasMenuActions = Boolean(onEdit || onDelete || onShareStory);
 
     return (
-        <Card className={cn(appCardClassName, completed && 'bg-emerald-400/10 ring-emerald-300/25')}>
+        <Card className={cn(appCardClassName, completed && 'bg-emerald-400/10 ring-emerald-300/25', atRisk && !completed && 'bg-amber-400/5 ring-amber-400/30')}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}>
                     <span aria-hidden="true">{emoji}</span>
@@ -52,6 +55,17 @@ export function HabitCard({
                 </div>
 
                 <div className="flex items-center gap-1">
+                    {atRisk && onUseFreeze ? (
+                        <button
+                            type="button"
+                            onClick={onUseFreeze}
+                            className="flex items-center gap-1 rounded-full bg-amber-400/15 px-3 py-1.5 text-xs font-semibold text-amber-200 ring-1 ring-amber-400/30 transition-colors hover:bg-amber-400/25"
+                            title="Use a streak freeze to save this streak"
+                        >
+                            <StreakFreezeIcon className="h-3.5 w-auto" />
+                            Save streak
+                        </button>
+                    ) : null}
                     {children}
                     {hasMenuActions ? (
                     <DropdownMenu>

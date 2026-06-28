@@ -1,0 +1,84 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ShieldAlert } from 'lucide-react';
+
+import { useAuth } from '@/context/authContext';
+import { StreakFreezeIcon } from '@/components/brand/StreakFreezeIcon.jsx';
+import { applyOverallStreakFreeze } from '@/services/streakFreezeApi';
+
+export function StreakRepairBanner() {
+    const navigate = useNavigate();
+    const { user, setUser } = useAuth();
+    const [now] = useState(() => Date.now());
+    const [isSaving, setIsSaving] = useState(false);
+
+    const deadline = user?.streakRepairDeadline ? new Date(user.streakRepairDeadline) : null;
+    const msLeft = deadline ? deadline.getTime() - now : 0;
+
+    if (!deadline || msLeft <= 0) {
+        return null;
+    }
+
+    const hoursLeft = Math.ceil(msLeft / (60 * 60 * 1000));
+    const daysLeft = Math.floor(hoursLeft / 24);
+    const timeLeft = hoursLeft >= 24
+        ? `${daysLeft} day${daysLeft === 1 ? '' : 's'}`
+        : `${hoursLeft} hour${hoursLeft === 1 ? '' : 's'}`;
+
+    const canUseFreeze = (user?.streakShields ?? 0) > 0;
+
+    async function handleUseFreeze() {
+        if (isSaving) {
+            return;
+        }
+
+        setIsSaving(true);
+
+        try {
+            const result = await applyOverallStreakFreeze();
+            setUser((current) => (current
+                ? {
+                    ...current,
+                    streak: result?.streak ?? current.streak,
+                    streakShields: result?.streakShields ?? current.streakShields,
+                    streakRepairDeadline: null,
+                }
+                : current));
+        } catch {
+            setIsSaving(false);
+        }
+    }
+
+    return (
+        <div className="mx-4 flex items-center gap-3 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3">
+            <ShieldAlert className="size-5 shrink-0 text-amber-300" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-white">Your streak is at risk!</p>
+                <p className="text-xs text-amber-200/90">
+                    {canUseFreeze
+                        ? `Use a freeze within ${timeLeft} to save it.`
+                        : `Grab a freeze within ${timeLeft} to save it.`}
+                </p>
+            </div>
+            {canUseFreeze ? (
+                <button
+                    type="button"
+                    onClick={handleUseFreeze}
+                    disabled={isSaving}
+                    className="flex shrink-0 items-center gap-1.5 rounded-full bg-amber-400 px-4 py-1.5 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-300 disabled:opacity-60"
+                >
+                    <StreakFreezeIcon className="h-4 w-auto" />
+                    {isSaving ? 'Saving…' : 'Use freeze'}
+                </button>
+            ) : (
+                <button
+                    type="button"
+                    onClick={() => navigate('/shop?category=powerUp')}
+                    className="shrink-0 rounded-full bg-amber-400 px-4 py-1.5 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-300"
+                >
+                    Get a freeze
+                </button>
+            )}
+        </div>
+    );
+}

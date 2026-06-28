@@ -20,6 +20,7 @@ import {
 } from '@/components/shop';
 import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
+import { StreakFreezeCard } from '@/components/shop/StreakFreezeCard.jsx';
 import { buyItem, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
 import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
@@ -44,6 +45,7 @@ export function ShopPage() {
     const [isPremiumDialogOpen, setIsPremiumDialogOpen] = useState(false);
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
+    const [syncedCategoryParam, setSyncedCategoryParam] = useState(null);
     const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
     const [selectedCustomItemId, setSelectedCustomItemId] = useState('');
     const [planInfo, setPlanInfo] = useState(null);
@@ -240,10 +242,26 @@ export function ShopPage() {
     const cartTotalPrice = cartItemsToBuy.reduce((total, entry) => total + (getPurchaseEntryItem(entry)?.price ?? 0), 0);
     const confirmationTotalPrice = itemsToBuy.reduce((total, entry) => total + (getPurchaseEntryItem(entry)?.price ?? 0), 0);
 
+    // Select the tab from the ?category= URL param (e.g. the dashboard banner's
+    // "Get a freeze" deep-links to ?category=powerUp). Adjusted during render — not
+    // an effect — so it also applies when navigating to an already-mounted shop.
+    const requestedCategory = searchParams.get('category');
+    if (requestedCategory !== syncedCategoryParam) {
+        setSyncedCategoryParam(requestedCategory);
+        if (requestedCategory && ITEM_CATEGORIES.some((category) => category.value === requestedCategory)) {
+            setActiveCategory(requestedCategory);
+        }
+    }
+
+    // Power-ups are consumables shown via their own card (StreakFreezeCard), not
+    // the wearable grid — keep them out.
     const filteredItems = useMemo(
-        () => activeCategory === 'all'
-            ? items
-            : items.filter((item) => itemMatchesCategory(item, activeCategory)),
+        () => {
+            const wearableItems = items.filter((item) => item.type !== 'powerUp');
+            return activeCategory === 'all'
+                ? wearableItems
+                : wearableItems.filter((item) => itemMatchesCategory(item, activeCategory));
+        },
         [activeCategory, items],
     );
     const selectedCustomItem = useMemo(() => {
@@ -602,6 +620,9 @@ export function ShopPage() {
                         openBuyConfirmation={openBuyConfirmation}
                         createPurchaseEntry={createPurchaseEntry}
                         buyingItemId={buyingItemId}
+                        leadingCard={activeCategory === 'all' || activeCategory === 'powerUp' ? (
+                            <StreakFreezeCard key="streak-freeze" />
+                        ) : null}
                         isFreeUser={isFreeUser}
                         onPremiumRequired={handlePremiumRequired}
                     />

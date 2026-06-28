@@ -16,6 +16,7 @@ export function ShopItemGrid({
     openBuyConfirmation,
     createPurchaseEntry,
     buyingItemId,
+    leadingCard = null,
     isFreeUser,
     onPremiumRequired,
 }) {
@@ -38,14 +39,15 @@ export function ShopItemGrid({
     return (
         <div className="relative rounded-2xl border border-white/10 bg-white/5 p-3 shadow-xl shadow-slate-950/20">
             <div className="h-[34rem] max-h-[34rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
-                {!isLoading && !error && items.length > 0 && filteredItems.length === 0 ? (
+                {!isLoading && !error && items.length > 0 && filteredItems.length === 0 && !leadingCard ? (
                     <div className="flex h-full items-center justify-center text-center">
                         <p className="text-sm text-slate-300">No items in this category yet</p>
                     </div>
                 ) : null}
 
-                {filteredItems.length > 0 ? (
+                {filteredItems.length > 0 || leadingCard ? (
                     <CardGrid columns={3} className="pb-8">
+                        {leadingCard}
                         {filteredItems.map((item) => {
                             return (
                                 <div key={item._id} className="h-full" data-shop-item-id={item._id}>
