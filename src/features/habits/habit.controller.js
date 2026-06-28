@@ -76,8 +76,8 @@ export const completeHabit = asyncHandler(async (req, res) => {
  * Undo completion of a habit for today.
  */
 export const uncompleteHabit = asyncHandler(async (req, res) => {
-    const habit = await habitService.uncompleteHabit(req.params.habitId, req.user.id);
-    res.status(200).json({ data: habit });
+    const { habit, boostReverted } = await habitService.uncompleteHabit(req.params.habitId, req.user.id);
+    res.status(200).json({ data: habit, boostReverted });
 });
 
 /**

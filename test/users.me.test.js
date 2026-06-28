@@ -74,7 +74,7 @@ test('GET /api/users/me/plan returns free plan details', async () => {
     assert.equal(response.body.currentPlanKey, 'free');
     assert.equal(response.body.currentPlan.limits.maxHabits, 2);
     assert.equal(response.body.currentPlan.permissions.canCreateChallenges, false);
-    assert.equal(response.body.plans.premium.limits.maxHabits, 6);
+    assert.equal(response.body.plans.premium.limits.maxHabits, 20);
 });
 
 test('GET /api/users/me/plan returns premium plan details for premium users', async () => {

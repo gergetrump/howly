@@ -152,3 +152,38 @@ export async function applyHabitBoostReward({ userId, habit }) {
         coins: freshUser.coins,
     };
 }
+
+export async function revertHabitBoostReward({ userId, habit, uncompletedAt = new Date() }) {
+    const periodKey = getCompletionPeriodKey(habit, uncompletedAt);
+
+    const boost = await HabitBoost.findOne({
+        user: userId,
+        habit: habit._id,
+        rewardedPeriodKeys: periodKey,
+    });
+
+    if (!boost) {
+        return null;
+    }
+
+    boost.rewardedPeriodKeys = boost.rewardedPeriodKeys.filter((key) => key !== periodKey);
+    boost.remainingCompletions = Math.min(
+        boost.remainingCompletions + 1,
+        BOOST_CONFIG_BY_ASSET_KEY[boost.assetKey].completions
+    );
+    boost.completedAt = null;
+
+    await Promise.all([
+        boost.save(),
+        User.findByIdAndUpdate(userId, { $inc: { coins: -boost.bonusCoins } }),
+    ]);
+
+    const freshUser = await User.findById(userId).select('coins');
+
+    return {
+        assetKey: boost.assetKey,
+        coinsReverted: boost.bonusCoins,
+        remainingCompletions: boost.remainingCompletions,
+        coins: freshUser.coins,
+    };
+}
