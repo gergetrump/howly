@@ -4,6 +4,7 @@ import { CircleHelp } from 'lucide-react';
 import { ActionButton } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { BigBoost, MediumBoost, SmallBoost } from '@/components/brand';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { getItems } from '@/services/itemApi';
 
 const BOOSTS = [
@@ -99,28 +100,34 @@ export function BoostPowerUpCards({
                 reserveBadgeSpace
                 dense
                 titleAction={(
-                    <div className="relative flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5">
                         <span className="rounded-full border border-violet-300/30 bg-violet-400/15 px-2 py-1 text-[10px] font-bold text-violet-100">
                             {boost.rewardLabel}
                         </span>
-                        <button
-                            type="button"
-                            className="grid h-6 w-6 place-items-center rounded-full border border-white/10 bg-white/10 text-slate-200 transition hover:bg-white/20 hover:text-white"
-                            aria-label={`What does ${item.name || boost.fallbackName} do?`}
-                            aria-expanded={openHelpAssetKey === boost.assetKey}
-                            onClick={() => {
-                                setOpenHelpAssetKey((currentAssetKey) => (
-                                    currentAssetKey === boost.assetKey ? '' : boost.assetKey
-                                ));
+                        <Popover
+                            open={openHelpAssetKey === boost.assetKey}
+                            onOpenChange={(isOpen) => {
+                                setOpenHelpAssetKey(isOpen ? boost.assetKey : '');
                             }}
                         >
-                            <CircleHelp className="h-3.5 w-3.5" aria-hidden="true" />
-                        </button>
-                        {openHelpAssetKey === boost.assetKey ? (
-                            <div className="absolute right-0 top-8 z-30 w-48 rounded-xl border border-violet-200/20 bg-slate-950/95 p-3 text-left text-[11px] font-semibold leading-snug text-slate-100 shadow-xl shadow-slate-950/30">
+                            <PopoverTrigger asChild>
+                                <button
+                                    type="button"
+                                    className="grid h-6 w-6 place-items-center rounded-full border border-white/10 bg-white/10 text-slate-200 transition hover:bg-white/20 hover:text-white"
+                                    aria-label={`What does ${item.name || boost.fallbackName} do?`}
+                                >
+                                    <CircleHelp className="h-3.5 w-3.5" aria-hidden="true" />
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                align="end"
+                                side="bottom"
+                                sideOffset={8}
+                                className="z-[120] w-52 rounded-xl border border-violet-200/20 bg-slate-950/95 p-3 text-left text-[11px] font-semibold leading-snug text-slate-100 shadow-xl shadow-slate-950/30"
+                            >
                                 {boost.description}
-                            </div>
-                        ) : null}
+                            </PopoverContent>
+                        </Popover>
                     </div>
                 )}
                 visual={<Visual className="h-full w-auto py-1" />}

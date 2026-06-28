@@ -34,7 +34,7 @@ export function CartDialog({
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold">Cart</DialogTitle>
                         <DialogDescription className="text-slate-300">
-                            Items you are trying on
+                            Items ready to buy
                         </DialogDescription>
                     </DialogHeader>
 
