@@ -47,7 +47,7 @@ export function UserPreviewDialog({
 
         if (relationship.status === 'friends') {
             return (
-                <Button type="button" disabled className="bg-white/10 text-slate-200 w-full">
+                <Button type="button" size="sm" disabled className="bg-white/10 text-slate-200 w-auto px-6 h-8 text-xs font-semibold rounded-full mx-auto">
                     Friends
                 </Button>
             );
@@ -55,7 +55,7 @@ export function UserPreviewDialog({
 
         if (relationship.status === 'outgoing') {
             return (
-                <Button type="button" disabled className="bg-white/10 text-slate-200 w-full">
+                <Button type="button" size="sm" disabled className="bg-white/10 text-slate-200 w-auto px-6 h-8 text-xs font-semibold rounded-full mx-auto">
                     Request sent
                 </Button>
             );
@@ -65,7 +65,8 @@ export function UserPreviewDialog({
             return (
                 <Button
                     type="button"
-                    className="bg-emerald-700 text-white hover:bg-emerald-600 w-full"
+                    size="sm"
+                    className="bg-emerald-700 text-white hover:bg-emerald-600 w-auto px-6 h-8 text-xs font-semibold rounded-full mx-auto"
                     disabled={busy}
                     onClick={() => onAcceptRequest(relationship.requestId)}
                 >
@@ -77,11 +78,12 @@ export function UserPreviewDialog({
         return (
             <Button
                 type="button"
-                className="bg-violet-500 text-white hover:bg-violet-400 w-full"
+                size="sm"
+                className="bg-violet-500 text-white hover:bg-violet-400 w-auto px-6 h-8 text-xs font-semibold rounded-full mx-auto"
                 disabled={busy}
                 onClick={() => onAddFriend(user)}
             >
-                <Plus aria-hidden="true" />
+                <Plus className="mr-1 size-3.5" aria-hidden="true" />
                 Add friend
             </Button>
         );
@@ -109,12 +111,13 @@ export function UserPreviewDialog({
                             {relationship.status === 'self' ? (
                                 <p className="rounded-full bg-white/10 px-4 py-2 text-sm text-slate-200">This is you</p>
                             ) : (
-                                <div className="flex flex-col gap-2 w-full mt-2">
+                                <div className="flex flex-col gap-2.5 w-full mt-2 items-center">
                                     {renderAction()}
                                     {isBlocked ? (
                                         <Button
                                             type="button"
-                                            className="bg-slate-700 text-white hover:bg-slate-600 w-full"
+                                            size="sm"
+                                            className="bg-slate-700 text-white hover:bg-slate-600 w-auto px-6 h-8 text-xs font-semibold rounded-full mx-auto"
                                             disabled={busy}
                                             onClick={() => onUnblock?.(user.id || user._id)}
                                         >
@@ -123,11 +126,12 @@ export function UserPreviewDialog({
                                     ) : (
                                         <Button
                                             type="button"
-                                            className="bg-red-950 text-red-200 border border-red-800/30 hover:bg-red-900/80 w-full"
+                                            size="sm"
+                                            className="bg-red-950 text-red-200 border border-red-800/30 hover:bg-red-900/80 w-auto px-6 h-8 text-xs font-semibold rounded-full mx-auto"
                                             disabled={busy}
                                             onClick={() => setIsBlockConfirmOpen(true)}
                                         >
-                                            Block User
+                                            {relationship?.status === 'friends' ? 'Block Friend' : 'Block User'}
                                         </Button>
                                     )}
                                 </div>

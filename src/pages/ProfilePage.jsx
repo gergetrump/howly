@@ -11,6 +11,7 @@ import {
     Lock,
     MessageSquare,
     Target,
+    Ban,
 } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
@@ -22,6 +23,7 @@ import {
     uploadCurrentUserProfilePicture,
     deleteCurrentUserProfilePicture,
 } from '@/services/userService';
+import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
 import { useAuth } from '@/context/authContext';
 import { createManagePremiumSession } from '@/services/paymentService';
 // TEMP: companion type tester
@@ -88,6 +90,7 @@ export function ProfilePage() {
     const [isUploadingPicture, setIsUploadingPicture] = useState(false);
     const [isDeletingPicture, setIsDeletingPicture] = useState(false);
     const [pictureError, setPictureError] = useState('');
+    const [isBlockedUsersDialogOpen, setIsBlockedUsersDialogOpen] = useState(false);
 
     // TEMP: companion type tester (remove once "companion everywhere" is verified)
     const [testType, setTestType] = useState('wolf');
@@ -346,7 +349,18 @@ export function ProfilePage() {
             </PageSection>
 
             <PageSection title="Privacy">
-                <GhostModeRow />
+                <div className="space-y-3">
+                    <GhostModeRow />
+                    <div className="overflow-hidden rounded-2xl">
+                        <SettingsRow
+                            icon={Ban}
+                            iconColor="text-red-400"
+                            title="Blocked Users"
+                            subtitle="Manage accounts you have blocked"
+                            onClick={() => setIsBlockedUsersDialogOpen(true)}
+                        />
+                    </div>
+                </div>
             </PageSection>
 
             <PageSection title="Account">
@@ -394,6 +408,11 @@ export function ProfilePage() {
                     Log out
                 </button>
             </PageSection>
+
+            <BlockedUsersDialog
+                open={isBlockedUsersDialogOpen}
+                onOpenChange={setIsBlockedUsersDialogOpen}
+            />
         </Page>
     );
 }
