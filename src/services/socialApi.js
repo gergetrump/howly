@@ -51,3 +51,19 @@ export function likeMilestone(postId) {
 export function unlikeMilestone(postId) {
     return reactToMilestone(postId, '💜');
 }
+
+export function getBlockedUsers() {
+    return apiRequest('/social/blocked');
+}
+
+export function blockUser(userId) {
+    return apiRequest(`/social/block/${userId}`, {
+        method: 'POST',
+    });
+}
+
+export function unblockUser(userId) {
+    return apiRequest(`/social/unblock/${userId}`, {
+        method: 'POST',
+    });
+}
