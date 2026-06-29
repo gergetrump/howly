@@ -14,6 +14,9 @@ import {
     rejectFriendRequest,
     reactToMilestone,
     sendFriendRequest,
+    blockUser,
+    unblockUser,
+    getBlockedUsers,
 } from '@/services/socialApi';
 import { searchUsers } from '@/services/userApi';
 import { deleteStory, getStoryLikes, toggleStoryLike } from '@/services/storyApi';
@@ -26,6 +29,7 @@ export function SocialPage() {
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState({ incoming: [], outgoing: [] });
     const [feed, setFeed] = useState([]);
+    const [blockedUsers, setBlockedUsers] = useState([]);
     const [usernameQuery, setUsernameQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -92,15 +96,17 @@ export function SocialPage() {
         }
 
         try {
-            const [friendsData, requestsData, feedData] = await Promise.all([
+            const [friendsData, requestsData, feedData, blockedData] = await Promise.all([
                 getFriends(),
                 getFriendRequests(),
                 getSocialFeed(),
+                getBlockedUsers(),
             ]);
 
             setFriends(friendsData ?? []);
             setRequests(requestsData ?? { incoming: [], outgoing: [] });
             setFeed(feedData ?? []);
+            setBlockedUsers(blockedData ?? []);
             window.dispatchEvent(new Event('howly:social-requests-updated'));
         } catch (err) {
             if (!silent) {
@@ -433,6 +439,42 @@ export function SocialPage() {
         await handleReactToMilestone(post, emoji);
     }
 
+    async function handleBlockUser(targetUserId) {
+        try {
+            setIsSubmitting(true);
+            setError('');
+            await blockUser(targetUserId);
+            const blockedData = await getBlockedUsers();
+            setBlockedUsers(blockedData ?? []);
+            void refreshSocialData({ silent: true });
+            setSelectedProfileUser(null);
+            setNotice('User blocked successfully.');
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    async function handleUnblockUser(targetUserId) {
+        try {
+            setIsSubmitting(true);
+            setError('');
+            await unblockUser(targetUserId);
+            const blockedData = await getBlockedUsers();
+            setBlockedUsers(blockedData ?? []);
+            setNotice('User unblocked successfully.');
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    const isSelectedUserBlocked = selectedProfileUser
+        ? blockedUsers.some((u) => sameId(u.id || u._id, selectedProfileUser.id || selectedProfileUser._id))
+        : false;
+
     return (
         <Page theme="forest" contentClassName="max-w-[112rem]">
             <Heading title="Social" subtitle="See what your friends are building." streakDays={user?.streak ?? 0} />
@@ -472,6 +514,7 @@ export function SocialPage() {
                     onAcceptRequest={handleAcceptRequest}
                     onRejectRequest={handleRejectRequest}
                     onDeleteFriend={handleDeleteFriend}
+                    onBlockUser={handleBlockUser}
                     onOpenProfile={setSelectedProfileUser}
                     getRelationship={getProfileRelationship}
                 />
@@ -494,9 +537,12 @@ export function SocialPage() {
                 user={selectedProfileUser}
                 relationship={getProfileRelationship(selectedProfileUser)}
                 busy={isSubmitting || busyRequestId !== null}
+                isBlocked={isSelectedUserBlocked}
                 onClose={() => setSelectedProfileUser(null)}
                 onAddFriend={handleSendProfileFriendRequest}
                 onAcceptRequest={handleAcceptProfileFriendRequest}
+                onBlock={handleBlockUser}
+                onUnblock={handleUnblockUser}
             />
         </Page>
     );
