@@ -1,6 +1,8 @@
 import User from '../users/user.model.js';
 import { toPublicUser } from '../users/user.service.js';
 import { FriendRequest, Friendship } from './social.model.js';
+import { Story, StoryLike } from '../stories/story.model.js';
+import { MilestonePost, MilestoneLike } from '../milestones/milestone.model.js';
 
 function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
@@ -47,10 +49,18 @@ export async function sendFriendRequest({ requesterId, recipientId }) {
     return { errorCode: 'FRIEND_REQUEST_TO_SELF' };
   }
 
+  const requester = await User.findById(requesterId).lean();
   const recipient = await User.findOne({ _id: recipientId, isDeleted: false }).lean();
 
   if (!recipient) {
     return { errorCode: 'FRIEND_REQUEST_RECIPIENT_NOT_FOUND' };
+  }
+
+  const recipientBlocked = requester?.blockedUsers?.some(id => sameId(id, recipientId));
+  const requesterBlocked = recipient?.blockedUsers?.some(id => sameId(id, requesterId));
+
+  if (recipientBlocked || requesterBlocked) {
+    return { errorCode: 'USER_BLOCKED' };
   }
 
   if (await areFriends(requesterId, recipientId)) {
@@ -178,4 +188,126 @@ export async function deleteFriend({ friendshipId, userId }) {
   }
 
   return { friendship: toFriendshipResponse(friendship, userId) };
+}
+
+export async function blockUser({ userId, targetUserId }) {
+  if (sameId(userId, targetUserId)) {
+    return { errorCode: 'CANNOT_BLOCK_SELF' };
+  }
+
+  const targetUser = await User.findOne({ _id: targetUserId, isDeleted: false });
+  if (!targetUser) {
+    return { errorCode: 'USER_NOT_FOUND' };
+  }
+
+  // Add targetUserId to current user's blockedUsers
+  await User.updateOne(
+    { _id: userId },
+    { $addToSet: { blockedUsers: targetUserId } }
+  );
+
+  // Sever friendship
+  const pair = buildFriendshipPair(userId, targetUserId);
+  await Friendship.deleteOne(pair);
+
+  // Delete pending/accepted friend requests
+  await FriendRequest.deleteMany({
+    $or: [
+      { requester: userId, recipient: targetUserId },
+      { requester: targetUserId, recipient: userId }
+    ]
+  });
+
+  // Delete likes and reactions on each other's posts
+  const [myStories, targetStories, myMilestones, targetMilestones] = await Promise.all([
+    Story.find({ user: userId }, '_id').lean(),
+    Story.find({ user: targetUserId }, '_id').lean(),
+    MilestonePost.find({ user: userId }, '_id').lean(),
+    MilestonePost.find({ user: targetUserId }, '_id').lean(),
+  ]);
+
+  const myStoryIds = myStories.map((s) => s._id);
+  const targetStoryIds = targetStories.map((s) => s._id);
+  const myMilestoneIds = myMilestones.map((m) => m._id);
+  const targetMilestoneIds = targetMilestones.map((m) => m._id);
+
+  // Deletions
+  await Promise.all([
+    // StoryLikes
+    StoryLike.deleteMany({
+      $or: [
+        { story: { $in: myStoryIds }, user: targetUserId },
+        { story: { $in: targetStoryIds }, user: userId }
+      ]
+    }),
+    // MilestoneLikes
+    MilestoneLike.deleteMany({
+      $or: [
+        { milestonePost: { $in: myMilestoneIds }, user: targetUserId },
+        { milestonePost: { $in: targetMilestoneIds }, user: userId }
+      ]
+    })
+  ]);
+
+  // Recalculate likeCount for affected stories
+  const affectedStoryIds = [...myStoryIds, ...targetStoryIds];
+  if (affectedStoryIds.length > 0) {
+    const updatedStoryLikes = await StoryLike.aggregate([
+      { $match: { story: { $in: affectedStoryIds } } },
+      { $group: { _id: '$story', count: { $sum: 1 } } }
+    ]);
+    const likesMap = new Map(updatedStoryLikes.map((group) => [group._id.toString(), group.count]));
+
+    await Promise.all(
+      affectedStoryIds.map((storyId) => {
+        const count = likesMap.get(storyId.toString()) || 0;
+        return Story.updateOne({ _id: storyId }, { $set: { likeCount: count } });
+      })
+    );
+  }
+
+  // Recalculate likeCount for affected milestones
+  const affectedMilestoneIds = [...myMilestoneIds, ...targetMilestoneIds];
+  if (affectedMilestoneIds.length > 0) {
+    const updatedMilestoneLikes = await MilestoneLike.aggregate([
+      { $match: { milestonePost: { $in: affectedMilestoneIds } } },
+      { $group: { _id: '$milestonePost', count: { $sum: 1 } } }
+    ]);
+    const reactionsMap = new Map(updatedMilestoneLikes.map((group) => [group._id.toString(), group.count]));
+
+    await Promise.all(
+      affectedMilestoneIds.map((milestoneId) => {
+        const count = reactionsMap.get(milestoneId.toString()) || 0;
+        return MilestonePost.updateOne({ _id: milestoneId }, { $set: { likeCount: count } });
+      })
+    );
+  }
+
+  return { blocked: true };
+}
+
+export async function unblockUser({ userId, targetUserId }) {
+  await User.updateOne(
+    { _id: userId },
+    { $pull: { blockedUsers: targetUserId } }
+  );
+
+  return { unblocked: true };
+}
+
+export async function listBlockedUsers({ userId }) {
+  const user = await User.findById(userId).populate('blockedUsers').lean();
+  const blockedList = user?.blockedUsers || [];
+  return blockedList.map(toPublicUser).filter(Boolean);
+}
+
+export async function getBlockedUserIds(userId) {
+  if (!userId) return new Set();
+  const user = await User.findById(userId).select('blockedUsers').lean();
+  const blockedByMe = user?.blockedUsers || [];
+  const blockedMe = await User.find({ blockedUsers: userId }, '_id').lean();
+  return new Set([
+    ...blockedByMe.map((id) => id.toString()),
+    ...blockedMe.map((id) => id._id.toString()),
+  ]);
 }

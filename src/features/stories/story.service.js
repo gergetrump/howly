@@ -7,6 +7,7 @@ import {
   STORY_ARCHIVE_DAYS,
 } from './story.model.js';
 import { Friendship } from '../social/social.model.js';
+import { getBlockedUserIds } from '../social/social.service.js';
 import { MilestonePost } from '../milestones/milestone.model.js';
 import Habit from '../habits/habit.model.js';
 import Challenge from '../challenges/challenge.model.js';
@@ -165,7 +166,25 @@ export async function getFriendFeedStories({ userId }) {
   }).lean();
   const likedStoryIds = new Set(likes.map((like) => like.story.toString()));
 
-  return stories.map((story) => toStoryResponse(story, likedStoryIds));
+  const blockedSet = await getBlockedUserIds(userId);
+  const storyIds = stories.map((s) => s._id);
+  const likesQuery = { story: { $in: storyIds } };
+  if (blockedSet.size > 0) {
+    likesQuery.user = { $nin: [...blockedSet].map((id) => new mongoose.Types.ObjectId(id)) };
+  }
+  const allLikes = await StoryLike.find(likesQuery).lean();
+
+  const likeCountsByStory = new Map();
+  allLikes.forEach((like) => {
+    const sId = like.story.toString();
+    likeCountsByStory.set(sId, (likeCountsByStory.get(sId) || 0) + 1);
+  });
+
+  return stories.map((story) => {
+    const res = toStoryResponse(story, likedStoryIds);
+    res.likeCount = likeCountsByStory.get(story._id.toString()) || 0;
+    return res;
+  });
 }
 
 // Own stories still visible in the feed
@@ -248,7 +267,13 @@ export async function getStoryLikes({ userId, storyId }) {
     .sort({ createdAt: -1 })
     .lean();
 
-  return { likers: likes.map((like) => toPublicUser(like.user)).filter(Boolean) };
+  const blockedSet = await getBlockedUserIds(userId);
+  const filteredLikes = likes.filter((like) => {
+    const likerId = like.user?._id?.toString() || like.user?.toString();
+    return !blockedSet.has(likerId);
+  });
+
+  return { likers: filteredLikes.map((like) => toPublicUser(like.user)).filter(Boolean) };
 }
 
 export async function deleteStory({ userId, storyId }) {

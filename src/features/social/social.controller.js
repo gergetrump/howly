@@ -36,6 +36,10 @@ export async function sendFriendRequest(req, res) {
     recipientId,
   });
 
+  if (errorCode === 'USER_BLOCKED') {
+    return notFound(res, 'User not found');
+  }
+
   if (errorCode) {
     return badRequest(res, 'Friend request could not be sent', errorCode);
   }
@@ -110,4 +114,35 @@ export async function deleteFriend(req, res) {
   }
 
   return res.status(204).send();
+}
+
+export async function blockUser(req, res) {
+  const { blocked, errorCode } = await socialService.blockUser({
+    userId: req.user.id,
+    targetUserId: req.params.userId,
+  });
+
+  if (errorCode === 'USER_NOT_FOUND') {
+    return notFound(res, 'User not found');
+  }
+
+  if (errorCode) {
+    return badRequest(res, 'Could not block user', errorCode);
+  }
+
+  return res.status(200).json({ blocked });
+}
+
+export async function unblockUser(req, res) {
+  const { unblocked } = await socialService.unblockUser({
+    userId: req.user.id,
+    targetUserId: req.params.userId,
+  });
+
+  return res.status(200).json({ unblocked });
+}
+
+export async function listBlockedUsers(req, res) {
+  const blockedUsers = await socialService.listBlockedUsers({ userId: req.user.id });
+  return res.status(200).json(blockedUsers);
 }
