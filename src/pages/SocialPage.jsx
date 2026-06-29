@@ -491,6 +491,7 @@ export function SocialPage() {
                     onOpenStoryLikes={handleOpenStoryLikes}
                     onDeleteStory={handleDeleteStory}
                     onOpenProfile={setSelectedProfileUser}
+                    blockedUsers={blockedUsers}
                 />
 
                 <FriendsPanel

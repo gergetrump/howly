@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Trash2, MessageCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PostAuthorAvatar } from '@/components/cards/FeedPostCard';
@@ -113,6 +113,7 @@ export function StoryFeedCard({
     onDelete,
     onOpenLikes,
     onOpenProfile,
+    blockedUsers = [],
     children,
 }) {
     const [likers, setLikers] = useState([]);
@@ -124,6 +125,22 @@ export function StoryFeedCard({
     const [isCommentsOpen, setIsCommentsOpen] = useState(false);
     const [error, setError] = useState('');
     const displayName = isOwn ? 'You' : authorName;
+
+    const blockedUserIds = useMemo(() => new Set(blockedUsers.map((u) => (u.id || u._id || u).toString())), [blockedUsers]);
+
+    const visibleComments = useMemo(() => {
+        return comments.filter((c) => {
+            const commenterId = (c.user?.id || c.user?._id || c.user || '').toString();
+            return !blockedUserIds.has(commenterId);
+        });
+    }, [comments, blockedUserIds]);
+
+    const visibleLikers = useMemo(() => {
+        return likers.filter((u) => {
+            const likerId = (u.id || u._id || u || '').toString();
+            return !blockedUserIds.has(likerId);
+        });
+    }, [likers, blockedUserIds]);
 
     // Sync story prop changes to localStory state
     useEffect(() => {
@@ -154,7 +171,7 @@ export function StoryFeedCard({
     }, [story.id, story.likeCount]);
 
     useEffect(() => {
-        const shouldLoadComments = isCommentsOpen || story.commentCount > 0 || localStory.commentCount > 0;
+        const shouldLoadComments = isCommentsOpen || story.commentCount > 0;
 
         if (!shouldLoadComments) {
             setComments([]);
@@ -162,7 +179,9 @@ export function StoryFeedCard({
         }
 
         let isCurrent = true;
-        setIsLoadingComments(true);
+        if (comments.length === 0) {
+            setIsLoadingComments(true);
+        }
 
         getStoryComments(story.id)
             .then((res) => {
@@ -180,7 +199,7 @@ export function StoryFeedCard({
         return () => {
             isCurrent = false;
         };
-    }, [story.id, isCommentsOpen]);
+    }, [story.id, story.commentCount, isCommentsOpen]);
 
     async function handleDelete() {
         try {
@@ -266,10 +285,10 @@ export function StoryFeedCard({
                             <button
                                 type="button"
                                 className={`min-w-0 truncate text-left transition ${localStory.likeCount ? 'hover:text-white' : 'cursor-default'}`}
-                                onClick={() => localStory.likeCount && onOpenLikes?.(localStory, likers)}
+                                onClick={() => localStory.likeCount && onOpenLikes?.(localStory, visibleLikers)}
                                 disabled={!localStory.likeCount}
                             >
-                                {buildSocialSummary(likers, comments, localStory.likeCount, localStory.commentCount)}
+                                {buildSocialSummary(visibleLikers, visibleComments, localStory.likeCount, localStory.commentCount)}
                             </button>
                         </div>
                     ) : null}
@@ -280,10 +299,10 @@ export function StoryFeedCard({
                             story={localStory}
                             currentUserId={currentUserId}
                             isStoryOwner={isOwn}
-                            comments={comments}
+                            comments={visibleComments}
                             setComments={setComments}
                             isLoading={isLoadingComments}
-                            likers={likers}
+                            likers={visibleLikers}
                             onOpenProfile={onOpenProfile}
                             onCommentAdded={() => setLocalStory(prev => ({ ...prev, commentCount: (prev.commentCount || 0) + 1 }))}
                             onCommentDeleted={(count) => setLocalStory(prev => ({ ...prev, commentCount: Math.max(0, (prev.commentCount || 0) - (count || 1)) }))}
