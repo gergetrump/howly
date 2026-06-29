@@ -182,12 +182,12 @@ export function FriendsPanel({
                     </button>
                     <button
                         type="button"
-                        className={`flex items-center gap-2 rounded-md px-3 py-2 font-medium transition ${activePanel === 'requests' ? 'bg-white text-slate-950' : 'hover:bg-white/10 hover:text-white'}`}
+                        className={`relative rounded-md px-3 py-2 font-medium transition ${activePanel === 'requests' ? 'bg-white text-slate-950' : 'hover:bg-white/10 hover:text-white'}`}
                         onClick={() => onActivePanelChange('requests')}
                     >
                         Friend Requests
                         {pendingFriendRequestCount > 0 ? (
-                            <span className="flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold leading-5 text-white">
+                            <span className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white border border-[#24213d] shadow-sm">
                                 {pendingFriendRequestCount}
                             </span>
                         ) : null}
