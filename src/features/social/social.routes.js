@@ -10,6 +10,7 @@ import {
   blockUser,
   unblockUser,
   listBlockedUsers,
+  listBlockers,
 } from './social.controller.js';
 
 const router = Router();
@@ -24,6 +25,7 @@ router.post('/friends/requests/:requestId/accept', acceptFriendRequest);
 router.post('/friends/requests/:requestId/reject', rejectFriendRequest);
 
 router.get('/blocked', listBlockedUsers);
+router.get('/blockers', listBlockers);
 router.post('/block/:userId', blockUser);
 router.post('/unblock/:userId', unblockUser);
 

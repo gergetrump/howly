@@ -79,6 +79,24 @@ export async function searchUsers(req, res) {
     return res.status(200).json(users);
 }
 
+export async function getUserByUsername(req, res) {
+    const { username } = req.params;
+    const { user, errorCode } = await userService.getUserByUsername({
+        username,
+        currentUserId: req.user.id,
+    });
+
+    if (errorCode === 'USER_NOT_FOUND') {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (errorCode === 'BLOCKED') {
+        return res.status(403).json({ message: 'Profile unavailable', errorCode: 'BLOCKED' });
+    }
+
+    return res.status(200).json(user);
+}
+
 // Update allowed fields for the authenticated user.
 export async function updateCurrentUser(req, res) {
     const { error: idError } = validateUserId(req.user?.id);

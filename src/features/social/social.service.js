@@ -344,3 +344,8 @@ export async function getBlockedUserIds(userId) {
     ...blockedMe.map((id) => id._id.toString()),
   ]);
 }
+
+export async function getUsernamesWhoBlockedMe(userId) {
+  const blockers = await User.find({ blockedUsers: userId }, 'username').lean();
+  return blockers.map((u) => (u.username || '').toLowerCase());
+}

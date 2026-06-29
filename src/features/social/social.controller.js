@@ -146,3 +146,8 @@ export async function listBlockedUsers(req, res) {
   const blockedUsers = await socialService.listBlockedUsers({ userId: req.user.id });
   return res.status(200).json(blockedUsers);
 }
+
+export async function listBlockers(req, res) {
+  const blockerUsernames = await socialService.getUsernamesWhoBlockedMe(req.user.id);
+  return res.status(200).json(blockerUsernames);
+}

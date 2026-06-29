@@ -49,6 +49,22 @@ export async function searchUsersByUsername({ query, currentUserId, limit = 10 }
     return users.map(toPublicUser);
 }
 
+export async function getUserByUsername({ username, currentUserId }) {
+    const targetUser = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') }, isDeleted: false });
+    if (!targetUser) {
+        return { errorCode: 'USER_NOT_FOUND' };
+    }
+
+    const currentUser = await User.findById(currentUserId).select('blockedUsers').lean();
+    const blockedByMe = currentUser?.blockedUsers?.some(id => id.toString() === targetUser._id.toString());
+    const hasBlockedMe = targetUser.blockedUsers?.some(id => id.toString() === currentUserId.toString());
+    if (blockedByMe || hasBlockedMe) {
+        return { errorCode: 'BLOCKED' };
+    }
+
+    return { user: toPublicUser(targetUser) };
+}
+
 // Update a user by id while enforcing unique username/email
 export async function updateUserById(userId, updates) {
     if (updates.email) {
