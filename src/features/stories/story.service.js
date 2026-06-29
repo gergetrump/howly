@@ -301,8 +301,7 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
     parentComment: finalParentId,
   });
 
-  story.commentCount += 1;
-  await story.save();
+  await Story.updateOne({ _id: storyId }, { $inc: { commentCount: 1 } });
 
   await comment.populate('user');
 
@@ -336,7 +335,7 @@ export async function deleteStoryComment({ userId, storyId, commentId }) {
   }
 
   const story = await Story.findById(storyId);
-  if (!story) {
+  if (!story || story.feedExpiresAt <= new Date()) {
     return { errorCode: 'STORY_NOT_FOUND' };
   }
 
@@ -347,18 +346,15 @@ export async function deleteStoryComment({ userId, storyId, commentId }) {
     return { errorCode: 'COMMENT_NOT_FOUND' };
   }
 
-  let deletedCount = 1;
-
   // If this is a parent comment, delete all its replies as well
   if (!comment.parentComment) {
-    const replies = await StoryComment.find({ parentComment: comment._id });
-    deletedCount += replies.length;
     await StoryComment.deleteMany({ parentComment: comment._id });
   }
 
   await comment.deleteOne();
 
-  await Story.updateOne({ _id: storyId }, { $inc: { commentCount: -deletedCount } });
+  const remainingCommentCount = await StoryComment.countDocuments({ story: storyId });
+  await Story.updateOne({ _id: storyId }, { commentCount: remainingCommentCount });
 
   return { deleted: true };
 }

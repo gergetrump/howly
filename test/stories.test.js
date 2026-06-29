@@ -437,6 +437,45 @@ test('a user can comment on their own story and see the comment list', async () 
   assert.equal(getResponse.body[0].content, 'Nice story!');
 });
 
+test('parallel comments keep story commentCount accurate', async () => {
+  const owner = await buildUser();
+  const firstFriend = await buildUser();
+  const secondFriend = await buildUser();
+  await makeFriends(owner, firstFriend);
+  await makeFriends(owner, secondFriend);
+
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  await Promise.all([
+    request(app)
+      .post(`/api/stories/${story._id}/comments`)
+      .set('Authorization', authHeader(owner))
+      .send({ content: 'Owner comment' })
+      .expect(201),
+    request(app)
+      .post(`/api/stories/${story._id}/comments`)
+      .set('Authorization', authHeader(firstFriend))
+      .send({ content: 'First friend comment' })
+      .expect(201),
+    request(app)
+      .post(`/api/stories/${story._id}/comments`)
+      .set('Authorization', authHeader(secondFriend))
+      .send({ content: 'Second friend comment' })
+      .expect(201),
+  ]);
+
+  const updatedStory = await Story.findById(story._id).lean();
+  assert.equal(updatedStory.commentCount, 3);
+
+  const getResponse = await request(app)
+    .get(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(getResponse.body.length, 3);
+});
+
 test('a friend can comment on a story and delete their comment', async () => {
   const owner = await buildUser();
   const friend = await buildUser();

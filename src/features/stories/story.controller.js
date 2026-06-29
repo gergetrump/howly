@@ -1,5 +1,5 @@
 import * as storyService from './story.service.js';
-import { validateCreateStoryInput, validateStoryId } from './story.validation.js';
+import { validateCommentInput, validateCreateStoryInput, validateStoryId } from './story.validation.js';
 
 const badRequest = (res, message, code) => {
   const body = { message };
@@ -127,7 +127,7 @@ export async function addStoryComment(req, res) {
     return badRequest(res, idError);
   }
 
-  const { error: validationError, value } = await import('./story.validation.js').then(m => m.validateCommentInput(req.body));
+  const { error: validationError, value } = validateCommentInput(req.body);
 
   if (validationError) {
     return badRequest(res, validationError);
@@ -185,6 +185,10 @@ export async function deleteStoryComment(req, res) {
     storyId: req.params.storyId,
     commentId: req.params.commentId,
   });
+
+  if (errorCode === 'STORY_NOT_FOUND') {
+    return notFound(res);
+  }
 
   if (errorCode === 'COMMENT_NOT_FOUND') {
     return notFound(res, 'Comment not found or not yours');
