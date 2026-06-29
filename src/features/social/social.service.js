@@ -47,10 +47,18 @@ export async function sendFriendRequest({ requesterId, recipientId }) {
     return { errorCode: 'FRIEND_REQUEST_TO_SELF' };
   }
 
+  const requester = await User.findById(requesterId).lean();
   const recipient = await User.findOne({ _id: recipientId, isDeleted: false }).lean();
 
   if (!recipient) {
     return { errorCode: 'FRIEND_REQUEST_RECIPIENT_NOT_FOUND' };
+  }
+
+  const recipientBlocked = requester?.blockedUsers?.some(id => sameId(id, recipientId));
+  const requesterBlocked = recipient?.blockedUsers?.some(id => sameId(id, requesterId));
+
+  if (recipientBlocked || requesterBlocked) {
+    return { errorCode: 'USER_BLOCKED' };
   }
 
   if (await areFriends(requesterId, recipientId)) {
@@ -178,4 +186,50 @@ export async function deleteFriend({ friendshipId, userId }) {
   }
 
   return { friendship: toFriendshipResponse(friendship, userId) };
+}
+
+export async function blockUser({ userId, targetUserId }) {
+  if (sameId(userId, targetUserId)) {
+    return { errorCode: 'CANNOT_BLOCK_SELF' };
+  }
+
+  const targetUser = await User.findOne({ _id: targetUserId, isDeleted: false });
+  if (!targetUser) {
+    return { errorCode: 'USER_NOT_FOUND' };
+  }
+
+  // Add targetUserId to current user's blockedUsers
+  await User.updateOne(
+    { _id: userId },
+    { $addToSet: { blockedUsers: targetUserId } }
+  );
+
+  // Sever friendship
+  const pair = buildFriendshipPair(userId, targetUserId);
+  await Friendship.deleteOne(pair);
+
+  // Delete pending/accepted friend requests
+  await FriendRequest.deleteMany({
+    $or: [
+      { requester: userId, recipient: targetUserId },
+      { requester: targetUserId, recipient: userId }
+    ]
+  });
+
+  return { blocked: true };
+}
+
+export async function unblockUser({ userId, targetUserId }) {
+  await User.updateOne(
+    { _id: userId },
+    { $pull: { blockedUsers: targetUserId } }
+  );
+
+  return { unblocked: true };
+}
+
+export async function listBlockedUsers({ userId }) {
+  const user = await User.findById(userId).populate('blockedUsers').lean();
+  const blockedList = user?.blockedUsers || [];
+  return blockedList.map(toPublicUser).filter(Boolean);
 }

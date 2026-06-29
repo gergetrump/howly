@@ -29,8 +29,17 @@ export async function listDevUsers() {
 
 export async function searchUsersByUsername({ query, currentUserId, limit = 10 }) {
     const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
+    // Find current user's blocked users
+    const currentUser = await User.findById(currentUserId).lean();
+    const blockedUserIds = currentUser?.blockedUsers || [];
+    
+    // Find users who have blocked the current user
+    const usersWhoBlockedMe = await User.find({ blockedUsers: currentUserId }, '_id').lean();
+    const excludeUserIds = [...blockedUserIds, ...usersWhoBlockedMe.map(u => u._id), currentUserId];
+
     const users = await User.find({
-        _id: { $ne: currentUserId },
+        _id: { $nin: excludeUserIds },
         isDeleted: false,
         username: { $regex: escapedQuery, $options: 'i' },
     })
