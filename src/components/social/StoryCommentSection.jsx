@@ -2,7 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, Trash2 } from 'lucide-react';
 import { postStoryComment, deleteStoryComment } from '@/services/storyApi';
 import { getUserByUsername } from '@/services/userApi';
-import { formatRelativeTime } from '@/components/social/socialHelpers';
+import {
+    formatRelativeTime,
+    getNormalizedUsername,
+    isBlockedByRelationship,
+} from '@/components/social/socialHelpers';
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -158,11 +162,8 @@ export function StoryCommentSection({
     const getRepliesFor = (parentId) => comments.filter((c) => c.parentComment === parentId);
 
     function isBlockedMention(username) {
-        const normalizedUsername = username.toLowerCase();
-        const blockedByMe = blockedUsers.some((user) => (user?.username || '').toLowerCase() === normalizedUsername);
-        const hasBlockedMe = blockers.some((blockerUsername) => (blockerUsername || '').toLowerCase() === normalizedUsername);
-
-        return blockedByMe || hasBlockedMe;
+        const normalizedUsername = getNormalizedUsername(username);
+        return isBlockedByRelationship({ username: normalizedUsername }, blockedUsers, blockers);
     }
 
     async function handleUsernameClick(username) {

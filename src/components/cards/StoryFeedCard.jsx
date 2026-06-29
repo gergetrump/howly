@@ -5,6 +5,7 @@ import { PostAuthorAvatar } from '@/components/cards/FeedPostCard';
 import { appCardClassName } from '@/components/cards/cardStyles';
 import { getStoryLikes, getStoryComments } from '@/services/storyApi';
 import { StoryCommentSection } from '@/components/social/StoryCommentSection';
+import { isBlockedByRelationship } from '@/components/social/socialHelpers';
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -127,21 +128,13 @@ export function StoryFeedCard({
     const [error, setError] = useState('');
     const displayName = isOwn ? 'You' : authorName;
 
-    const blockedUserIds = useMemo(() => new Set(blockedUsers.map((u) => (u.id || u._id || u).toString())), [blockedUsers]);
-
     const visibleComments = useMemo(() => {
-        return comments.filter((c) => {
-            const commenterId = (c.user?.id || c.user?._id || c.user || '').toString();
-            return !blockedUserIds.has(commenterId);
-        });
-    }, [comments, blockedUserIds]);
+        return comments.filter((c) => !isBlockedByRelationship(c.user, blockedUsers, blockers));
+    }, [comments, blockedUsers, blockers]);
 
     const visibleLikers = useMemo(() => {
-        return likers.filter((u) => {
-            const likerId = (u.id || u._id || u || '').toString();
-            return !blockedUserIds.has(likerId);
-        });
-    }, [likers, blockedUserIds]);
+        return likers.filter((u) => !isBlockedByRelationship(u, blockedUsers, blockers));
+    }, [likers, blockedUsers, blockers]);
 
     // Sync story prop changes to localStory state
     useEffect(() => {

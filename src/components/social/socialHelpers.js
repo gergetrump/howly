@@ -10,6 +10,36 @@ export function sameId(firstId, secondId) {
     return firstId?.toString?.() === secondId?.toString?.();
 }
 
+export function getUserId(user) {
+    return (user?.id || user?._id || user || '').toString();
+}
+
+export function getNormalizedUsername(userOrUsername) {
+    if (typeof userOrUsername === 'string') {
+        return userOrUsername.toLowerCase();
+    }
+
+    return (userOrUsername?.username || '').toLowerCase();
+}
+
+export function isBlockedByRelationship(user, blockedUsers = [], blockers = []) {
+    const userId = getUserId(user);
+    const username = getNormalizedUsername(user);
+
+    const blockedByMe = blockedUsers.some((blockedUser) => {
+        const blockedId = getUserId(blockedUser);
+        return (userId && blockedId === userId)
+            || (username && getNormalizedUsername(blockedUser) === username);
+    });
+    const hasBlockedMe = blockers.some((blocker) => {
+        const blockerId = getUserId(blocker);
+        return (userId && blockerId === userId)
+            || (username && getNormalizedUsername(blocker) === username);
+    });
+
+    return blockedByMe || hasBlockedMe;
+}
+
 export function buildMilestoneTitle(post) {
     const habitTitle = post?.habit?.title || 'Habit';
     const habitFrequency = post?.habit?.frequency || 'Habit';

@@ -4,7 +4,12 @@ import { FriendsPanel } from '@/components/social/FriendsPanel.jsx';
 import { ReactionUsersDialog } from '@/components/social/ReactionUsersDialog.jsx';
 import { SocialFeed } from '@/components/social/SocialFeed.jsx';
 import { UserPreviewDialog } from '@/components/social/UserPreviewDialog.jsx';
-import { getSocialErrorMessage, getDisplayName, sameId } from '@/components/social/socialHelpers.js';
+import {
+    getSocialErrorMessage,
+    getDisplayName,
+    isBlockedByRelationship,
+    sameId,
+} from '@/components/social/socialHelpers.js';
 import {
     acceptFriendRequest,
     deleteFriend,
@@ -476,7 +481,7 @@ export function SocialPage() {
     }
 
     const isSelectedUserBlocked = selectedProfileUser
-        ? blockedUsers.some((u) => sameId(u.id || u._id, selectedProfileUser.id || selectedProfileUser._id))
+        ? isBlockedByRelationship(selectedProfileUser, blockedUsers, blockers)
         : false;
 
     return (
