@@ -448,6 +448,7 @@ export function SocialPage() {
                     onToggleStoryLike={handleToggleStoryLike}
                     onOpenStoryLikes={handleOpenStoryLikes}
                     onDeleteStory={handleDeleteStory}
+                    onOpenProfile={setSelectedProfileUser}
                 />
 
                 <FriendsPanel

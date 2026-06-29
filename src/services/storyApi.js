@@ -41,11 +41,11 @@ export function getStoryComments(storyId) {
     return apiRequest(`/stories/${storyId}/comments`);
 }
 
-export function postStoryComment(storyId, content) {
+export function postStoryComment(storyId, content, parentCommentId = null) {
     return apiRequest(`/stories/${storyId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, parentCommentId }),
     });
 }
 
