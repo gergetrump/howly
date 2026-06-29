@@ -329,9 +329,21 @@ export async function getStoryComments({ userId, storyId }) {
 }
 
 export async function deleteStoryComment({ userId, storyId, commentId }) {
-  const comment = await StoryComment.findOne({ _id: commentId, story: storyId, user: userId });
+  const comment = await StoryComment.findOne({ _id: commentId, story: storyId });
 
   if (!comment) {
+    return { errorCode: 'COMMENT_NOT_FOUND' };
+  }
+
+  const story = await Story.findById(storyId);
+  if (!story) {
+    return { errorCode: 'STORY_NOT_FOUND' };
+  }
+
+  const isCommentAuthor = sameId(comment.user, userId);
+  const isStoryOwner = sameId(story.user, userId);
+
+  if (!isCommentAuthor && !isStoryOwner) {
     return { errorCode: 'COMMENT_NOT_FOUND' };
   }
 

@@ -453,16 +453,18 @@ test('a friend can comment on a story and delete their comment', async () => {
 
   const commentId = commentResponse.body.id;
 
-  // another user (owner) cannot delete friend's comment
+  const stranger = await buildUser();
+
+  // another user (stranger) cannot delete friend's comment
+  await request(app)
+    .delete(`/api/stories/${story._id}/comments/${commentId}`)
+    .set('Authorization', authHeader(stranger))
+    .expect(404);
+
+  // story owner can delete friend's comment
   await request(app)
     .delete(`/api/stories/${story._id}/comments/${commentId}`)
     .set('Authorization', authHeader(owner))
-    .expect(404);
-
-  // friend can delete their own comment
-  await request(app)
-    .delete(`/api/stories/${story._id}/comments/${commentId}`)
-    .set('Authorization', authHeader(friend))
     .expect(204);
 
   const getResponse = await request(app)
