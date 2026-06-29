@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import {
   Story,
   StoryLike,
+  StoryComment,
   STORY_FEED_VISIBLE_HOURS,
   STORY_ARCHIVE_DAYS,
 } from './story.model.js';
@@ -42,9 +43,20 @@ export function toStoryResponse(story, likedStoryIds = new Set()) {
     feedExpiresAt: story.feedExpiresAt,
     archiveExpiresAt: story.archiveExpiresAt,
     likeCount: story.likeCount,
+    commentCount: story.commentCount,
     likedByCurrentUser: likedStoryIds.has(story._id.toString()),
     createdAt: story.createdAt,
     updatedAt: story.updatedAt,
+  };
+}
+
+export function toStoryCommentResponse(comment) {
+  return {
+    id: comment._id.toString(),
+    user: toPublicUser(comment.user),
+    content: comment.content,
+    createdAt: comment.createdAt,
+    updatedAt: comment.updatedAt,
   };
 }
 
@@ -253,7 +265,66 @@ export async function deleteStory({ userId, storyId }) {
   }
 
   await StoryLike.deleteMany({ story: story._id });
+  await StoryComment.deleteMany({ story: story._id });
   await story.deleteOne();
+
+  return { deleted: true };
+}
+
+export async function addStoryComment({ userId, storyId, content }) {
+  const story = await Story.findById(storyId);
+
+  if (!story || story.feedExpiresAt <= new Date()) {
+    return { errorCode: 'STORY_NOT_FOUND' };
+  }
+
+  if (!sameId(story.user, userId) && !(await areFriends(userId, story.user))) {
+    return { errorCode: 'STORY_NOT_FOUND' };
+  }
+
+  const comment = await StoryComment.create({
+    user: userId,
+    story: storyId,
+    content,
+  });
+
+  story.commentCount += 1;
+  await story.save();
+
+  await comment.populate('user');
+
+  return { comment: toStoryCommentResponse(comment) };
+}
+
+export async function getStoryComments({ userId, storyId }) {
+  const story = await Story.findById(storyId).lean();
+
+  if (
+    !story
+    || story.feedExpiresAt <= new Date()
+    || (!sameId(story.user, userId) && !(await areFriends(userId, story.user)))
+  ) {
+    return { errorCode: 'STORY_NOT_FOUND' };
+  }
+
+  const comments = await StoryComment.find({ story: storyId })
+    .populate('user')
+    .sort({ createdAt: 1 })
+    .lean();
+
+  return { comments: comments.map(toStoryCommentResponse) };
+}
+
+export async function deleteStoryComment({ userId, storyId, commentId }) {
+  const comment = await StoryComment.findOne({ _id: commentId, story: storyId, user: userId });
+
+  if (!comment) {
+    return { errorCode: 'COMMENT_NOT_FOUND' };
+  }
+
+  await comment.deleteOne();
+
+  await Story.updateOne({ _id: storyId }, { $inc: { commentCount: -1 } });
 
   return { deleted: true };
 }

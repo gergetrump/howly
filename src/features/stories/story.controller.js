@@ -118,3 +118,72 @@ export async function deleteStory(req, res) {
 
   return res.status(204).send();
 }
+
+// POST /api/stories/:storyId/comments
+export async function addStoryComment(req, res) {
+  const { error: idError } = validateStoryId(req.params.storyId);
+
+  if (idError) {
+    return badRequest(res, idError);
+  }
+
+  const { error: validationError, value } = await import('./story.validation.js').then(m => m.validateCommentInput(req.body));
+
+  if (validationError) {
+    return badRequest(res, validationError);
+  }
+
+  const { comment, errorCode } = await storyService.addStoryComment({
+    userId: req.user.id,
+    storyId: req.params.storyId,
+    content: value.content,
+  });
+
+  if (errorCode === 'STORY_NOT_FOUND') {
+    return notFound(res);
+  }
+
+  return res.status(201).json(comment);
+}
+
+// GET /api/stories/:storyId/comments
+export async function getStoryComments(req, res) {
+  const { error } = validateStoryId(req.params.storyId);
+
+  if (error) {
+    return badRequest(res, error);
+  }
+
+  const { comments, errorCode } = await storyService.getStoryComments({
+    userId: req.user.id,
+    storyId: req.params.storyId,
+  });
+
+  if (errorCode === 'STORY_NOT_FOUND') {
+    return notFound(res);
+  }
+
+  return res.status(200).json(comments);
+}
+
+// DELETE /api/stories/:storyId/comments/:commentId
+export async function deleteStoryComment(req, res) {
+  const { error: storyIdError } = validateStoryId(req.params.storyId);
+  const { error: commentIdError } = validateStoryId(req.params.commentId);
+
+  if (storyIdError || commentIdError) {
+    return badRequest(res, storyIdError || commentIdError);
+  }
+
+  const { errorCode } = await storyService.deleteStoryComment({
+    userId: req.user.id,
+    storyId: req.params.storyId,
+    commentId: req.params.commentId,
+  });
+
+  if (errorCode === 'COMMENT_NOT_FOUND') {
+    return notFound(res, 'Comment not found or not yours');
+  }
+
+  return res.status(204).send();
+}

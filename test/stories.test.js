@@ -10,6 +10,7 @@ import config from '../config.js';
 import {
   Story,
   StoryLike,
+  StoryComment,
   STORY_FEED_VISIBLE_HOURS,
 } from '../src/features/stories/story.model.js';
 import { Friendship } from '../src/features/social/social.model.js';
@@ -87,6 +88,7 @@ afterEach(async () => {
   await Promise.all([
     Story.deleteMany({}),
     StoryLike.deleteMany({}),
+    StoryComment.deleteMany({}),
     Friendship.deleteMany({}),
     Habit.deleteMany({}),
     User.deleteMany({}),
@@ -408,6 +410,80 @@ test('users cannot delete stories of other users (404)', async () => {
     .expect(404);
 
   assert.equal(await Story.countDocuments({}), 1);
+});
+
+// --- Story Comments ---
+
+test('a user can comment on their own story and see the comment list', async () => {
+  const owner = await buildUser();
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  const commentResponse = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .send({ content: 'Nice story!' })
+    .expect(201);
+
+  assert.equal(commentResponse.body.content, 'Nice story!');
+  assert.equal(commentResponse.body.user.username, owner.username);
+
+  const getResponse = await request(app)
+    .get(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(getResponse.body.length, 1);
+  assert.equal(getResponse.body[0].content, 'Nice story!');
+});
+
+test('a friend can comment on a story and delete their comment', async () => {
+  const owner = await buildUser();
+  const friend = await buildUser();
+  await makeFriends(owner, friend);
+
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  const commentResponse = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(friend))
+    .send({ content: 'Awesome!' })
+    .expect(201);
+
+  const commentId = commentResponse.body.id;
+
+  // another user (owner) cannot delete friend's comment
+  await request(app)
+    .delete(`/api/stories/${story._id}/comments/${commentId}`)
+    .set('Authorization', authHeader(owner))
+    .expect(404);
+
+  // friend can delete their own comment
+  await request(app)
+    .delete(`/api/stories/${story._id}/comments/${commentId}`)
+    .set('Authorization', authHeader(friend))
+    .expect(204);
+
+  const getResponse = await request(app)
+    .get(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(getResponse.body.length, 0);
+});
+
+test('strangers cannot comment on a story (404)', async () => {
+  const owner = await buildUser();
+  const stranger = await buildUser();
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(stranger))
+    .send({ content: 'Hello!' })
+    .expect(404);
 });
 
 test('requests without auth token are rejected', async () => {

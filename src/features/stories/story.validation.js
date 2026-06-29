@@ -47,3 +47,23 @@ export function validateCreateStoryInput(body = {}) {
     },
   };
 }
+
+export function validateCommentInput(body = {}) {
+  const errors = [];
+  
+  if (!isNonEmptyString(body.content)) {
+    errors.push('content is required');
+  } else if (body.content.trim().length > 500) {
+    errors.push('content must be 500 characters or less');
+  }
+
+  if (errors.length) {
+    return { error: errors.join(', ') };
+  }
+
+  return {
+    value: {
+      content: body.content.trim(),
+    },
+  };
+}
