@@ -36,6 +36,7 @@ export function BoostPowerUpCards({
     onBuy,
     getCartQuantity,
     isCartQuantityMax,
+    isOwnedQuantityMax,
     isBuying,
     isFreeUser,
     onPremiumRequired,
@@ -91,6 +92,7 @@ export function BoostPowerUpCards({
         const Visual = boost.Visual;
         const cartQuantity = getCartQuantity?.(item) ?? 0;
         const cartQuantityMax = isCartQuantityMax?.(item) ?? false;
+        const ownedQuantityMax = isOwnedQuantityMax?.(item) ?? false;
 
         return (
             <ItemCard
@@ -146,8 +148,8 @@ export function BoostPowerUpCards({
                 <ActionButton
                     type="button"
                     fullWidth
-                    className="h-8 px-3 text-xs"
-                    disabled={isBuying}
+                    className="h-8 px-3 text-xs disabled:bg-white/10 disabled:text-slate-500"
+                    disabled={isBuying || ownedQuantityMax}
                     onClick={() => guardPremium(item, () => onBuy?.(item))}
                 >
                     {isBuying ? 'Buying...' : 'Buy'}

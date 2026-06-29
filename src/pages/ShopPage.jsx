@@ -794,6 +794,7 @@ export function ShopPage() {
                                         const entry = cartEntry ?? createPurchaseEntry(item);
                                         return getMaxCartQuantityForEntry(entry) <= 0 || (cartEntry ? isCartEntryAtQuantityLimit(cartEntry) : false);
                                     }}
+                                    isOwnedQuantityMax={(item) => getOwnedPowerUpQuantity(item) >= MAX_OWNED_POWER_UP_QUANTITY}
                                     isBuying={buyingItemId === 'cart'}
                                     isFreeUser={isFreeUser}
                                     onPremiumRequired={handlePremiumRequired}
