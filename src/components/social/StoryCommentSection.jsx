@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Trash2 } from 'lucide-react';
 import { postStoryComment, deleteStoryComment } from '@/services/storyApi';
+import { getUserByUsername } from '@/services/userApi';
 import { formatRelativeTime } from '@/components/social/socialHelpers';
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,8 @@ export function StoryCommentSection({
     likers = [],
     onOpenProfile,
     isStoryOwner = false,
+    blockedUsers = [],
+    blockers = [],
     onCommentAdded,
     onCommentDeleted,
 }) {
@@ -154,33 +157,50 @@ export function StoryCommentSection({
     const parentComments = comments.filter((c) => !c.parentComment);
     const getRepliesFor = (parentId) => comments.filter((c) => c.parentComment === parentId);
 
+    function isBlockedMention(username) {
+        const normalizedUsername = username.toLowerCase();
+        const blockedByMe = blockedUsers.some((user) => (user?.username || '').toLowerCase() === normalizedUsername);
+        const hasBlockedMe = blockers.some((blockerUsername) => (blockerUsername || '').toLowerCase() === normalizedUsername);
+
+        return blockedByMe || hasBlockedMe;
+    }
+
+    async function handleUsernameClick(username) {
+        if (isBlockedMention(username)) {
+            return;
+        }
+
+        try {
+            setError('');
+            const user = await getUserByUsername(username);
+            if (user) {
+                onOpenProfile?.(user);
+            }
+        } catch (err) {
+            console.error('Failed to load user profile via mention:', err);
+            // If the error is due to blocking (e.g. 403 or custom message), the click does nothing
+        }
+    }
+
     function formatCommentText(text) {
         if (!text) return '';
         const parts = text.split(/(@\w+)/g);
         return parts.map((part, index) => {
             if (part.startsWith('@')) {
                 const username = part.slice(1);
-                // Look up user object by matching username
-                const matchedUser = [...likers, ...comments.map((c) => c.user)].find(
-                    (u) => u?.username?.toLowerCase() === username.toLowerCase()
-                );
-                
-                if (matchedUser) {
-                    return (
-                        <button
-                            key={index}
-                            type="button"
-                            onClick={() => onOpenProfile?.(matchedUser)}
-                            className="text-violet-400 font-semibold hover:text-violet-300 transition hover:underline focus:outline-none"
-                        >
-                            {part}
-                        </button>
-                    );
+                if (isBlockedMention(username)) {
+                    return part;
                 }
+
                 return (
-                    <span key={index} className="text-violet-400 font-semibold">
+                    <button
+                        key={index}
+                        type="button"
+                        onClick={() => handleUsernameClick(username)}
+                        className="text-violet-400 font-semibold hover:text-violet-300 transition hover:underline focus:outline-none"
+                    >
                         {part}
-                    </span>
+                    </button>
                 );
             }
             return part;

@@ -32,6 +32,7 @@ export function SocialFeed({
     onDeleteStory,
     onOpenProfile,
     blockedUsers = [],
+    blockers = [],
 }) {
     return (
         <PageSection title="Feed" className="min-w-0 lg:max-w-[64rem]">
@@ -54,6 +55,7 @@ export function SocialFeed({
                                 onOpenLikes={(_, likers) => onOpenStoryLikes?.(post, likers)}
                                 onOpenProfile={onOpenProfile}
                                 blockedUsers={blockedUsers}
+                                blockers={blockers}
                             >
                                 <ReactionButton
                                     liked={post.likedByCurrentUser}

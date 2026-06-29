@@ -56,6 +56,10 @@ export function getBlockedUsers() {
     return apiRequest('/social/blocked');
 }
 
+export function getBlockers() {
+    return apiRequest('/social/blockers');
+}
+
 export function blockUser(userId) {
     return apiRequest(`/social/block/${userId}`, {
         method: 'POST',

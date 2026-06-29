@@ -5,3 +5,7 @@ export function searchUsers(query) {
 
     return apiRequest(`/users/search?${params.toString()}`);
 }
+
+export function getUserByUsername(username) {
+    return apiRequest(`/users/profile/${username}`);
+}

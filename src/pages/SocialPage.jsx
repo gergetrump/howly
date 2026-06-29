@@ -17,6 +17,7 @@ import {
     blockUser,
     unblockUser,
     getBlockedUsers,
+    getBlockers,
 } from '@/services/socialApi';
 import { searchUsers } from '@/services/userApi';
 import { deleteStory, getStoryLikes, toggleStoryLike } from '@/services/storyApi';
@@ -30,6 +31,7 @@ export function SocialPage() {
     const [requests, setRequests] = useState({ incoming: [], outgoing: [] });
     const [feed, setFeed] = useState([]);
     const [blockedUsers, setBlockedUsers] = useState([]);
+    const [blockers, setBlockers] = useState([]);
     const [usernameQuery, setUsernameQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -96,17 +98,19 @@ export function SocialPage() {
         }
 
         try {
-            const [friendsData, requestsData, feedData, blockedData] = await Promise.all([
+            const [friendsData, requestsData, feedData, blockedData, blockersData] = await Promise.all([
                 getFriends(),
                 getFriendRequests(),
                 getSocialFeed(),
                 getBlockedUsers(),
+                getBlockers(),
             ]);
 
             setFriends(friendsData ?? []);
             setRequests(requestsData ?? { incoming: [], outgoing: [] });
             setFeed(feedData ?? []);
             setBlockedUsers(blockedData ?? []);
+            setBlockers(blockersData ?? []);
             window.dispatchEvent(new Event('howly:social-requests-updated'));
         } catch (err) {
             if (!silent) {
@@ -492,6 +496,7 @@ export function SocialPage() {
                     onDeleteStory={handleDeleteStory}
                     onOpenProfile={setSelectedProfileUser}
                     blockedUsers={blockedUsers}
+                    blockers={blockers}
                 />
 
                 <FriendsPanel

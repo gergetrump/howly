@@ -114,6 +114,7 @@ export function StoryFeedCard({
     onOpenLikes,
     onOpenProfile,
     blockedUsers = [],
+    blockers = [],
     children,
 }) {
     const [likers, setLikers] = useState([]);
@@ -304,6 +305,8 @@ export function StoryFeedCard({
                             isLoading={isLoadingComments}
                             likers={visibleLikers}
                             onOpenProfile={onOpenProfile}
+                            blockedUsers={blockedUsers}
+                            blockers={blockers}
                             onCommentAdded={() => setLocalStory(prev => ({ ...prev, commentCount: (prev.commentCount || 0) + 1 }))}
                             onCommentDeleted={(count) => setLocalStory(prev => ({ ...prev, commentCount: Math.max(0, (prev.commentCount || 0) - (count || 1)) }))}
                         />
