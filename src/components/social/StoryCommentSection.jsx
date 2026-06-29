@@ -2,6 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, Trash2, MessageCircle } from 'lucide-react';
 import { getStoryComments, postStoryComment, deleteStoryComment } from '@/services/storyApi';
 import { formatRelativeTime } from '@/components/social/socialHelpers';
+import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+    ConfirmationDialog,
+    ConfirmationDialogContent,
+    ConfirmationDialogDescription,
+    ConfirmationDialogFooter,
+    ConfirmationDialogHeader,
+    ConfirmationDialogTitle,
+} from "@/components/ui/confirmation-dialog";
 
 function getUniqueUsers(users) {
     const seen = new Set();
@@ -32,7 +42,15 @@ export function StoryCommentSection({
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
     const [error, setError] = useState('');
+    const [commentIdToDelete, setCommentIdToDelete] = useState(null);
     const inputRef = useRef(null);
+
+    const confirmDelete = async () => {
+        if (commentIdToDelete) {
+            await handleDelete(commentIdToDelete);
+            setCommentIdToDelete(null);
+        }
+    };
 
 
     useEffect(() => {
@@ -190,7 +208,7 @@ export function StoryCommentSection({
                         {comment.user?.id === currentUserId && (
                             <button
                                 type="button"
-                                onClick={() => handleDelete(comment.id)}
+                                onClick={() => setCommentIdToDelete(comment.id)}
                                 className="text-xs font-semibold text-slate-500 hover:text-red-400 transition flex items-center gap-0.5"
                                 aria-label="Delete comment"
                             >
@@ -304,6 +322,50 @@ export function StoryCommentSection({
                     </form>
                 </div>
             </div>
+
+            {commentIdToDelete && (() => {
+                const commentToDelete = comments.find((c) => c.id === commentIdToDelete);
+                const commentToDeleteHasReplies = commentToDelete
+                    ? comments.some((c) => c.parentComment === commentToDelete.id)
+                    : false;
+
+                return (
+                    <ConfirmationDialog open={commentIdToDelete !== null} onOpenChange={(open) => !open && setCommentIdToDelete(null)}>
+                        <ConfirmationDialogContent className="bg-[#1e1b3a] border-0 text-white rounded-3xl p-8 sm:max-w-md flex flex-col items-center text-center shadow-2xl z-[100]">
+                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10 mb-2 border border-red-500/20">
+                                <Trash2 className="h-8 w-8 text-red-400" />
+                            </div>
+                            <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-4 text-center">
+                                <ConfirmationDialogTitle className="text-2xl font-bold tracking-tight text-center">Delete comment?</ConfirmationDialogTitle>
+                                <ConfirmationDialogDescription className="text-base text-slate-300 text-center">
+                                    {commentToDeleteHasReplies
+                                        ? "Are you sure you want to delete this comment? All replies will also be deleted. This can't be undone."
+                                        : "Are you sure you want to delete this comment? This can't be undone."
+                                    }
+                                </ConfirmationDialogDescription>
+                            </ConfirmationDialogHeader>
+                            <ConfirmationDialogFooter className="flex-col w-full gap-3 mt-8 sm:flex-col sm:space-x-0">
+                                <AlertDialogPrimitive.Cancel asChild>
+                                    <Button 
+                                        variant="outline"
+                                        className="w-full h-14 rounded-full bg-[#2a2746] border border-slate-700/50 text-white hover:bg-[#343155] hover:text-white mt-0 text-lg font-semibold"
+                                    >
+                                        Keep it
+                                    </Button>
+                                </AlertDialogPrimitive.Cancel>
+                                <AlertDialogPrimitive.Action asChild>
+                                    <Button 
+                                        onClick={confirmDelete}
+                                        className="w-full h-14 rounded-full bg-[#d65d53] hover:bg-[#c2534a] text-white text-lg font-semibold shadow-lg shadow-red-900/20"
+                                    >
+                                        <Trash2 className="mr-2 h-5 w-5" /> Yes, delete comment
+                                    </Button>
+                                </AlertDialogPrimitive.Action>
+                            </ConfirmationDialogFooter>
+                        </ConfirmationDialogContent>
+                    </ConfirmationDialog>
+                );
+            })()}
         </div>
     );
 }
