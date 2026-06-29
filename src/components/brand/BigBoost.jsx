@@ -11,7 +11,7 @@ export function BigBoost({ className, ...props }) {
             <g transform="translate(158 18) scale(0.8)">
                 <path d="M20 0L26.3986 17.6201H47.1051L30.3532 28.5099L36.7519 46.1299L20 35.2401L3.24814 46.1299L9.6468 28.5099L-7.1051 17.6201H13.6014L20 0Z" fill="#FFFF00" />
             </g>
-            <g transform="translate(8 46) scale(0.8)">
+            <g transform="translate(100 46) scale(0.8)">
                 <path d="M20 0L26.3986 17.6201H47.1051L30.3532 28.5099L36.7519 46.1299L20 35.2401L3.24814 46.1299L9.6468 28.5099L-7.1051 17.6201H13.6014L20 0Z" fill="#FFFF00" />
             </g>
             <g transform="translate(172 74) scale(0.7)">
