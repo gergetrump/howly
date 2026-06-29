@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Trash2, MessageCircle } from 'lucide-react';
-import { getStoryComments, postStoryComment, deleteStoryComment } from '@/services/storyApi';
+import { Send, Trash2 } from 'lucide-react';
+import { postStoryComment, deleteStoryComment } from '@/services/storyApi';
 import { formatRelativeTime } from '@/components/social/socialHelpers';
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { Button } from "@/components/ui/button";

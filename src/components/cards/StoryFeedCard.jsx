@@ -154,7 +154,9 @@ export function StoryFeedCard({
     }, [story.id, story.likeCount]);
 
     useEffect(() => {
-        if (!story.commentCount) {
+        const shouldLoadComments = isCommentsOpen || story.commentCount > 0 || localStory.commentCount > 0;
+
+        if (!shouldLoadComments) {
             setComments([]);
             return undefined;
         }
@@ -178,7 +180,7 @@ export function StoryFeedCard({
         return () => {
             isCurrent = false;
         };
-    }, [story.id, story.commentCount]);
+    }, [story.id, story.commentCount, localStory.commentCount, isCommentsOpen]);
 
     async function handleDelete() {
         try {
