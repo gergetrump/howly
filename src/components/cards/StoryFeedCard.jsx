@@ -180,7 +180,7 @@ export function StoryFeedCard({
         return () => {
             isCurrent = false;
         };
-    }, [story.id, story.commentCount, localStory.commentCount, isCommentsOpen]);
+    }, [story.id, isCommentsOpen]);
 
     async function handleDelete() {
         try {

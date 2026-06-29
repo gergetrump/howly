@@ -45,6 +45,7 @@ export function StoryCommentSection({
     const [error, setError] = useState('');
     const [commentIdToDelete, setCommentIdToDelete] = useState(null);
     const inputRef = useRef(null);
+    const containerRef = useRef(null);
 
     const confirmDelete = async () => {
         if (commentIdToDelete) {
@@ -121,6 +122,15 @@ export function StoryCommentSection({
                 }
                 
                 onCommentAdded?.();
+
+                setTimeout(() => {
+                    if (containerRef.current) {
+                        containerRef.current.scrollTo({
+                            top: containerRef.current.scrollHeight,
+                            behavior: 'smooth',
+                        });
+                    }
+                }, 80);
             }
         } catch (err) {
             setError(err.message || 'Failed to post comment');
@@ -227,7 +237,7 @@ export function StoryCommentSection({
         <div className="w-full">
             <div className="rounded-xl bg-black/20 p-4">
                 {/* Comment List */}
-                <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
+                <div ref={containerRef} className="space-y-4 max-h-80 overflow-y-auto pr-2">
                     {isLoading ? (
                         <p className="text-sm text-slate-400">Loading comments...</p>
                     ) : parentComments.length === 0 ? (
@@ -257,6 +267,7 @@ export function StoryCommentSection({
                                             ))}
                                         </div>
                                     )}
+                                    {/* spacing */}
                                 </div>
                             );
                         })
