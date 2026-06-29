@@ -48,6 +48,7 @@ const habitBoostSchema = new Schema(
 habitBoostSchema.index(
     { user: 1, habit: 1 },
     {
+        unique: true,
         partialFilterExpression: {
             remainingCompletions: { $gt: 0 },
         },
