@@ -33,9 +33,9 @@ function authHeader(user) {
 
 before(async () => {
     config.jwtSecret = 'test-secret';
+    app = createApp();
     mongo = await MongoMemoryServer.create();
     await connectDB(mongo.getUri());
-    app = createApp();
 });
 
 afterEach(async () => {
