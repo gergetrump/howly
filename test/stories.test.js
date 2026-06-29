@@ -285,6 +285,44 @@ test('users can like and unlike their own story', async () => {
   assert.equal(unlikeResponse.body.story.likeCount, 0);
 });
 
+test('story comment count stays independent from like count', async () => {
+  const owner = await buildUser();
+  const friend = await buildUser();
+  await makeFriends(owner, friend);
+
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(friend))
+    .send({ content: 'This should count only as a comment' })
+    .expect(201);
+
+  await request(app)
+    .post(`/api/stories/${story._id}/like`)
+    .set('Authorization', authHeader(friend))
+    .expect(200);
+
+  await request(app)
+    .post(`/api/stories/${story._id}/like`)
+    .set('Authorization', authHeader(friend))
+    .expect(200);
+
+  const updatedStory = await Story.findById(story._id).lean();
+  assert.equal(updatedStory.likeCount, 0);
+  assert.equal(updatedStory.commentCount, 1);
+
+  const feedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  const feedStory = feedResponse.body.find((post) => post.type === 'story');
+  assert.equal(feedStory.likeCount, 0);
+  assert.equal(feedStory.commentCount, 1);
+});
+
 test('non-friends cannot like a story (404)', async () => {
   const owner = await buildUser();
   const stranger = await buildUser();

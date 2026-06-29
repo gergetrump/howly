@@ -208,3 +208,98 @@ test('blocking a user hides their comments on a mutual friend story', async () =
   // User A should not see User B's comment
   assert.equal(commentsRes.body.length, 0);
 });
+
+test('story comment count stays viewer-visible after blocking when liking a mutual friend story', async () => {
+  const userA = await buildUser({ username: 'user_a' });
+  const userB = await buildUser({ username: 'user_b' });
+  const userC = await buildUser({ username: 'user_c' });
+
+  await Promise.all([
+    makeFriends(userA, userB),
+    makeFriends(userA, userC),
+    makeFriends(userB, userC),
+  ]);
+
+  const habitA = await Habit.create({
+    title: 'Reading',
+    icon: '📚',
+    type: 'boolean',
+    frequency: 'Daily',
+    ownerId: userA._id,
+  });
+
+  const storyA = await Story.create({
+    user: userA._id,
+    sourceType: 'habit',
+    sourceId: habitA._id,
+    sourceTitle: habitA.title,
+    imageUrl: 'https://example.com/story.jpg',
+    imagePublicId: 'howly/stories/testA',
+    feedExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    archiveExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+  });
+
+  await Promise.all([
+    request(app)
+      .post(`/api/stories/${storyA._id}/comments`)
+      .set('Authorization', authHeader(userB))
+      .send({ content: 'B first comment' })
+      .expect(201),
+    request(app)
+      .post(`/api/stories/${storyA._id}/comments`)
+      .set('Authorization', authHeader(userB))
+      .send({ content: 'B second comment' })
+      .expect(201),
+    request(app)
+      .post(`/api/stories/${storyA._id}/comments`)
+      .set('Authorization', authHeader(userC))
+      .send({ content: 'C first comment' })
+      .expect(201),
+    request(app)
+      .post(`/api/stories/${storyA._id}/comments`)
+      .set('Authorization', authHeader(userC))
+      .send({ content: 'C second comment' })
+      .expect(201),
+  ]);
+
+  await request(app)
+    .post(`/api/social/block/${userC._id}`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+
+  const ownerFeedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(userA))
+    .expect(200);
+  const ownerStory = ownerFeedResponse.body.find((post) => post.type === 'story');
+  assert.equal(ownerStory.commentCount, 4);
+
+  const blockerFeedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+  const blockerStory = blockerFeedResponse.body.find((post) => post.type === 'story');
+  assert.equal(blockerStory.commentCount, 2);
+
+  const blockedFeedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(userC))
+    .expect(200);
+  const blockedStory = blockedFeedResponse.body.find((post) => post.type === 'story');
+  assert.equal(blockedStory.commentCount, 2);
+
+  const likeResponse = await request(app)
+    .post(`/api/stories/${storyA._id}/like`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+
+  assert.equal(likeResponse.body.story.likeCount, 1);
+  assert.equal(likeResponse.body.story.commentCount, 2);
+
+  const commentsResponse = await request(app)
+    .get(`/api/stories/${storyA._id}/comments`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+
+  assert.equal(commentsResponse.body.length, 2);
+});

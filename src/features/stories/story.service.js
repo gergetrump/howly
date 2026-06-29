@@ -140,6 +140,58 @@ export async function createStory({ userId, sourceType, sourceId, caption, image
   return { story: toStoryResponse(story) };
 }
 
+async function getVisibleStoryEngagementCounts({ storyIds, userId }) {
+  if (!storyIds.length) {
+    return {
+      likeCountsByStory: new Map(),
+      commentCountsByStory: new Map(),
+    };
+  }
+
+  const blockedSet = await getBlockedUserIds(userId);
+  const hiddenUserIds = [...blockedSet].map((id) => new mongoose.Types.ObjectId(id));
+
+  const likesQuery = { story: { $in: storyIds } };
+  const commentsQuery = { story: { $in: storyIds } };
+
+  if (hiddenUserIds.length > 0) {
+    likesQuery.user = { $nin: hiddenUserIds };
+    commentsQuery.user = { $nin: hiddenUserIds };
+  }
+
+  const [allLikes, allComments] = await Promise.all([
+    StoryLike.find(likesQuery).lean(),
+    StoryComment.find(commentsQuery).lean(),
+  ]);
+
+  const likeCountsByStory = new Map();
+  allLikes.forEach((like) => {
+    const storyId = like.story.toString();
+    likeCountsByStory.set(storyId, (likeCountsByStory.get(storyId) || 0) + 1);
+  });
+
+  const commentCountsByStory = new Map();
+  allComments.forEach((comment) => {
+    const storyId = comment.story.toString();
+    commentCountsByStory.set(storyId, (commentCountsByStory.get(storyId) || 0) + 1);
+  });
+
+  return { likeCountsByStory, commentCountsByStory };
+}
+
+async function toVisibleStoryResponse(story, userId, likedStoryIds = new Set()) {
+  const response = toStoryResponse(story, likedStoryIds);
+  const { likeCountsByStory, commentCountsByStory } = await getVisibleStoryEngagementCounts({
+    storyIds: [story._id],
+    userId,
+  });
+
+  response.likeCount = likeCountsByStory.get(story._id.toString()) || 0;
+  response.commentCount = commentCountsByStory.get(story._id.toString()) || 0;
+
+  return response;
+}
+
 // Stories from the user and their friends that are still inside the 7-day feed window
 export async function getFriendFeedStories({ userId }) {
   const friendships = await Friendship.find({
@@ -166,33 +218,10 @@ export async function getFriendFeedStories({ userId }) {
   }).lean();
   const likedStoryIds = new Set(likes.map((like) => like.story.toString()));
 
-  const blockedSet = await getBlockedUserIds(userId);
   const storyIds = stories.map((s) => s._id);
-
-  // Story Likes
-  const likesQuery = { story: { $in: storyIds } };
-  if (blockedSet.size > 0) {
-    likesQuery.user = { $nin: [...blockedSet].map((id) => new mongoose.Types.ObjectId(id)) };
-  }
-  const allLikes = await StoryLike.find(likesQuery).lean();
-
-  const likeCountsByStory = new Map();
-  allLikes.forEach((like) => {
-    const sId = like.story.toString();
-    likeCountsByStory.set(sId, (likeCountsByStory.get(sId) || 0) + 1);
-  });
-
-  // Story Comments
-  const commentsQuery = { story: { $in: storyIds } };
-  if (blockedSet.size > 0) {
-    commentsQuery.user = { $nin: [...blockedSet].map((id) => new mongoose.Types.ObjectId(id)) };
-  }
-  const allComments = await StoryComment.find(commentsQuery).lean();
-
-  const commentCountsByStory = new Map();
-  allComments.forEach((comment) => {
-    const sId = comment.story.toString();
-    commentCountsByStory.set(sId, (commentCountsByStory.get(sId) || 0) + 1);
+  const { likeCountsByStory, commentCountsByStory } = await getVisibleStoryEngagementCounts({
+    storyIds,
+    userId,
   });
 
   return stories.map((story) => {
@@ -230,33 +259,10 @@ export async function getFriendFeedStoriesForMixedFeed({ userId, visibleUserIds 
   }).lean();
   const likedStoryIds = new Set(likes.map((like) => like.story.toString()));
 
-  const blockedSet = await getBlockedUserIds(userId);
   const storyIds = stories.map((s) => s._id);
-
-  // Story Likes
-  const likesQuery = { story: { $in: storyIds } };
-  if (blockedSet.size > 0) {
-    likesQuery.user = { $nin: [...blockedSet].map((id) => new mongoose.Types.ObjectId(id)) };
-  }
-  const allLikes = await StoryLike.find(likesQuery).lean();
-
-  const likeCountsByStory = new Map();
-  allLikes.forEach((like) => {
-    const sId = like.story.toString();
-    likeCountsByStory.set(sId, (likeCountsByStory.get(sId) || 0) + 1);
-  });
-
-  // Story Comments
-  const commentsQuery = { story: { $in: storyIds } };
-  if (blockedSet.size > 0) {
-    commentsQuery.user = { $nin: [...blockedSet].map((id) => new mongoose.Types.ObjectId(id)) };
-  }
-  const allComments = await StoryComment.find(commentsQuery).lean();
-
-  const commentCountsByStory = new Map();
-  allComments.forEach((comment) => {
-    const sId = comment.story.toString();
-    commentCountsByStory.set(sId, (commentCountsByStory.get(sId) || 0) + 1);
+  const { likeCountsByStory, commentCountsByStory } = await getVisibleStoryEngagementCounts({
+    storyIds,
+    userId,
   });
 
   return stories.map((story) => {
@@ -295,7 +301,7 @@ export async function toggleStoryLike({ userId, storyId }) {
     await story.save();
     await story.populate('user');
 
-    return { liked: false, story: toStoryResponse(story) };
+    return { liked: false, story: await toVisibleStoryResponse(story, userId) };
   }
 
   try {
@@ -308,14 +314,20 @@ export async function toggleStoryLike({ userId, storyId }) {
 
     await story.populate('user');
 
-    return { liked: true, story: toStoryResponse(story, new Set([storyId])) };
+    return {
+      liked: true,
+      story: await toVisibleStoryResponse(story, userId, new Set([storyId])),
+    };
   }
 
   story.likeCount += 1;
   await story.save();
   await story.populate('user');
 
-  return { liked: true, story: toStoryResponse(story, new Set([storyId])) };
+  return {
+    liked: true,
+    story: await toVisibleStoryResponse(story, userId, new Set([storyId])),
+  };
 }
 
 // Who liked a story — available to the owner and friends who can see the story
