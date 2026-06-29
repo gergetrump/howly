@@ -1,7 +1,7 @@
 import User from '../users/user.model.js';
 import { toPublicUser } from '../users/user.service.js';
 import { FriendRequest, Friendship } from './social.model.js';
-import { Story, StoryLike } from '../stories/story.model.js';
+import { Story, StoryLike, StoryComment } from '../stories/story.model.js';
 import { MilestonePost, MilestoneLike } from '../milestones/milestone.model.js';
 
 function sameId(firstId, secondId) {
@@ -232,6 +232,14 @@ export async function blockUser({ userId, targetUserId }) {
   const targetMilestoneIds = targetMilestones.map((m) => m._id);
 
   // Deletions
+  const deletedComments = await StoryComment.find({
+    $or: [
+      { story: { $in: myStoryIds }, user: targetUserId },
+      { story: { $in: targetStoryIds }, user: userId }
+    ]
+  }, '_id').lean();
+  const deletedCommentIds = deletedComments.map((c) => c._id);
+
   await Promise.all([
     // StoryLikes
     StoryLike.deleteMany({
@@ -246,7 +254,16 @@ export async function blockUser({ userId, targetUserId }) {
         { milestonePost: { $in: myMilestoneIds }, user: targetUserId },
         { milestonePost: { $in: targetMilestoneIds }, user: userId }
       ]
-    })
+    }),
+    // StoryComments (direct + replies)
+    deletedCommentIds.length > 0
+      ? StoryComment.deleteMany({
+          $or: [
+            { _id: { $in: deletedCommentIds } },
+            { parentComment: { $in: deletedCommentIds } }
+          ]
+        })
+      : Promise.resolve()
   ]);
 
   // Recalculate likeCount for affected stories
@@ -262,6 +279,22 @@ export async function blockUser({ userId, targetUserId }) {
       affectedStoryIds.map((storyId) => {
         const count = likesMap.get(storyId.toString()) || 0;
         return Story.updateOne({ _id: storyId }, { $set: { likeCount: count } });
+      })
+    );
+  }
+
+  // Recalculate commentCount for affected stories
+  if (affectedStoryIds.length > 0) {
+    const updatedStoryComments = await StoryComment.aggregate([
+      { $match: { story: { $in: affectedStoryIds } } },
+      { $group: { _id: '$story', count: { $sum: 1 } } }
+    ]);
+    const commentsMap = new Map(updatedStoryComments.map((group) => [group._id.toString(), group.count]));
+
+    await Promise.all(
+      affectedStoryIds.map((storyId) => {
+        const count = commentsMap.get(storyId.toString()) || 0;
+        return Story.updateOne({ _id: storyId }, { $set: { commentCount: count } });
       })
     );
   }

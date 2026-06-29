@@ -10,7 +10,7 @@ import config from '../config.js';
 import User from '../src/features/users/user.model.js';
 import Habit from '../src/features/habits/habit.model.js';
 import { MilestonePost, MilestoneLike } from '../src/features/milestones/milestone.model.js';
-import { Story, StoryLike } from '../src/features/stories/story.model.js';
+import { Story, StoryLike, StoryComment } from '../src/features/stories/story.model.js';
 import { Friendship } from '../src/features/social/social.model.js';
 
 let mongo;
@@ -54,6 +54,7 @@ afterEach(async () => {
     MilestoneLike.deleteMany({}),
     Story.deleteMany({}),
     StoryLike.deleteMany({}),
+    StoryComment.deleteMany({}),
   ]);
 });
 
@@ -64,7 +65,7 @@ after(async () => {
   }
 });
 
-test('blocking a user deletes their likes and reactions on each other posts, and unblocking does not restore them', async () => {
+test('blocking a user deletes their likes, reactions, and comments on each other posts, and unblocking does not restore them', async () => {
   // 1. Setup Users and Friendship
   const userA = await buildUser({ username: 'user_a' });
   const userB = await buildUser({ username: 'user_b' });
@@ -102,14 +103,30 @@ test('blocking a user deletes their likes and reactions on each other posts, and
     feedExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     archiveExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
     likeCount: 1,
+    commentCount: 2,
   });
 
   // User B likes User A's story
   await StoryLike.create({ story: storyA._id, user: userB._id });
 
-  // 4. Verify likes/reactions exist in the database
+  // User B comments on User A's story, and User A replies to B's comment
+  const commentB = await StoryComment.create({
+    story: storyA._id,
+    user: userB._id,
+    content: 'Nice job!',
+  });
+
+  await StoryComment.create({
+    story: storyA._id,
+    user: userA._id,
+    content: 'Thanks!',
+    parentComment: commentB._id,
+  });
+
+  // 4. Verify likes, reactions, and comments exist in the database
   assert.equal(await StoryLike.countDocuments({ user: userB._id }), 1);
   assert.equal(await MilestoneLike.countDocuments({ user: userB._id }), 1);
+  assert.equal(await StoryComment.countDocuments({}), 2);
 
   // 5. User A blocks User B
   await request(app)
@@ -117,13 +134,15 @@ test('blocking a user deletes their likes and reactions on each other posts, and
     .set('Authorization', authHeader(userA))
     .expect(200);
 
-  // Assert likes/reactions are permanently deleted from database
+  // Assert likes, reactions, and comments are permanently deleted from database
   assert.equal(await StoryLike.countDocuments({ user: userB._id }), 0);
   assert.equal(await MilestoneLike.countDocuments({ user: userB._id }), 0);
+  assert.equal(await StoryComment.countDocuments({}), 0);
 
   // Assert counts on the post documents are updated to 0
   const updatedStory = await Story.findById(storyA._id);
   assert.equal(updatedStory.likeCount, 0);
+  assert.equal(updatedStory.commentCount, 0);
 
   const updatedMilestone = await MilestonePost.findById(milestoneA._id);
   assert.equal(updatedMilestone.likeCount, 0);
@@ -134,7 +153,58 @@ test('blocking a user deletes their likes and reactions on each other posts, and
     .set('Authorization', authHeader(userA))
     .expect(200);
 
-  // Verify that likes and reactions are NOT restored
+  // Verify that likes, reactions, and comments are NOT restored
   assert.equal(await StoryLike.countDocuments({ user: userB._id }), 0);
   assert.equal(await MilestoneLike.countDocuments({ user: userB._id }), 0);
+  assert.equal(await StoryComment.countDocuments({}), 0);
+});
+
+test('blocking a user hides their comments on a mutual friend story', async () => {
+  const userA = await buildUser({ username: 'user_a' });
+  const userB = await buildUser({ username: 'user_b' });
+  const friendC = await buildUser({ username: 'friend_c' });
+
+  await makeFriends(userA, friendC);
+  await makeFriends(userB, friendC);
+
+  const habitC = await Habit.create({
+    title: 'Reading',
+    icon: '📚',
+    type: 'boolean',
+    frequency: 'Daily',
+    ownerId: friendC._id,
+  });
+
+  const storyC = await Story.create({
+    user: friendC._id,
+    sourceType: 'habit',
+    sourceId: habitC._id,
+    sourceTitle: habitC.title,
+    imageUrl: 'https://example.com/story.jpg',
+    imagePublicId: 'howly/stories/testC',
+    feedExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    archiveExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+  });
+
+  // User B comments on C's story
+  await StoryComment.create({
+    story: storyC._id,
+    user: userB._id,
+    content: 'Awesome story!',
+  });
+
+  // User A blocks User B
+  await request(app)
+    .post(`/api/social/block/${userB._id}`)
+    .set('Authorization', authHeader(userA))
+    .expect(200);
+
+  // User A gets comments for C's story
+  const commentsRes = await request(app)
+    .get(`/api/stories/${storyC._id}/comments`)
+    .set('Authorization', authHeader(userA))
+    .expect(200);
+
+  // User A should not see User B's comment
+  assert.equal(commentsRes.body.length, 0);
 });

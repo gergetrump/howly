@@ -168,6 +168,8 @@ export async function getFriendFeedStories({ userId }) {
 
   const blockedSet = await getBlockedUserIds(userId);
   const storyIds = stories.map((s) => s._id);
+
+  // Story Likes
   const likesQuery = { story: { $in: storyIds } };
   if (blockedSet.size > 0) {
     likesQuery.user = { $nin: [...blockedSet].map((id) => new mongoose.Types.ObjectId(id)) };
@@ -180,9 +182,23 @@ export async function getFriendFeedStories({ userId }) {
     likeCountsByStory.set(sId, (likeCountsByStory.get(sId) || 0) + 1);
   });
 
+  // Story Comments
+  const commentsQuery = { story: { $in: storyIds } };
+  if (blockedSet.size > 0) {
+    commentsQuery.user = { $nin: [...blockedSet].map((id) => new mongoose.Types.ObjectId(id)) };
+  }
+  const allComments = await StoryComment.find(commentsQuery).lean();
+
+  const commentCountsByStory = new Map();
+  allComments.forEach((comment) => {
+    const sId = comment.story.toString();
+    commentCountsByStory.set(sId, (commentCountsByStory.get(sId) || 0) + 1);
+  });
+
   return stories.map((story) => {
     const res = toStoryResponse(story, likedStoryIds);
     res.likeCount = likeCountsByStory.get(story._id.toString()) || 0;
+    res.commentCount = commentCountsByStory.get(story._id.toString()) || 0;
     return res;
   });
 }
@@ -197,6 +213,58 @@ export async function getMyActiveStories({ userId }) {
     .sort({ createdAt: -1 });
 
   return stories.map((story) => toStoryResponse(story));
+}
+
+// Mixed feed: stories + milestones (for stories specifically)
+export async function getFriendFeedStoriesForMixedFeed({ userId, visibleUserIds }) {
+  const stories = await Story.find({
+    user: { $in: visibleUserIds },
+    feedExpiresAt: { $gt: new Date() },
+  })
+    .populate('user')
+    .sort({ createdAt: -1 });
+
+  const likes = await StoryLike.find({
+    user: userId,
+    story: { $in: stories.map((story) => story._id) },
+  }).lean();
+  const likedStoryIds = new Set(likes.map((like) => like.story.toString()));
+
+  const blockedSet = await getBlockedUserIds(userId);
+  const storyIds = stories.map((s) => s._id);
+
+  // Story Likes
+  const likesQuery = { story: { $in: storyIds } };
+  if (blockedSet.size > 0) {
+    likesQuery.user = { $nin: [...blockedSet].map((id) => new mongoose.Types.ObjectId(id)) };
+  }
+  const allLikes = await StoryLike.find(likesQuery).lean();
+
+  const likeCountsByStory = new Map();
+  allLikes.forEach((like) => {
+    const sId = like.story.toString();
+    likeCountsByStory.set(sId, (likeCountsByStory.get(sId) || 0) + 1);
+  });
+
+  // Story Comments
+  const commentsQuery = { story: { $in: storyIds } };
+  if (blockedSet.size > 0) {
+    commentsQuery.user = { $nin: [...blockedSet].map((id) => new mongoose.Types.ObjectId(id)) };
+  }
+  const allComments = await StoryComment.find(commentsQuery).lean();
+
+  const commentCountsByStory = new Map();
+  allComments.forEach((comment) => {
+    const sId = comment.story.toString();
+    commentCountsByStory.set(sId, (commentCountsByStory.get(sId) || 0) + 1);
+  });
+
+  return stories.map((story) => {
+    const res = toStoryResponse(story, likedStoryIds);
+    res.likeCount = likeCountsByStory.get(story._id.toString()) || 0;
+    res.commentCount = commentCountsByStory.get(story._id.toString()) || 0;
+    return res;
+  });
 }
 
 // All own stories (up to 90 days — TTL removes older ones automatically)
@@ -349,7 +417,13 @@ export async function getStoryComments({ userId, storyId }) {
     .sort({ createdAt: 1 })
     .lean();
 
-  return { comments: comments.map(toStoryCommentResponse) };
+  const blockedSet = await getBlockedUserIds(userId);
+  const filteredComments = comments.filter((comment) => {
+    const commenterId = comment.user?._id?.toString() || comment.user?.toString();
+    return !blockedSet.has(commenterId);
+  });
+
+  return { comments: filteredComments.map(toStoryCommentResponse) };
 }
 
 export async function deleteStoryComment({ userId, storyId, commentId }) {
