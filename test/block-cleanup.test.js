@@ -302,4 +302,114 @@ test('story comment count stays viewer-visible after blocking when liking a mutu
     .expect(200);
 
   assert.equal(commentsResponse.body.length, 2);
+
+  await request(app)
+    .post(`/api/stories/${storyA._id}/comments`)
+    .set('Authorization', authHeader(userB))
+    .send({ content: 'B third visible comment' })
+    .expect(201);
+
+  const blockerFeedAfterCommentResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+  const blockerStoryAfterComment = blockerFeedAfterCommentResponse.body.find((post) => post.type === 'story');
+  assert.equal(blockerStoryAfterComment.commentCount, 3);
+
+  const commentsAfterCommentResponse = await request(app)
+    .get(`/api/stories/${storyA._id}/comments`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+  assert.equal(commentsAfterCommentResponse.body.length, 3);
+
+  const ownerFeedAfterCommentResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(userA))
+    .expect(200);
+  const ownerStoryAfterComment = ownerFeedAfterCommentResponse.body.find((post) => post.type === 'story');
+  assert.equal(ownerStoryAfterComment.commentCount, 5);
+});
+
+test('deleting a visible comment after blocking keeps story comment counts viewer-visible', async () => {
+  const userA = await buildUser({ username: 'user_a' });
+  const userB = await buildUser({ username: 'user_b' });
+  const userC = await buildUser({ username: 'user_c' });
+
+  await Promise.all([
+    makeFriends(userA, userB),
+    makeFriends(userA, userC),
+    makeFriends(userB, userC),
+  ]);
+
+  const habitA = await Habit.create({
+    title: 'Reading',
+    icon: '📚',
+    type: 'boolean',
+    frequency: 'Daily',
+    ownerId: userA._id,
+  });
+
+  const storyA = await Story.create({
+    user: userA._id,
+    sourceType: 'habit',
+    sourceId: habitA._id,
+    sourceTitle: habitA.title,
+    imageUrl: 'https://example.com/story.jpg',
+    imagePublicId: 'howly/stories/delete-visible-comment',
+    feedExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    archiveExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+  });
+
+  const bComments = [];
+  for (const content of ['B first comment', 'B second comment', 'B third comment']) {
+    const response = await request(app)
+      .post(`/api/stories/${storyA._id}/comments`)
+      .set('Authorization', authHeader(userB))
+      .send({ content })
+      .expect(201);
+    bComments.push(response.body);
+  }
+
+  await Promise.all([
+    request(app)
+      .post(`/api/stories/${storyA._id}/comments`)
+      .set('Authorization', authHeader(userC))
+      .send({ content: 'C first comment' })
+      .expect(201),
+    request(app)
+      .post(`/api/stories/${storyA._id}/comments`)
+      .set('Authorization', authHeader(userC))
+      .send({ content: 'C second comment' })
+      .expect(201),
+  ]);
+
+  await request(app)
+    .post(`/api/social/block/${userC._id}`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+
+  await request(app)
+    .delete(`/api/stories/${storyA._id}/comments/${bComments[0].id}`)
+    .set('Authorization', authHeader(userB))
+    .expect(204);
+
+  const blockerCommentsResponse = await request(app)
+    .get(`/api/stories/${storyA._id}/comments`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+  assert.equal(blockerCommentsResponse.body.length, 2);
+
+  const blockerFeedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+  const blockerStory = blockerFeedResponse.body.find((post) => post.type === 'story');
+  assert.equal(blockerStory.commentCount, 2);
+
+  const ownerFeedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(userA))
+    .expect(200);
+  const ownerStory = ownerFeedResponse.body.find((post) => post.type === 'story');
+  assert.equal(ownerStory.commentCount, 4);
 });

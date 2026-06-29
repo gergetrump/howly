@@ -144,6 +144,10 @@ function toMilestonePostResponse(
   const postId = post._id.toString();
   const currentUserReactions = normalizeReactionList(userReactionsByPostId.get(postId));
   const currentUserReaction = currentUserReactions[0] ?? null;
+  const visibleReactionCounts = reactionCountsByPostId.get(postId);
+  const visibleLikeCount = visibleReactionCounts
+    ? visibleReactionCounts.reduce((total, reaction) => total + reaction.count, 0)
+    : post.likeCount;
 
   return {
     id: postId,
@@ -160,11 +164,11 @@ function toMilestonePostResponse(
     },
     streakDays: post.streakDays,
     visibleUntil: post.visibleUntil,
-    likeCount: post.likeCount,
+    likeCount: visibleLikeCount,
     likedByCurrentUser: currentUserReactions.length > 0,
     currentUserReaction,
     currentUserReactions,
-    reactionCounts: reactionCountsByPostId.get(postId) ?? [],
+    reactionCounts: visibleReactionCounts ?? [],
     reactions: reactionsByPostId.get(postId) ?? [],
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
@@ -184,6 +188,9 @@ async function getReactionCountsByPostId(postIds, currentUserId = null) {
     }
   }
 
+  const reactionCountsByPostId = new Map(
+    postIds.map((postId) => [postId.toString(), []])
+  );
   const groupedReactions = await MilestoneLike.aggregate([
     { $match: matchQuery },
     {
@@ -195,8 +202,6 @@ async function getReactionCountsByPostId(postIds, currentUserId = null) {
     },
     { $sort: { firstReactedAt: 1, count: -1, '_id.emoji': 1 } },
   ]);
-  const reactionCountsByPostId = new Map();
-
   groupedReactions.forEach((reaction) => {
     const postId = reaction._id.milestonePost.toString();
     const counts = reactionCountsByPostId.get(postId) ?? [];

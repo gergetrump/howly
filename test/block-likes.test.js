@@ -135,6 +135,7 @@ test('blocking a user filters milestone reactions and story likes between them',
   assert.ok(fireReaction);
   assert.equal(fireReaction.count, 1);
   assert.ok(!starReaction); // ⭐ from blocked user B should be excluded completely
+  assert.equal(milestoneFeedA.likeCount, 1);
 
   // 6. Verify Story likes count and list for User A
   const storyFeedA = feedResA.body.find((item) => item.type === 'story');
@@ -169,4 +170,280 @@ test('blocking a user filters milestone reactions and story likes between them',
     .expect(200);
 
   assert.equal(likesResC.body.length, 2);
+});
+
+test('milestone reaction count stays viewer-visible after blocking when reacting to a mutual friend milestone', async () => {
+  const userA = await buildUser({ username: 'user_a' });
+  const userB = await buildUser({ username: 'user_b' });
+  const userC = await buildUser({ username: 'user_c' });
+
+  await Promise.all([
+    makeFriends(userA, userB),
+    makeFriends(userA, userC),
+    makeFriends(userB, userC),
+  ]);
+
+  const habitA = await Habit.create({
+    title: 'Reading',
+    icon: '📚',
+    type: 'boolean',
+    frequency: 'Daily',
+    ownerId: userA._id,
+  });
+
+  const milestone = await MilestonePost.create({
+    user: userA._id,
+    habit: habitA._id,
+    habitTitle: habitA.title,
+    streakDays: 10,
+    visibleUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  });
+
+  await Promise.all([
+    MilestoneLike.create({ milestonePost: milestone._id, user: userB._id, emoji: '🔥' }),
+    MilestoneLike.create({ milestonePost: milestone._id, user: userC._id, emoji: '⭐' }),
+  ]);
+  await MilestonePost.updateOne({ _id: milestone._id }, { likeCount: 2 });
+
+  await request(app)
+    .post(`/api/social/block/${userC._id}`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+
+  const ownerFeedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(userA))
+    .expect(200);
+  const ownerMilestone = ownerFeedResponse.body.find((post) => post.type === 'milestone');
+  assert.equal(ownerMilestone.likeCount, 2);
+  assert.deepEqual(
+    ownerMilestone.reactionCounts.toSorted((a, b) => a.emoji.localeCompare(b.emoji)),
+    [
+      { emoji: '⭐', count: 1 },
+      { emoji: '🔥', count: 1 },
+    ],
+  );
+
+  const blockerFeedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+  const blockerMilestone = blockerFeedResponse.body.find((post) => post.type === 'milestone');
+  assert.equal(blockerMilestone.likeCount, 1);
+  assert.deepEqual(blockerMilestone.reactionCounts, [{ emoji: '🔥', count: 1 }]);
+
+  const reactionResponse = await request(app)
+    .post(`/api/milestones/${milestone._id}/like`)
+    .set('Authorization', authHeader(userB))
+    .send({ emoji: '💜' })
+    .expect(200);
+
+  assert.equal(reactionResponse.body.milestonePost.likeCount, 1);
+  assert.deepEqual(reactionResponse.body.milestonePost.reactionCounts, [{ emoji: '💜', count: 1 }]);
+  assert.deepEqual(reactionResponse.body.milestonePost.currentUserReactions, ['💜']);
+
+  const blockedFeedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(userC))
+    .expect(200);
+  const blockedMilestone = blockedFeedResponse.body.find((post) => post.type === 'milestone');
+  assert.equal(blockedMilestone.likeCount, 1);
+  assert.deepEqual(blockedMilestone.reactionCounts, [{ emoji: '⭐', count: 1 }]);
+});
+
+test('story likes list stays viewer-visible after toggling a like with a blocked user', async () => {
+  const userA = await buildUser({ username: 'user_a' });
+  const userB = await buildUser({ username: 'user_b' });
+  const userC = await buildUser({ username: 'user_c' });
+
+  await Promise.all([
+    makeFriends(userA, userB),
+    makeFriends(userA, userC),
+    makeFriends(userB, userC),
+  ]);
+
+  const habitA = await Habit.create({
+    title: 'Reading',
+    icon: '📚',
+    type: 'boolean',
+    frequency: 'Daily',
+    ownerId: userA._id,
+  });
+
+  const storyA = await Story.create({
+    user: userA._id,
+    sourceType: 'habit',
+    sourceId: habitA._id,
+    sourceTitle: habitA.title,
+    imageUrl: 'https://example.com/story.jpg',
+    imagePublicId: 'howly/stories/likes-toggle',
+    feedExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    archiveExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+  });
+
+  await Promise.all([
+    StoryLike.create({ story: storyA._id, user: userB._id }),
+    StoryLike.create({ story: storyA._id, user: userC._id }),
+  ]);
+  await Story.updateOne({ _id: storyA._id }, { likeCount: 2 });
+
+  await request(app)
+    .post(`/api/social/block/${userC._id}`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+
+  await request(app)
+    .post(`/api/stories/${storyA._id}/like`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+
+  const likesAfterUnlikeResponse = await request(app)
+    .get(`/api/stories/${storyA._id}/likes`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+  assert.equal(likesAfterUnlikeResponse.body.length, 0);
+
+  const likeAgainResponse = await request(app)
+    .post(`/api/stories/${storyA._id}/like`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+  assert.equal(likeAgainResponse.body.story.likeCount, 1);
+
+  const likesAfterRelikeResponse = await request(app)
+    .get(`/api/stories/${storyA._id}/likes`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+  assert.equal(likesAfterRelikeResponse.body.length, 1);
+  assert.equal(likesAfterRelikeResponse.body[0].username, 'user_b');
+});
+
+test('removing a milestone reaction after blocking keeps visible reaction counts correct', async () => {
+  const userA = await buildUser({ username: 'user_a' });
+  const userB = await buildUser({ username: 'user_b' });
+  const userC = await buildUser({ username: 'user_c' });
+
+  await Promise.all([
+    makeFriends(userA, userB),
+    makeFriends(userA, userC),
+    makeFriends(userB, userC),
+  ]);
+
+  const habitA = await Habit.create({
+    title: 'Reading',
+    icon: '📚',
+    type: 'boolean',
+    frequency: 'Daily',
+    ownerId: userA._id,
+  });
+
+  const milestone = await MilestonePost.create({
+    user: userA._id,
+    habit: habitA._id,
+    habitTitle: habitA.title,
+    streakDays: 10,
+    visibleUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  });
+
+  await Promise.all([
+    MilestoneLike.create({ milestonePost: milestone._id, user: userB._id, emoji: '🔥' }),
+    MilestoneLike.create({ milestonePost: milestone._id, user: userC._id, emoji: '⭐' }),
+  ]);
+  await MilestonePost.updateOne({ _id: milestone._id }, { likeCount: 2 });
+
+  await request(app)
+    .post(`/api/social/block/${userC._id}`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+
+  const removeReactionResponse = await request(app)
+    .post(`/api/milestones/${milestone._id}/like`)
+    .set('Authorization', authHeader(userB))
+    .send({ emoji: '🔥' })
+    .expect(200);
+
+  assert.equal(removeReactionResponse.body.liked, false);
+  assert.equal(removeReactionResponse.body.milestonePost.likeCount, 0);
+  assert.deepEqual(removeReactionResponse.body.milestonePost.reactionCounts, []);
+
+  const ownerFeedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(userA))
+    .expect(200);
+  const ownerMilestone = ownerFeedResponse.body.find((post) => post.type === 'milestone');
+  assert.equal(ownerMilestone.likeCount, 1);
+  assert.deepEqual(ownerMilestone.reactionCounts, [{ emoji: '⭐', count: 1 }]);
+});
+
+test('premium milestone reactions stay viewer-visible after blocking another reactor', async () => {
+  const userA = await buildUser({ username: 'user_a' });
+  const premiumUserB = await buildUser({
+    username: 'premium_b',
+    isPremium: true,
+  });
+  const userC = await buildUser({ username: 'user_c' });
+
+  await Promise.all([
+    makeFriends(userA, premiumUserB),
+    makeFriends(userA, userC),
+    makeFriends(premiumUserB, userC),
+  ]);
+
+  const habitA = await Habit.create({
+    title: 'Reading',
+    icon: '📚',
+    type: 'boolean',
+    frequency: 'Daily',
+    ownerId: userA._id,
+  });
+
+  const milestone = await MilestonePost.create({
+    user: userA._id,
+    habit: habitA._id,
+    habitTitle: habitA.title,
+    streakDays: 10,
+    visibleUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  });
+
+  await Promise.all([
+    MilestoneLike.create({ milestonePost: milestone._id, user: premiumUserB._id, emoji: '🎉' }),
+    MilestoneLike.create({ milestonePost: milestone._id, user: premiumUserB._id, emoji: '💜' }),
+    MilestoneLike.create({ milestonePost: milestone._id, user: userC._id, emoji: '⭐' }),
+  ]);
+  await MilestonePost.updateOne({ _id: milestone._id }, { likeCount: 3 });
+
+  await request(app)
+    .post(`/api/social/block/${userC._id}`)
+    .set('Authorization', authHeader(premiumUserB))
+    .expect(200);
+
+  const blockerFeedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(premiumUserB))
+    .expect(200);
+  const blockerMilestone = blockerFeedResponse.body.find((post) => post.type === 'milestone');
+  assert.equal(blockerMilestone.likeCount, 2);
+  assert.deepEqual(
+    blockerMilestone.reactionCounts.toSorted((a, b) => a.emoji.localeCompare(b.emoji)),
+    [
+      { emoji: '🎉', count: 1 },
+      { emoji: '💜', count: 1 },
+    ],
+  );
+
+  const thirdReactionResponse = await request(app)
+    .post(`/api/milestones/${milestone._id}/like`)
+    .set('Authorization', authHeader(premiumUserB))
+    .send({ emoji: '✨' })
+    .expect(200);
+
+  assert.equal(thirdReactionResponse.body.milestonePost.likeCount, 3);
+  assert.deepEqual(
+    thirdReactionResponse.body.milestonePost.reactionCounts.toSorted((a, b) => a.emoji.localeCompare(b.emoji)),
+    [
+      { emoji: '✨', count: 1 },
+      { emoji: '🎉', count: 1 },
+      { emoji: '💜', count: 1 },
+    ],
+  );
+  assert.deepEqual(thirdReactionResponse.body.milestonePost.currentUserReactions, ['🎉', '💜', '✨']);
 });
