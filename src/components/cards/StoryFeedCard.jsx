@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, MessageCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PostAuthorAvatar } from '@/components/cards/FeedPostCard';
 import { appCardClassName } from '@/components/cards/cardStyles';
-import { getStoryLikes } from '@/services/storyApi';
+import { getStoryLikes, getStoryComments } from '@/services/storyApi';
+import { StoryCommentSection } from '@/components/social/StoryCommentSection';
 
 // Context line per source type, e.g. "completed Morning Run 🏃"
 function buildContextLine(story) {
@@ -31,26 +32,64 @@ function getLikerName(liker) {
     return liker?.firstName || liker?.username || 'someone';
 }
 
-function buildLikeSummary(likers, likeCount) {
-    if (!likeCount) {
+function getUniqueUsers(users) {
+    const seen = new Set();
+    return users.filter((u) => {
+        if (!u) return false;
+        const id = u.id || u._id || u;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+    });
+}
+
+function buildSocialSummary(likers, comments, likeCount, commentCount) {
+    if (!likeCount && !commentCount) {
         return '';
     }
 
-    if (!likers.length) {
-        return `Liked by ${likeCount === 1 ? '1 person' : `${likeCount} people`}`;
+    const uniqueLikers = getUniqueUsers(likers);
+    const uniqueCommenters = getUniqueUsers(comments.map((c) => c.user));
+    const allUsers = getUniqueUsers([...likers, ...comments.map((c) => c.user)]);
+
+    // Case 1: Both likes and comments
+    if (likeCount > 0 && commentCount > 0) {
+        const firstUser = allUsers[0];
+        const firstName = getLikerName(firstUser);
+        return `Liked and commented by ${firstName} and others`;
     }
 
-    const firstName = getLikerName(likers[0]);
-
-    if (likeCount === 1) {
-        return `Liked by ${firstName}`;
+    // Case 2: Only comments
+    if (commentCount > 0) {
+        if (!uniqueCommenters.length) {
+            return `Commented by ${commentCount === 1 ? '1 person' : `${commentCount} people`}`;
+        }
+        const name1 = getLikerName(uniqueCommenters[0]);
+        if (commentCount === 1) {
+            return `Commented by ${name1}`;
+        }
+        if (commentCount === 2 && uniqueCommenters[1]) {
+            return `Commented by ${name1} and ${getLikerName(uniqueCommenters[1])}`;
+        }
+        return `Commented by ${name1} and others`;
     }
 
-    if (likeCount === 2 && likers[1]) {
-        return `Liked by ${firstName} and ${getLikerName(likers[1])}`;
+    // Case 3: Only likes
+    if (likeCount > 0) {
+        if (!uniqueLikers.length) {
+            return `Liked by ${likeCount === 1 ? '1 person' : `${likeCount} people`}`;
+        }
+        const name1 = getLikerName(uniqueLikers[0]);
+        if (likeCount === 1) {
+            return `Liked by ${name1}`;
+        }
+        if (likeCount === 2 && uniqueLikers[1]) {
+            return `Liked by ${name1} and ${getLikerName(uniqueLikers[1])}`;
+        }
+        return `Liked by ${name1} and others`;
     }
 
-    return `Liked by ${firstName} and others`;
+    return '';
 }
 
 export function StoryFeedCard({
@@ -60,18 +99,29 @@ export function StoryFeedCard({
     meta,
     story,
     isOwn = false,
+    currentUserId,
     onDelete,
     onOpenLikes,
     children,
 }) {
     const [likers, setLikers] = useState([]);
+    const [comments, setComments] = useState([]);
+    const [isLoadingComments, setIsLoadingComments] = useState(false);
+    const [localStory, setLocalStory] = useState(story);
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isCommentsOpen, setIsCommentsOpen] = useState(false);
     const [error, setError] = useState('');
     const displayName = isOwn ? 'You' : authorName;
 
+    // Sync story prop changes to localStory state
+    useEffect(() => {
+        setLocalStory(story);
+    }, [story]);
+
     useEffect(() => {
         if (!story.likeCount) {
+            setLikers([]);
             return undefined;
         }
 
@@ -91,6 +141,33 @@ export function StoryFeedCard({
             isCurrent = false;
         };
     }, [story.id, story.likeCount]);
+
+    useEffect(() => {
+        if (!story.commentCount) {
+            setComments([]);
+            return undefined;
+        }
+
+        let isCurrent = true;
+        setIsLoadingComments(true);
+
+        getStoryComments(story.id)
+            .then((res) => {
+                if (isCurrent && Array.isArray(res)) {
+                    setComments(res);
+                }
+            })
+            .catch((err) => {
+                console.error('Failed to load story comments:', err);
+            })
+            .finally(() => {
+                if (isCurrent) setIsLoadingComments(false);
+            });
+
+        return () => {
+            isCurrent = false;
+        };
+    }, [story.id, story.commentCount]);
 
     async function handleDelete() {
         try {
@@ -173,17 +250,51 @@ export function StoryFeedCard({
 
                 {error && <p className="text-sm text-red-300">{error}</p>}
 
-                <div className="flex min-w-0 items-center gap-3">
-                    <div className="shrink-0">{children}</div>
-                    {story.likeCount ? (
-                        <button
-                            type="button"
-                            className="min-w-0 truncate text-left text-sm text-slate-300 transition hover:text-white"
-                            onClick={() => onOpenLikes?.(story, likers)}
-                        >
-                            {buildLikeSummary(likers, story.likeCount)}
-                        </button>
+                <div className="flex flex-col gap-3 mt-4">
+                    {/* Action Icons Row */}
+                    <div className="flex min-w-0 items-center gap-3">
+                        <div className="shrink-0">{children}</div>
+                        
+                        <div className="shrink-0 flex items-center">
+                            <button
+                                type="button"
+                                onClick={() => setIsCommentsOpen(!isCommentsOpen)}
+                                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+                                    isCommentsOpen || localStory.commentCount > 0 ? 'text-blue-400 hover:bg-blue-500/10' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
+                                }`}
+                            >
+                                <MessageCircle className={`size-4 ${isCommentsOpen || localStory.commentCount > 0 ? 'fill-blue-400/20' : ''}`} />
+                                {localStory.commentCount > 0 && <span>{localStory.commentCount}</span>}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Social Summary Text (Below Icons Row) */}
+                    {(localStory.likeCount > 0 || localStory.commentCount > 0) ? (
+                        <div className="flex items-center text-sm text-slate-300">
+                            <button
+                                type="button"
+                                className={`min-w-0 truncate text-left transition ${localStory.likeCount ? 'hover:text-white' : 'cursor-default'}`}
+                                onClick={() => localStory.likeCount && onOpenLikes?.(localStory, likers)}
+                                disabled={!localStory.likeCount}
+                            >
+                                {buildSocialSummary(likers, comments, localStory.likeCount, localStory.commentCount)}
+                            </button>
+                        </div>
                     ) : null}
+
+                    {/* Comments Section */}
+                    {isCommentsOpen && (
+                        <StoryCommentSection
+                            story={localStory}
+                            currentUserId={currentUserId}
+                            comments={comments}
+                            setComments={setComments}
+                            isLoading={isLoadingComments}
+                            onCommentAdded={() => setLocalStory(prev => ({ ...prev, commentCount: (prev.commentCount || 0) + 1 }))}
+                            onCommentDeleted={() => setLocalStory(prev => ({ ...prev, commentCount: Math.max(0, (prev.commentCount || 1) - 1) }))}
+                        />
+                    )}
                 </div>
             </CardContent>
         </Card>

@@ -47,6 +47,7 @@ export function SocialFeed({
                                 meta={formatRelativeTime(post.createdAt)}
                                 story={post}
                                 isOwn={post.user?.id === currentUserId}
+                                currentUserId={currentUserId}
                                 onDelete={onDeleteStory}
                                 onOpenLikes={(_, likers) => onOpenStoryLikes?.(post, likers)}
                             >
