@@ -99,6 +99,43 @@ test('premium users can buy premium-only items', async () => {
     assert.equal(updatedUser.coins, 900);
 });
 
+test('premium-only items stay in inventory and equippable after premium ends', async () => {
+    const user = await buildUser({ isPremium: true, coins: 1000 });
+    const item = await buildItem({
+        type: 'clothing',
+        assetKey: 'hoodie',
+        premiumOnly: true,
+        price: 100,
+    });
+
+    const buyResponse = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({ itemId: item._id.toString() })
+        .expect(201);
+
+    await User.updateOne({ _id: user._id }, { isPremium: false });
+
+    const inventoryResponse = await request(app)
+        .get('/api/inventory/me')
+        .set('Authorization', authHeader(user))
+        .expect(200);
+
+    assert.equal(inventoryResponse.body.length, 1);
+    assert.equal(inventoryResponse.body[0].item._id, item._id.toString());
+    assert.equal(inventoryResponse.body[0].item.premiumOnly, true);
+
+    const outfitResponse = await request(app)
+        .put('/api/inventory/outfit')
+        .set('Authorization', authHeader(user))
+        .send({ equippedUserItemIds: [buyResponse.body._id] })
+        .expect(200);
+
+    const premiumItem = outfitResponse.body.find((entry) => entry._id === buyResponse.body._id);
+
+    assert.equal(premiumItem.equipped, true);
+});
+
 test('free users can still buy non-premium items', async () => {
     const user = await buildUser({ isPremium: false, coins: 1000 });
     const item = await buildItem({ premiumOnly: false, price: 100 });
