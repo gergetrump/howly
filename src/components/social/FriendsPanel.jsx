@@ -124,8 +124,8 @@ export function FriendsPanel({
     getRelationship,
 }) {
     return (
-        <aside className="ml-auto w-full max-w-[42rem] space-y-3 lg:sticky lg:top-6 lg:max-w-[22rem]">
-            <div className="flex flex-wrap items-center gap-2">
+        <aside className="ml-auto w-full max-w-[42rem] space-y-3 lg:sticky lg:top-24 lg:max-w-[22rem] lg:max-h-[calc(100vh-8rem)] lg:flex lg:flex-col">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <div className="inline-flex rounded-lg border border-white/10 bg-white/10 p-1 text-sm text-slate-300">
                     <button
                         type="button"
@@ -157,7 +157,7 @@ export function FriendsPanel({
                 </Button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1 overflow-y-auto pr-1">
                 {activePanel === 'friends' ? (
                     isLoading ? (
                         <EmptyState>Loading friends</EmptyState>
