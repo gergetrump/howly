@@ -19,11 +19,13 @@ export const INVENTORY_ERROR_CODES = {
     OUTFIT_ITEM_TYPE_CONFLICT: 'OUTFIT_ITEM_TYPE_CONFLICT',
     SHIELDS_AT_MAX: 'SHIELDS_AT_MAX',
     BOOST_NOT_AVAILABLE: 'BOOST_NOT_AVAILABLE',
+    BOOST_QUANTITY_LIMIT_REACHED: 'BOOST_QUANTITY_LIMIT_REACHED',
     ...BOOST_ERROR_CODES,
 };
 
 // Consumable power-up in the catalog: buying it grants a streak shield instead
 export const STREAK_FREEZE_ASSET_KEY = 'streak-freeze';
+export const MAX_OWNED_BOOST_QUANTITY = 20;
 
 const SINGLE_EQUIP_ITEM_TYPES = new Set(['clothing', 'shoes']);
 const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
@@ -401,6 +403,18 @@ async function buyBoostPowerUp({ user, item }) {
         throw inventoryError(INVENTORY_ERROR_CODES.PREMIUM_REQUIRED);
     }
 
+    await ensureCustomizationIndexes();
+
+    const existingUserItem = await UserItem.findOne({
+        user: user._id,
+        item: item._id,
+        customizationKey: 'default',
+    });
+
+    if ((existingUserItem?.quantity ?? 0) >= MAX_OWNED_BOOST_QUANTITY) {
+        throw inventoryError(INVENTORY_ERROR_CODES.BOOST_QUANTITY_LIMIT_REACHED);
+    }
+
     if (user.coins < item.price) {
         throw inventoryError(INVENTORY_ERROR_CODES.NOT_ENOUGH_COINS);
     }
@@ -409,14 +423,6 @@ async function buyBoostPowerUp({ user, item }) {
     await user.save();
 
     try {
-        await ensureCustomizationIndexes();
-
-        const existingUserItem = await UserItem.findOne({
-            user: user._id,
-            item: item._id,
-            customizationKey: 'default',
-        });
-
         if (existingUserItem) {
             existingUserItem.quantity = (existingUserItem.quantity ?? 1) + 1;
             return existingUserItem.save().then((savedItem) => savedItem.populate('item'));

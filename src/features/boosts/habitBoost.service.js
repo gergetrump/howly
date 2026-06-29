@@ -90,13 +90,23 @@ export async function activateHabitBoost({ userId, item, habitId }) {
         throw boostError(BOOST_ERROR_CODES.BOOST_ALREADY_ACTIVE);
     }
 
-    const boost = await HabitBoost.create({
-        user: userId,
-        habit: habit._id,
-        assetKey: item.assetKey,
-        bonusCoins: config.bonusCoins,
-        remainingCompletions: config.completions,
-    });
+    let boost;
+
+    try {
+        boost = await HabitBoost.create({
+            user: userId,
+            habit: habit._id,
+            assetKey: item.assetKey,
+            bonusCoins: config.bonusCoins,
+            remainingCompletions: config.completions,
+        });
+    } catch (error) {
+        if (error.code === 11000) {
+            throw boostError(BOOST_ERROR_CODES.BOOST_ALREADY_ACTIVE);
+        }
+
+        throw error;
+    }
 
     const freshUser = await User.findById(userId).select('coins');
 

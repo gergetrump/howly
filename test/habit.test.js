@@ -250,6 +250,46 @@ test('habit boost can be bought, used from inventory, and grants bonus coins for
   assert.equal(updatedUser.coins, 350);
 });
 
+test('habit boost ownership is capped at 20 per boost type', async () => {
+  const user = await buildUser({ coins: 3000 });
+  const token = authHeader(user);
+  const boostItem = await Item.create({
+    name: 'Small Boost',
+    type: 'powerUp',
+    price: 100,
+    assetKey: 'small-boost',
+  });
+
+  for (let index = 0; index < 20; index += 1) {
+    await request(app)
+      .post('/api/inventory/buy')
+      .set('Authorization', token)
+      .send({
+        itemId: boostItem._id.toString(),
+      })
+      .expect(201);
+  }
+
+  const ownedBoost = await UserItem.findOne({ user: user._id, item: boostItem._id }).lean();
+  const userBeforeRejectedBuy = await User.findById(user._id).lean();
+
+  assert.equal(ownedBoost.quantity, 20);
+  assert.equal(userBeforeRejectedBuy.coins, 1000);
+
+  const rejectedResponse = await request(app)
+    .post('/api/inventory/buy')
+    .set('Authorization', token)
+    .send({
+      itemId: boostItem._id.toString(),
+    })
+    .expect(400);
+
+  const userAfterRejectedBuy = await User.findById(user._id).lean();
+
+  assert.equal(rejectedResponse.body.code, 'BOOST_QUANTITY_LIMIT_REACHED');
+  assert.equal(userAfterRejectedBuy.coins, 1000);
+});
+
 test('habit custom frequency stores customDays properly', async () => {
   const user = await buildUser();
   const token = authHeader(user);
