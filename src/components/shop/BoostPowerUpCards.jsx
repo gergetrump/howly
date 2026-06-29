@@ -35,6 +35,7 @@ export function BoostPowerUpCards({
     onAddToCart,
     onBuy,
     getCartQuantity,
+    isCartQuantityMax,
     isBuying,
     isFreeUser,
     onPremiumRequired,
@@ -89,6 +90,7 @@ export function BoostPowerUpCards({
 
         const Visual = boost.Visual;
         const cartQuantity = getCartQuantity?.(item) ?? 0;
+        const cartQuantityMax = isCartQuantityMax?.(item) ?? false;
 
         return (
             <ItemCard
@@ -135,10 +137,11 @@ export function BoostPowerUpCards({
                 <ActionButton
                     type="button"
                     fullWidth
-                    className="h-8 px-3 text-xs"
+                    className="h-8 px-3 text-xs disabled:bg-white/10 disabled:text-slate-500"
+                    disabled={cartQuantityMax}
                     onClick={() => guardPremium(item, () => onAddToCart?.(item))}
                 >
-                    {cartQuantity > 0 ? `${cartQuantity}x in cart` : 'Add to cart'}
+                    {cartQuantity > 0 ? `${cartQuantity}x in cart` : cartQuantityMax ? 'Max 20' : 'Add to cart'}
                 </ActionButton>
                 <ActionButton
                     type="button"

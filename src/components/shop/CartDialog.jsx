@@ -21,6 +21,7 @@ export function CartDialog({
     getPurchaseEntryCustomization,
     getPurchaseEntryQuantity,
     isStackablePurchaseEntry,
+    isCartEntryAtQuantityLimit,
     isPurchaseEntryOwned,
     onRemoveCartEntry,
     onIncreaseCartEntry,
@@ -49,6 +50,7 @@ export function CartDialog({
                             const customization = getPurchaseEntryCustomization(entry);
                             const quantity = getPurchaseEntryQuantity(entry);
                             const isStackable = isStackablePurchaseEntry(entry);
+                            const isAtQuantityLimit = isCartEntryAtQuantityLimit?.(entry) ?? false;
                             const isOwned = isPurchaseEntryOwned(entry);
 
                             return (
@@ -91,8 +93,9 @@ export function CartDialog({
                                                 type="button"
                                                 size="icon"
                                                 variant="ghost"
-                                                className="h-8 w-8 rounded-full text-slate-300 hover:bg-white/10 hover:text-white"
-                                                aria-label={`Increase ${getItemDisplayName(item)} quantity`}
+                                                className="h-8 w-8 rounded-full text-slate-300 hover:bg-white/10 hover:text-white disabled:text-slate-600"
+                                                aria-label={isAtQuantityLimit ? `${getItemDisplayName(item)} cart quantity is at maximum` : `Increase ${getItemDisplayName(item)} quantity`}
+                                                disabled={isAtQuantityLimit}
                                                 onClick={() => onIncreaseCartEntry(entry.cartKey)}
                                             >
                                                 <Plus className="h-4 w-4" aria-hidden="true" />
