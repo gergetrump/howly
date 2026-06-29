@@ -137,10 +137,15 @@ export async function addStoryComment(req, res) {
     userId: req.user.id,
     storyId: req.params.storyId,
     content: value.content,
+    parentCommentId: value.parentCommentId,
   });
 
   if (errorCode === 'STORY_NOT_FOUND') {
     return notFound(res);
+  }
+
+  if (errorCode === 'PARENT_COMMENT_NOT_FOUND') {
+    return badRequest(res, 'Parent comment not found');
   }
 
   return res.status(201).json(comment);

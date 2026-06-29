@@ -55,6 +55,7 @@ export function toStoryCommentResponse(comment) {
     id: comment._id.toString(),
     user: toPublicUser(comment.user),
     content: comment.content,
+    parentComment: comment.parentComment?.toString() || null,
     createdAt: comment.createdAt,
     updatedAt: comment.updatedAt,
   };
@@ -271,7 +272,7 @@ export async function deleteStory({ userId, storyId }) {
   return { deleted: true };
 }
 
-export async function addStoryComment({ userId, storyId, content }) {
+export async function addStoryComment({ userId, storyId, content, parentCommentId = null }) {
   const story = await Story.findById(storyId);
 
   if (!story || story.feedExpiresAt <= new Date()) {
@@ -282,10 +283,22 @@ export async function addStoryComment({ userId, storyId, content }) {
     return { errorCode: 'STORY_NOT_FOUND' };
   }
 
+  let finalParentId = null;
+
+  if (parentCommentId) {
+    const parentComment = await StoryComment.findOne({ _id: parentCommentId, story: storyId });
+    if (!parentComment) {
+      return { errorCode: 'PARENT_COMMENT_NOT_FOUND' };
+    }
+    // Restrict nesting to exactly 1 level (replies of replies become replies to the parent comment)
+    finalParentId = parentComment.parentComment || parentComment._id;
+  }
+
   const comment = await StoryComment.create({
     user: userId,
     story: storyId,
     content,
+    parentComment: finalParentId,
   });
 
   story.commentCount += 1;
@@ -322,9 +335,18 @@ export async function deleteStoryComment({ userId, storyId, commentId }) {
     return { errorCode: 'COMMENT_NOT_FOUND' };
   }
 
+  let deletedCount = 1;
+
+  // If this is a parent comment, delete all its replies as well
+  if (!comment.parentComment) {
+    const replies = await StoryComment.find({ parentComment: comment._id });
+    deletedCount += replies.length;
+    await StoryComment.deleteMany({ parentComment: comment._id });
+  }
+
   await comment.deleteOne();
 
-  await Story.updateOne({ _id: storyId }, { $inc: { commentCount: -1 } });
+  await Story.updateOne({ _id: storyId }, { $inc: { commentCount: -deletedCount } });
 
   return { deleted: true };
 }

@@ -486,6 +486,65 @@ test('strangers cannot comment on a story (404)', async () => {
     .expect(404);
 });
 
+test('a user can reply to a comment, and deleting the parent comment deletes replies and updates story commentCount', async () => {
+  const owner = await buildUser();
+  const friend = await buildUser();
+  await makeFriends(owner, friend);
+
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  // 1. Post parent comment
+  const parentRes = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .send({ content: 'Main thread comment' })
+    .expect(201);
+
+  const parentId = parentRes.body.id;
+
+  // 2. Post reply comment
+  const replyRes = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(friend))
+    .send({ content: 'My reply to you', parentCommentId: parentId })
+    .expect(201);
+
+  assert.equal(replyRes.body.parentComment, parentId);
+
+  // Check comment count on story document
+  const updatedStory = await Story.findById(story._id);
+  assert.equal(updatedStory.commentCount, 2);
+
+  // Fetch comments to verify listing both
+  const getRes = await request(app)
+    .get(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(getRes.body.length, 2);
+  assert.equal(getRes.body[0].id, parentId);
+  assert.equal(getRes.body[1].parentComment, parentId);
+
+  // 3. Delete parent comment (which deletes reply too)
+  await request(app)
+    .delete(`/api/stories/${story._id}/comments/${parentId}`)
+    .set('Authorization', authHeader(owner))
+    .expect(204);
+
+  // Check if comments list is empty
+  const getResAfterDelete = await request(app)
+    .get(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(getResAfterDelete.body.length, 0);
+
+  // Check if story commentCount is decremented by 2 (back to 0)
+  const finalStory = await Story.findById(story._id);
+  assert.equal(finalStory.commentCount, 0);
+});
+
 test('requests without auth token are rejected', async () => {
   await request(app).get('/api/stories/me').expect(401);
 });

@@ -122,6 +122,12 @@ const storyCommentSchema = new Schema(
       required: true,
       index: true,
     },
+    parentComment: {
+      type: Schema.Types.ObjectId,
+      ref: 'StoryComment',
+      default: null,
+      index: true,
+    },
     content: {
       type: String,
       required: true,

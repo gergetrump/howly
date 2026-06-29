@@ -57,6 +57,16 @@ export function validateCommentInput(body = {}) {
     errors.push('content must be 500 characters or less');
   }
 
+  let parentCommentId = null;
+
+  if (body.parentCommentId !== undefined && body.parentCommentId !== null) {
+    if (!isNonEmptyString(body.parentCommentId) || !isValidObjectId(body.parentCommentId)) {
+      errors.push('parentCommentId must be a valid ObjectId');
+    } else {
+      parentCommentId = body.parentCommentId.trim();
+    }
+  }
+
   if (errors.length) {
     return { error: errors.join(', ') };
   }
@@ -64,6 +74,7 @@ export function validateCommentInput(body = {}) {
   return {
     value: {
       content: body.content.trim(),
+      parentCommentId,
     },
   };
 }
