@@ -5,6 +5,16 @@ import { PostAuthorAvatar } from '@/components/cards/FeedPostCard';
 import { appCardClassName } from '@/components/cards/cardStyles';
 import { getStoryLikes, getStoryComments } from '@/services/storyApi';
 import { StoryCommentSection } from '@/components/social/StoryCommentSection';
+import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+    ConfirmationDialog,
+    ConfirmationDialogContent,
+    ConfirmationDialogDescription,
+    ConfirmationDialogFooter,
+    ConfirmationDialogHeader,
+    ConfirmationDialogTitle,
+} from "@/components/ui/confirmation-dialog";
 
 // Context line per source type, e.g. "completed Morning Run 🏃"
 function buildContextLine(story) {
@@ -203,36 +213,14 @@ export function StoryFeedCard({
                     <div className="flex shrink-0 items-center gap-2">
                         {meta ? <span className="text-sm text-slate-400">{meta}</span> : null}
                         {isOwn && onDelete ? (
-                            isConfirmingDelete ? (
-                                <div className="flex items-center gap-2 text-sm">
-                                    <span className="text-slate-400">Delete?</span>
-                                    <button
-                                        type="button"
-                                        onClick={handleDelete}
-                                        disabled={isDeleting}
-                                        className="font-semibold text-red-300 hover:text-red-200 disabled:opacity-50"
-                                    >
-                                        {isDeleting ? 'Deleting...' : 'Yes'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsConfirmingDelete(false)}
-                                        disabled={isDeleting}
-                                        className="text-slate-400 hover:text-white disabled:opacity-50"
-                                    >
-                                        No
-                                    </button>
-                                </div>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => setIsConfirmingDelete(true)}
-                                    className="flex size-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-red-500/10 hover:text-red-300"
-                                    aria-label="Delete story"
-                                >
-                                    <Trash2 className="size-4" />
-                                </button>
-                            )
+                            <button
+                                type="button"
+                                onClick={() => setIsConfirmingDelete(true)}
+                                className="flex size-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-red-500/10 hover:text-red-300"
+                                aria-label="Delete story"
+                            >
+                                <Trash2 className="size-4" />
+                            </button>
                         ) : null}
                     </div>
                 </div>
@@ -289,6 +277,7 @@ export function StoryFeedCard({
                         <StoryCommentSection
                             story={localStory}
                             currentUserId={currentUserId}
+                            isStoryOwner={isOwn}
                             comments={comments}
                             setComments={setComments}
                             isLoading={isLoadingComments}
@@ -300,6 +289,41 @@ export function StoryFeedCard({
                     )}
                 </div>
             </CardContent>
+
+            {isConfirmingDelete && (
+                <ConfirmationDialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
+                    <ConfirmationDialogContent className="bg-[#1e1b3a] border-0 text-white rounded-3xl p-8 sm:max-w-md flex flex-col items-center text-center shadow-2xl z-[100]">
+                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10 mb-2 border border-red-500/20">
+                            <Trash2 className="h-8 w-8 text-red-400" />
+                        </div>
+                        <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-4 text-center">
+                            <ConfirmationDialogTitle className="text-2xl font-bold tracking-tight text-center">Delete this story?</ConfirmationDialogTitle>
+                            <ConfirmationDialogDescription className="text-base text-slate-300 text-center">
+                                This will permanently remove your story post, likes, and comments. This can't be undone.
+                            </ConfirmationDialogDescription>
+                        </ConfirmationDialogHeader>
+                        <ConfirmationDialogFooter className="flex-col w-full gap-3 mt-8 sm:flex-col sm:space-x-0">
+                            <AlertDialogPrimitive.Cancel asChild>
+                                <Button 
+                                    variant="outline"
+                                    className="w-full h-14 rounded-full bg-[#2a2746] border border-slate-700/50 text-white hover:bg-[#343155] hover:text-white mt-0 text-lg font-semibold"
+                                >
+                                    Keep it
+                                </Button>
+                            </AlertDialogPrimitive.Cancel>
+                            <AlertDialogPrimitive.Action asChild>
+                                <Button 
+                                    onClick={handleDelete}
+                                    disabled={isDeleting}
+                                    className="w-full h-14 rounded-full bg-[#d65d53] hover:bg-[#c2534a] text-white text-lg font-semibold shadow-lg shadow-red-900/20"
+                                >
+                                    <Trash2 className="mr-2 h-5 w-5" /> {isDeleting ? 'Deleting...' : 'Yes, delete story'}
+                                </Button>
+                            </AlertDialogPrimitive.Action>
+                        </ConfirmationDialogFooter>
+                    </ConfirmationDialogContent>
+                </ConfirmationDialog>
+            )}
         </Card>
     );
 }

@@ -32,6 +32,7 @@ export function StoryCommentSection({
     isLoading = false,
     likers = [],
     onOpenProfile,
+    isStoryOwner = false,
     onCommentAdded,
     onCommentDeleted,
 }) {
@@ -205,7 +206,7 @@ export function StoryCommentSection({
                                 Reply
                             </button>
                         )}
-                        {comment.user?.id === currentUserId && (
+                        {(comment.user?.id === currentUserId || isStoryOwner) && (
                             <button
                                 type="button"
                                 onClick={() => setCommentIdToDelete(comment.id)}
