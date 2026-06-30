@@ -30,7 +30,7 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
     const progressText = `${item.participant?.daysCompleted ?? 0}/${item.challenge?.durationDays ?? 0} days`;
 
     return (
-        <Card className={cn(appCardClassName, item.habit.isCompletedToday && 'bg-emerald-400/10 ring-emerald-300/25')}>
+        <Card className={cn(appCardClassName, item.habit.isCompletedToday && 'bg-[#23423b] ring-emerald-300/25')}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}>
                     <span aria-hidden="true">{item.habit.icon}</span>

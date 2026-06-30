@@ -43,7 +43,7 @@ export function HabitCard({
     const hasMenuActions = Boolean(onEdit || onDelete || onShareStory);
 
     return (
-        <Card className={cn(appCardClassName, completed && 'bg-emerald-400/10 ring-emerald-300/25', atRisk && !completed && 'bg-amber-400/5 ring-amber-400/30')}>
+        <Card className={cn(appCardClassName, completed && 'bg-[#23423b] ring-emerald-300/25', atRisk && !completed && 'bg-[#42392c] ring-amber-400/30')}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}>
                     <span aria-hidden="true">{emoji}</span>
