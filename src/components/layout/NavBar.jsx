@@ -34,7 +34,7 @@ const brandSizes = {
     },
 };
 
-const navStatBadgeClassName = 'min-h-10 gap-2 px-3.5 py-1.5 text-sm font-bold leading-none [&>span:first-child]:text-lg';
+const navStatBadgeClassName = 'min-h-10 gap-2 px-3.5 py-1.5 text-sm font-bold leading-none';
 
 export function NavBar({
     items = defaultItems,
@@ -140,7 +140,7 @@ export function NavBar({
 
                 <div className="flex shrink-0 items-center gap-3">
                     <MoonCoin amount={coinAmount} compact className={navStatBadgeClassName} />
-                    <StreakBadge days={streakAmount} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'rounded-full border border-orange-400/20 bg-orange-400/10 text-orange-300')} />
+                    <StreakBadge days={streakAmount} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'rounded-full border border-orange-400/20 bg-orange-400/10 text-orange-300 [&>span:first-child]:text-lg')} />
                     {profileItem ? (
                         <div className="relative ml-1">
 
