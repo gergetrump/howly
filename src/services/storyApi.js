@@ -36,3 +36,19 @@ export function getStoryLikes(storyId) {
 export function deleteStory(storyId) {
     return apiRequest(`/stories/${storyId}`, { method: 'DELETE' });
 }
+
+export function getStoryComments(storyId) {
+    return apiRequest(`/stories/${storyId}/comments`);
+}
+
+export function postStoryComment(storyId, content, parentCommentId = null) {
+    return apiRequest(`/stories/${storyId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, parentCommentId }),
+    });
+}
+
+export function deleteStoryComment(storyId, commentId) {
+    return apiRequest(`/stories/${storyId}/comments/${commentId}`, { method: 'DELETE' });
+}

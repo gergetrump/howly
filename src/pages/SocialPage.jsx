@@ -4,7 +4,12 @@ import { FriendsPanel } from '@/components/social/FriendsPanel.jsx';
 import { ReactionUsersDialog } from '@/components/social/ReactionUsersDialog.jsx';
 import { SocialFeed } from '@/components/social/SocialFeed.jsx';
 import { UserPreviewDialog } from '@/components/social/UserPreviewDialog.jsx';
-import { getSocialErrorMessage, getDisplayName, sameId } from '@/components/social/socialHelpers.js';
+import {
+    getSocialErrorMessage,
+    getDisplayName,
+    isBlockedByRelationship,
+    sameId,
+} from '@/components/social/socialHelpers.js';
 import {
     acceptFriendRequest,
     deleteFriend,
@@ -14,6 +19,10 @@ import {
     rejectFriendRequest,
     reactToMilestone,
     sendFriendRequest,
+    blockUser,
+    unblockUser,
+    getBlockedUsers,
+    getBlockers,
 } from '@/services/socialApi';
 import { searchUsers } from '@/services/userApi';
 import { deleteStory, getStoryLikes, toggleStoryLike } from '@/services/storyApi';
@@ -26,6 +35,8 @@ export function SocialPage() {
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState({ incoming: [], outgoing: [] });
     const [feed, setFeed] = useState([]);
+    const [blockedUsers, setBlockedUsers] = useState([]);
+    const [blockers, setBlockers] = useState([]);
     const [usernameQuery, setUsernameQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -92,15 +103,19 @@ export function SocialPage() {
         }
 
         try {
-            const [friendsData, requestsData, feedData] = await Promise.all([
+            const [friendsData, requestsData, feedData, blockedData, blockersData] = await Promise.all([
                 getFriends(),
                 getFriendRequests(),
                 getSocialFeed(),
+                getBlockedUsers(),
+                getBlockers(),
             ]);
 
             setFriends(friendsData ?? []);
             setRequests(requestsData ?? { incoming: [], outgoing: [] });
             setFeed(feedData ?? []);
+            setBlockedUsers(blockedData ?? []);
+            setBlockers(blockersData ?? []);
             window.dispatchEvent(new Event('howly:social-requests-updated'));
         } catch (err) {
             if (!silent) {
@@ -433,6 +448,42 @@ export function SocialPage() {
         await handleReactToMilestone(post, emoji);
     }
 
+    async function handleBlockUser(targetUserId) {
+        try {
+            setIsSubmitting(true);
+            setError('');
+            await blockUser(targetUserId);
+            const blockedData = await getBlockedUsers();
+            setBlockedUsers(blockedData ?? []);
+            void refreshSocialData({ silent: true });
+            setSelectedProfileUser(null);
+            setNotice('User blocked successfully.');
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    async function handleUnblockUser(targetUserId) {
+        try {
+            setIsSubmitting(true);
+            setError('');
+            await unblockUser(targetUserId);
+            const blockedData = await getBlockedUsers();
+            setBlockedUsers(blockedData ?? []);
+            setNotice('User unblocked successfully.');
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    const isSelectedUserBlocked = selectedProfileUser
+        ? isBlockedByRelationship(selectedProfileUser, blockedUsers, blockers)
+        : false;
+
     return (
         <Page theme="forest" contentClassName="max-w-[112rem]">
             <Heading title="Social" subtitle="See what your friends are building." streakDays={user?.streak ?? 0} />
@@ -448,6 +499,9 @@ export function SocialPage() {
                     onToggleStoryLike={handleToggleStoryLike}
                     onOpenStoryLikes={handleOpenStoryLikes}
                     onDeleteStory={handleDeleteStory}
+                    onOpenProfile={setSelectedProfileUser}
+                    blockedUsers={blockedUsers}
+                    blockers={blockers}
                 />
 
                 <FriendsPanel
@@ -471,6 +525,7 @@ export function SocialPage() {
                     onAcceptRequest={handleAcceptRequest}
                     onRejectRequest={handleRejectRequest}
                     onDeleteFriend={handleDeleteFriend}
+                    onBlockUser={handleBlockUser}
                     onOpenProfile={setSelectedProfileUser}
                     getRelationship={getProfileRelationship}
                 />
@@ -493,9 +548,12 @@ export function SocialPage() {
                 user={selectedProfileUser}
                 relationship={getProfileRelationship(selectedProfileUser)}
                 busy={isSubmitting || busyRequestId !== null}
+                isBlocked={isSelectedUserBlocked}
                 onClose={() => setSelectedProfileUser(null)}
                 onAddFriend={handleSendProfileFriendRequest}
                 onAcceptRequest={handleAcceptProfileFriendRequest}
+                onBlock={handleBlockUser}
+                onUnblock={handleUnblockUser}
             />
         </Page>
     );
