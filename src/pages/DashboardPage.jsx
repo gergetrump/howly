@@ -55,30 +55,6 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
     );
 }
 
-// Group habits by their goal. Habits without a goal come first (no header),
-// followed by one group per goal.
-function groupHabitsByGoal(list) {
-    const byGoal = new Map();
-    for (const habit of list) {
-        const key = habit.goal || '';
-        if (!byGoal.has(key)) {
-            byGoal.set(key, []);
-        }
-        byGoal.get(key).push(habit);
-    }
-
-    const groups = [];
-    if (byGoal.has('')) {
-        groups.push({ goal: null, habits: byGoal.get('') });
-    }
-    for (const [key, groupHabits] of byGoal) {
-        if (key !== '') {
-            groups.push({ goal: key, habits: groupHabits });
-        }
-    }
-    return groups;
-}
-
 export function DashboardPage() {
     const navigate = useNavigate();
     const { user, companion, setUser } = useAuth();
@@ -292,18 +268,6 @@ export function DashboardPage() {
         setIsAddModalOpen(true);
     }
 
-    function renderGoalHeader(goalLabel) {
-        return (
-            <div className="px-1">
-                <span className="inline-flex items-center gap-2 rounded-full bg-howly-primary/15 px-4 py-1.5 text-sm font-bold text-howly-primary ring-1 ring-howly-primary/40">
-                    <Sparkles size={15} aria-hidden="true" />
-                    <span className="text-xs font-semibold uppercase tracking-wider opacity-70">Goal:</span>
-                    {goalLabel}
-                </span>
-            </div>
-        );
-    }
-
     function renderHabitCard(habit, withCompletion) {
         return (
             <HabitCard
@@ -311,6 +275,7 @@ export function DashboardPage() {
                 emoji={habit.icon}
                 title={habit.title}
                 frequency={habit.frequency}
+                goal={habit.goal}
                 streakDays={habit.streakCount}
                 completed={habit.isCompletedToday}
                 atRisk={Boolean(habit.streakRepairDeadline)}
@@ -448,16 +413,9 @@ export function DashboardPage() {
                 {todaysHabits.length === 0 ? (
                     <p className="text-sm text-slate-400 text-center py-4">No habits scheduled for today. Take a break!</p>
                 ) : (
-                    <div className="space-y-4">
-                        {groupHabitsByGoal(todaysHabits).map((group) => (
-                            <div key={group.goal ?? '__ungrouped'} className="space-y-2">
-                                {group.goal ? renderGoalHeader(group.goal) : null}
-                                <CardGrid columns={group.habits.length === 1 ? 1 : 2}>
-                                    {group.habits.map((habit) => renderHabitCard(habit, true))}
-                                </CardGrid>
-                            </div>
-                        ))}
-                    </div>
+                    <CardGrid columns={todaysHabits.length === 1 ? 1 : 2}>
+                        {todaysHabits.map((habit) => renderHabitCard(habit, true))}
+                    </CardGrid>
                 )}
             </PageSection>
 
@@ -478,14 +436,9 @@ export function DashboardPage() {
                         {habits.length === 0 ? (
                             <p className="text-sm text-slate-400 text-center py-4">No habits yet. Click "Add Habit" to start!</p>
                         ) : (
-                            groupHabitsByGoal(habits).map((group) => (
-                                <div key={group.goal ?? '__ungrouped'} className="space-y-2">
-                                    {group.goal ? renderGoalHeader(group.goal) : null}
-                                    <CardGrid columns={group.habits.length === 1 ? 1 : 2}>
-                                        {group.habits.map((habit) => renderHabitCard(habit, false))}
-                                    </CardGrid>
-                                </div>
-                            ))
+                            <CardGrid columns={habits.length === 1 ? 1 : 2}>
+                                {habits.map((habit) => renderHabitCard(habit, false))}
+                            </CardGrid>
                         )}
                     </div>
                 )}
