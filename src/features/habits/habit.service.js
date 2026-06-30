@@ -11,6 +11,8 @@ import {
 } from '../analytics/analytics.service.js';
 import User from '../users/user.model.js';
 import { PLAN_KEYS, getPlanForUser } from '../../config/plans.js';
+import { applyHabitBoostReward, revertHabitBoostReward } from '../boosts/habitBoost.service.js';
+import HabitBoost from '../boosts/habitBoost.model.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -160,6 +162,29 @@ function toHabitDto(habit) {
     };
 }
 
+async function populateActiveBoosts(userId, dtos) {
+    if (!dtos || dtos.length === 0) return dtos;
+    const habitIds = dtos.map(d => d.id);
+    const activeBoosts = await HabitBoost.find({
+        user: userId,
+        habit: { $in: habitIds },
+        completedAt: null
+    });
+    const boostsByHabitId = {};
+    activeBoosts.forEach(boost => {
+        boostsByHabitId[boost.habit.toString()] = {
+            id: boost._id.toString(),
+            assetKey: boost.assetKey,
+            bonusCoins: boost.bonusCoins,
+            remainingCompletions: boost.remainingCompletions,
+        };
+    });
+    dtos.forEach(dto => {
+        dto.activeBoost = boostsByHabitId[dto.id] || null;
+    });
+    return dtos;
+}
+
 async function assertCanCreateHabits(userId, requestedHabitCount = 1) {
     const user = await User.findOne({ _id: userId, isDeleted: false })
         .select('role isPremium')
@@ -204,8 +229,11 @@ export async function getHabitsForUser(userId, { page = 1, limit = 20 } = {}) {
         Habit.countDocuments({ ownerId: userId, source: { $ne: 'challenge' } }),
     ]);
 
+    const dtos = habits.map(toHabitDto);
+    await populateActiveBoosts(userId, dtos);
+
     return {
-        data: habits.map(toHabitDto),
+        data: dtos,
         pagination: {
             page,
             limit,
@@ -225,7 +253,9 @@ export async function getHabitById(habitId, userId) {
         throw ApiError.notFound('Habit not found.');
     }
 
-    return toHabitDto(habit);
+    const dto = toHabitDto(habit);
+    const [populated] = await populateActiveBoosts(userId, [dto]);
+    return populated;
 }
 
 /**
@@ -235,7 +265,9 @@ export async function createHabit(userId, data) {
     await assertCanCreateHabits(userId);
 
     const habit = await Habit.create({ ...data, ownerId: userId });
-    return toHabitDto(habit);
+    const dto = toHabitDto(habit);
+    const [populated] = await populateActiveBoosts(userId, [dto]);
+    return populated;
 }
 
 /**
@@ -270,11 +302,12 @@ export async function updateHabit(habitId, userId, data) {
         throw ApiError.notFound('Habit not found.');
     }
 
-    // Apply only the provided fields (PATCH semantics)
     Object.assign(habit, data);
     await habit.save();
 
-    return toHabitDto(habit);
+    const dto = toHabitDto(habit);
+    const [populated] = await populateActiveBoosts(userId, [dto]);
+    return populated;
 }
 
 /**
@@ -286,6 +319,8 @@ export async function deleteHabit(habitId, userId) {
     if (!habit) {
         throw ApiError.notFound('Habit not found.');
     }
+
+    await HabitBoost.deleteMany({ habit: habitId });
 }
 
 /**
@@ -309,10 +344,15 @@ export async function completeHabit(habitId, userId) {
         await habit.save();
         await recordHabitCheckIn({ userId, habit, completedAt: habit.lastCompletedAt });
         await recordProgressForHabit({ userId, habitId: habit._id });
+        const boostReward = await applyHabitBoostReward({ userId, habit });
+
+        const dto = toHabitDto(habit);
+        const [populated] = await populateActiveBoosts(userId, [dto]);
 
         return {
-            habit: toHabitDto(habit),
+            habit: populated,
             milestonePost: null,
+            boostReward,
         };
     }
 
@@ -335,11 +375,16 @@ export async function completeHabit(habitId, userId) {
         ? await enrichMilestonePost(milestonePost)
         : null;
     await recordProgressForHabit({ userId, habitId: habit._id });
+    const boostReward = await applyHabitBoostReward({ userId, habit });
     await creditOverallStreak(userId);
 
+    const dto = toHabitDto(habit);
+    const [populated] = await populateActiveBoosts(userId, [dto]);
+
     return {
-        habit: toHabitDto(habit),
+        habit: populated,
         milestonePost: enrichedMilestonePost,
+        boostReward,
     };
 }
 
@@ -359,12 +404,19 @@ export async function uncompleteHabit(habitId, userId) {
     }
 
     if (habit.source === 'challenge') {
+        const uncompletedAt = habit.lastCompletedAt || new Date();
         await removeHabitCheckInForCurrentPeriod({ userId, habit });
         habit.lastCompletedAt = null;
         await habit.save();
         await recordProgressForHabit({ userId, habitId: habit._id, days: -1 });
+        const boostReverted = await revertHabitBoostReward({ userId, habit, uncompletedAt });
 
-        return toHabitDto(habit);
+        const dto = toHabitDto(habit);
+        const [populated] = await populateActiveBoosts(userId, [dto]);
+        return {
+            habit: populated,
+            boostReverted,
+        };
     }
 
     // Revert streak
@@ -373,12 +425,19 @@ export async function uncompleteHabit(habitId, userId) {
     // Approximate previous completion date to yesterday so streak can continue tomorrow
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
+    const uncompletedAt = habit.lastCompletedAt || new Date();
     await removeHabitCheckInForCurrentPeriod({ userId, habit });
     habit.lastCompletedAt = habit.streakCount > 0 ? yesterday : null;
 
     await habit.save();
+    const boostReverted = await revertHabitBoostReward({ userId, habit, uncompletedAt });
 
-    return toHabitDto(habit);
+    const dto = toHabitDto(habit);
+    const [populated] = await populateActiveBoosts(userId, [dto]);
+    return {
+        habit: populated,
+        boostReverted,
+    };
 }
 
 

@@ -8,6 +8,9 @@ import connectDB from '../src/config/database.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
 import Habit from '../src/features/habits/habit.model.js';
 import User from '../src/features/users/user.model.js';
+import Item from '../src/features/items/item.model.js';
+import UserItem from '../src/features/inventory/inventory.model.js';
+import HabitBoost from '../src/features/boosts/habitBoost.model.js';
 import config from '../config.js';
 import { getPlanForUser } from '../src/config/plans.js';
 
@@ -43,6 +46,9 @@ afterEach(async () => {
   await Promise.all([
     Habit.deleteMany({}),
     User.deleteMany({}),
+    Item.deleteMany({}),
+    UserItem.deleteMany({}),
+    HabitBoost.deleteMany({}),
   ]);
 });
 
@@ -162,6 +168,126 @@ test('habit check-in and uncheck-in updates streaks correctly', async () => {
     .delete(`/api/habits/${habitId}/check-ins`)
     .set('Authorization', token)
     .expect(400);
+});
+
+test('habit boost can be bought, used from inventory, and grants bonus coins for the next completions', async () => {
+  const user = await buildUser({ coins: 500 });
+  const token = authHeader(user);
+  const boostItem = await Item.create({
+    name: 'Small Boost',
+    type: 'powerUp',
+    price: 100,
+    assetKey: 'small-boost',
+  });
+
+  const createResponse = await request(app)
+    .post('/api/habits')
+    .set('Authorization', token)
+    .send({
+      title: 'Read',
+      type: 'boolean',
+      frequency: 'Daily',
+      category: 'Productivity',
+    })
+    .expect(201);
+
+  const habitId = createResponse.body.data.id;
+
+  const buyResponse = await request(app)
+    .post('/api/inventory/buy')
+    .set('Authorization', token)
+    .send({
+      itemId: boostItem._id.toString(),
+    })
+    .expect(201);
+
+  assert.equal(buyResponse.body.item.assetKey, 'small-boost');
+  assert.equal(buyResponse.body.quantity, 1);
+
+  const secondBuyResponse = await request(app)
+    .post('/api/inventory/buy')
+    .set('Authorization', token)
+    .send({
+      itemId: boostItem._id.toString(),
+    })
+    .expect(201);
+
+  assert.equal(secondBuyResponse.body._id, buyResponse.body._id);
+  assert.equal(secondBuyResponse.body.quantity, 2);
+
+  const userAfterPurchase = await User.findById(user._id).lean();
+  assert.equal(userAfterPurchase.coins, 300);
+
+  const useBoostResponse = await request(app)
+    .post(`/api/inventory/${buyResponse.body._id}/use`)
+    .set('Authorization', token)
+    .send({ habitId })
+    .expect(200);
+
+  assert.equal(useBoostResponse.body.assetKey, 'small-boost');
+  assert.equal(useBoostResponse.body.boost.bonusCoins, 50);
+  assert.equal(useBoostResponse.body.boost.remainingCompletions, 3);
+  assert.equal(useBoostResponse.body.quantity, 1);
+  assert.equal(await UserItem.countDocuments({ user: user._id }), 1);
+
+  const checkInResponse = await request(app)
+    .post(`/api/habits/${habitId}/check-ins`)
+    .set('Authorization', token)
+    .expect(200);
+
+  assert.deepEqual(checkInResponse.body.boostReward, {
+    assetKey: 'small-boost',
+    bonusCoins: 50,
+    remainingCompletions: 2,
+    coins: 350,
+  });
+
+  const storedBoost = await HabitBoost.findOne({ user: user._id, habit: habitId }).lean();
+  const updatedUser = await User.findById(user._id).lean();
+
+  assert.equal(storedBoost.remainingCompletions, 2);
+  assert.equal(storedBoost.rewardedPeriodKeys.length, 1);
+  assert.equal(updatedUser.coins, 350);
+});
+
+test('habit boost ownership is capped at 20 per boost type', async () => {
+  const user = await buildUser({ coins: 3000 });
+  const token = authHeader(user);
+  const boostItem = await Item.create({
+    name: 'Small Boost',
+    type: 'powerUp',
+    price: 100,
+    assetKey: 'small-boost',
+  });
+
+  for (let index = 0; index < 20; index += 1) {
+    await request(app)
+      .post('/api/inventory/buy')
+      .set('Authorization', token)
+      .send({
+        itemId: boostItem._id.toString(),
+      })
+      .expect(201);
+  }
+
+  const ownedBoost = await UserItem.findOne({ user: user._id, item: boostItem._id }).lean();
+  const userBeforeRejectedBuy = await User.findById(user._id).lean();
+
+  assert.equal(ownedBoost.quantity, 20);
+  assert.equal(userBeforeRejectedBuy.coins, 1000);
+
+  const rejectedResponse = await request(app)
+    .post('/api/inventory/buy')
+    .set('Authorization', token)
+    .send({
+      itemId: boostItem._id.toString(),
+    })
+    .expect(400);
+
+  const userAfterRejectedBuy = await User.findById(user._id).lean();
+
+  assert.equal(rejectedResponse.body.code, 'BOOST_QUANTITY_LIMIT_REACHED');
+  assert.equal(userAfterRejectedBuy.coins, 1000);
 });
 
 test('habit custom frequency stores customDays properly', async () => {

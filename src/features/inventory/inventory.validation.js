@@ -121,6 +121,18 @@ export function validateUserItemId(id) {
     return { value: id };
 }
 
+export function validateUseInventoryItemInput(body = {}) {
+    if (!mongoose.Types.ObjectId.isValid(body.habitId)) {
+        return { error: 'habitId must be a valid ObjectId' };
+    }
+
+    return {
+        value: {
+            habitId: body.habitId,
+        },
+    };
+}
+
 export function validateSaveOutfitInput(body = {}) {
     if (!Array.isArray(body.equippedUserItemIds)) {
         return { error: 'equippedUserItemIds must be an array' };
