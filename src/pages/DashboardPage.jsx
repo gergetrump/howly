@@ -368,27 +368,30 @@ export function DashboardPage() {
                 <DailyProgressCard completed={completedCount} total={totalCount} />
             </PageSection>
 
-            <div className={isChatOpen ? 'flex flex-col gap-4 px-4 md:flex-row md:items-start' : ''}>
+            <div className={isChatOpen ? 'flex flex-col items-center gap-4 px-4 md:flex-row md:items-start' : ''}>
                 <CompanionStage
                     type={companion?.type}
                     name={companion?.name}
-                    size={isChatOpen ? 'lg' : 'xl'}
+                    size="xl"
                     equippedItemConfigs={equippedItemConfigs}
-                    className={isChatOpen ? 'md:w-2/5 md:flex-shrink-0' : undefined}
+                    className={isChatOpen ? 'md:flex-shrink-0' : undefined}
                 />
 
                 {isChatOpen && (
-                    <CompanionChatPanel
-                        companionName={companion?.name}
-                        onClose={() => setIsChatOpen(false)}
-                        onHabitAdded={(habit) => setHabits((prev) => [habit, ...prev])}
-                        onEditSuggestion={(suggestion, removeFromPanel) => {
-                            setHabitToEdit(null);
-                            setPrefillHabit(suggestion);
-                            setConsumeSuggestion(() => removeFromPanel);
-                            setIsAddModalOpen(true);
-                        }}
-                    />
+                    <div className="flex w-full min-w-0 justify-center md:flex-1">
+                        <CompanionChatPanel
+                            className="max-w-2xl"
+                            companionName={companion?.name}
+                            onClose={() => setIsChatOpen(false)}
+                            onHabitAdded={(habit) => setHabits((prev) => [habit, ...prev])}
+                            onEditSuggestion={(suggestion, removeFromPanel) => {
+                                setHabitToEdit(null);
+                                setPrefillHabit(suggestion);
+                                setConsumeSuggestion(() => removeFromPanel);
+                                setIsAddModalOpen(true);
+                            }}
+                        />
+                    </div>
                 )}
             </div>
 

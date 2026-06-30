@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Sparkles, X, Plus, Pencil, ArrowUp } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 import { suggestHabits, createHabitsFromTemplates } from '@/services/habitService';
 import { STARTER_HABITS } from '@/constants/starterHabits';
@@ -20,7 +21,7 @@ function fallbackHabits() {
 // The companion "speaks" via this panel; the actual avatar sits to the left
 // (CompanionStage on the dashboard). Mounted fresh each time it opens, so no
 // reset logic is needed.
-export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAdded, onEditSuggestion }) {
+export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAdded, onEditSuggestion, className }) {
     const lines = getCompanionLines(companionName);
 
     const [phase, setPhase] = useState('input'); // input | thinking | results
@@ -79,7 +80,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
     const bubble = phase === 'thinking' ? lines.thinking : phase === 'results' ? lines.results : lines.greeting;
 
     return (
-        <div className="min-w-0 flex-1 rounded-2xl border border-purple-500/20 bg-[#1e1b3a]/70 p-4 text-white shadow-xl">
+        <div className={cn('min-w-0 flex-1 rounded-2xl border border-purple-500/20 bg-[#1e1b3a]/70 p-4 text-white shadow-xl', className)}>
             <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-sm font-semibold text-purple-100">
                     <Sparkles size={15} aria-hidden="true" />
