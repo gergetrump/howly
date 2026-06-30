@@ -33,21 +33,21 @@ function MoonCoinIcon({ compact = false }) {
                 strokeLinecap="round"
                 opacity="0.35"
             />
-            <circle cx="12" cy="12" r="6.05" fill="#d97706" opacity="0.28" />
+            <circle cx="12" cy="12" r="5.9" fill="#d97706" opacity="0.22" />
             <path
-                d="M16.15 17.55c-4.05.65-7.75-2.45-7.75-6.75 0-3.15 2.05-5.85 5-6.65-1.2 1.25-1.9 2.95-1.9 4.8 0 3.75 2.75 6.9 6.35 7.5-.5.52-1.08.9-1.7 1.1Z"
+                d="M15.65 16.65c-.9.48-1.92.72-3.05.72-3.08 0-5.58-2.42-5.58-5.4 0-2.88 2.32-5.28 5.25-5.42-.72.95-1.08 2.08-1.08 3.35 0 3.05 2.48 5.52 5.58 5.52-.32.48-.68.88-1.12 1.23Z"
                 fill="#fff7cc"
                 stroke="#78350f"
-                strokeWidth="0.75"
+                strokeWidth="0.8"
                 strokeLinejoin="round"
             />
             <path
-                d="M12.25 5.7c-.72 1.1-1.08 2.4-1.08 3.8 0 3.2 1.98 5.95 4.75 7"
+                d="M10.85 7.85c-1.22.85-2 2.33-2 4.02 0 2.03 1.12 3.78 2.78 4.55"
                 fill="none"
                 stroke="#ffffff"
-                strokeWidth="0.75"
+                strokeWidth="0.8"
                 strokeLinecap="round"
-                opacity="0.55"
+                opacity="0.58"
             />
         </svg>
     );
