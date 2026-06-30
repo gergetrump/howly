@@ -1,3 +1,4 @@
+export { BoostPowerUpCards } from './BoostPowerUpCards.jsx';
 export { CartDialog } from './CartDialog.jsx';
 export { PremiumRequiredDialog } from './PremiumRequiredDialog.jsx';
 export { PurchaseConfirmationDialog } from './PurchaseConfirmationDialog.jsx';

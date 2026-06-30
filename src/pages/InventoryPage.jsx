@@ -1,19 +1,31 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, AlertTriangle } from 'lucide-react';
 import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
 import { getItemDisplayName, getItemEquipSlot, hasItemSideOptions, renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import {
     getMyInventory,
     saveOutfit,
+    consumeInventoryItem,
 } from '@/services/inventoryApi';
+import { getMyHabits } from '@/services/habitService';
 import { getEquippedItemConfigsFromInventory, itemMatchesCategory } from '@/lib/inventoryItems';
+import { cn } from '@/lib/utils';
 
 const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
 const SIDEABLE_HEAD_ITEM_KEYS = new Set(['cute-hat', 'hairpin']);
@@ -24,10 +36,15 @@ function isSideableHeadItem(assetKey) {
 
 export function InventoryPage() {
     const navigate = useNavigate();
-    const { user, companion } = useAuth();
+    const { user, setUser, companion } = useAuth();
     const [inventory, setInventory] = useState([]);
+    const [habits, setHabits] = useState([]);
     const [draftEquippedItemIds, setDraftEquippedItemIds] = useState(new Set());
     const [draftItemSides, setDraftItemSides] = useState({});
+    const [usingBoostItemId, setUsingBoostItemId] = useState('');
+    const [boostDialogItemId, setBoostDialogItemId] = useState('');
+    const [boostDialogHabitId, setBoostDialogHabitId] = useState('');
+    const [boostDialogError, setBoostDialogError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSavingOutfit, setIsSavingOutfit] = useState(false);
     const [error, setError] = useState('');
@@ -62,10 +79,14 @@ export function InventoryPage() {
             setError('');
 
             try {
-                const nextInventory = await getMyInventory();
+                const [nextInventory, nextHabits] = await Promise.all([
+                    getMyInventory(),
+                    getMyHabits({ limit: 100 }),
+                ]);
 
                 if (isCurrent) {
                     setInventory(nextInventory);
+                    setHabits(nextHabits?.data ?? []);
                     setDraftEquippedItemIds(new Set(
                         nextInventory
                             .filter((entry) => entry.equipped)
@@ -107,6 +128,7 @@ export function InventoryPage() {
             .map((entry) => ({
                 ...entry.item,
                 userItemId: entry._id,
+                quantity: entry.quantity ?? 1,
                 equipped: draftEquippedItemIds.has(entry._id),
                 customization: getDraftCustomization(entry),
             }))
@@ -130,6 +152,10 @@ export function InventoryPage() {
             : ownedItems.filter((item) => itemMatchesCategory(item, activeCategory)),
         [activeCategory, ownedItems],
     );
+    const boostDialogItem = useMemo(
+        () => ownedItems.find((item) => item.userItemId === boostDialogItemId) ?? null,
+        [boostDialogItemId, ownedItems],
+    );
 
     const hasUnsavedOutfitChanges = useMemo(() => {
         if (savedEquippedItemIds.size !== draftEquippedItemIds.size) {
@@ -144,6 +170,10 @@ export function InventoryPage() {
     }, [draftEquippedItemIds, draftItemSides, savedEquippedItemIds, savedItemSides]);
 
     function handleToggleEquipped(item) {
+        if (item.type === 'powerUp') {
+            return;
+        }
+
         setError('');
         setCompanionMessage('');
 
@@ -328,7 +358,80 @@ export function InventoryPage() {
         );
     }
 
+    function openBoostDialog(item) {
+        setBoostDialogItemId(item.userItemId);
+        setBoostDialogHabitId(habits[0]?.id || '');
+        setBoostDialogError('');
+    }
+
+    function closeBoostDialog() {
+        setBoostDialogItemId('');
+        setBoostDialogHabitId('');
+        setBoostDialogError('');
+    }
+
+    async function handleUseBoost(item, habitId) {
+        if (!habitId) {
+            setBoostDialogError('Choose a habit first');
+            return;
+        }
+
+        if (!habitId || usingBoostItemId) {
+            return;
+        }
+
+        setUsingBoostItemId(item.userItemId);
+        setError('');
+        setBoostDialogError('');
+
+        try {
+            const result = await consumeInventoryItem(item.userItemId, habitId);
+
+            setInventory((currentInventory) => {
+                if ((result?.quantity ?? 0) <= 0) {
+                    return currentInventory.filter((entry) => entry._id !== item.userItemId);
+                }
+
+                return currentInventory.map((entry) => (
+                    entry._id === item.userItemId
+                        ? { ...entry, quantity: result.quantity }
+                        : entry
+                ));
+            });
+            setUser((currentUser) => (currentUser && result?.coins !== undefined
+                ? { ...currentUser, coins: result.coins }
+                : currentUser));
+            closeBoostDialog();
+        } catch (boostError) {
+            const message = boostError.code === 'BOOST_ALREADY_ACTIVE'
+                ? 'This habit already has an active boost'
+                : boostError.code === 'BOOST_HABIT_NOT_FOUND'
+                    ? 'Choose one of your habits'
+                    : 'Boost could not be used';
+
+            setBoostDialogError(message);
+        } finally {
+            setUsingBoostItemId('');
+        }
+    }
+
+    function renderBoostControls(item) {
+        const isUsing = usingBoostItemId === item.userItemId;
+
+        return (
+            <ActionButton
+                type="button"
+                className="col-span-2 ml-auto h-8 w-1/2 px-3 text-xs"
+                disabled={habits.length === 0 || isUsing}
+                onClick={() => openBoostDialog(item)}
+            >
+                {isUsing ? 'Using...' : 'Use'}
+            </ActionButton>
+        );
+    }
+
     return (
+        <>
         <Page theme="forest">
             <div className="space-y-5">
                 <Heading title="Inventory" subtitle="Equip items for your companion." streakDays={user?.streak ?? 0} />
@@ -417,17 +520,105 @@ export function InventoryPage() {
                                     equipped={item.equipped}
                                     showPrice={false}
                                     dense
-                                    interactive
+                                    interactive={item.type !== 'powerUp'}
                                     disabled={isSavingOutfit}
-                                    titleAction={renderSideControls(item)}
+                                    cornerBadge={item.type === 'powerUp' ? (
+                                        <span className="rounded-full border border-white/10 bg-white/10 px-2 py-1 text-[10px] font-bold text-white">
+                                            x{item.quantity}
+                                        </span>
+                                    ) : null}
                                     visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', item.customization)}
                                     onClick={() => handleToggleEquipped(item)}
-                                />
+                                >
+                                    {item.type === 'powerUp' ? (
+                                        renderBoostControls(item)
+                                    ) : (
+                                        <div className="col-span-2 flex min-h-8 justify-end">
+                                            {renderSideControls(item)}
+                                        </div>
+                                    )}
+                                </ItemCard>
                             ))}
                         </CardGrid>
                     ) : null}
                 </div>
             </PageSection>
         </Page>
+        <Dialog
+            open={Boolean(boostDialogItem)}
+            onOpenChange={(nextOpen) => {
+                if (!nextOpen) {
+                    closeBoostDialog();
+                }
+            }}
+        >
+            <DialogContent className="rounded-2xl border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl sm:max-w-md">
+                <h2 className="mb-2 text-center text-2xl font-bold tracking-tight text-white">
+                    Apply boost
+                </h2>
+                <p className="mb-6 text-center text-sm text-slate-300">
+                    Choose a habit for {boostDialogItem ? getItemDisplayName(boostDialogItem) : 'this boost'}
+                </p>
+
+                <div className="mb-6 flex gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-left">
+                    <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400" />
+                    <p className="text-xs leading-relaxed text-amber-100/90">
+                        If the selected habit is deleted later on, the boost cannot be further used.
+                    </p>
+                </div>
+
+                <div 
+                    className={cn(
+                        "mb-4 rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm text-red-100 transition-opacity duration-200",
+                        boostDialogError ? "opacity-100" : "opacity-0 pointer-events-none select-none"
+                    )}
+                    aria-hidden={!boostDialogError}
+                >
+                    {boostDialogError || '\u00A0'}
+                </div>
+
+                <div className="space-y-2.5">
+                    <Label className="text-sm font-medium text-white">Habit</Label>
+                    <Select
+                        value={boostDialogHabitId}
+                        onValueChange={(nextHabitId) => {
+                            setBoostDialogHabitId(nextHabitId);
+                            setBoostDialogError('');
+                        }}
+                        disabled={usingBoostItemId === boostDialogItem?.userItemId}
+                    >
+                        <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:text-white [&>svg]:opacity-50">
+                            <SelectValue placeholder="Choose a habit" />
+                        </SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4} className="z-[100] max-h-60 w-[var(--radix-select-trigger-width)] rounded-xl border-purple-500/20 bg-[#1e1b3a]">
+                            {habits.map((habit) => (
+                                <SelectItem
+                                    key={habit.id}
+                                    value={habit.id}
+                                    className="cursor-pointer text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white [&_*]:!text-white"
+                                >
+                                    {habit.title}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <ActionButton
+                    type="button"
+                    fullWidth
+                    className="mt-6 h-12 rounded-2xl bg-gradient-to-r from-purple-600 to-purple-500 text-base font-semibold text-white shadow-lg shadow-purple-600/25 hover:from-purple-700 hover:to-purple-600"
+                    disabled={!boostDialogHabitId || usingBoostItemId === boostDialogItem?.userItemId}
+                    onClick={() => {
+                        if (boostDialogItem) {
+                            handleUseBoost(boostDialogItem, boostDialogHabitId);
+                        }
+                    }}
+                >
+                    {usingBoostItemId === boostDialogItem?.userItemId ? 'Applying...' : 'Use boost'}
+                </ActionButton>
+            </DialogContent>
+        </Dialog>
+        </>
     );
 }

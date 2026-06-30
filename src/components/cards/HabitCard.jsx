@@ -22,6 +22,7 @@ import { StreakFreezeIcon } from '@/components/brand/StreakFreezeIcon.jsx';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
+import { renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 
 export function HabitCard({
     emoji = '🔥',
@@ -34,6 +35,7 @@ export function HabitCard({
     onEdit,
     onDelete,
     onShareStory,
+    activeBoost = null,
     children,
 }) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -49,7 +51,15 @@ export function HabitCard({
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                         <h3 className="truncate font-semibold">{title}</h3>
-                        {frequency ? <Badge variant="secondary">{frequency}</Badge> : null}
+                        <div className="flex items-center gap-1.5">
+                            {frequency ? <Badge variant="secondary">{frequency}</Badge> : null}
+                            {activeBoost ? (
+                                <Badge className="bg-slate-700 hover:bg-slate-800 text-white border-0 font-medium capitalize text-[10px] py-0 h-5 px-1.5 flex gap-1 items-center">
+                                    {renderShopItemVisual(activeBoost, 'h-3 w-3')}
+                                    {activeBoost.assetKey.replace('-', ' ')} &bull; {activeBoost.remainingCompletions} left
+                                </Badge>
+                            ) : null}
+                        </div>
                     </div>
                     <StreakBadge days={streakDays} icon="🔥" className="mt-1" />
                 </div>
@@ -109,8 +119,15 @@ export function HabitCard({
                             </div>
                             <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-4 text-center">
                                 <ConfirmationDialogTitle className="text-2xl font-bold tracking-tight text-center">Delete this habit?</ConfirmationDialogTitle>
-                                <ConfirmationDialogDescription className="text-base text-slate-300 text-center">
-                                    Your streak and all progress for <strong className="text-white font-semibold">{title}</strong> will be lost forever. This can't be undone.
+                                <ConfirmationDialogDescription className="text-base text-slate-300 text-center flex flex-col gap-2">
+                                    <span>
+                                        Your streak and all progress for <strong className="text-white font-semibold">{title}</strong> will be lost forever. This can't be undone.
+                                    </span>
+                                    {activeBoost && (
+                                        <span className="text-red-400 font-medium bg-red-400/10 p-2 rounded-lg mt-1 border border-red-400/20 text-sm">
+                                            Warning: You will also lose the currently active boost and it cannot be used anymore.
+                                        </span>
+                                    )}
                                 </ConfirmationDialogDescription>
                             </ConfirmationDialogHeader>
                             <ConfirmationDialogFooter className="flex-col w-full gap-3 mt-8 sm:flex-col sm:space-x-0">

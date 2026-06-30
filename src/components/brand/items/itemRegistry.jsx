@@ -34,6 +34,9 @@ import { WarmBootsLayer, WarmBootsPair } from './WarmBoots';
 import WarmHat, { WarmHatLayer } from './WarmHat';
 import WarmHat2Pompom, { WarmHat2PompomLayer } from './WarmHat2Pompom';
 import WinterJacket, { WinterJacketLayer } from './WinterJacket';
+import SmallBoost from '../SmallBoost';
+import MediumBoost from '../MediumBoost';
+import BigBoost from '../BigBoost';
 
 const itemRegistry = {
     bag: {
@@ -46,6 +49,11 @@ const itemRegistry = {
             right: 'translate(120 850) scale(1.8 1.8)',
             left: 'translate(1280 850) scale(-1.8 1.8)',
         },
+        previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'big-boost': {
+        type: 'powerUp',
+        visual: BigBoost,
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },
     ballerina: {
@@ -224,6 +232,11 @@ const itemRegistry = {
         },
         previewClassName: 'max-h-[82%] max-w-[56%]',
     },
+    'medium-boost': {
+        type: 'powerUp',
+        visual: MediumBoost,
+        previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
     necklace: {
         type: 'accessory',
         equipSlot: 'neck',
@@ -290,6 +303,11 @@ const itemRegistry = {
             left: 'translate(290 280)',
         },
         previewClassName: 'max-h-[82%] max-w-[56%]',
+    },
+    'small-boost': {
+        type: 'powerUp',
+        visual: SmallBoost,
+        previewClassName: 'max-h-[78%] max-w-[78%]',
     },
     'sneaker': {
         type: 'shoes',

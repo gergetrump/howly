@@ -8,6 +8,7 @@ import { Page, PageSection, Heading } from '@/components/layout';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     CartDialog,
+    BoostPowerUpCards,
     getCustomizationConfig,
     getInventoryEntryOwnershipSignature,
     getItemOwnershipSignature,
@@ -29,6 +30,7 @@ import { itemMatchesCategory } from '@/lib/inventoryItems';
 
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
 const SINGLE_PREVIEW_SLOTS = new Set(['body', 'face', 'hand', 'head', 'neck']);
+const MAX_OWNED_POWER_UP_QUANTITY = 20;
 
 export function ShopPage() {
     const navigate = useNavigate();
@@ -36,6 +38,7 @@ export function ShopPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [items, setItems] = useState([]);
     const [ownedItemSignatures, setOwnedItemSignatures] = useState(new Set());
+    const [ownedPowerUpQuantities, setOwnedPowerUpQuantities] = useState({});
     const [previewItems, setPreviewItems] = useState([]);
     const [cartItems, setCartItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +46,9 @@ export function ShopPage() {
     const [itemsToBuy, setItemsToBuy] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isPremiumDialogOpen, setIsPremiumDialogOpen] = useState(false);
+    const [premiumDialogTitle, setPremiumDialogTitle] = useState(undefined);
+    const [premiumDialogDescription, setPremiumDialogDescription] = useState(undefined);
+    const [premiumDialogShowsUpgradeActions, setPremiumDialogShowsUpgradeActions] = useState(true);
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
     const [syncedCategoryParam, setSyncedCategoryParam] = useState(null);
@@ -78,19 +84,29 @@ export function ShopPage() {
         }
     }, []);
 
-    const openPremiumPage = useCallback((message, returnItemId = '') => {
+    const openPremiumPage = useCallback((description, returnItemId = '', title = undefined, showUpgradeActions = true) => {
         if (returnItemId) {
             window.sessionStorage.setItem(PREMIUM_RETURN_ITEM_STORAGE_KEY, returnItemId);
             setPremiumReturnItemId(returnItemId);
         }
 
-        navigate('/premium', {
-            state: {
-                message,
-                returnTo: '/shop',
-            },
+        setPremiumDialogTitle(title);
+        setPremiumDialogDescription(description);
+        setPremiumDialogShowsUpgradeActions(showUpgradeActions);
+        setIsPremiumDialogOpen(true);
+    }, []);
+
+    const openPremiumPageAfterPurchaseDialog = useCallback((description, returnItemId = '', title = undefined, showUpgradeActions = true) => {
+        const scrollX = window.scrollX;
+        const scrollY = window.scrollY;
+
+        setItemsToBuy([]);
+        window.requestAnimationFrame(() => {
+            window.scrollTo(scrollX, scrollY);
+            openPremiumPage(description, returnItemId, title, showUpgradeActions);
+            window.requestAnimationFrame(() => window.scrollTo(scrollX, scrollY));
         });
-    }, [navigate]);
+    }, [openPremiumPage]);
 
     const refreshCurrentUser = useCallback(async () => {
         const currentUser = await getCurrentUser();
@@ -204,6 +220,11 @@ export function ShopPage() {
                             .map(getInventoryEntryOwnershipSignature)
                             .filter(Boolean),
                     ));
+                    setOwnedPowerUpQuantities(Object.fromEntries(
+                        nextInventory
+                            .filter((entry) => entry.item?.type === 'powerUp')
+                            .map((entry) => [entry.item.assetKey, entry.quantity ?? 1]),
+                    ));
                 }
             } catch {
                 if (isCurrent) {
@@ -239,8 +260,9 @@ export function ShopPage() {
         }));
 
     const cartItemsToBuy = cartItems.filter((entry) => !isPurchaseEntryOwned(entry));
-    const cartTotalPrice = cartItemsToBuy.reduce((total, entry) => total + (getPurchaseEntryItem(entry)?.price ?? 0), 0);
-    const confirmationTotalPrice = itemsToBuy.reduce((total, entry) => total + (getPurchaseEntryItem(entry)?.price ?? 0), 0);
+    const cartTotalPrice = cartItemsToBuy.reduce((total, entry) => total + ((getPurchaseEntryItem(entry)?.price ?? 0) * getPurchaseEntryQuantity(entry)), 0);
+    const confirmationTotalPrice = itemsToBuy.reduce((total, entry) => total + ((getPurchaseEntryItem(entry)?.price ?? 0) * getPurchaseEntryQuantity(entry)), 0);
+    const cartItemCount = cartItems.reduce((total, entry) => total + getPurchaseEntryQuantity(entry), 0);
 
     // Select the tab from the ?category= URL param (e.g. the dashboard banner's
     // "Get a freeze" deep-links to ?category=powerUp). Adjusted during render — not
@@ -326,6 +348,10 @@ export function ShopPage() {
         return entry?.item ?? entry;
     }
 
+    function getPurchaseEntryQuantity(entry) {
+        return Math.max(1, Number(entry?.quantity ?? 1));
+    }
+
     function getPurchaseEntryCustomization(entry) {
         const item = getPurchaseEntryItem(entry);
 
@@ -351,10 +377,40 @@ export function ShopPage() {
             cartKey: getItemOwnershipSignature(item, customization),
             item,
             customization,
+            quantity: 1,
         };
     }
 
+    function isStackablePurchaseEntry(entry) {
+        return getPurchaseEntryItem(entry)?.type === 'powerUp';
+    }
+
+    function getOwnedPowerUpQuantity(item) {
+        return item?.type === 'powerUp'
+            ? Number(ownedPowerUpQuantities[item.assetKey] ?? 0)
+            : 0;
+    }
+
+    function getMaxCartQuantityForEntry(entry) {
+        const item = getPurchaseEntryItem(entry);
+
+        if (!isStackablePurchaseEntry(entry)) {
+            return 1;
+        }
+
+        return Math.max(0, MAX_OWNED_POWER_UP_QUANTITY - getOwnedPowerUpQuantity(item));
+    }
+
+    function isCartEntryAtQuantityLimit(entry) {
+        return isStackablePurchaseEntry(entry)
+            && getPurchaseEntryQuantity(entry) >= getMaxCartQuantityForEntry(entry);
+    }
+
     function isPurchaseEntryOwned(entry) {
+        if (isStackablePurchaseEntry(entry)) {
+            return false;
+        }
+
         return ownedItemSignatures.has(getPurchaseEntrySignature(entry));
     }
 
@@ -373,11 +429,29 @@ export function ShopPage() {
     function addCartEntry(currentCartItems, item) {
         const nextEntry = createPurchaseEntry(item);
 
-        if (ownedItemSignatures.has(nextEntry.cartKey)) {
+        if (!isStackablePurchaseEntry(nextEntry) && ownedItemSignatures.has(nextEntry.cartKey)) {
             return currentCartItems;
         }
 
-        if (currentCartItems.some((entry) => entry.cartKey === nextEntry.cartKey)) {
+        const existingEntry = currentCartItems.find((entry) => entry.cartKey === nextEntry.cartKey);
+
+        if (existingEntry) {
+            if (!isStackablePurchaseEntry(existingEntry)) {
+                return currentCartItems;
+            }
+
+            if (isCartEntryAtQuantityLimit(existingEntry)) {
+                return currentCartItems;
+            }
+
+            return currentCartItems.map((entry) => (
+                entry.cartKey === nextEntry.cartKey
+                    ? { ...entry, quantity: getPurchaseEntryQuantity(entry) + 1 }
+                    : entry
+            ));
+        }
+
+        if (isStackablePurchaseEntry(nextEntry) && getMaxCartQuantityForEntry(nextEntry) <= 0) {
             return currentCartItems;
         }
 
@@ -385,6 +459,8 @@ export function ShopPage() {
     }
 
     function handlePremiumRequired() {
+        setPremiumDialogTitle(undefined);
+        setPremiumDialogDescription(undefined);
         setIsPremiumDialogOpen(true);
     }
 
@@ -421,6 +497,27 @@ export function ShopPage() {
     function handleRemoveCartEntry(cartKey) {
         setError('');
         setCartItems((currentCartItems) => currentCartItems.filter((entry) => entry.cartKey !== cartKey));
+    }
+
+    function handleIncreaseCartEntry(cartKey) {
+        setError('');
+        setCartItems((currentCartItems) => currentCartItems.map((entry) => (
+            entry.cartKey === cartKey && isStackablePurchaseEntry(entry) && !isCartEntryAtQuantityLimit(entry)
+                ? { ...entry, quantity: getPurchaseEntryQuantity(entry) + 1 }
+                : entry
+        )));
+    }
+
+    function handleDecreaseCartEntry(cartKey) {
+        setError('');
+        setCartItems((currentCartItems) => currentCartItems.flatMap((entry) => {
+            if (entry.cartKey !== cartKey || !isStackablePurchaseEntry(entry)) {
+                return [entry];
+            }
+
+            const nextQuantity = getPurchaseEntryQuantity(entry) - 1;
+            return nextQuantity > 0 ? [{ ...entry, quantity: nextQuantity }] : [];
+        }));
     }
 
     function openBuyConfirmation(entriesForPurchase) {
@@ -485,55 +582,107 @@ export function ShopPage() {
         }));
     }
 
+    function addPurchasedPowerUpQuantities(purchasedQuantitiesByCartKey, purchasedEntries) {
+        setOwnedPowerUpQuantities((currentQuantities) => {
+            const nextQuantities = { ...currentQuantities };
+
+            purchasedEntries.forEach((entry) => {
+                const item = getPurchaseEntryItem(entry);
+                const purchasedQuantity = purchasedQuantitiesByCartKey[entry.cartKey] ?? 0;
+
+                if (item?.type === 'powerUp' && purchasedQuantity > 0) {
+                    nextQuantities[item.assetKey] = Math.min(
+                        MAX_OWNED_POWER_UP_QUANTITY,
+                        Number(nextQuantities[item.assetKey] ?? 0) + purchasedQuantity,
+                    );
+                }
+            });
+
+            return nextQuantities;
+        });
+    }
+
     async function handleBuyItems(entriesForPurchase) {
         setBuyingItemId('cart');
         setError('');
         const purchasedEntries = [];
+        const purchasedQuantitiesByCartKey = {};
         let failedEntry = null;
 
         try {
             for (const entry of entriesForPurchase) {
                 const item = getPurchaseEntryItem(entry);
                 const customization = getPurchaseEntryCustomization(entry);
+                const quantity = getPurchaseEntryQuantity(entry);
 
                 failedEntry = entry;
-                await buyItem(item._id, customization);
+                for (let count = 0; count < quantity; count += 1) {
+                    await buyItem(item._id, customization);
+                    purchasedQuantitiesByCartKey[entry.cartKey] = (purchasedQuantitiesByCartKey[entry.cartKey] ?? 0) + 1;
+                }
+
                 purchasedEntries.push(entry);
             }
 
             setOwnedItemSignatures((currentOwnedItemSignatures) => {
                 const nextOwnedItemSignatures = new Set(currentOwnedItemSignatures);
                 purchasedEntries.forEach((entry) => {
-                    nextOwnedItemSignatures.add(getPurchaseEntrySignature(entry));
+                    if (!isStackablePurchaseEntry(entry)) {
+                        nextOwnedItemSignatures.add(getPurchaseEntrySignature(entry));
+                    }
                 });
                 return nextOwnedItemSignatures;
             });
-            setCartItems((currentCartItems) => (
-                currentCartItems.filter((entry) => !purchasedEntries.some((purchasedEntry) => purchasedEntry.cartKey === entry.cartKey))
-            ));
+            addPurchasedPowerUpQuantities(purchasedQuantitiesByCartKey, entriesForPurchase);
+            setCartItems((currentCartItems) => currentCartItems.flatMap((entry) => {
+                const purchasedQuantity = purchasedQuantitiesByCartKey[entry.cartKey] ?? 0;
+
+                if (purchasedQuantity <= 0) {
+                    return [entry];
+                }
+
+                const remainingQuantity = getPurchaseEntryQuantity(entry) - purchasedQuantity;
+                return remainingQuantity > 0 ? [{ ...entry, quantity: remainingQuantity }] : [];
+            }));
             await refreshCurrentUser();
+            setItemsToBuy([]);
         } catch (buyError) {
-            if (purchasedEntries.length > 0) {
+            if (Object.keys(purchasedQuantitiesByCartKey).length > 0) {
                 setOwnedItemSignatures((currentOwnedItemSignatures) => {
                     const nextOwnedItemSignatures = new Set(currentOwnedItemSignatures);
                     purchasedEntries.forEach((entry) => {
-                        nextOwnedItemSignatures.add(getPurchaseEntrySignature(entry));
+                        if (!isStackablePurchaseEntry(entry)) {
+                            nextOwnedItemSignatures.add(getPurchaseEntrySignature(entry));
+                        }
                     });
                     return nextOwnedItemSignatures;
                 });
-                setCartItems((currentCartItems) => (
-                    currentCartItems.filter((entry) => !purchasedEntries.some((purchasedEntry) => purchasedEntry.cartKey === entry.cartKey))
-                ));
+                addPurchasedPowerUpQuantities(purchasedQuantitiesByCartKey, entriesForPurchase);
+                setCartItems((currentCartItems) => currentCartItems.flatMap((entry) => {
+                    const purchasedQuantity = purchasedQuantitiesByCartKey[entry.cartKey] ?? 0;
+
+                    if (purchasedQuantity <= 0) {
+                        return [entry];
+                    }
+
+                    const remainingQuantity = getPurchaseEntryQuantity(entry) - purchasedQuantity;
+                    return remainingQuantity > 0 ? [{ ...entry, quantity: remainingQuantity }] : [];
+                }));
                 await refreshCurrentUser();
             }
 
             const failedItem = getPurchaseEntryItem(failedEntry);
 
+            let shouldCloseConfirmation = true;
+
             if (buyError.code === 'ITEM_ALREADY_OWNED') {
                 setError('One of these items is already in your inventory');
+            } else if (buyError.code === 'BOOST_QUANTITY_LIMIT_REACHED') {
+                await refreshCurrentUser();
             } else if (buyError.code === 'PREMIUM_REQUIRED') {
                 if (isFreeUser) {
-                    openPremiumPage(
+                    shouldCloseConfirmation = false;
+                    openPremiumPageAfterPurchaseDialog(
                         `${failedItem ? getItemDisplayName(failedItem) : 'This item'} is a premium item. Upgrade to buy premium shop items and get monthly bonus coins.`,
                         failedItem?._id ?? '',
                     );
@@ -541,20 +690,30 @@ export function ShopPage() {
                     setError(`${failedItem ? getItemDisplayName(failedItem) : 'This item'} is premium only`);
                 }
             } else if (buyError.code === 'NOT_ENOUGH_COINS') {
+                shouldCloseConfirmation = false;
                 if (isFreeUser) {
-                    openPremiumPage(
-                        `You do not have enough moon coins for ${failedItem ? getItemDisplayName(failedItem) : 'this item'}. Premium gives you monthly bonus coins${premiumMonthlyCoins ? ` (${premiumMonthlyCoins} coins)` : ''}.`,
-                        failedItem?._id ?? '',
+                    openPremiumPageAfterPurchaseDialog(
+                        `You do not have enough moon coins for this purchase. Premium gives you monthly bonus coins${premiumMonthlyCoins ? ` (${premiumMonthlyCoins} coins)` : ''}.`,
+                        '',
+                        'Not enough moon coins'
                     );
                 } else {
-                    setError(`You do not have enough moon coins for ${failedItem ? getItemDisplayName(failedItem) : 'this item'}`);
+                    openPremiumPageAfterPurchaseDialog(
+                        'You do not have enough moon coins for this purchase.',
+                        '',
+                        'Not enough moon coins',
+                        false
+                    );
                 }
             } else {
                 setError('Buying these items did not work');
             }
+
+            if (shouldCloseConfirmation) {
+                setItemsToBuy([]);
+            }
         } finally {
             setBuyingItemId(null);
-            setItemsToBuy([]);
         }
     }
 
@@ -602,7 +761,6 @@ export function ShopPage() {
                     </div>
 
                     {isLoading ? <p className="text-sm text-slate-300">Loading shop items...</p> : null}
-                    {error ? <p className="text-sm text-red-300">{error}</p> : null}
                     {!isLoading && !error && items.length === 0 ? (
                         <p className="text-sm text-slate-300">No shop items yet</p>
                     ) : null}
@@ -621,7 +779,27 @@ export function ShopPage() {
                         createPurchaseEntry={createPurchaseEntry}
                         buyingItemId={buyingItemId}
                         leadingCard={activeCategory === 'all' || activeCategory === 'powerUp' ? (
-                            <StreakFreezeCard key="streak-freeze" />
+                            <>
+                                <StreakFreezeCard key="streak-freeze" />
+                                <BoostPowerUpCards
+                                    key="habit-boosts"
+                                    onAddToCart={handleAddCurrentItemToCart}
+                                    onBuy={(item) => openBuyConfirmation([createPurchaseEntry(item)])}
+                                    getCartQuantity={(item) => {
+                                        const cartEntry = cartItems.find((entry) => entry.cartKey === createPurchaseEntry(item).cartKey);
+                                        return cartEntry ? getPurchaseEntryQuantity(cartEntry) : 0;
+                                    }}
+                                    isCartQuantityMax={(item) => {
+                                        const cartEntry = cartItems.find((entry) => entry.cartKey === createPurchaseEntry(item).cartKey);
+                                        const entry = cartEntry ?? createPurchaseEntry(item);
+                                        return getMaxCartQuantityForEntry(entry) <= 0 || (cartEntry ? isCartEntryAtQuantityLimit(cartEntry) : false);
+                                    }}
+                                    isOwnedQuantityMax={(item) => getOwnedPowerUpQuantity(item) >= MAX_OWNED_POWER_UP_QUANTITY}
+                                    isBuying={buyingItemId === 'cart'}
+                                    isFreeUser={isFreeUser}
+                                    onPremiumRequired={handlePremiumRequired}
+                                />
+                            </>
                         ) : null}
                         isFreeUser={isFreeUser}
                         onPremiumRequired={handlePremiumRequired}
@@ -635,7 +813,7 @@ export function ShopPage() {
                         >
                             <ShoppingCart className="h-4 w-4" aria-hidden="true" />
                             Cart
-                            <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{cartItems.length}</span>
+                            <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{cartItemCount}</span>
                         </ActionButton>
                     </div>
                 </PageSection>
@@ -668,6 +846,10 @@ export function ShopPage() {
             <PremiumRequiredDialog
                 isOpen={isPremiumDialogOpen}
                 onClose={() => setIsPremiumDialogOpen(false)}
+                title={premiumDialogTitle}
+                description={premiumDialogDescription}
+                showIcon={premiumDialogShowsUpgradeActions}
+                showActions={premiumDialogShowsUpgradeActions}
             />
 
             <CartDialog
@@ -678,8 +860,13 @@ export function ShopPage() {
                 cartTotalPrice={cartTotalPrice}
                 getPurchaseEntryItem={getPurchaseEntryItem}
                 getPurchaseEntryCustomization={getPurchaseEntryCustomization}
+                getPurchaseEntryQuantity={getPurchaseEntryQuantity}
+                isStackablePurchaseEntry={isStackablePurchaseEntry}
+                isCartEntryAtQuantityLimit={isCartEntryAtQuantityLimit}
                 isPurchaseEntryOwned={isPurchaseEntryOwned}
                 onRemoveCartEntry={handleRemoveCartEntry}
+                onIncreaseCartEntry={handleIncreaseCartEntry}
+                onDecreaseCartEntry={handleDecreaseCartEntry}
                 onOpenBuyConfirmation={openBuyConfirmation}
             />
 
@@ -688,6 +875,7 @@ export function ShopPage() {
                 confirmationTotalPrice={confirmationTotalPrice}
                 buyingItemId={buyingItemId}
                 getPurchaseEntryItem={getPurchaseEntryItem}
+                getPurchaseEntryQuantity={getPurchaseEntryQuantity}
                 onOpenChange={(open) => !open && setItemsToBuy([])}
                 onBuyItems={handleBuyItems}
             />
