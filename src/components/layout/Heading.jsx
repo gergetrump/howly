@@ -1,6 +1,5 @@
 import { LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
 import { cn } from '@/lib/utils';
 
 // Available sizes: sm, md, lg.
@@ -28,7 +27,6 @@ const topBarSizes = {
 export function Heading({
     title,
     subtitle,
-    streakDays,
     size = 'md',
     onSettings,
     onLogout,
@@ -47,10 +45,6 @@ export function Heading({
             </div>
 
             <div className="flex items-center gap-2">
-                {typeof streakDays === 'number' ? (
-                    <StreakBadge days={streakDays} showLabel={false} size="lg" />
-                ) : null}
-
                 {onSettings ? (
                     <Button
                         type="button"
