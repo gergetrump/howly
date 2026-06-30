@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, Edit2, Trash2, Camera } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Camera, Sparkles } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,6 +28,7 @@ export function HabitCard({
     emoji = '🔥',
     title,
     frequency,
+    goal = null,
     streakDays = 0,
     completed = false,
     atRisk = false,
@@ -52,6 +53,12 @@ export function HabitCard({
                     <div className="flex flex-wrap items-center gap-2">
                         <h3 className="truncate font-semibold">{title}</h3>
                         <div className="flex items-center gap-1.5">
+                            {goal ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-howly-primary/15 px-2.5 py-0.5 text-xs font-semibold text-howly-primary ring-1 ring-howly-primary/40">
+                                    <Sparkles size={12} aria-hidden="true" />
+                                    {goal}
+                                </span>
+                            ) : null}
                             {frequency ? <Badge variant="secondary">{frequency}</Badge> : null}
                             {activeBoost ? (
                                 <Badge className="bg-slate-700 hover:bg-slate-800 text-white border-0 font-medium capitalize text-[10px] py-0 h-5 px-1.5 flex gap-1 items-center">
