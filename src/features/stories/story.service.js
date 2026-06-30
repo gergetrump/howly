@@ -2,10 +2,12 @@ import mongoose from 'mongoose';
 import {
   Story,
   StoryLike,
+  StoryComment,
   STORY_FEED_VISIBLE_HOURS,
   STORY_ARCHIVE_DAYS,
 } from './story.model.js';
 import { Friendship } from '../social/social.model.js';
+import { getBlockedUserIds } from '../social/social.service.js';
 import { MilestonePost } from '../milestones/milestone.model.js';
 import Habit from '../habits/habit.model.js';
 import Challenge from '../challenges/challenge.model.js';
@@ -42,9 +44,21 @@ export function toStoryResponse(story, likedStoryIds = new Set()) {
     feedExpiresAt: story.feedExpiresAt,
     archiveExpiresAt: story.archiveExpiresAt,
     likeCount: story.likeCount,
+    commentCount: story.commentCount,
     likedByCurrentUser: likedStoryIds.has(story._id.toString()),
     createdAt: story.createdAt,
     updatedAt: story.updatedAt,
+  };
+}
+
+export function toStoryCommentResponse(comment) {
+  return {
+    id: comment._id.toString(),
+    user: toPublicUser(comment.user),
+    content: comment.content,
+    parentComment: comment.parentComment?.toString() || null,
+    createdAt: comment.createdAt,
+    updatedAt: comment.updatedAt,
   };
 }
 
@@ -126,6 +140,58 @@ export async function createStory({ userId, sourceType, sourceId, caption, image
   return { story: toStoryResponse(story) };
 }
 
+async function getVisibleStoryEngagementCounts({ storyIds, userId }) {
+  if (!storyIds.length) {
+    return {
+      likeCountsByStory: new Map(),
+      commentCountsByStory: new Map(),
+    };
+  }
+
+  const blockedSet = await getBlockedUserIds(userId);
+  const hiddenUserIds = [...blockedSet].map((id) => new mongoose.Types.ObjectId(id));
+
+  const likesQuery = { story: { $in: storyIds } };
+  const commentsQuery = { story: { $in: storyIds } };
+
+  if (hiddenUserIds.length > 0) {
+    likesQuery.user = { $nin: hiddenUserIds };
+    commentsQuery.user = { $nin: hiddenUserIds };
+  }
+
+  const [allLikes, allComments] = await Promise.all([
+    StoryLike.find(likesQuery).lean(),
+    StoryComment.find(commentsQuery).lean(),
+  ]);
+
+  const likeCountsByStory = new Map();
+  allLikes.forEach((like) => {
+    const storyId = like.story.toString();
+    likeCountsByStory.set(storyId, (likeCountsByStory.get(storyId) || 0) + 1);
+  });
+
+  const commentCountsByStory = new Map();
+  allComments.forEach((comment) => {
+    const storyId = comment.story.toString();
+    commentCountsByStory.set(storyId, (commentCountsByStory.get(storyId) || 0) + 1);
+  });
+
+  return { likeCountsByStory, commentCountsByStory };
+}
+
+async function toVisibleStoryResponse(story, userId, likedStoryIds = new Set()) {
+  const response = toStoryResponse(story, likedStoryIds);
+  const { likeCountsByStory, commentCountsByStory } = await getVisibleStoryEngagementCounts({
+    storyIds: [story._id],
+    userId,
+  });
+
+  response.likeCount = likeCountsByStory.get(story._id.toString()) || 0;
+  response.commentCount = commentCountsByStory.get(story._id.toString()) || 0;
+
+  return response;
+}
+
 // Stories from the user and their friends that are still inside the 7-day feed window
 export async function getFriendFeedStories({ userId }) {
   const friendships = await Friendship.find({
@@ -152,7 +218,18 @@ export async function getFriendFeedStories({ userId }) {
   }).lean();
   const likedStoryIds = new Set(likes.map((like) => like.story.toString()));
 
-  return stories.map((story) => toStoryResponse(story, likedStoryIds));
+  const storyIds = stories.map((s) => s._id);
+  const { likeCountsByStory, commentCountsByStory } = await getVisibleStoryEngagementCounts({
+    storyIds,
+    userId,
+  });
+
+  return stories.map((story) => {
+    const res = toStoryResponse(story, likedStoryIds);
+    res.likeCount = likeCountsByStory.get(story._id.toString()) || 0;
+    res.commentCount = commentCountsByStory.get(story._id.toString()) || 0;
+    return res;
+  });
 }
 
 // Own stories still visible in the feed
@@ -165,6 +242,35 @@ export async function getMyActiveStories({ userId }) {
     .sort({ createdAt: -1 });
 
   return stories.map((story) => toStoryResponse(story));
+}
+
+// Mixed feed: stories + milestones (for stories specifically)
+export async function getFriendFeedStoriesForMixedFeed({ userId, visibleUserIds }) {
+  const stories = await Story.find({
+    user: { $in: visibleUserIds },
+    feedExpiresAt: { $gt: new Date() },
+  })
+    .populate('user')
+    .sort({ createdAt: -1 });
+
+  const likes = await StoryLike.find({
+    user: userId,
+    story: { $in: stories.map((story) => story._id) },
+  }).lean();
+  const likedStoryIds = new Set(likes.map((like) => like.story.toString()));
+
+  const storyIds = stories.map((s) => s._id);
+  const { likeCountsByStory, commentCountsByStory } = await getVisibleStoryEngagementCounts({
+    storyIds,
+    userId,
+  });
+
+  return stories.map((story) => {
+    const res = toStoryResponse(story, likedStoryIds);
+    res.likeCount = likeCountsByStory.get(story._id.toString()) || 0;
+    res.commentCount = commentCountsByStory.get(story._id.toString()) || 0;
+    return res;
+  });
 }
 
 // All own stories (up to 90 days — TTL removes older ones automatically)
@@ -195,7 +301,7 @@ export async function toggleStoryLike({ userId, storyId }) {
     await story.save();
     await story.populate('user');
 
-    return { liked: false, story: toStoryResponse(story) };
+    return { liked: false, story: await toVisibleStoryResponse(story, userId) };
   }
 
   try {
@@ -208,14 +314,20 @@ export async function toggleStoryLike({ userId, storyId }) {
 
     await story.populate('user');
 
-    return { liked: true, story: toStoryResponse(story, new Set([storyId])) };
+    return {
+      liked: true,
+      story: await toVisibleStoryResponse(story, userId, new Set([storyId])),
+    };
   }
 
   story.likeCount += 1;
   await story.save();
   await story.populate('user');
 
-  return { liked: true, story: toStoryResponse(story, new Set([storyId])) };
+  return {
+    liked: true,
+    story: await toVisibleStoryResponse(story, userId, new Set([storyId])),
+  };
 }
 
 // Who liked a story — available to the owner and friends who can see the story
@@ -235,7 +347,13 @@ export async function getStoryLikes({ userId, storyId }) {
     .sort({ createdAt: -1 })
     .lean();
 
-  return { likers: likes.map((like) => toPublicUser(like.user)).filter(Boolean) };
+  const blockedSet = await getBlockedUserIds(userId);
+  const filteredLikes = likes.filter((like) => {
+    const likerId = like.user?._id?.toString() || like.user?.toString();
+    return !blockedSet.has(likerId);
+  });
+
+  return { likers: filteredLikes.map((like) => toPublicUser(like.user)).filter(Boolean) };
 }
 
 export async function deleteStory({ userId, storyId }) {
@@ -253,7 +371,101 @@ export async function deleteStory({ userId, storyId }) {
   }
 
   await StoryLike.deleteMany({ story: story._id });
+  await StoryComment.deleteMany({ story: story._id });
   await story.deleteOne();
+
+  return { deleted: true };
+}
+
+export async function addStoryComment({ userId, storyId, content, parentCommentId = null }) {
+  const story = await Story.findById(storyId);
+
+  if (!story || story.feedExpiresAt <= new Date()) {
+    return { errorCode: 'STORY_NOT_FOUND' };
+  }
+
+  if (!sameId(story.user, userId) && !(await areFriends(userId, story.user))) {
+    return { errorCode: 'STORY_NOT_FOUND' };
+  }
+
+  let finalParentId = null;
+
+  if (parentCommentId) {
+    const parentComment = await StoryComment.findOne({ _id: parentCommentId, story: storyId });
+    if (!parentComment) {
+      return { errorCode: 'PARENT_COMMENT_NOT_FOUND' };
+    }
+    // Restrict nesting to exactly 1 level (replies of replies become replies to the parent comment)
+    finalParentId = parentComment.parentComment || parentComment._id;
+  }
+
+  const comment = await StoryComment.create({
+    user: userId,
+    story: storyId,
+    content,
+    parentComment: finalParentId,
+  });
+
+  await Story.updateOne({ _id: storyId }, { $inc: { commentCount: 1 } });
+
+  await comment.populate('user');
+
+  return { comment: toStoryCommentResponse(comment) };
+}
+
+export async function getStoryComments({ userId, storyId }) {
+  const story = await Story.findById(storyId).lean();
+
+  if (
+    !story
+    || story.feedExpiresAt <= new Date()
+    || (!sameId(story.user, userId) && !(await areFriends(userId, story.user)))
+  ) {
+    return { errorCode: 'STORY_NOT_FOUND' };
+  }
+
+  const comments = await StoryComment.find({ story: storyId })
+    .populate('user')
+    .sort({ createdAt: 1 })
+    .lean();
+
+  const blockedSet = await getBlockedUserIds(userId);
+  const filteredComments = comments.filter((comment) => {
+    const commenterId = comment.user?._id?.toString() || comment.user?.toString();
+    return !blockedSet.has(commenterId);
+  });
+
+  return { comments: filteredComments.map(toStoryCommentResponse) };
+}
+
+export async function deleteStoryComment({ userId, storyId, commentId }) {
+  const comment = await StoryComment.findOne({ _id: commentId, story: storyId });
+
+  if (!comment) {
+    return { errorCode: 'COMMENT_NOT_FOUND' };
+  }
+
+  const story = await Story.findById(storyId);
+  if (!story || story.feedExpiresAt <= new Date()) {
+    return { errorCode: 'STORY_NOT_FOUND' };
+  }
+
+  const isCommentAuthor = sameId(comment.user, userId);
+  const isStoryOwner = sameId(story.user, userId);
+
+  if (!isCommentAuthor && !isStoryOwner) {
+    return { errorCode: 'COMMENT_NOT_FOUND' };
+  }
+
+  // If this is a parent comment, delete all its replies as well
+  if (!comment.parentComment) {
+    await StoryComment.deleteMany({ parentComment: comment._id });
+  }
+
+  await comment.deleteOne();
+
+  const remainingCommentCount = await StoryComment.countDocuments({ story: storyId });
+  await Story.updateOne({ _id: storyId }, { commentCount: remainingCommentCount });
 
   return { deleted: true };
 }

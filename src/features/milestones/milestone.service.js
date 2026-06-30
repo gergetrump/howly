@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { toPublicUser } from '../users/user.service.js';
 import User from '../users/user.model.js';
 import { Friendship } from '../social/social.model.js';
+import { getBlockedUserIds } from '../social/social.service.js';
 import Companion from '../companion/companion.model.js';
 import UserItem from '../inventory/inventory.model.js';
 import { hasPremiumAccess } from '../../config/plans.js';
@@ -143,6 +144,10 @@ function toMilestonePostResponse(
   const postId = post._id.toString();
   const currentUserReactions = normalizeReactionList(userReactionsByPostId.get(postId));
   const currentUserReaction = currentUserReactions[0] ?? null;
+  const visibleReactionCounts = reactionCountsByPostId.get(postId);
+  const visibleLikeCount = visibleReactionCounts
+    ? visibleReactionCounts.reduce((total, reaction) => total + reaction.count, 0)
+    : post.likeCount;
 
   return {
     id: postId,
@@ -159,24 +164,35 @@ function toMilestonePostResponse(
     },
     streakDays: post.streakDays,
     visibleUntil: post.visibleUntil,
-    likeCount: post.likeCount,
+    likeCount: visibleLikeCount,
     likedByCurrentUser: currentUserReactions.length > 0,
     currentUserReaction,
     currentUserReactions,
-    reactionCounts: reactionCountsByPostId.get(postId) ?? [],
+    reactionCounts: visibleReactionCounts ?? [],
     reactions: reactionsByPostId.get(postId) ?? [],
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
   };
 }
 
-async function getReactionCountsByPostId(postIds) {
+async function getReactionCountsByPostId(postIds, currentUserId = null) {
   if (!postIds.length) {
     return new Map();
   }
 
+  const matchQuery = { milestonePost: { $in: postIds } };
+  if (currentUserId) {
+    const blockedSet = await getBlockedUserIds(currentUserId);
+    if (blockedSet.size > 0) {
+      matchQuery.user = { $nin: [...blockedSet].map((id) => new mongoose.Types.ObjectId(id)) };
+    }
+  }
+
+  const reactionCountsByPostId = new Map(
+    postIds.map((postId) => [postId.toString(), []])
+  );
   const groupedReactions = await MilestoneLike.aggregate([
-    { $match: { milestonePost: { $in: postIds } } },
+    { $match: matchQuery },
     {
       $group: {
         _id: { milestonePost: '$milestonePost', emoji: '$emoji' },
@@ -186,8 +202,6 @@ async function getReactionCountsByPostId(postIds) {
     },
     { $sort: { firstReactedAt: 1, count: -1, '_id.emoji': 1 } },
   ]);
-  const reactionCountsByPostId = new Map();
-
   groupedReactions.forEach((reaction) => {
     const postId = reaction._id.milestonePost.toString();
     const counts = reactionCountsByPostId.get(postId) ?? [];
@@ -198,7 +212,7 @@ async function getReactionCountsByPostId(postIds) {
   return reactionCountsByPostId;
 }
 
-async function getReactionsByPostId(postIds) {
+async function getReactionsByPostId(postIds, currentUserId = null) {
   if (!postIds.length) {
     return new Map();
   }
@@ -209,7 +223,16 @@ async function getReactionsByPostId(postIds) {
     .lean();
   const reactionsByPostId = new Map();
 
+  let blockedSet = new Set();
+  if (currentUserId) {
+    blockedSet = await getBlockedUserIds(currentUserId);
+  }
+
   reactions.forEach((reaction) => {
+    const reactingUserId = reaction.user?._id?.toString() || reaction.user?.toString();
+    if (blockedSet.has(reactingUserId)) {
+      return;
+    }
     const postId = reaction.milestonePost.toString();
     const postReactions = reactionsByPostId.get(postId) ?? [];
 
@@ -258,7 +281,7 @@ async function getEquippedItemsByUserId(userIds) {
   return equippedItemsByUserId;
 }
 
-export async function enrichMilestonePost(post, currentUserReaction = null) {
+export async function enrichMilestonePost(post, currentUserReaction = null, currentUserId = null) {
   await post.populate(['user', 'habit']);
 
   const companion = await Companion.findOne({ user: post.user._id ?? post.user }).lean();
@@ -272,8 +295,8 @@ export async function enrichMilestonePost(post, currentUserReaction = null) {
   const userReactionsByPostId = currentUserReactions.length
     ? new Map([[postId, currentUserReactions]])
     : new Map();
-  const reactionCountsByPostId = await getReactionCountsByPostId([post._id]);
-  const reactionsByPostId = await getReactionsByPostId([post._id]);
+  const reactionCountsByPostId = await getReactionCountsByPostId([post._id], currentUserId);
+  const reactionsByPostId = await getReactionsByPostId([post._id], currentUserId);
 
   return toMilestonePostResponse(
     post,
@@ -362,8 +385,8 @@ export async function getFriendFeed({ userId }) {
     postReactions.push(reaction.emoji);
     userReactionsByPostId.set(postId, postReactions);
   });
-  const reactionCountsByPostId = await getReactionCountsByPostId(posts.map((post) => post._id));
-  const reactionsByPostId = await getReactionsByPostId(posts.map((post) => post._id));
+  const reactionCountsByPostId = await getReactionCountsByPostId(posts.map((post) => post._id), userId);
+  const reactionsByPostId = await getReactionsByPostId(posts.map((post) => post._id), userId);
   const companions = await Companion.find({
     user: { $in: posts.map((post) => post.user._id ?? post.user) },
   }).lean();
@@ -430,7 +453,8 @@ export async function toggleMilestoneLike({ userId, milestonePostId, emoji = 'ðŸ
       liked: remainingUserReactions.length > 0,
       milestonePost: await enrichMilestonePost(
         post,
-        remainingUserReactions.map((reaction) => reaction.emoji)
+        remainingUserReactions.map((reaction) => reaction.emoji),
+        userId
       ),
     };
   }
@@ -474,7 +498,8 @@ export async function toggleMilestoneLike({ userId, milestonePostId, emoji = 'ðŸ
     liked: true,
     milestonePost: await enrichMilestonePost(
       post,
-      updatedUserReactions.map((reaction) => reaction.emoji)
+      updatedUserReactions.map((reaction) => reaction.emoji),
+      userId
     ),
   };
 }

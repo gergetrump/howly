@@ -71,6 +71,11 @@ const storySchema = new Schema(
       default: 0,
       min: 0,
     },
+    commentCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,
@@ -103,5 +108,38 @@ const storyLikeSchema = new Schema(
 
 storyLikeSchema.index({ user: 1, story: 1 }, { unique: true });
 
+const storyCommentSchema = new Schema(
+  {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    story: {
+      type: Schema.Types.ObjectId,
+      ref: 'Story',
+      required: true,
+      index: true,
+    },
+    parentComment: {
+      type: Schema.Types.ObjectId,
+      ref: 'StoryComment',
+      default: null,
+      index: true,
+    },
+    content: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 500,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
 export const Story = mongoose.model('Story', storySchema);
 export const StoryLike = mongoose.model('StoryLike', storyLikeSchema);
+export const StoryComment = mongoose.model('StoryComment', storyCommentSchema);

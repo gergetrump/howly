@@ -142,6 +142,13 @@ const userSchema = new Schema(
       type: Date,
       default: null,
     },
+    blockedUsers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        index: true,
+      }
+    ],
   },
   {
     timestamps: true,

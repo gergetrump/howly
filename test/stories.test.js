@@ -10,6 +10,7 @@ import config from '../config.js';
 import {
   Story,
   StoryLike,
+  StoryComment,
   STORY_FEED_VISIBLE_HOURS,
 } from '../src/features/stories/story.model.js';
 import { Friendship } from '../src/features/social/social.model.js';
@@ -87,6 +88,7 @@ afterEach(async () => {
   await Promise.all([
     Story.deleteMany({}),
     StoryLike.deleteMany({}),
+    StoryComment.deleteMany({}),
     Friendship.deleteMany({}),
     Habit.deleteMany({}),
     User.deleteMany({}),
@@ -283,6 +285,44 @@ test('users can like and unlike their own story', async () => {
   assert.equal(unlikeResponse.body.story.likeCount, 0);
 });
 
+test('story comment count stays independent from like count', async () => {
+  const owner = await buildUser();
+  const friend = await buildUser();
+  await makeFriends(owner, friend);
+
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(friend))
+    .send({ content: 'This should count only as a comment' })
+    .expect(201);
+
+  await request(app)
+    .post(`/api/stories/${story._id}/like`)
+    .set('Authorization', authHeader(friend))
+    .expect(200);
+
+  await request(app)
+    .post(`/api/stories/${story._id}/like`)
+    .set('Authorization', authHeader(friend))
+    .expect(200);
+
+  const updatedStory = await Story.findById(story._id).lean();
+  assert.equal(updatedStory.likeCount, 0);
+  assert.equal(updatedStory.commentCount, 1);
+
+  const feedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  const feedStory = feedResponse.body.find((post) => post.type === 'story');
+  assert.equal(feedStory.likeCount, 0);
+  assert.equal(feedStory.commentCount, 1);
+});
+
 test('non-friends cannot like a story (404)', async () => {
   const owner = await buildUser();
   const stranger = await buildUser();
@@ -408,6 +448,180 @@ test('users cannot delete stories of other users (404)', async () => {
     .expect(404);
 
   assert.equal(await Story.countDocuments({}), 1);
+});
+
+// --- Story Comments ---
+
+test('a user can comment on their own story and see the comment list', async () => {
+  const owner = await buildUser();
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  const commentResponse = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .send({ content: 'Nice story!' })
+    .expect(201);
+
+  assert.equal(commentResponse.body.content, 'Nice story!');
+  assert.equal(commentResponse.body.user.username, owner.username);
+
+  const getResponse = await request(app)
+    .get(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(getResponse.body.length, 1);
+  assert.equal(getResponse.body[0].content, 'Nice story!');
+});
+
+test('parallel comments keep story commentCount accurate', async () => {
+  const owner = await buildUser();
+  const firstFriend = await buildUser();
+  const secondFriend = await buildUser();
+  await makeFriends(owner, firstFriend);
+  await makeFriends(owner, secondFriend);
+
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  await Promise.all([
+    request(app)
+      .post(`/api/stories/${story._id}/comments`)
+      .set('Authorization', authHeader(owner))
+      .send({ content: 'Owner comment' })
+      .expect(201),
+    request(app)
+      .post(`/api/stories/${story._id}/comments`)
+      .set('Authorization', authHeader(firstFriend))
+      .send({ content: 'First friend comment' })
+      .expect(201),
+    request(app)
+      .post(`/api/stories/${story._id}/comments`)
+      .set('Authorization', authHeader(secondFriend))
+      .send({ content: 'Second friend comment' })
+      .expect(201),
+  ]);
+
+  const updatedStory = await Story.findById(story._id).lean();
+  assert.equal(updatedStory.commentCount, 3);
+
+  const getResponse = await request(app)
+    .get(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(getResponse.body.length, 3);
+});
+
+test('a friend can comment on a story and delete their comment', async () => {
+  const owner = await buildUser();
+  const friend = await buildUser();
+  await makeFriends(owner, friend);
+
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  const commentResponse = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(friend))
+    .send({ content: 'Awesome!' })
+    .expect(201);
+
+  const commentId = commentResponse.body.id;
+
+  const stranger = await buildUser();
+
+  // another user (stranger) cannot delete friend's comment
+  await request(app)
+    .delete(`/api/stories/${story._id}/comments/${commentId}`)
+    .set('Authorization', authHeader(stranger))
+    .expect(404);
+
+  // story owner can delete friend's comment
+  await request(app)
+    .delete(`/api/stories/${story._id}/comments/${commentId}`)
+    .set('Authorization', authHeader(owner))
+    .expect(204);
+
+  const getResponse = await request(app)
+    .get(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(getResponse.body.length, 0);
+});
+
+test('strangers cannot comment on a story (404)', async () => {
+  const owner = await buildUser();
+  const stranger = await buildUser();
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(stranger))
+    .send({ content: 'Hello!' })
+    .expect(404);
+});
+
+test('a user can reply to a comment, and deleting the parent comment deletes replies and updates story commentCount', async () => {
+  const owner = await buildUser();
+  const friend = await buildUser();
+  await makeFriends(owner, friend);
+
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  // 1. Post parent comment
+  const parentRes = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .send({ content: 'Main thread comment' })
+    .expect(201);
+
+  const parentId = parentRes.body.id;
+
+  // 2. Post reply comment
+  const replyRes = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(friend))
+    .send({ content: 'My reply to you', parentCommentId: parentId })
+    .expect(201);
+
+  assert.equal(replyRes.body.parentComment, parentId);
+
+  // Check comment count on story document
+  const updatedStory = await Story.findById(story._id);
+  assert.equal(updatedStory.commentCount, 2);
+
+  // Fetch comments to verify listing both
+  const getRes = await request(app)
+    .get(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(getRes.body.length, 2);
+  assert.equal(getRes.body[0].id, parentId);
+  assert.equal(getRes.body[1].parentComment, parentId);
+
+  // 3. Delete parent comment (which deletes reply too)
+  await request(app)
+    .delete(`/api/stories/${story._id}/comments/${parentId}`)
+    .set('Authorization', authHeader(owner))
+    .expect(204);
+
+  // Check if comments list is empty
+  const getResAfterDelete = await request(app)
+    .get(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(getResAfterDelete.body.length, 0);
+
+  // Check if story commentCount is decremented by 2 (back to 0)
+  const finalStory = await Story.findById(story._id);
+  assert.equal(finalStory.commentCount, 0);
 });
 
 test('requests without auth token are rejected', async () => {

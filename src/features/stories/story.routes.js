@@ -8,6 +8,9 @@ import {
   toggleStoryLike,
   getStoryLikes,
   deleteStory,
+  addStoryComment,
+  getStoryComments,
+  deleteStoryComment,
 } from './story.controller.js';
 
 const router = Router();
@@ -20,5 +23,9 @@ router.get('/me/archive', getMyArchive);
 router.post('/:storyId/like', toggleStoryLike);
 router.get('/:storyId/likes', getStoryLikes);
 router.delete('/:storyId', deleteStory);
+
+router.post('/:storyId/comments', addStoryComment);
+router.get('/:storyId/comments', getStoryComments);
+router.delete('/:storyId/comments/:commentId', deleteStoryComment);
 
 export default router;

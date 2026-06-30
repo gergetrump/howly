@@ -29,8 +29,17 @@ export async function listDevUsers() {
 
 export async function searchUsersByUsername({ query, currentUserId, limit = 10 }) {
     const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
+    // Find current user's blocked users
+    const currentUser = await User.findById(currentUserId).lean();
+    const blockedUserIds = currentUser?.blockedUsers || [];
+    
+    // Find users who have blocked the current user
+    const usersWhoBlockedMe = await User.find({ blockedUsers: currentUserId }, '_id').lean();
+    const excludeUserIds = [...blockedUserIds, ...usersWhoBlockedMe.map(u => u._id), currentUserId];
+
     const users = await User.find({
-        _id: { $ne: currentUserId },
+        _id: { $nin: excludeUserIds },
         isDeleted: false,
         username: { $regex: escapedQuery, $options: 'i' },
     })
@@ -38,6 +47,22 @@ export async function searchUsersByUsername({ query, currentUserId, limit = 10 }
         .limit(limit);
 
     return users.map(toPublicUser);
+}
+
+export async function getUserByUsername({ username, currentUserId }) {
+    const targetUser = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') }, isDeleted: false });
+    if (!targetUser) {
+        return { errorCode: 'USER_NOT_FOUND' };
+    }
+
+    const currentUser = await User.findById(currentUserId).select('blockedUsers').lean();
+    const blockedByMe = currentUser?.blockedUsers?.some(id => id.toString() === targetUser._id.toString());
+    const hasBlockedMe = targetUser.blockedUsers?.some(id => id.toString() === currentUserId.toString());
+    if (blockedByMe || hasBlockedMe) {
+        return { errorCode: 'BLOCKED' };
+    }
+
+    return { user: toPublicUser(targetUser) };
 }
 
 // Update a user by id while enforcing unique username/email
