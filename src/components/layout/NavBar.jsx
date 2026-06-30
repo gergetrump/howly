@@ -2,7 +2,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { BarChart3, Dumbbell, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
-import { StreakShieldBadge } from '@/components/brand/StreakShieldBadge.jsx';
+import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
 import { getFriendRequests } from '@/services/socialApi';
 import howlyIcon from '@/assets/wolf.svg';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,8 @@ const brandSizes = {
     },
 };
 
+const navStatBadgeClassName = 'min-h-10 gap-2 px-3.5 py-1.5 text-sm font-bold leading-none';
+
 export function NavBar({
     items = defaultItems,
     brandSize = 'lg',
@@ -45,6 +47,7 @@ export function NavBar({
     const profileItem = items.find((item) => item.to === '/profile');
     const navigationItems = items.filter((item) => item.to !== '/profile');
     const coinAmount = user?.coins ?? 0;
+    const streakAmount = user?.streak ?? 0;
     const navProfilePictureUrl = user?.profilePictureUrl;
     const isPremium = user?.isPremium === true || user?.role === 'admin';
     const displayedPendingFriendRequestCount = user ? pendingFriendRequestCount : 0;
@@ -135,17 +138,17 @@ export function NavBar({
                     </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
-                    <MoonCoin amount={coinAmount} compact />
-                    <StreakShieldBadge count={user?.streakShields ?? 0} showLabel={false} size="sm" />
+                <div className="flex shrink-0 items-center gap-3">
+                    <MoonCoin amount={coinAmount} compact className={navStatBadgeClassName} />
+                    <StreakBadge days={streakAmount} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'rounded-full border border-orange-400/20 bg-orange-400/10 text-orange-300 [&>span:first-child]:text-lg')} />
                     {profileItem ? (
-                        <div className="relative">
+                        <div className="relative ml-1">
 
                             <NavLink
                                 to={profileItem.to}
                                 className={({ isActive }) =>
                                     cn(
-                                        'relative flex size-12 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white',
+                                        'relative flex size-[3.25rem] items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white',
                                         isActive && 'bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-300/20',
                                         isPremium && !isActive && 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950',
                                     )
@@ -159,7 +162,7 @@ export function NavBar({
                                         className="size-full rounded-full object-cover"
                                     />
                                 ) : (
-                                    <UserRound className="size-6" aria-hidden="true" />
+                                    <UserRound className="size-7" aria-hidden="true" />
                                 )}
                             </NavLink>
                         </div>
