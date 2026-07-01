@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { AlertDialog as AlertDialogPrimitive } from 'radix-ui';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/confirmation-dialog';
 import { UserAvatar } from '@/components/social/UserProfileTrigger.jsx';
 import { getDisplayName, getUsername } from '@/components/social/socialHelpers.js';
+import { getFriendHabits } from '@/services/socialApi';
 
 export function UserPreviewDialog({
     user,
@@ -33,6 +34,37 @@ export function UserPreviewDialog({
 }) {
     const isOpen = Boolean(user);
     const [isBlockConfirmOpen, setIsBlockConfirmOpen] = useState(false);
+
+    const friendId = user?.id || user?._id;
+    const isFriend = relationship?.status === 'friends';
+    const [loadedHabits, setLoadedHabits] = useState({ userId: null, habits: [] });
+
+    useEffect(() => {
+        if (!friendId || !isFriend) {
+            return undefined;
+        }
+
+        let active = true;
+        getFriendHabits(friendId)
+            .then((response) => {
+                if (active) {
+                    setLoadedHabits({ userId: friendId, habits: Array.isArray(response?.habits) ? response.habits : [] });
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setLoadedHabits({ userId: friendId, habits: [] });
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [friendId, isFriend]);
+
+    const habitsLoaded = loadedHabits.userId === friendId;
+    const friendHabits = habitsLoaded ? loadedHabits.habits : [];
+    const isGhostFriend = isFriend && user?.ghostMode === true;
 
     const blockTitle = relationship?.status === 'friends' ? 'Block this friend?' : 'Block this user?';
     const blockDesc = relationship?.status === 'friends'
@@ -106,8 +138,32 @@ export function UserPreviewDialog({
                             <div>
                                 <h3 className="text-2xl font-bold">{getDisplayName(user)}</h3>
                                 <p className="text-slate-300">@{getUsername(user)}</p>
-                                <p className="mt-2 text-sm font-medium text-slate-200">🔥 {user?.streak ?? 0} days</p>
+                                {isGhostFriend ? (
+                                    <p className="mt-2 text-sm font-medium text-slate-300">👻 In Ghost Mode</p>
+                                ) : (
+                                    <p className="mt-2 text-sm font-medium text-slate-200">🔥 {user?.streak ?? 0} days</p>
+                                )}
                             </div>
+                            {isFriend && !isGhostFriend ? (
+                                <div className="w-full">
+                                    <p className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Habits</p>
+                                    {!habitsLoaded ? (
+                                        <p className="text-sm text-slate-400">Loading habits…</p>
+                                    ) : friendHabits.length > 0 ? (
+                                        <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                                            {friendHabits.map((habit) => (
+                                                <div key={habit.id} className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-2 text-left">
+                                                    <span className="text-lg" aria-hidden="true">{habit.icon}</span>
+                                                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-white">{habit.title}</span>
+                                                    <span className="shrink-0 text-sm font-semibold text-orange-300">🔥 {habit.streakCount}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-slate-400">No habits yet.</p>
+                                    )}
+                                </div>
+                            ) : null}
                             {relationship.status === 'self' ? (
                                 <p className="rounded-full bg-white/10 px-4 py-2 text-sm text-slate-200">This is you</p>
                             ) : (
