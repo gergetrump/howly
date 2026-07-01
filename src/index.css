@@ -194,7 +194,7 @@ body {
 .howly-blink {
     transform-box: fill-box;
     transform-origin: center;
-    animation: howly-blink 5s ease-in-out infinite;
+    animation: howly-blink 3.5s ease-in-out infinite;
 }
 
 .howly-hop {
