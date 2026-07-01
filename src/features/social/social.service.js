@@ -3,6 +3,7 @@ import { toPublicUser } from '../users/user.service.js';
 import { FriendRequest, Friendship } from './social.model.js';
 import { Story, StoryLike, StoryComment } from '../stories/story.model.js';
 import { MilestonePost, MilestoneLike } from '../milestones/milestone.model.js';
+import Habit from '../habits/habit.model.js';
 
 function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
@@ -42,6 +43,29 @@ async function areFriends(firstUserId, secondUserId) {
   const friendship = await Friendship.findOne(pair).lean();
 
   return Boolean(friendship);
+}
+
+export async function getFriendHabits({ userId, targetUserId }) {
+  if (!(await areFriends(userId, targetUserId))) {
+    return { errorCode: 'NOT_FRIENDS' };
+  }
+
+  const habits = await Habit.find({
+    ownerId: targetUserId,
+    source: { $ne: 'challenge' },
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return {
+    habits: habits.map((habit) => ({
+      id: habit._id.toString(),
+      title: habit.title,
+      icon: habit.icon,
+      frequency: habit.frequency,
+      streakCount: habit.streakCount ?? 0,
+    })),
+  };
 }
 
 export async function sendFriendRequest({ requesterId, recipientId }) {
