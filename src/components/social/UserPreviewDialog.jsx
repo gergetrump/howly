@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { AlertTriangle, Plus } from 'lucide-react';
 import { AlertDialog as AlertDialogPrimitive } from 'radix-ui';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +18,7 @@ import {
     ConfirmationDialogTitle,
 } from '@/components/ui/confirmation-dialog';
 import { UserAvatar } from '@/components/social/UserProfileTrigger.jsx';
+import { ReportUserDialog } from '@/components/social/ReportUserDialog.jsx';
 import { getDisplayName, getUsername } from '@/components/social/socialHelpers.js';
 import { getFriendHabits } from '@/services/socialApi';
 
@@ -34,6 +35,7 @@ export function UserPreviewDialog({
 }) {
     const isOpen = Boolean(user);
     const [isBlockConfirmOpen, setIsBlockConfirmOpen] = useState(false);
+    const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
 
     const friendId = user?.id || user?._id;
     const isFriend = relationship?.status === 'friends';
@@ -169,6 +171,15 @@ export function UserPreviewDialog({
                             ) : (
                                 <div className="flex flex-col gap-2.5 w-full mt-2 items-center">
                                     {renderAction()}
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        className="bg-white/10 text-slate-200 hover:bg-white/15 hover:text-white w-auto px-6 h-8 text-xs font-semibold rounded-full mx-auto"
+                                        onClick={() => setIsReportDialogOpen(true)}
+                                    >
+                                        <AlertTriangle className="mr-1 size-3.5" aria-hidden="true" />
+                                        Report
+                                    </Button>
                                     {isBlocked ? (
                                         <Button
                                             type="button"
@@ -233,6 +244,12 @@ export function UserPreviewDialog({
                     </ConfirmationDialogFooter>
                 </ConfirmationDialogContent>
             </ConfirmationDialog>
+
+            <ReportUserDialog
+                user={user}
+                open={isReportDialogOpen}
+                onOpenChange={setIsReportDialogOpen}
+            />
         </>
     );
 }
