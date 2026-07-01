@@ -22,6 +22,7 @@ import { logoutUser } from '@/services/authService';
 import {
     uploadCurrentUserProfilePicture,
     deleteCurrentUserProfilePicture,
+    updateCurrentUser,
 } from '@/services/userService';
 import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
 import { useAuth } from '@/context/authContext';
@@ -56,6 +57,27 @@ function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle
 }
 
 function GhostModeRow() {
+    const { user, setUser } = useAuth();
+    const [isSaving, setIsSaving] = useState(false);
+    const isGhost = user?.ghostMode === true;
+
+    async function handleToggle() {
+        if (isSaving) {
+            return;
+        }
+
+        setIsSaving(true);
+
+        try {
+            const updated = await updateCurrentUser({ ghostMode: !isGhost });
+            setUser((current) => (current ? { ...current, ghostMode: updated?.ghostMode ?? !isGhost } : current));
+        } catch (error) {
+            console.error('Failed to toggle ghost mode:', error);
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
     return (
         <div className="flex items-center justify-between rounded-2xl bg-slate-800/80 px-5 py-4">
             <div className="flex items-center gap-4">
@@ -63,15 +85,19 @@ function GhostModeRow() {
                 <div>
                     <p className="font-semibold text-white">Ghost Mode</p>
                     <p className="mt-1 text-sm text-slate-400">
-                        Hide your metrics from friends
+                        Hide your streak from friends
                     </p>
                 </div>
             </div>
 
             <button
                 type="button"
-                className="flex h-7 w-12 items-center rounded-full bg-slate-600 px-1"
+                onClick={handleToggle}
+                disabled={isSaving}
+                role="switch"
+                aria-checked={isGhost}
                 aria-label="Toggle ghost mode"
+                className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${isGhost ? 'justify-end bg-howly-primary' : 'justify-start bg-slate-600'}`}
             >
                 <span className="size-5 rounded-full bg-white" />
             </button>
