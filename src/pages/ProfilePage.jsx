@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
-import { StoryArchive } from '@/components/stories/StoryArchive.jsx';
 import { Button } from '@/components/ui/button';
 // import { ThemeToggle } from '@/components/brand/ThemeToggle.jsx';
 import { logoutUser } from '@/services/authService';
@@ -291,7 +290,22 @@ export function ProfilePage() {
             </section>
 
             <PageSection title="My Stories">
-                <StoryArchive />
+                <button
+                    type="button"
+                    onClick={() => navigate('/stories')}
+                    className="flex w-full items-center justify-between gap-4 rounded-2xl bg-slate-800/80 px-5 py-4 text-left transition-colors hover:bg-slate-800"
+                >
+                    <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-howly-primary/15 text-xl">
+                            <span aria-hidden="true">📸</span>
+                        </div>
+                        <div className="min-w-0">
+                            <p className="font-semibold text-white">Story Archive</p>
+                            <p className="truncate text-sm text-slate-400">Your shared moments from the last 90 days</p>
+                        </div>
+                    </div>
+                    <span aria-hidden="true" className="shrink-0 text-lg text-slate-400">→</span>
+                </button>
             </PageSection>
 
             <PageSection title="Privacy">
