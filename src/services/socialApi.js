@@ -4,6 +4,10 @@ export function getFriends() {
     return apiRequest('/social/friends');
 }
 
+export function getFriendHabits(userId) {
+    return apiRequest(`/social/friends/${userId}/habits`);
+}
+
 export function deleteFriend(friendshipId) {
     return apiRequest(`/social/friends/${friendshipId}`, {
         method: 'DELETE',
