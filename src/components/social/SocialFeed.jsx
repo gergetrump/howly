@@ -56,6 +56,7 @@ export function SocialFeed({
                                 onOpenProfile={onOpenProfile}
                                 blockedUsers={blockedUsers}
                                 blockers={blockers}
+                                fullImage
                             >
                                 <ReactionButton
                                     liked={post.likedByCurrentUser}

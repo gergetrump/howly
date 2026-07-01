@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, Edit2, Trash2, Camera } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Camera, Sparkles } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -18,7 +18,7 @@ import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
-import { StreakFreezeIcon } from '@/components/brand/StreakFreezeIcon.jsx';
+import { StreakShieldIcon } from '@/components/brand/StreakShieldIcon.jsx';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
@@ -28,6 +28,7 @@ export function HabitCard({
     emoji = '🔥',
     title,
     frequency,
+    goal = null,
     streakDays = 0,
     completed = false,
     atRisk = false,
@@ -42,7 +43,7 @@ export function HabitCard({
     const hasMenuActions = Boolean(onEdit || onDelete || onShareStory);
 
     return (
-        <Card className={cn(appCardClassName, completed && 'bg-emerald-400/10 ring-emerald-300/25', atRisk && !completed && 'bg-amber-400/5 ring-amber-400/30')}>
+        <Card className={cn(appCardClassName, completed && 'bg-[#23423b] ring-emerald-300/25', atRisk && !completed && 'bg-[#42392c] ring-amber-400/30')}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}>
                     <span aria-hidden="true">{emoji}</span>
@@ -52,6 +53,12 @@ export function HabitCard({
                     <div className="flex flex-wrap items-center gap-2">
                         <h3 className="truncate font-semibold">{title}</h3>
                         <div className="flex items-center gap-1.5">
+                            {goal ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-howly-primary/15 px-2.5 py-0.5 text-xs font-semibold text-howly-primary ring-1 ring-howly-primary/40">
+                                    <Sparkles size={12} aria-hidden="true" />
+                                    {goal}
+                                </span>
+                            ) : null}
                             {frequency ? <Badge variant="secondary">{frequency}</Badge> : null}
                             {activeBoost ? (
                                 <Badge className="bg-slate-700 hover:bg-slate-800 text-white border-0 font-medium capitalize text-[10px] py-0 h-5 px-1.5 flex gap-1 items-center">
@@ -70,9 +77,9 @@ export function HabitCard({
                             type="button"
                             onClick={onUseFreeze}
                             className="flex items-center gap-1 rounded-full bg-amber-400/15 px-3 py-1.5 text-xs font-semibold text-amber-200 ring-1 ring-amber-400/30 transition-colors hover:bg-amber-400/25"
-                            title="Use a streak freeze to save this streak"
+                            title="Use a streak shield to save this streak"
                         >
-                            <StreakFreezeIcon className="h-3.5 w-auto" />
+                            <StreakShieldIcon className="h-3.5 w-auto" />
                             Save streak
                         </button>
                     ) : null}

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { BarChart3, Dumbbell, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
+import { StreakShieldBadge } from '@/components/brand/StreakShieldBadge.jsx';
 import { getFriendRequests } from '@/services/socialApi';
 import howlyIcon from '@/assets/wolf.svg';
 import { cn } from '@/lib/utils';
@@ -34,7 +35,7 @@ const brandSizes = {
     },
 };
 
-const navStatBadgeClassName = 'min-h-10 gap-2 px-3.5 py-1.5 text-sm font-bold leading-none';
+const navStatBadgeClassName = 'min-h-10 gap-0 px-2 py-1.5 text-[0px] font-bold leading-none sm:gap-2 sm:px-3.5 sm:text-sm';
 
 export function NavBar({
     items = defaultItems,
@@ -48,6 +49,7 @@ export function NavBar({
     const navigationItems = items.filter((item) => item.to !== '/profile');
     const coinAmount = user?.coins ?? 0;
     const streakAmount = user?.streak ?? 0;
+    const streakShields = user?.streakShields ?? 0;
     const navProfilePictureUrl = user?.profilePictureUrl;
     const isPremium = user?.isPremium === true || user?.role === 'admin';
     const displayedPendingFriendRequestCount = user ? pendingFriendRequestCount : 0;
@@ -108,7 +110,7 @@ export function NavBar({
                         </span>
                     </Link>
 
-                    <div className="flex items-center gap-1 sm:gap-3">
+                    <div className="flex items-center gap-1 lg:gap-3">
                         {navigationItems.map((item) => {
                             const Icon = item.icon ?? Dumbbell;
 
@@ -118,7 +120,7 @@ export function NavBar({
                                     to={item.to}
                                     className={({ isActive }) =>
                                         cn(
-                                    'flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm font-medium text-slate-400 transition hover:bg-white/10 hover:text-white sm:px-4 sm:text-base',
+                                    'flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm font-medium text-slate-400 transition hover:bg-white/10 hover:text-white lg:px-4 lg:text-base',
                                             isActive && 'bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-300/20',
                                         )
                                     }
@@ -131,16 +133,17 @@ export function NavBar({
                                             </span>
                                         ) : null}
                                     </span>
-                                    <span className="hidden truncate sm:inline">{item.label}</span>
+                                    <span className="hidden truncate lg:inline">{item.label}</span>
                                 </NavLink>
                             );
                         })}
                     </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-3">
+                <div className="flex shrink-0 items-center gap-2 lg:gap-3">
                     <MoonCoin amount={coinAmount} compact className={navStatBadgeClassName} />
                     <StreakBadge days={streakAmount} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'rounded-full border border-orange-400/20 bg-orange-400/10 text-orange-300 [&>span:first-child]:text-lg')} />
+                    <StreakShieldBadge count={streakShields} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'rounded-full border border-violet-400/25 bg-violet-400/10 text-violet-200 [&>svg]:h-6')} />
                     {profileItem ? (
                         <div className="relative ml-1">
 

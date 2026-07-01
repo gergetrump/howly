@@ -36,14 +36,18 @@ export function WolfSkin({ part = 'back' }) {
                 <rect x="804.997" y="1429" width="200" height="200" transform="rotate(-90 804.997 1429)" fill="var(--color-wolf-dark)" />
 
                 {/* Back right leg */}
-                <ellipse cx="1165.45" cy="969.455" rx="75" ry="75" transform="rotate(-145 1165.45 969.455)" fill="var(--color-wolf-dark)" />
-                <ellipse cx="1288.33" cy="1055.49" rx="75" ry="75" transform="rotate(-145 1288.33 1055.49)" fill="var(--color-wolf-dark)" />
-                <rect x="1245.31" y="1116.93" width="150" height="150" transform="rotate(-145 1245.31 1116.93)" fill="var(--color-wolf-dark)" />
+                <g className="howly-arm-r">
+                    <ellipse cx="1165.45" cy="969.455" rx="75" ry="75" transform="rotate(-145 1165.45 969.455)" fill="var(--color-wolf-dark)" />
+                    <ellipse cx="1288.33" cy="1055.49" rx="75" ry="75" transform="rotate(-145 1288.33 1055.49)" fill="var(--color-wolf-dark)" />
+                    <rect x="1245.31" y="1116.93" width="150" height="150" transform="rotate(-145 1245.31 1116.93)" fill="var(--color-wolf-dark)" />
+                </g>
 
                 {/* Back left leg */}
-                <ellipse cx="75" cy="75" rx="75" ry="75" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 208.909 1073.91)" fill="var(--color-wolf-dark)" />
-                <ellipse cx="75" cy="75" rx="75" ry="75" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 86.0364 1159.95)" fill="var(--color-wolf-dark)" />
-                <rect width="150" height="150" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 147.473 1116.93)" fill="var(--color-wolf-dark)" />
+                <g className="howly-arm-l">
+                    <ellipse cx="75" cy="75" rx="75" ry="75" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 208.909 1073.91)" fill="var(--color-wolf-dark)" />
+                    <ellipse cx="75" cy="75" rx="75" ry="75" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 86.0364 1159.95)" fill="var(--color-wolf-dark)" />
+                    <rect width="150" height="150" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 147.473 1116.93)" fill="var(--color-wolf-dark)" />
+                </g>
             </g>
 
             {/* Body */}
@@ -85,10 +89,12 @@ export function WolfSkin({ part = 'back' }) {
             </g>
 
             {/* Eyes */}
-            <circle cx="386.999" cy="680" r="100" fill="white" />
-            <circle cx="1005" cy="680" r="100" fill="white" />
-            <circle cx="386.999" cy="680" r="80" fill="black" />
-            <circle cx="1005" cy="680" r="80" fill="black" />
+            <g className="howly-blink">
+                <circle cx="386.999" cy="680" r="100" fill="white" />
+                <circle cx="1005" cy="680" r="100" fill="white" />
+                <circle cx="386.999" cy="680" r="80" fill="black" />
+                <circle cx="1005" cy="680" r="80" fill="black" />
+            </g>
 
             {/* Tongue (drawn BEFORE the beige snout so it sits behind it) */}
             <path

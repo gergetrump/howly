@@ -10,6 +10,10 @@ import { AddHabitModal } from '@/components/habits/AddHabitModal.jsx';
 import { CompanionChatPanel } from '@/components/habits/CompanionChatPanel.jsx';
 import { StreakRepairBanner } from '@/components/habits/StreakRepairBanner.jsx';
 import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
+
+
+
+import { toast } from 'sonner';
 import { NotificationBanner } from '@/components/ui/notification-banner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -30,7 +34,7 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
     const progressText = `${item.participant?.daysCompleted ?? 0}/${item.challenge?.durationDays ?? 0} days`;
 
     return (
-        <Card className={cn(appCardClassName, item.habit.isCompletedToday && 'bg-emerald-400/10 ring-emerald-300/25')}>
+        <Card className={cn(appCardClassName, item.habit.isCompletedToday && 'bg-[#23423b] ring-emerald-300/25')}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}>
                     <span aria-hidden="true">{item.habit.icon}</span>
@@ -53,30 +57,6 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
             </CardContent>
         </Card>
     );
-}
-
-// Group habits by their goal. Habits without a goal come first (no header),
-// followed by one group per goal.
-function groupHabitsByGoal(list) {
-    const byGoal = new Map();
-    for (const habit of list) {
-        const key = habit.goal || '';
-        if (!byGoal.has(key)) {
-            byGoal.set(key, []);
-        }
-        byGoal.get(key).push(habit);
-    }
-
-    const groups = [];
-    if (byGoal.has('')) {
-        groups.push({ goal: null, habits: byGoal.get('') });
-    }
-    for (const [key, groupHabits] of byGoal) {
-        if (key !== '') {
-            groups.push({ goal: key, habits: groupHabits });
-        }
-    }
-    return groups;
 }
 
 export function DashboardPage() {
@@ -230,11 +210,18 @@ export function DashboardPage() {
             // A check-in can complete the day → refresh the overall streak (🔥).
             if (!wasCompleted) {
                 refreshUserStreak();
+                window.dispatchEvent(new Event('howly:habit-completed'));
             }
 
             // Offer to share a story moment after checking off a habit (if none posted yet)
             if (!wasCompleted && !sharedHabitIds.has(habit.id)) {
-                setStoryHabit(habit);
+                toast('Capture this moment? 📸', {
+                    description: habit.title,
+                    action: {
+                        label: 'Add photo',
+                        onClick: () => setStoryHabit(habit),
+                    },
+                });
             }
 
             if (!habit.isCompletedToday && updatedHabit.milestonePost) {
@@ -270,6 +257,7 @@ export function DashboardPage() {
             // A check-in can complete the day → refresh the overall streak (🔥).
             if (!wasCompleted) {
                 refreshUserStreak();
+                window.dispatchEvent(new Event('howly:habit-completed'));
             }
         } catch (error) {
             console.error('Failed to complete challenge habit:', error);
@@ -292,18 +280,6 @@ export function DashboardPage() {
         setIsAddModalOpen(true);
     }
 
-    function renderGoalHeader(goalLabel) {
-        return (
-            <div className="px-1">
-                <span className="inline-flex items-center gap-2 rounded-full bg-howly-primary/15 px-4 py-1.5 text-sm font-bold text-howly-primary ring-1 ring-howly-primary/40">
-                    <Sparkles size={15} aria-hidden="true" />
-                    <span className="text-xs font-semibold uppercase tracking-wider opacity-70">Goal:</span>
-                    {goalLabel}
-                </span>
-            </div>
-        );
-    }
-
     function renderHabitCard(habit, withCompletion) {
         return (
             <HabitCard
@@ -311,6 +287,7 @@ export function DashboardPage() {
                 emoji={habit.icon}
                 title={habit.title}
                 frequency={habit.frequency}
+                goal={habit.goal}
                 streakDays={habit.streakCount}
                 completed={habit.isCompletedToday}
                 atRisk={Boolean(habit.streakRepairDeadline)}
@@ -403,27 +380,30 @@ export function DashboardPage() {
                 <DailyProgressCard completed={completedCount} total={totalCount} />
             </PageSection>
 
-            <div className={isChatOpen ? 'flex flex-col gap-4 px-4 md:flex-row md:items-start' : ''}>
+            <div className={isChatOpen ? 'flex flex-col items-center gap-4 px-4 md:flex-row md:items-start' : ''}>
                 <CompanionStage
                     type={companion?.type}
                     name={companion?.name}
-                    size={isChatOpen ? 'lg' : 'xl'}
+                    size="xl"
                     equippedItemConfigs={equippedItemConfigs}
-                    className={isChatOpen ? 'md:w-2/5 md:flex-shrink-0' : undefined}
+                    className={isChatOpen ? 'md:flex-shrink-0' : undefined}
                 />
 
                 {isChatOpen && (
-                    <CompanionChatPanel
-                        companionName={companion?.name}
-                        onClose={() => setIsChatOpen(false)}
-                        onHabitAdded={(habit) => setHabits((prev) => [habit, ...prev])}
-                        onEditSuggestion={(suggestion, removeFromPanel) => {
-                            setHabitToEdit(null);
-                            setPrefillHabit(suggestion);
-                            setConsumeSuggestion(() => removeFromPanel);
-                            setIsAddModalOpen(true);
-                        }}
-                    />
+                    <div className="flex w-full min-w-0 justify-center md:flex-1">
+                        <CompanionChatPanel
+                            className="max-w-2xl"
+                            companionName={companion?.name}
+                            onClose={() => setIsChatOpen(false)}
+                            onHabitAdded={(habit) => setHabits((prev) => [habit, ...prev])}
+                            onEditSuggestion={(suggestion, removeFromPanel) => {
+                                setHabitToEdit(null);
+                                setPrefillHabit(suggestion);
+                                setConsumeSuggestion(() => removeFromPanel);
+                                setIsAddModalOpen(true);
+                            }}
+                        />
+                    </div>
                 )}
             </div>
 
@@ -448,16 +428,9 @@ export function DashboardPage() {
                 {todaysHabits.length === 0 ? (
                     <p className="text-sm text-slate-400 text-center py-4">No habits scheduled for today. Take a break!</p>
                 ) : (
-                    <div className="space-y-4">
-                        {groupHabitsByGoal(todaysHabits).map((group) => (
-                            <div key={group.goal ?? '__ungrouped'} className="space-y-2">
-                                {group.goal ? renderGoalHeader(group.goal) : null}
-                                <CardGrid columns={group.habits.length === 1 ? 1 : 2}>
-                                    {group.habits.map((habit) => renderHabitCard(habit, true))}
-                                </CardGrid>
-                            </div>
-                        ))}
-                    </div>
+                    <CardGrid columns={todaysHabits.length === 1 ? 1 : 2}>
+                        {todaysHabits.map((habit) => renderHabitCard(habit, true))}
+                    </CardGrid>
                 )}
             </PageSection>
 
@@ -478,14 +451,9 @@ export function DashboardPage() {
                         {habits.length === 0 ? (
                             <p className="text-sm text-slate-400 text-center py-4">No habits yet. Click "Add Habit" to start!</p>
                         ) : (
-                            groupHabitsByGoal(habits).map((group) => (
-                                <div key={group.goal ?? '__ungrouped'} className="space-y-2">
-                                    {group.goal ? renderGoalHeader(group.goal) : null}
-                                    <CardGrid columns={group.habits.length === 1 ? 1 : 2}>
-                                        {group.habits.map((habit) => renderHabitCard(habit, false))}
-                                    </CardGrid>
-                                </div>
-                            ))
+                            <CardGrid columns={habits.length === 1 ? 1 : 2}>
+                                {habits.map((habit) => renderHabitCard(habit, false))}
+                            </CardGrid>
                         )}
                     </div>
                 )}
@@ -560,7 +528,7 @@ export function DashboardPage() {
                     <DialogHeader className="space-y-3 pt-4 text-left">
                         <DialogTitle className="text-2xl font-bold tracking-tight">Your streak is at risk</DialogTitle>
                         <DialogDescription className="text-base leading-relaxed text-slate-300">
-                            Completing “{riskConfirmHabit?.title}” now starts a new streak at 1. Your current {riskConfirmHabit?.streakCount}-day streak can still be saved with a freeze.
+                            Completing “{riskConfirmHabit?.title}” now starts a new streak at 1. Your current {riskConfirmHabit?.streakCount}-day streak can still be saved with a shield.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="mt-7 flex w-full flex-col gap-3">
@@ -576,7 +544,7 @@ export function DashboardPage() {
                                 className="h-14 w-full rounded-full bg-amber-400 text-lg font-semibold text-amber-950 shadow-lg shadow-amber-900/20 hover:bg-amber-300"
                                 onClick={() => { setRiskConfirmHabit(null); navigate('/shop?category=powerUp'); }}
                             >
-                                Get a freeze
+                                Get a shield
                             </Button>
                         )}
                         <Button
