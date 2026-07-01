@@ -117,6 +117,7 @@ export function StoryFeedCard({
     blockedUsers = [],
     blockers = [],
     children,
+    fullImage = false,
 }) {
     const [likers, setLikers] = useState([]);
     const [comments, setComments] = useState([]);
@@ -241,12 +242,12 @@ export function StoryFeedCard({
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="overflow-hidden rounded-2xl">
+                <div className={fullImage ? 'flex justify-center overflow-hidden rounded-2xl bg-slate-900/40' : 'overflow-hidden rounded-2xl'}>
                     <img
                         src={story.imageUrl}
                         alt={`Story by ${isOwn ? 'you' : authorName}`}
                         loading="lazy"
-                        className="max-h-96 w-full object-cover"
+                        className={fullImage ? 'max-h-[70vh] w-auto max-w-full object-contain' : 'max-h-96 w-full object-cover'}
                     />
                 </div>
 
