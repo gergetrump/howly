@@ -64,6 +64,7 @@ export function UserPreviewDialog({
 
     const habitsLoaded = loadedHabits.userId === friendId;
     const friendHabits = habitsLoaded ? loadedHabits.habits : [];
+    const isGhostFriend = isFriend && user?.ghostMode === true;
 
     const blockTitle = relationship?.status === 'friends' ? 'Block this friend?' : 'Block this user?';
     const blockDesc = relationship?.status === 'friends'
@@ -137,9 +138,13 @@ export function UserPreviewDialog({
                             <div>
                                 <h3 className="text-2xl font-bold">{getDisplayName(user)}</h3>
                                 <p className="text-slate-300">@{getUsername(user)}</p>
-                                <p className="mt-2 text-sm font-medium text-slate-200">🔥 {user?.streak ?? 0} days</p>
+                                {isGhostFriend ? (
+                                    <p className="mt-2 text-sm font-medium text-slate-300">👻 In Ghost Mode</p>
+                                ) : (
+                                    <p className="mt-2 text-sm font-medium text-slate-200">🔥 {user?.streak ?? 0} days</p>
+                                )}
                             </div>
-                            {isFriend ? (
+                            {isFriend && !isGhostFriend ? (
                                 <div className="w-full">
                                     <p className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Habits</p>
                                     {!habitsLoaded ? (
