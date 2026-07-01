@@ -8,6 +8,7 @@ function App() {
             <Toaster
                 theme="dark"
                 position="top-right"
+                closeButton
                 toastOptions={{
                     style: {
                         background: '#1e1b3a',
@@ -16,6 +17,7 @@ function App() {
                     },
                     classNames: {
                         actionButton: 'bg-howly-primary! text-white!',
+                        closeButton: 'bg-[#1e1b3a]! border-white/25! text-white! hover:bg-[#2a2746]!',
                     },
                 }}
             />
