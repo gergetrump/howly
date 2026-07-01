@@ -5,6 +5,7 @@ import { PostAuthorAvatar } from '@/components/cards/FeedPostCard';
 import { appCardClassName } from '@/components/cards/cardStyles';
 import { getStoryLikes, getStoryComments } from '@/services/storyApi';
 import { StoryCommentSection } from '@/components/social/StoryCommentSection';
+import { cloudinaryUrl } from '@/lib/cloudinary';
 import { isBlockedByRelationship } from '@/components/social/socialHelpers';
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -244,7 +245,7 @@ export function StoryFeedCard({
             <CardContent className="space-y-4">
                 <div className={fullImage ? 'flex justify-center overflow-hidden rounded-2xl bg-slate-900/40' : 'overflow-hidden rounded-2xl'}>
                     <img
-                        src={story.imageUrl}
+                        src={cloudinaryUrl(story.imageUrl, { width: 1080 })}
                         alt={`Story by ${isOwn ? 'you' : authorName}`}
                         loading="lazy"
                         className={fullImage ? 'max-h-[70vh] w-auto max-w-full object-contain' : 'max-h-96 w-full object-cover'}
