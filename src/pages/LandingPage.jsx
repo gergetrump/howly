@@ -3,7 +3,7 @@ import { CircleCheckBig, Image, Users, Flame } from 'lucide-react';
 import howlyIcon from '@/assets/howly.png';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { CompanionAvatar } from '@/components/brand/companionAvatar';
+import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
 import { Background } from '@/components/brand/background';
 import { appCardClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';

@@ -17,24 +17,8 @@ export function FriendCard({ name, username, streakDays, avatarSrc, action, onCl
             className="shadow-xl shadow-slate-950/20 backdrop-blur"
             onOpenProfile={onClick}
         >
-            <Badge className="shrink-0 border border-white/15 bg-white/10 text-slate-100">🔥 {streakDays} days</Badge>
+            <Badge className="shrink-0 border border-theme-text/15 bg-theme-text/10 text-theme-text">🔥 {streakDays} days</Badge>
             {action}
         </UserPanelRow>
-        <Card className={appCardClassName}>
-            <CardContent className="flex items-center gap-3">
-                <Avatar size="lg">
-                    <AvatarImage src={avatarSrc} alt={name} />
-                    <AvatarFallback>{initials}</AvatarFallback>
-                </Avatar>
-
-                <div className="min-w-0 flex-1">
-                    <h3 className="truncate font-semibold">{name}</h3>
-                    <p className="truncate text-sm text-theme-text-soft">@{username}</p>
-                </div>
-
-                <Badge className="border border-theme-text/15 bg-theme-text/10 text-theme-text">{streakDays} days</Badge>
-                {action}
-            </CardContent>
-        </Card>
     );
 }

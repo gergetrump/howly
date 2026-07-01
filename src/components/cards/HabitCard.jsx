@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, Edit2, Trash2 } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Camera, Sparkles } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -8,8 +8,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
     ConfirmationDialog,
-    ConfirmationDialogAction,
-    ConfirmationDialogCancel,
     ConfirmationDialogContent,
     ConfirmationDialogDescription,
     ConfirmationDialogFooter,
@@ -20,24 +18,32 @@ import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
+import { StreakShieldIcon } from '@/components/brand/StreakShieldIcon.jsx';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
+import { renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 
 export function HabitCard({
     emoji = '🔥',
     title,
     frequency,
+    goal = null,
     streakDays = 0,
     completed = false,
+    atRisk = false,
+    onUseFreeze,
     onEdit,
     onDelete,
+    onShareStory,
+    activeBoost = null,
     children,
 }) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const hasMenuActions = Boolean(onEdit || onDelete || onShareStory);
 
     return (
-        <Card className={cn(appCardClassName, completed && 'bg-pink-500/20 ring-pink-300/30')}>
+        <Card className={cn(appCardClassName, completed && 'bg-[#23423b] ring-emerald-300/25', atRisk && !completed && 'bg-[#42392c] ring-amber-400/30')}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}>
                     <span aria-hidden="true">{emoji}</span>
@@ -46,13 +52,39 @@ export function HabitCard({
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                         <h3 className="truncate font-semibold">{title}</h3>
-                        {frequency ? <Badge variant="secondary">{frequency}</Badge> : null}
+                        <div className="flex items-center gap-1.5">
+                            {goal ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-howly-primary/15 px-2.5 py-0.5 text-xs font-semibold text-howly-primary ring-1 ring-howly-primary/40">
+                                    <Sparkles size={12} aria-hidden="true" />
+                                    {goal}
+                                </span>
+                            ) : null}
+                            {frequency ? <Badge variant="secondary">{frequency}</Badge> : null}
+                            {activeBoost ? (
+                                <Badge className="bg-slate-700 hover:bg-slate-800 text-white border-0 font-medium capitalize text-[10px] py-0 h-5 px-1.5 flex gap-1 items-center">
+                                    {renderShopItemVisual(activeBoost, 'h-3 w-3')}
+                                    {activeBoost.assetKey.replace('-', ' ')} &bull; {activeBoost.remainingCompletions} left
+                                </Badge>
+                            ) : null}
+                        </div>
                     </div>
                     <StreakBadge days={streakDays} icon="🔥" className="mt-1" />
                 </div>
 
                 <div className="flex items-center gap-1">
+                    {atRisk && onUseFreeze ? (
+                        <button
+                            type="button"
+                            onClick={onUseFreeze}
+                            className="flex items-center gap-1 rounded-full bg-amber-400/15 px-3 py-1.5 text-xs font-semibold text-amber-200 ring-1 ring-amber-400/30 transition-colors hover:bg-amber-400/25"
+                            title="Use a streak shield to save this streak"
+                        >
+                            <StreakShieldIcon className="h-3.5 w-auto" />
+                            Save streak
+                        </button>
+                    ) : null}
                     {children}
+                    {hasMenuActions ? (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-theme-text-muted hover:text-theme-text hover:bg-theme-surface">
@@ -61,20 +93,32 @@ export function HabitCard({
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40 border-theme-text/20 bg-theme-bg text-theme-text-soft">
-                            <DropdownMenuItem onClick={onEdit} className="cursor-pointer focus:bg-theme-surface focus:text-theme-text">
-                                <Edit2 className="mr-2 h-4 w-4" />
-                                Edit Habit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                                onClick={() => setIsDeleteDialogOpen(true)} 
-                                className="cursor-pointer text-theme-danger focus:bg-theme-danger/10 focus:text-theme-danger"
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Habit
-                            </DropdownMenuItem>
+                            {onEdit ? (
+                                <DropdownMenuItem onClick={onEdit} className="cursor-pointer focus:bg-theme-surface focus:text-theme-text">
+                                    <Edit2 className="mr-2 h-4 w-4" />
+                                    Edit Habit
+                                </DropdownMenuItem>
+                            ) : null}
+                            {onShareStory ? (
+                                <DropdownMenuItem onClick={onShareStory} className="cursor-pointer focus:bg-theme-surface focus:text-theme-text">
+                                    <Camera className="mr-2 h-4 w-4" />
+                                    Share Story
+                                </DropdownMenuItem>
+                            ) : null}
+                            {onDelete ? (
+                                <DropdownMenuItem
+                                    onClick={() => setIsDeleteDialogOpen(true)}
+                                    className="cursor-pointer text-theme-danger focus:bg-theme-danger/10 focus:text-theme-danger"
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Habit
+                                </DropdownMenuItem>
+                            ) : null}
                         </DropdownMenuContent>
                     </DropdownMenu>
+                    ) : null}
 
+                    {onDelete ? (
                     <ConfirmationDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                         <ConfirmationDialogContent className="bg-theme-surface border-0 text-theme-text rounded-3xl p-8 sm:max-w-md flex flex-col items-center text-center shadow-2xl">
                             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-theme-danger/10 mb-2 border border-theme-danger/20">
@@ -82,8 +126,15 @@ export function HabitCard({
                             </div>
                             <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-4 text-center">
                                 <ConfirmationDialogTitle className="text-2xl font-bold tracking-tight text-center">Delete this habit?</ConfirmationDialogTitle>
-                                <ConfirmationDialogDescription className="text-base text-theme-text-soft text-center">
-                                    Your streak and all progress for <strong className="text-theme-text font-semibold">{title}</strong> will be lost forever. This can't be undone.
+                                <ConfirmationDialogDescription className="text-base text-theme-text-soft text-center flex flex-col gap-2">
+                                    <span>
+                                        Your streak and all progress for <strong className="text-theme-text font-semibold">{title}</strong> will be lost forever. This can't be undone.
+                                    </span>
+                                    {activeBoost && (
+                                        <span className="text-theme-danger font-medium bg-theme-danger/10 p-2 rounded-lg mt-1 border border-theme-danger/20 text-sm">
+                                            Warning: You will also lose the currently active boost and it cannot be used anymore.
+                                        </span>
+                                    )}
                                 </ConfirmationDialogDescription>
                             </ConfirmationDialogHeader>
                             <ConfirmationDialogFooter className="flex-col w-full gap-3 mt-8 sm:flex-col sm:space-x-0">
@@ -106,6 +157,7 @@ export function HabitCard({
                             </ConfirmationDialogFooter>
                         </ConfirmationDialogContent>
                     </ConfirmationDialog>
+                    ) : null}
                 </div>
             </CardContent>
         </Card>

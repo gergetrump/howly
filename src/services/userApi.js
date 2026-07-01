@@ -12,3 +12,7 @@ export function updateUserPreferences(preferences) {
         body: JSON.stringify(preferences),
     });
 }
+
+export function getUserByUsername(username) {
+    return apiRequest(`/users/profile/${username}`);
+}

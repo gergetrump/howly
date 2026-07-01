@@ -4,6 +4,10 @@ export function getCurrentUser() {
     return apiRequest('/users/me');
 }
 
+export function getCurrentUserPlan() {
+    return apiRequest('/users/me/plan');
+}
+
 export function updateCurrentUser(userData) {
     return apiRequest('/users/me', {
         method: 'PATCH',
@@ -14,6 +18,12 @@ export function updateCurrentUser(userData) {
 export function deleteCurrentUser() {
     return apiRequest('/users/me', {
         method: 'DELETE',
+    });
+}
+
+export function completeOnboarding() {
+    return apiRequest('/users/me/complete-onboarding', {
+        method: 'POST',
     });
 }
 

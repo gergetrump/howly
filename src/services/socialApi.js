@@ -4,6 +4,10 @@ export function getFriends() {
     return apiRequest('/social/friends');
 }
 
+export function getFriendHabits(userId) {
+    return apiRequest(`/social/friends/${userId}/habits`);
+}
+
 export function deleteFriend(friendshipId) {
     return apiRequest(`/social/friends/${friendshipId}`, {
         method: 'DELETE',
@@ -34,11 +38,11 @@ export function rejectFriendRequest(requestId) {
 }
 
 export function getSocialFeed() {
-    return apiRequest('/social/feed');
+    return apiRequest('/milestones/feed');
 }
 
 export function reactToMilestone(postId, emoji) {
-    return apiRequest(`/social/milestones/${postId}/like`, {
+    return apiRequest(`/milestones/${postId}/like`, {
         method: 'POST',
         body: JSON.stringify({ emoji }),
     });
@@ -50,4 +54,24 @@ export function likeMilestone(postId) {
 
 export function unlikeMilestone(postId) {
     return reactToMilestone(postId, '💜');
+}
+
+export function getBlockedUsers() {
+    return apiRequest('/social/blocked');
+}
+
+export function getBlockers() {
+    return apiRequest('/social/blockers');
+}
+
+export function blockUser(userId) {
+    return apiRequest(`/social/block/${userId}`, {
+        method: 'POST',
+    });
+}
+
+export function unblockUser(userId) {
+    return apiRequest(`/social/unblock/${userId}`, {
+        method: 'POST',
+    });
 }

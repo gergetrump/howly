@@ -4,7 +4,12 @@ import { FriendsPanel } from '@/components/social/FriendsPanel.jsx';
 import { ReactionUsersDialog } from '@/components/social/ReactionUsersDialog.jsx';
 import { SocialFeed } from '@/components/social/SocialFeed.jsx';
 import { UserPreviewDialog } from '@/components/social/UserPreviewDialog.jsx';
-import { getSocialErrorMessage, getDisplayName, sameId } from '@/components/social/socialHelpers.js';
+import {
+    getSocialErrorMessage,
+    getDisplayName,
+    isBlockedByRelationship,
+    sameId,
+} from '@/components/social/socialHelpers.js';
 import {
     acceptFriendRequest,
     deleteFriend,
@@ -14,8 +19,13 @@ import {
     rejectFriendRequest,
     reactToMilestone,
     sendFriendRequest,
+    blockUser,
+    unblockUser,
+    getBlockedUsers,
+    getBlockers,
 } from '@/services/socialApi';
 import { searchUsers } from '@/services/userApi';
+import { deleteStory, getStoryLikes, toggleStoryLike } from '@/services/storyApi';
 import { useAuth } from '@/context/authContext';
 
 const SOCIAL_REFRESH_INTERVAL_MS = 10000;
@@ -25,6 +35,8 @@ export function SocialPage() {
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState({ incoming: [], outgoing: [] });
     const [feed, setFeed] = useState([]);
+    const [blockedUsers, setBlockedUsers] = useState([]);
+    const [blockers, setBlockers] = useState([]);
     const [usernameQuery, setUsernameQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -39,8 +51,16 @@ export function SocialPage() {
     const [selectedReaction, setSelectedReaction] = useState(null);
     const [selectedProfileUser, setSelectedProfileUser] = useState(null);
     const pendingFriendRequestCount = requests.incoming?.length ?? 0;
+    const selectedFeedPost = selectedReaction?.post?.id
+        ? feed.find((post) => post.id === selectedReaction.post.id)
+        : null;
     const selectedReactionPost = selectedReaction?.post?.id
-        ? feed.find((post) => post.id === selectedReaction.post.id) ?? selectedReaction.post
+        ? {
+            ...(selectedFeedPost ?? selectedReaction.post),
+            reactions: selectedReaction.post.reactions
+                ?? selectedFeedPost?.reactions
+                ?? [],
+        }
         : null;
 
     function getProfileRelationship(profileUser) {
@@ -83,15 +103,19 @@ export function SocialPage() {
         }
 
         try {
-            const [friendsData, requestsData, feedData] = await Promise.all([
+            const [friendsData, requestsData, feedData, blockedData, blockersData] = await Promise.all([
                 getFriends(),
                 getFriendRequests(),
                 getSocialFeed(),
+                getBlockedUsers(),
+                getBlockers(),
             ]);
 
             setFriends(friendsData ?? []);
             setRequests(requestsData ?? { incoming: [], outgoing: [] });
             setFeed(feedData ?? []);
+            setBlockedUsers(blockedData ?? []);
+            setBlockers(blockersData ?? []);
             window.dispatchEvent(new Event('howly:social-requests-updated'));
         } catch (err) {
             if (!silent) {
@@ -309,6 +333,88 @@ export function SocialPage() {
         }
     }
 
+    async function handleToggleStoryLike(post) {
+        setBusyPostId(post.id);
+        setError('');
+
+        try {
+            const response = await toggleStoryLike(post.id);
+            const updatedStory = { type: 'story', ...response.story };
+
+            setFeed((currentFeed) =>
+                currentFeed.map((feedPost) =>
+                    feedPost.id === post.id ? updatedStory : feedPost,
+                ),
+            );
+            setSelectedReaction((currentReaction) => {
+                if (currentReaction?.post?.id !== post.id) {
+                    return currentReaction;
+                }
+
+                const currentUserId = user?.id ?? user?._id;
+                const currentReactions = currentReaction.post.reactions ?? [];
+                const nextReactions = response.liked
+                    ? currentReactions.some((reaction) => sameId(reaction.user?.id, currentUserId))
+                        ? currentReactions
+                        : [...currentReactions, {
+                            emoji: '💜',
+                            user: { ...user, id: currentUserId },
+                        }]
+                    : currentReactions.filter((reaction) => !sameId(reaction.user?.id, currentUserId));
+
+                return {
+                    post: {
+                        ...updatedStory,
+                        reactions: nextReactions,
+                    },
+                };
+            });
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setBusyPostId(null);
+        }
+    }
+
+    async function handleOpenStoryLikes(post, loadedLikers = []) {
+        if (!post.likeCount) {
+            return;
+        }
+
+        setBusyPostId(post.id);
+        setError('');
+
+        try {
+            const likers = loadedLikers.length === post.likeCount
+                ? loadedLikers
+                : await getStoryLikes(post.id);
+
+            setSelectedReaction({
+                post: {
+                    ...post,
+                    type: 'story',
+                    reactions: (likers ?? []).map((liker) => ({
+                        emoji: '💜',
+                        user: liker,
+                    })),
+                },
+            });
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setBusyPostId(null);
+        }
+    }
+
+    async function handleDeleteStory(post) {
+        await deleteStory(post.id);
+        setFeed((currentFeed) =>
+            currentFeed.filter(
+                (feedPost) => !(feedPost.type === 'story' && feedPost.id === post.id),
+            ),
+        );
+    }
+
     async function handleReactToMilestone(post, emoji) {
         setBusyPostId(post.id);
         setError('');
@@ -321,6 +427,11 @@ export function SocialPage() {
                     feedPost.id === post.id ? response.milestonePost : feedPost,
                 ),
             );
+            setSelectedReaction((currentReaction) =>
+                currentReaction?.post?.id === post.id
+                    ? { post: response.milestonePost }
+                    : currentReaction,
+            );
         } catch (err) {
             setError(getSocialErrorMessage(err));
         } finally {
@@ -328,17 +439,69 @@ export function SocialPage() {
         }
     }
 
+    async function handleReactFromDialog(post, emoji) {
+        if (post.type === 'story') {
+            await handleToggleStoryLike(post);
+            return;
+        }
+
+        await handleReactToMilestone(post, emoji);
+    }
+
+    async function handleBlockUser(targetUserId) {
+        try {
+            setIsSubmitting(true);
+            setError('');
+            await blockUser(targetUserId);
+            const blockedData = await getBlockedUsers();
+            setBlockedUsers(blockedData ?? []);
+            void refreshSocialData({ silent: true });
+            setSelectedProfileUser(null);
+            setNotice('User blocked successfully.');
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    async function handleUnblockUser(targetUserId) {
+        try {
+            setIsSubmitting(true);
+            setError('');
+            await unblockUser(targetUserId);
+            const blockedData = await getBlockedUsers();
+            setBlockedUsers(blockedData ?? []);
+            setNotice('User unblocked successfully.');
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    const isSelectedUserBlocked = selectedProfileUser
+        ? isBlockedByRelationship(selectedProfileUser, blockedUsers, blockers)
+        : false;
+
     return (
-        <Page theme="forest">
+        <Page theme="forest" contentClassName="max-w-[112rem]">
             <Heading title="Social" subtitle="See what your friends are building." streakDays={user?.streak ?? 0} />
 
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,22rem)] lg:items-start xl:gap-12">
                 <SocialFeed
                     feed={feed}
                     isLoading={isLoading}
                     busyPostId={busyPostId}
+                    currentUserId={user?.id}
                     onReact={handleReactToMilestone}
                     onOpenReactions={(feedPost) => setSelectedReaction({ post: feedPost })}
+                    onToggleStoryLike={handleToggleStoryLike}
+                    onOpenStoryLikes={handleOpenStoryLikes}
+                    onDeleteStory={handleDeleteStory}
+                    onOpenProfile={setSelectedProfileUser}
+                    blockedUsers={blockedUsers}
+                    blockers={blockers}
                 />
 
                 <FriendsPanel
@@ -362,6 +525,7 @@ export function SocialPage() {
                     onAcceptRequest={handleAcceptRequest}
                     onRejectRequest={handleRejectRequest}
                     onDeleteFriend={handleDeleteFriend}
+                    onBlockUser={handleBlockUser}
                     onOpenProfile={setSelectedProfileUser}
                     getRelationship={getProfileRelationship}
                 />
@@ -369,22 +533,27 @@ export function SocialPage() {
 
             <ReactionUsersDialog
                 reaction={selectedReactionPost ? { post: selectedReactionPost } : null}
-                busy={isSubmitting}
+                busy={isSubmitting || busyPostId === selectedReactionPost?.id}
+                currentUserId={user?.id}
                 onClose={() => setSelectedReaction(null)}
                 onSelectUser={(reactionUser) => {
                     setSelectedReaction(null);
                     setSelectedProfileUser(reactionUser);
                 }}
                 onAddFriend={handleSendProfileFriendRequest}
+                onReact={handleReactFromDialog}
                 getRelationship={getProfileRelationship}
             />
             <UserPreviewDialog
                 user={selectedProfileUser}
                 relationship={getProfileRelationship(selectedProfileUser)}
                 busy={isSubmitting || busyRequestId !== null}
+                isBlocked={isSelectedUserBlocked}
                 onClose={() => setSelectedProfileUser(null)}
                 onAddFriend={handleSendProfileFriendRequest}
                 onAcceptRequest={handleAcceptProfileFriendRequest}
+                onBlock={handleBlockUser}
+                onUnblock={handleUnblockUser}
             />
         </Page>
     );

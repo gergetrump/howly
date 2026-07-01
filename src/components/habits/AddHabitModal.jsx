@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import {
     Dialog,
@@ -19,6 +20,8 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { PlanLimitDialog } from '@/components/common';
+import { useAuth } from '@/context/authContext';
 import { createHabit, updateHabit } from '@/services/habitService';
 
 const ICONS = [
@@ -43,7 +46,9 @@ const DAYS_OF_WEEK = [
     { label: 'Sun', value: 7 },
 ];
 
-export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, existingHabits = [] }) {
+export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, prefill, existingHabits = [] }) {
+    const navigate = useNavigate();
+    const { user } = useAuth();
     const [name, setName] = useState('');
     const [icon, setIcon] = useState('🎯');
     const [target, setTarget] = useState(1);
@@ -53,24 +58,26 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
     const [customDays, setCustomDays] = useState([]);
     const [category, setCategory] = useState('');
     const [customCategory, setCustomCategory] = useState('');
+    const [goal, setGoal] = useState(null);
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
-
-    const dynamicCategories = [...new Set([
+    const [formError, setFormError] = useState('');
+    const [limitPrompt, setLimitPrompt] = useState(null);
+    const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
+    const dynamicCategories = useMemo(() => [...new Set([
         ...(existingHabits?.map(h => h.category).filter(Boolean) || []),
         editHabit?.category
-    ].filter(Boolean))];
-    const ALL_CATEGORIES = [...new Set([...CATEGORIES, ...dynamicCategories])];
-    const SELECTABLE_CATEGORIES = [...ALL_CATEGORIES, 'Custom'];
+    ].filter(Boolean))], [existingHabits, editHabit?.category]);
+    const ALL_CATEGORIES = useMemo(() => [...new Set([...CATEGORIES, ...dynamicCategories])], [dynamicCategories]);
+    const SELECTABLE_CATEGORIES = useMemo(() => [...ALL_CATEGORIES, 'Custom'], [ALL_CATEGORIES]);
 
     // Effect to pre-fill form when editHabit is passed
     useEffect(() => {
         if (open && editHabit) {
             setName(editHabit.title || '');
             setTarget(editHabit.target || 1);
+            setGoal(editHabit.goal ?? null);
             setIcon(editHabit.icon || '🎯');
             setFrequency(editHabit.frequency || '');
-            setCustomDays(editHabit.customDays || []);
-            
             if (ALL_CATEGORIES.includes(editHabit.category)) {
                 setCategory(editHabit.category);
                 setCustomCategory('');
@@ -80,6 +87,8 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             } else {
                 setCategory('');
             }
+            setCustomDays(editHabit.customDays || []);
+            setFormError('');
             
             if (UNITS.includes(editHabit.unit)) {
                 setUnit(editHabit.unit);
@@ -90,9 +99,31 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             } else {
                 setUnit('');
             }
+        } else if (open && prefill) {
+            // Pre-fill from an AI suggestion — but submit still CREATES (no id),
+            // since there is no editHabit. Lets the user tweak before adding.
+            setName(prefill.title || '');
+            setTarget(1);
+            setGoal(prefill.goal ?? null);
+            setUnit('');
+            setCustomUnit('');
+            setFrequency(prefill.frequency || '');
+            setCustomDays([]);
+            setFormError('');
+            if (ALL_CATEGORIES.includes(prefill.category)) {
+                setCategory(prefill.category);
+                setCustomCategory('');
+            } else if (prefill.category) {
+                setCategory('Custom');
+                setCustomCategory(prefill.category);
+            } else {
+                setCategory('');
+            }
+            setIcon(prefill.icon || '🎯');
         } else if (open && !editHabit) {
             // Reset for new
             setName('');
+            setGoal(null);
             setTarget(1);
             setUnit('');
             setCustomUnit('');
@@ -101,8 +132,9 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             setCategory('');
             setCustomCategory('');
             setIcon('🎯');
+            setFormError('');
         }
-    }, [open, editHabit, ALL_CATEGORIES.join(',')]);
+    }, [open, editHabit, prefill, ALL_CATEGORIES]);
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -121,10 +153,12 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             frequency,
             customDays,
             category: finalCategory,
-            icon
+            icon,
+            goal: goal ?? null,
         };
 
         try {
+            setFormError('');
             let result;
             if (editHabit) {
                 result = await updateHabit(editHabit.id, data);
@@ -134,16 +168,43 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
             if (onHabitAdded) onHabitAdded(result.data, !!editHabit);
             onOpenChange(false);
         } catch (error) {
+            if (!editHabit && error.code === 'HABIT_LIMIT_REACHED') {
+                onOpenChange(false);
+                window.setTimeout(() => {
+                    if (isFreeUser) {
+                        navigate('/premium', {
+                            state: {
+                                message: error.message || 'You already reached the free habit limit. Upgrade to Premium to create more habits.',
+                                returnTo: '/dashboard',
+                            },
+                        });
+                    } else {
+                        setLimitPrompt({
+                            title: 'Habit limit reached',
+                            message: error.message || 'You reached the habit limit for your current plan.',
+                        });
+                    }
+                }, 0);
+                return;
+            }
+
+            setFormError(error.message || (editHabit ? 'Failed to update habit' : 'Failed to create habit'));
             console.error(editHabit ? 'Failed to update habit' : 'Failed to create habit', error);
         }
     }
 
     return (
+        <>
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-xl rounded-2xl bg-theme-surface p-10 border-0 text-theme-text shadow-2xl">
                 <h2 className="mb-8 text-center text-2xl font-bold tracking-tight text-theme-text">
                     {editHabit ? 'Edit Habit' : 'Add Habit'}
                 </h2>
+                {formError ? (
+                    <p className="mb-4 rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                        {formError}
+                    </p>
+                ) : null}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Icon picker + Habit name — side by side */}
@@ -364,5 +425,16 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, exi
                 </form>
             </DialogContent>
         </Dialog>
+        <PlanLimitDialog
+            open={Boolean(limitPrompt)}
+            onOpenChange={(nextOpen) => {
+                if (!nextOpen) {
+                    setLimitPrompt(null);
+                }
+            }}
+            title={limitPrompt?.title}
+            message={limitPrompt?.message}
+        />
+        </>
     );
 }

@@ -1,9 +1,11 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Dumbbell, Home, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
+import { BarChart3, Dumbbell, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
+import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
+import { StreakShieldBadge } from '@/components/brand/StreakShieldBadge.jsx';
 import { getFriendRequests } from '@/services/socialApi';
-import howlyIcon from '@/assets/howly.png';
+import howlyIcon from '@/assets/wolf.svg';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/authContext';
 
@@ -11,7 +13,9 @@ const defaultItems = [
     { label: 'Home', to: '/dashboard', icon: Home },
     { label: 'Social', to: '/social', icon: UsersRound },
     { label: 'Shop', to: '/shop', icon: ShoppingBag },
+    { label: 'Inventory', to: '/inventory', icon: PackageOpen },
     { label: 'Challenges', to: '/challenges', icon: Trophy },
+    { label: 'Analytics', to: '/analytics', icon: BarChart3 },
     { label: 'Profile', to: '/profile', icon: UserRound },
 ];
 
@@ -31,6 +35,8 @@ const brandSizes = {
     },
 };
 
+const navStatBadgeClassName = 'min-h-10 gap-0 px-2 py-1.5 text-[0px] font-bold leading-none sm:gap-2 sm:px-3.5 sm:text-sm';
+
 export function NavBar({
     items = defaultItems,
     brandSize = 'lg',
@@ -42,7 +48,10 @@ export function NavBar({
     const profileItem = items.find((item) => item.to === '/profile');
     const navigationItems = items.filter((item) => item.to !== '/profile');
     const coinAmount = user?.coins ?? 0;
+    const streakAmount = user?.streak ?? 0;
+    const streakShields = user?.streakShields ?? 0;
     const navProfilePictureUrl = user?.profilePictureUrl;
+    const isPremium = user?.isPremium === true || user?.role === 'admin';
     const displayedPendingFriendRequestCount = user ? pendingFriendRequestCount : 0;
 
     useEffect(() => {
@@ -88,7 +97,7 @@ export function NavBar({
             )}
             aria-label="Primary navigation"
         >
-            <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-4 md:px-6">
+            <div className="flex w-full items-center justify-between gap-6 px-4 md:px-8">
                 <div className="flex min-w-0 items-center gap-3 sm:gap-6">
                     <Link to="/dashboard" className="flex shrink-0 items-center gap-2">
                         <img
@@ -101,7 +110,7 @@ export function NavBar({
                         </span>
                     </Link>
 
-                    <div className="flex items-center gap-1 sm:gap-3">
+                    <div className="flex items-center gap-1 lg:gap-3">
                         {navigationItems.map((item) => {
                             const Icon = item.icon ?? Dumbbell;
 
@@ -111,7 +120,7 @@ export function NavBar({
                                     to={item.to}
                                     className={({ isActive }) =>
                                         cn(
-                                    'flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm font-medium text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text sm:px-4 sm:text-base',
+                                    'flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm font-medium text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text lg:px-4 lg:text-base',
                                             isActive && 'bg-theme-love/15 text-theme-love ring-1 ring-theme-love/20',
                                         )
                                     }
@@ -124,36 +133,42 @@ export function NavBar({
                                             </span>
                                         ) : null}
                                     </span>
-                                    <span className="hidden truncate sm:inline">{item.label}</span>
+                                    <span className="hidden truncate lg:inline">{item.label}</span>
                                 </NavLink>
                             );
                         })}
                     </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
-                    <MoonCoin amount={coinAmount} compact />
+                <div className="flex shrink-0 items-center gap-2 lg:gap-3">
+                    <MoonCoin amount={coinAmount} compact className={navStatBadgeClassName} />
+                    <StreakBadge days={streakAmount} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'rounded-full border border-orange-400/20 bg-orange-400/10 text-orange-300 [&>span:first-child]:text-lg')} />
+                    <StreakShieldBadge count={streakShields} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'rounded-full border border-violet-400/25 bg-violet-400/10 text-violet-200 [&>svg]:h-6')} />
                     {profileItem ? (
-                        <NavLink
-                            to={profileItem.to}
-                            className={({ isActive }) =>
-                                cn(
-                                    'flex size-12 items-center justify-center rounded-full text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text',
-                                    isActive && 'bg-theme-love/15 text-theme-love ring-1 ring-theme-love/20',
-                                )
-                            }
-                            aria-label="Profile"
-                        >
-                            {navProfilePictureUrl ? (
-                                <img
-                                    src={navProfilePictureUrl}
-                                    alt="Profile"
-                                    className="size-full rounded-full object-cover"
-                                />
-                            ) : (
-                                <UserRound className="size-6" aria-hidden="true" />
-                            )}
-                        </NavLink>
+                        <div className="relative ml-1">
+
+                            <NavLink
+                                to={profileItem.to}
+                                className={({ isActive }) =>
+                                    cn(
+                                        'relative flex size-[3.25rem] items-center justify-center rounded-full text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text',
+                                        isActive && 'bg-theme-love/15 text-theme-love ring-1 ring-theme-love/20',
+                                        isPremium && !isActive && 'ring-2 ring-theme-gold ring-offset-2 ring-offset-theme-bg',
+                                    )
+                                }
+                                aria-label="Profile"
+                            >
+                                {navProfilePictureUrl ? (
+                                    <img
+                                        src={navProfilePictureUrl}
+                                        alt="Profile"
+                                        className="size-full rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <UserRound className="size-7" aria-hidden="true" />
+                                )}
+                            </NavLink>
+                        </div>
                     ) : null}
                 </div>
             </div>

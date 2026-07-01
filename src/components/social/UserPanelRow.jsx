@@ -12,12 +12,15 @@ export function UserPanelRow({
     className = '',
     surfaceClassName = 'bg-white/8',
     children,
+    trailingContent,
     onOpenProfile,
     onAddFriend,
 }) {
     const canAddFriend = relationship.status === 'none';
     const isSelf = relationship.status === 'self';
     const hasCustomActions = Boolean(children);
+    const defaultTrailingContent = emoji ? <span className="text-xl" aria-hidden="true">{emoji}</span> : null;
+    const rowTrailingContent = trailingContent ?? defaultTrailingContent;
 
     return (
         <div className={`flex items-center gap-3 rounded-xl p-3 text-left ${surfaceClassName} ${className}`}>
@@ -25,11 +28,10 @@ export function UserPanelRow({
                 user={user}
                 avatarClassName={avatarClassName}
                 onOpen={onOpenProfile}
-            >
-                {emoji ? <span className="text-xl" aria-hidden="true">{emoji}</span> : null}
-            </UserProfileTrigger>
+            />
 
             {hasCustomActions ? children : null}
+            {!hasCustomActions && rowTrailingContent ? rowTrailingContent : null}
 
             {!hasCustomActions && !isSelf ? (
                 <Button

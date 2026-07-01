@@ -10,6 +10,36 @@ export function sameId(firstId, secondId) {
     return firstId?.toString?.() === secondId?.toString?.();
 }
 
+export function getUserId(user) {
+    return (user?.id || user?._id || user || '').toString();
+}
+
+export function getNormalizedUsername(userOrUsername) {
+    if (typeof userOrUsername === 'string') {
+        return userOrUsername.toLowerCase();
+    }
+
+    return (userOrUsername?.username || '').toLowerCase();
+}
+
+export function isBlockedByRelationship(user, blockedUsers = [], blockers = []) {
+    const userId = getUserId(user);
+    const username = getNormalizedUsername(user);
+
+    const blockedByMe = blockedUsers.some((blockedUser) => {
+        const blockedId = getUserId(blockedUser);
+        return (userId && blockedId === userId)
+            || (username && getNormalizedUsername(blockedUser) === username);
+    });
+    const hasBlockedMe = blockers.some((blocker) => {
+        const blockerId = getUserId(blocker);
+        return (userId && blockerId === userId)
+            || (username && getNormalizedUsername(blocker) === username);
+    });
+
+    return blockedByMe || hasBlockedMe;
+}
+
 export function buildMilestoneTitle(post) {
     const habitTitle = post?.habit?.title || 'Habit';
     const habitFrequency = post?.habit?.frequency || 'Habit';
@@ -48,19 +78,13 @@ export function formatRelativeTime(dateValue) {
         return `${elapsedHours} hours ago`;
     }
 
-    const elapsedDays = Math.floor(elapsedHours / 24);
+    const elapsedDays = Math.min(Math.floor(elapsedHours / 24), 6);
 
     if (elapsedDays === 1) {
-        return '1 day ago';
+        return '1 day';
     }
 
-    if (elapsedDays < 7) {
-        return `${elapsedDays} days ago`;
-    }
-
-    const elapsedWeeks = Math.floor(elapsedDays / 7);
-
-    return elapsedWeeks === 1 ? '1 week ago' : `${elapsedWeeks} weeks ago`;
+    return `${elapsedDays} days`;
 }
 
 export function getSocialErrorMessage(error, user) {
@@ -81,8 +105,12 @@ export function getSocialErrorMessage(error, user) {
             return 'That milestone is no longer available';
         case 'MILESTONE_REACTION_INVALID':
             return 'Choose one of the available milestone reactions';
+        case 'MILESTONE_REACTION_LIMIT_REACHED':
+            return 'Premium users can react with up to 5 emojis';
         case 'CANNOT_LIKE_OWN_MILESTONE':
             return 'You cannot like your own milestone';
+        case 'STORY_NOT_FOUND':
+            return 'That story is no longer available';
         default:
             return error.message;
     }

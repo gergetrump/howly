@@ -52,17 +52,18 @@ export function ChallengeCard({
                     <Trophy className="size-7 text-theme-success" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
-                    <CardTitle className="break-words text-xl">{title}</CardTitle>
-                    {description ? <p className="mt-2 text-base text-theme-text-soft">{description}</p> : null}
+                    <CardTitle className="break-words text-2xl font-bold leading-tight">{title}</CardTitle>
                 </div>
             </CardHeader>
             <CardContent className="space-y-5 px-6 pb-6">
-                <div className="flex flex-wrap items-center gap-2">
-                    {habitTitle ? (
-                        <Badge className="border border-theme-success/30 bg-theme-success/10 text-theme-success">
+                {habitTitle ? (
+                    <div className="inline-flex max-w-full rounded-xl border border-theme-success/25 bg-theme-success/10 px-3 py-2">
+                        <span className="min-w-0 break-words text-lg font-bold leading-snug text-theme-success">
                             {habitTitle}
-                        </Badge>
-                    ) : null}
+                        </span>
+                    </div>
+                ) : null}
+                <div className="flex flex-wrap items-center gap-2">
                     {status ? (
                         <Badge className="border border-theme-text/15 bg-theme-text/10 text-theme-text">
                             {toTitleCase(status)}
@@ -82,6 +83,7 @@ export function ChallengeCard({
                         {totalDays} days
                     </Badge>
                 </div>
+                {description ? <p className="text-sm leading-relaxed text-slate-300">{description}</p> : null}
                 <div className="space-y-2">
                     <div className="flex justify-between text-sm text-theme-text-soft">
                         <span>Progress</span>
@@ -91,8 +93,8 @@ export function ChallengeCard({
                     </div>
                     <Progress value={progressValue} className="h-2" indicatorClassName="bg-theme-success" />
                 </div>
-                <div className="flex items-end justify-between gap-3 pt-1">
-                    <div className="flex flex-wrap gap-2">{children}</div>
+                <div className="flex items-center justify-between gap-3 pt-1">
+                    <div className="flex min-w-0 flex-1 flex-nowrap gap-2 overflow-x-auto pb-1">{children}</div>
                     <div className="ml-auto shrink-0">
                         <MoonCoin amount={reward ?? 0} compact />
                     </div>

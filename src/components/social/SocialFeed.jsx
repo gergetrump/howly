@@ -1,5 +1,5 @@
-import { CardGrid } from '@/components/common';
-import { FeedPostCard } from '@/components/cards';
+import { CardGrid, ReactionButton } from '@/components/common';
+import { FeedPostCard, StoryFeedCard } from '@/components/cards';
 import { PageSection } from '@/components/layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { MilestoneReactionPicker } from '@/components/social/MilestoneReactionPicker.jsx';
@@ -24,36 +24,73 @@ export function SocialFeed({
     feed,
     isLoading,
     busyPostId,
+    currentUserId,
     onReact,
     onOpenReactions,
+    onToggleStoryLike,
+    onOpenStoryLikes,
+    onDeleteStory,
+    onOpenProfile,
+    blockedUsers = [],
+    blockers = [],
 }) {
     return (
-        <PageSection title="Feed" className="min-w-0">
+        <PageSection title="Feed" className="min-w-0 lg:max-w-[64rem]">
             {isLoading ? (
                 <EmptyState>Loading feed</EmptyState>
             ) : feed.length ? (
                 <CardGrid columns={1}>
-                    {feed.map((post) => (
-                        <FeedPostCard
-                            key={post.id}
-                            authorName={getDisplayName(post.user)}
-                            authorUsername={getUsername(post.user)}
-                            authorAvatarSrc={post.user?.profilePictureUrl}
-                            meta={formatRelativeTime(post.createdAt)}
-                            companionName={post.companion?.name || 'Howly'}
-                            milestoneTitle={buildMilestoneTitle(post)}
-                        >
-                            <MilestoneReactionPicker
-                                post={post}
-                                busy={busyPostId === post.id}
-                                onReact={onReact}
-                                onOpenReactions={onOpenReactions}
-                            />
-                        </FeedPostCard>
-                    ))}
+                    {feed.map((post) =>
+                        post.type === 'story' ? (
+                            <StoryFeedCard
+                                key={`story-${post.id}`}
+                                authorName={getDisplayName(post.user)}
+                                authorAvatarSrc={post.user?.profilePictureUrl}
+                                authorIsPremium={post.user?.isPremium === true || post.user?.role === 'admin'}
+                                meta={formatRelativeTime(post.createdAt)}
+                                story={post}
+                                isOwn={post.user?.id === currentUserId}
+                                currentUserId={currentUserId}
+                                onDelete={onDeleteStory}
+                                onOpenLikes={(_, likers) => onOpenStoryLikes?.(post, likers)}
+                                onOpenProfile={onOpenProfile}
+                                blockedUsers={blockedUsers}
+                                blockers={blockers}
+                                fullImage
+                            >
+                                <ReactionButton
+                                    liked={post.likedByCurrentUser}
+                                    count={post.likeCount}
+                                    label="Like story"
+                                    disabled={busyPostId === post.id}
+                                    onClick={() => onToggleStoryLike?.(post)}
+                                />
+                            </StoryFeedCard>
+                        ) : (
+                            <FeedPostCard
+                                key={`milestone-${post.id}`}
+                                authorName={getDisplayName(post.user)}
+                                authorUsername={getUsername(post.user)}
+                                authorAvatarSrc={post.user?.profilePictureUrl}
+                                authorIsPremium={post.user?.isPremium === true || post.user?.role === 'admin'}
+                                meta={formatRelativeTime(post.createdAt)}
+                                companionName={post.companion?.name || 'Howly'}
+                                companionType={post.companion?.type || 'wolf'}
+                                companionEquippedItemConfigs={post.companion?.equippedItemConfigs ?? []}
+                                milestoneTitle={buildMilestoneTitle(post)}
+                            >
+                                <MilestoneReactionPicker
+                                    post={post}
+                                    busy={busyPostId === post.id}
+                                    onReact={onReact}
+                                    onOpenReactions={onOpenReactions}
+                                />
+                            </FeedPostCard>
+                        ),
+                    )}
                 </CardGrid>
             ) : (
-                <EmptyState>No milestones today</EmptyState>
+                <EmptyState>Nothing new today</EmptyState>
             )}
         </PageSection>
     );

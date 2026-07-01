@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, Plus, Trash2 } from 'lucide-react';
+import { MoreVertical, Plus, Trash2, Ban } from 'lucide-react';
 import { AlertDialog as AlertDialogPrimitive } from 'radix-ui';
 import { FriendCard } from '@/components/cards';
 import { Button } from '@/components/ui/button';
@@ -32,8 +32,9 @@ function EmptyState({ children }) {
     );
 }
 
-function FriendActions({ friend, friendshipId, busy, onDelete }) {
+function FriendActions({ friend, friendshipId, busy, onDelete, onBlock }) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false);
     const friendName = getDisplayName(friend);
 
     return (
@@ -58,6 +59,13 @@ function FriendActions({ friend, friendshipId, busy, onDelete }) {
                     >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete friend
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        className="cursor-pointer text-red-400 focus:bg-slate-800 focus:text-red-300"
+                        onClick={() => setIsBlockDialogOpen(true)}
+                    >
+                        <Ban className="mr-2 h-4 w-4" />
+                        Block friend
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -95,6 +103,43 @@ function FriendActions({ friend, friendshipId, busy, onDelete }) {
                     </ConfirmationDialogFooter>
                 </ConfirmationDialogContent>
             </ConfirmationDialog>
+
+            <ConfirmationDialog open={isBlockDialogOpen} onOpenChange={setIsBlockDialogOpen}>
+                <ConfirmationDialogContent className="border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl sm:max-w-md">
+                    <ConfirmationDialogHeader className="space-y-3 text-center">
+                        <ConfirmationDialogTitle className="text-xl font-bold">
+                            Block this friend?
+                        </ConfirmationDialogTitle>
+                        <ConfirmationDialogDescription className="text-sm text-slate-300">
+                            Are you sure you want to block this friend? You will no longer be friends or see each other's progress.
+                        </ConfirmationDialogDescription>
+                    </ConfirmationDialogHeader>
+                    <ConfirmationDialogFooter className="mt-4 gap-3 sm:justify-center">
+                        <AlertDialogPrimitive.Cancel asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="border-white/15 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                            >
+                                Cancel
+                            </Button>
+                        </AlertDialogPrimitive.Cancel>
+                        <AlertDialogPrimitive.Action asChild>
+                            <Button
+                                type="button"
+                                className="bg-red-500 text-white hover:bg-red-400"
+                                disabled={busy}
+                                onClick={() => {
+                                    setIsBlockDialogOpen(false);
+                                    onBlock(friend.id || friend._id);
+                                }}
+                            >
+                                Block friend
+                            </Button>
+                        </AlertDialogPrimitive.Action>
+                    </ConfirmationDialogFooter>
+                </ConfirmationDialogContent>
+            </ConfirmationDialog>
         </div>
     );
 }
@@ -120,12 +165,13 @@ export function FriendsPanel({
     onAcceptRequest,
     onRejectRequest,
     onDeleteFriend,
+    onBlockUser,
     onOpenProfile,
     getRelationship,
 }) {
     return (
-        <aside className="space-y-3 lg:sticky lg:top-6">
-            <div className="flex flex-wrap items-center gap-2">
+        <aside className="ml-auto w-full max-w-[42rem] space-y-3 lg:sticky lg:top-24 lg:max-w-[22rem] lg:max-h-[calc(100vh-8rem)] lg:flex lg:flex-col">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <div className="inline-flex rounded-lg border border-white/10 bg-white/10 p-1 text-sm text-slate-300">
                     <button
                         type="button"
@@ -136,12 +182,12 @@ export function FriendsPanel({
                     </button>
                     <button
                         type="button"
-                        className={`flex items-center gap-2 rounded-md px-3 py-2 font-medium transition ${activePanel === 'requests' ? 'bg-white text-slate-950' : 'hover:bg-white/10 hover:text-white'}`}
+                        className={`relative rounded-md px-3 py-2 font-medium transition ${activePanel === 'requests' ? 'bg-white text-slate-950' : 'hover:bg-white/10 hover:text-white'}`}
                         onClick={() => onActivePanelChange('requests')}
                     >
                         Friend Requests
                         {pendingFriendRequestCount > 0 ? (
-                            <span className="flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold leading-5 text-white">
+                            <span className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white border border-[#24213d] shadow-sm">
                                 {pendingFriendRequestCount}
                             </span>
                         ) : null}
@@ -157,7 +203,7 @@ export function FriendsPanel({
                 </Button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1 overflow-y-auto pr-1">
                 {activePanel === 'friends' ? (
                     isLoading ? (
                         <EmptyState>Loading friends</EmptyState>
@@ -178,6 +224,7 @@ export function FriendsPanel({
                                             friendshipId={id}
                                             busy={busyFriendId === id}
                                             onDelete={onDeleteFriend}
+                                            onBlock={onBlockUser}
                                         />
                                     )}
                                 />
@@ -200,6 +247,7 @@ export function FriendsPanel({
                                     busy={busyRequestId === request.id}
                                     onAccept={onAcceptRequest}
                                     onReject={onRejectRequest}
+                                    onBlock={onBlockUser}
                                 />
                             ))}
                         </div>
