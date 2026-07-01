@@ -84,6 +84,10 @@ export function validateUpdateUserInput(body = {}) {
         }
     }
 
+    if (body.ghostMode !== undefined) {
+        updates.ghostMode = Boolean(body.ghostMode);
+    }
+
     if (Object.keys(updates).length === 0 && errors.length === 0) {
         errors.push('no valid fields provided');
     }

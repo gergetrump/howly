@@ -123,6 +123,7 @@ export function toPublicUser(user) {
         streak: user.streak,
         streakShields: user.streakShields ?? 0,
         streakRepairDeadline: user.streakRepairDeadline ?? null,
+        ghostMode: user.ghostMode ?? false,
         premiumStatus: user.premiumStatus,
         premiumUntil: user.premiumUntil,
         createdAt: user.createdAt,
