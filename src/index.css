@@ -176,3 +176,56 @@ body {
     @apply font-sans;
     }
 }
+
+@keyframes howly-blink {
+    0%, 92%, 100% { transform: scaleY(1); }
+    96% { transform: scaleY(0.08); }
+}
+
+@keyframes howly-hop {
+    0% { transform: translateY(0) scale(1, 1); }
+    15% { transform: translateY(0) scale(1.06, 0.9); }
+    45% { transform: translateY(-14%) scale(0.95, 1.08); }
+    70% { transform: translateY(0) scale(1.05, 0.92); }
+    85% { transform: translateY(0) scale(0.99, 1.01); }
+    100% { transform: translateY(0) scale(1, 1); }
+}
+
+.howly-blink {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: howly-blink 5s ease-in-out infinite;
+}
+
+.howly-hop {
+    transform-origin: bottom center;
+    animation: howly-hop 0.65s ease-in-out;
+}
+
+@keyframes howly-arm-r {
+    0%, 100% { transform: rotate(0deg); }
+    40%, 65% { transform: rotate(-20deg); }
+}
+
+@keyframes howly-arm-l {
+    0%, 100% { transform: rotate(0deg); }
+    40%, 65% { transform: rotate(20deg); }
+}
+
+.howly-arm-l,
+.howly-arm-r {
+    transform-box: fill-box;
+    transform-origin: top center;
+}
+
+.howly-hop .howly-arm-r { animation: howly-arm-r 0.65s ease-in-out; }
+.howly-hop .howly-arm-l { animation: howly-arm-l 0.65s ease-in-out; }
+
+@media (prefers-reduced-motion: reduce) {
+    .howly-blink,
+    .howly-hop,
+    .howly-hop .howly-arm-l,
+    .howly-hop .howly-arm-r {
+        animation: none;
+    }
+}

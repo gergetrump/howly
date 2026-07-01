@@ -210,6 +210,7 @@ export function DashboardPage() {
             // A check-in can complete the day → refresh the overall streak (🔥).
             if (!wasCompleted) {
                 refreshUserStreak();
+                window.dispatchEvent(new Event('howly:habit-completed'));
             }
 
             // Offer to share a story moment after checking off a habit (if none posted yet)
@@ -256,6 +257,7 @@ export function DashboardPage() {
             // A check-in can complete the day → refresh the overall streak (🔥).
             if (!wasCompleted) {
                 refreshUserStreak();
+                window.dispatchEvent(new Event('howly:habit-completed'));
             }
         } catch (error) {
             console.error('Failed to complete challenge habit:', error);
