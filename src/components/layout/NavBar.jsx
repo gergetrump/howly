@@ -62,8 +62,28 @@ function getNotificationMessage(notification) {
             return `${actorName} liked your post`;
         case 'story_commented':
             return `${actorName} commented on your post`;
+        case 'story_tagged':
+            return `${actorName} tagged you in a post`;
         default:
             return `${actorName} has an update for you`;
+    }
+}
+
+function getNotificationLink(notification) {
+    const storyId = notification.entityId;
+    const commentId = notification.metadata?.commentId;
+
+    switch (notification.type) {
+        case 'story_tagged':
+        case 'story_commented':
+            if (storyId && commentId) {
+                return `/social?storyId=${storyId}&commentId=${commentId}`;
+            }
+            return '/social';
+        case 'story_liked':
+            return storyId ? `/social?storyId=${storyId}` : '/social';
+        default:
+            return '/social';
     }
 }
 
@@ -397,7 +417,7 @@ export function NavBar({
                                                 return (
                                                 <Link
                                                     key={notification.id}
-                                                    to="/social"
+                                                    to={getNotificationLink(notification)}
                                                     data-notification-id={notification.id}
                                                     data-unread={isUnread ? 'true' : 'false'}
                                                     className={cn(

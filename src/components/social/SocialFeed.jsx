@@ -33,6 +33,8 @@ export function SocialFeed({
     onOpenProfile,
     blockedUsers = [],
     blockers = [],
+    targetStoryId = null,
+    targetCommentId = null,
 }) {
     return (
         <PageSection title="Feed" className="min-w-0 lg:max-w-[64rem]">
@@ -57,6 +59,8 @@ export function SocialFeed({
                                 blockedUsers={blockedUsers}
                                 blockers={blockers}
                                 fullImage
+                                defaultOpenComments={post.id === targetStoryId}
+                                targetCommentId={post.id === targetStoryId ? targetCommentId : null}
                             >
                                 <ReactionButton
                                     liked={post.likedByCurrentUser}

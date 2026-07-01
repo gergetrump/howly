@@ -119,6 +119,8 @@ export function StoryFeedCard({
     blockers = [],
     children,
     fullImage = false,
+    defaultOpenComments = false,
+    targetCommentId = null,
 }) {
     const [likers, setLikers] = useState([]);
     const [comments, setComments] = useState([]);
@@ -142,6 +144,13 @@ export function StoryFeedCard({
     useEffect(() => {
         setLocalStory(story);
     }, [story]);
+
+    // Auto-open the comment drawer when arriving from a notification link.
+    useEffect(() => {
+        if (defaultOpenComments) {
+            setIsCommentsOpen(true);
+        }
+    }, [defaultOpenComments]);
 
     useEffect(() => {
         if (!story.likeCount) {
@@ -210,7 +219,7 @@ export function StoryFeedCard({
     }
 
     return (
-        <Card className={appCardClassName}>
+        <Card className={appCardClassName} data-story-id={story.id ?? story._id}>
             <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 items-start gap-3">
@@ -302,6 +311,7 @@ export function StoryFeedCard({
                             onOpenProfile={onOpenProfile}
                             blockedUsers={blockedUsers}
                             blockers={blockers}
+                            targetCommentId={targetCommentId}
                             onCommentAdded={() => setLocalStory(prev => ({ ...prev, commentCount: (prev.commentCount || 0) + 1 }))}
                             onCommentDeleted={(count) => setLocalStory(prev => ({ ...prev, commentCount: Math.max(0, (prev.commentCount || 0) - (count || 1)) }))}
                         />

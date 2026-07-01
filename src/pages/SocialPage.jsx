@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Page, Heading } from '@/components/layout';
 import { FriendsPanel } from '@/components/social/FriendsPanel.jsx';
 import { ReactionUsersDialog } from '@/components/social/ReactionUsersDialog.jsx';
@@ -50,6 +51,10 @@ export function SocialPage() {
     const [activePanel, setActivePanel] = useState('friends');
     const [selectedReaction, setSelectedReaction] = useState(null);
     const [selectedProfileUser, setSelectedProfileUser] = useState(null);
+    const location = useLocation();
+    const searchParams = new URLSearchParams(location.search);
+    const targetStoryId = searchParams.get('storyId') ?? null;
+    const targetCommentId = searchParams.get('commentId') ?? null;
     const pendingFriendRequestCount = requests.incoming?.length ?? 0;
     const selectedFeedPost = selectedReaction?.post?.id
         ? feed.find((post) => post.id === selectedReaction.post.id)
@@ -125,6 +130,18 @@ export function SocialPage() {
             setIsLoading(false);
         }
     }, []);
+
+    // After the feed loads, scroll the target story card into view if we arrived
+    // from a notification link with ?storyId=...
+    useEffect(() => {
+        if (!targetStoryId || feed.length === 0) return;
+        // Give React one render cycle to paint the cards into the DOM.
+        const timer = setTimeout(() => {
+            const el = document.querySelector(`[data-story-id="${targetStoryId}"]`);
+            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 150);
+        return () => clearTimeout(timer);
+    }, [targetStoryId, feed]);
 
     function handleActivePanelChange(nextPanel) {
         setActivePanel(nextPanel);
@@ -502,6 +519,8 @@ export function SocialPage() {
                     onOpenProfile={setSelectedProfileUser}
                     blockedUsers={blockedUsers}
                     blockers={blockers}
+                    targetStoryId={targetStoryId}
+                    targetCommentId={targetCommentId}
                 />
 
                 <FriendsPanel

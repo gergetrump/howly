@@ -42,6 +42,7 @@ export function StoryCommentSection({
     blockers = [],
     onCommentAdded,
     onCommentDeleted,
+    targetCommentId = null,
 }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [newComment, setNewComment] = useState('');
@@ -51,6 +52,7 @@ export function StoryCommentSection({
     const [suggestions, setSuggestions] = useState([]);
     const [error, setError] = useState('');
     const [commentIdToDelete, setCommentIdToDelete] = useState(null);
+    const [highlightedCommentId, setHighlightedCommentId] = useState(null);
     const inputRef = useRef(null);
     const containerRef = useRef(null);
 
@@ -60,6 +62,27 @@ export function StoryCommentSection({
             setCommentIdToDelete(null);
         }
     };
+
+    // When a targetCommentId is provided (from a notification link), scroll to
+    // that comment within the section's scroll container and briefly highlight it.
+    useEffect(() => {
+        if (!targetCommentId || isLoading || comments.length === 0) return;
+
+        const timer = setTimeout(() => {
+            const container = containerRef.current;
+            const el = container?.querySelector(`[data-comment-id="${targetCommentId}"]`);
+            if (!el) return;
+
+            el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            setHighlightedCommentId(targetCommentId);
+
+            // Fade the highlight out after 2.5 s.
+            const fadeTimer = setTimeout(() => setHighlightedCommentId(null), 2500);
+            return () => clearTimeout(fadeTimer);
+        }, 300); // wait for the list to paint
+
+        return () => clearTimeout(timer);
+    }, [targetCommentId, isLoading, comments]);
 
 
     useEffect(() => {
@@ -209,8 +232,18 @@ export function StoryCommentSection({
     }
 
     function CommentItem({ comment, isReply = false }) {
+        const isHighlighted = comment.id === highlightedCommentId;
         return (
-            <div className={`flex items-start gap-3 text-sm ${isReply ? 'pl-8 mt-2 border-l border-slate-800' : ''}`}>
+            <div
+                data-comment-id={comment.id}
+                className={`flex items-start gap-3 text-sm rounded-lg transition-all duration-700 ${
+                    isReply ? 'pl-8 mt-2 border-l border-slate-800' : ''
+                } ${
+                    isHighlighted
+                        ? 'ring-2 ring-violet-400/60 bg-violet-400/10 p-2 -mx-2'
+                        : ''
+                }`}
+            >
                 <img
                     src={comment.user?.profilePictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'}
                     alt={comment.user?.username || 'User'}
