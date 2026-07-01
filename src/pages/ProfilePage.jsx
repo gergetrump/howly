@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Bell,
@@ -26,10 +26,6 @@ import {
 import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
 import { useAuth } from '@/context/authContext';
 import { createManagePremiumSession } from '@/services/paymentService';
-// TEMP: companion type tester
-import { CompanionAvatar } from '@/components/brand';
-import { COMPANIONS, getDefaultCompanionName } from '@/constants/companions';
-import { getMyCompanion, selectCompanion } from '@/services/companionService';
 
 
 function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle, onClick, disabled }) {
@@ -82,7 +78,7 @@ function GhostModeRow() {
 export function ProfilePage() {
     const navigate = useNavigate();
 
-    const { user, setUser, isLoadingUser, refreshUser } = useAuth();
+    const { user, setUser, isLoadingUser } = useAuth();
     // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState('');
     const [premiumError, setPremiumError] = useState('');
@@ -91,32 +87,6 @@ export function ProfilePage() {
     const [isDeletingPicture, setIsDeletingPicture] = useState(false);
     const [pictureError, setPictureError] = useState('');
     const [isBlockedUsersDialogOpen, setIsBlockedUsersDialogOpen] = useState(false);
-
-    // TEMP: companion type tester (remove once "companion everywhere" is verified)
-    const [testType, setTestType] = useState('wolf');
-    const [testMsg, setTestMsg] = useState('');
-
-    useEffect(() => {
-        getMyCompanion()
-            .then((res) => {
-                if (res?.data?.type) setTestType(res.data.type);
-            })
-            .catch(() => { });
-    }, []);
-
-    async function applyTestCompanion(type) {
-        setTestType(type);
-        setTestMsg('Saving...');
-        try {
-            await selectCompanion({ type, name: getDefaultCompanionName(type) });
-            setTestMsg(`Saved "${type}". Open other pages to see it everywhere.`);
-            if (refreshUser) {
-                await refreshUser();
-            }
-        } catch (err) {
-            setTestMsg(err.message || 'Failed to save');
-        }
-    }
 
     function handleUpgradeToPremium() {
         navigate('/premium', {
@@ -319,30 +289,6 @@ export function ProfilePage() {
                     </div>
                 </div>
             </section>
-
-
-            {/* TEMP: companion type tester — remove once verified */}
-            <PageSection title="Companion (test)">
-                <div className="flex flex-col items-center gap-4 rounded-2xl bg-slate-800/80 px-6 py-6">
-                    <CompanionAvatar type={testType} size="xl" showName={false} />
-                    <div className="flex gap-3">
-                        {COMPANIONS.map((companion) => (
-                            <button
-                                key={companion.type}
-                                type="button"
-                                onClick={() => applyTestCompanion(companion.type)}
-                                className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${testType === companion.type
-                                    ? 'border-howly-primary bg-howly-primary/10 text-white'
-                                    : 'border-slate-600 bg-slate-800 text-slate-200 hover:border-slate-500'
-                                    }`}
-                            >
-                                {companion.label}
-                            </button>
-                        ))}
-                    </div>
-                    {testMsg && <p className="text-sm text-slate-400">{testMsg}</p>}
-                </div>
-            </PageSection>
 
             <PageSection title="My Stories">
                 <StoryArchive />
