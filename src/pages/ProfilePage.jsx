@@ -17,11 +17,19 @@ import {
 import { Page, PageSection, Heading } from '@/components/layout';
 import { StoryArchive } from '@/components/stories/StoryArchive.jsx';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 // import { ThemeToggle } from '@/components/brand/ThemeToggle.jsx';
 import { logoutUser } from '@/services/authService';
 import {
     uploadCurrentUserProfilePicture,
     deleteCurrentUserProfilePicture,
+    updateNotificationPreferences,
 } from '@/services/userService';
 import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
 import { useAuth } from '@/context/authContext';
@@ -31,6 +39,19 @@ import { CompanionAvatar } from '@/components/brand';
 import { COMPANIONS, getDefaultCompanionName } from '@/constants/companions';
 import { getMyCompanion, selectCompanion } from '@/services/companionService';
 
+
+const DEFAULT_NOTIFICATION_PREFERENCES = {
+    emailEnabled: true,
+    challengeInvitations: true,
+    streakReminders: true,
+};
+
+function getNotificationPreferences(user) {
+    return {
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        ...(user?.notificationPreferences ?? {}),
+    };
+}
 
 function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle, onClick, disabled }) {
     return (
@@ -55,6 +76,78 @@ function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle
     );
 }
 
+
+function ToggleControl({ checked, onChange, disabled, label }) {
+    return (
+        <button
+            type="button"
+            onClick={() => onChange(!checked)}
+            disabled={disabled}
+            aria-label={label}
+            aria-pressed={checked}
+            className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${checked ? 'bg-emerald-400' : 'bg-slate-600'}`}
+        >
+            <span className={`size-5 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+    );
+}
+
+function NotificationPreferenceRow({ title, description, checked, onChange, disabled }) {
+    return (
+        <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-800/80 px-5 py-4">
+            <div className="min-w-0">
+                <p className="font-semibold text-white">{title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-400">{description}</p>
+            </div>
+            <ToggleControl checked={checked} onChange={onChange} disabled={disabled} label={title} />
+        </div>
+    );
+}
+
+function NotificationPreferencesDialog({ open, onOpenChange, preferences, onToggle, isSaving, error }) {
+    const emailEnabled = preferences.emailEnabled;
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="border border-white/10 bg-slate-950 p-6 text-white sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-white">Notifications</DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                        Choose which email updates Howly may send you.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-3">
+                    <NotificationPreferenceRow
+                        title="Email notifications"
+                        description="Master switch for all Howly emails except required account emails."
+                        checked={preferences.emailEnabled}
+                        onChange={(value) => onToggle('emailEnabled', value)}
+                        disabled={isSaving}
+                    />
+                    <NotificationPreferenceRow
+                        title="Challenge invitations"
+                        description="Get an email when a friend invites you to a challenge."
+                        checked={emailEnabled && preferences.challengeInvitations}
+                        onChange={(value) => onToggle('challengeInvitations', value)}
+                        disabled={isSaving || !emailEnabled}
+                    />
+                    <NotificationPreferenceRow
+                        title="Streak reminders"
+                        description="Get an email around 2 hours before your streak repair window expires."
+                        checked={emailEnabled && preferences.streakReminders}
+                        onChange={(value) => onToggle('streakReminders', value)}
+                        disabled={isSaving || !emailEnabled}
+                    />
+                </div>
+
+                {error ? (
+                    <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p>
+                ) : null}
+            </DialogContent>
+        </Dialog>
+    );
+}
 function GhostModeRow() {
     return (
         <div className="flex items-center justify-between rounded-2xl bg-slate-800/80 px-5 py-4">
@@ -91,6 +184,9 @@ export function ProfilePage() {
     const [isDeletingPicture, setIsDeletingPicture] = useState(false);
     const [pictureError, setPictureError] = useState('');
     const [isBlockedUsersDialogOpen, setIsBlockedUsersDialogOpen] = useState(false);
+    const [isNotificationsDialogOpen, setIsNotificationsDialogOpen] = useState(false);
+    const [isSavingNotificationPreferences, setIsSavingNotificationPreferences] = useState(false);
+    const [notificationError, setNotificationError] = useState('');
 
     // TEMP: companion type tester (remove once "companion everywhere" is verified)
     const [testType, setTestType] = useState('wolf');
@@ -174,6 +270,25 @@ export function ProfilePage() {
         }
     }
 
+    async function handleNotificationPreferenceToggle(key, value) {
+        const currentPreferences = getNotificationPreferences(user);
+        const nextPreferences = {
+            ...currentPreferences,
+            [key]: value,
+        };
+
+        try {
+            setNotificationError('');
+            setIsSavingNotificationPreferences(true);
+            const updatedUser = await updateNotificationPreferences(nextPreferences);
+            setUser(updatedUser);
+        } catch (error) {
+            setNotificationError(error.message || 'Could not update notification settings.');
+        } finally {
+            setIsSavingNotificationPreferences(false);
+        }
+    }
+
     async function handleManagePremium() {
         try {
             setPremiumError('');
@@ -229,6 +344,7 @@ export function ProfilePage() {
     const streak = user?.streak ?? 0;
     const completed = user?.completedHabits ?? 0;
     const isPremium = user?.isPremium === true || user?.role === 'admin';
+    const notificationPreferences = getNotificationPreferences(user);
 
     return (
         <Page theme="forest">
@@ -381,7 +497,7 @@ export function ProfilePage() {
                             onClick={handleUpgradeToPremium}
                         />
                     )}
-                    <SettingsRow icon={Bell} title="Notifications" />
+                    <SettingsRow icon={Bell} title="Notifications" subtitle="Email preferences" onClick={() => setIsNotificationsDialogOpen(true)} />
                     <SettingsRow icon={Lock} title="Privacy & Security" />
                 </div>
                 {premiumError && (
@@ -412,6 +528,14 @@ export function ProfilePage() {
             <BlockedUsersDialog
                 open={isBlockedUsersDialogOpen}
                 onOpenChange={setIsBlockedUsersDialogOpen}
+            />
+            <NotificationPreferencesDialog
+                open={isNotificationsDialogOpen}
+                onOpenChange={setIsNotificationsDialogOpen}
+                preferences={notificationPreferences}
+                onToggle={handleNotificationPreferenceToggle}
+                isSaving={isSavingNotificationPreferences}
+                error={notificationError}
             />
         </Page>
     );
