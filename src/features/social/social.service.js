@@ -31,9 +31,14 @@ function toFriendshipResponse(friendship, currentUserId) {
     ? friendship.userB
     : friendship.userA;
 
+  const friend = toPublicUser(otherUser);
+  if (otherUser.ghostMode) {
+    friend.streak = null;
+  }
+
   return {
     id: friendship._id.toString(),
-    friend: toPublicUser(otherUser),
+    friend,
     createdAt: friendship.createdAt,
   };
 }
@@ -50,6 +55,11 @@ export async function getFriendHabits({ userId, targetUserId }) {
     return { errorCode: 'NOT_FRIENDS' };
   }
 
+  const target = await User.findById(targetUserId).select('ghostMode').lean();
+  if (target?.ghostMode) {
+    return { ghostMode: true, habits: [] };
+  }
+
   const habits = await Habit.find({
     ownerId: targetUserId,
     source: { $ne: 'challenge' },
@@ -58,6 +68,7 @@ export async function getFriendHabits({ userId, targetUserId }) {
     .lean();
 
   return {
+    ghostMode: false,
     habits: habits.map((habit) => ({
       id: habit._id.toString(),
       title: habit.title,

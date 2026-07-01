@@ -98,7 +98,7 @@ export async function listFriends(req, res) {
 }
 
 export async function getFriendHabits(req, res) {
-  const { habits, errorCode } = await socialService.getFriendHabits({
+  const { habits, ghostMode, errorCode } = await socialService.getFriendHabits({
     userId: req.user.id,
     targetUserId: req.params.userId,
   });
@@ -107,7 +107,7 @@ export async function getFriendHabits(req, res) {
     return res.status(403).json({ message: 'You are not friends with this user', code: errorCode });
   }
 
-  return res.status(200).json({ habits });
+  return res.status(200).json({ habits, ghostMode: Boolean(ghostMode) });
 }
 
 export async function deleteFriend(req, res) {
