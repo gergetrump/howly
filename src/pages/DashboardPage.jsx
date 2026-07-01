@@ -10,6 +10,10 @@ import { AddHabitModal } from '@/components/habits/AddHabitModal.jsx';
 import { CompanionChatPanel } from '@/components/habits/CompanionChatPanel.jsx';
 import { StreakRepairBanner } from '@/components/habits/StreakRepairBanner.jsx';
 import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
+
+
+
+import { toast } from 'sonner';
 import { NotificationBanner } from '@/components/ui/notification-banner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -210,7 +214,13 @@ export function DashboardPage() {
 
             // Offer to share a story moment after checking off a habit (if none posted yet)
             if (!wasCompleted && !sharedHabitIds.has(habit.id)) {
-                setStoryHabit(habit);
+                toast('Capture this moment? 📸', {
+                    description: habit.title,
+                    action: {
+                        label: 'Add photo',
+                        onClick: () => setStoryHabit(habit),
+                    },
+                });
             }
 
             if (!habit.isCompletedToday && updatedHabit.milestonePost) {
