@@ -10,6 +10,26 @@ import {
 
 const TOKEN_EXPIRES_IN = config.jwtExpiresIn || '7d';
 
+const DEFAULT_NOTIFICATION_PREFERENCES = {
+    emailEnabled: true,
+    challengeInvitations: true,
+    streakReminders: true,
+};
+
+function normalizeNotificationPreferences(preferences = {}) {
+    return {
+        emailEnabled: typeof preferences?.emailEnabled === 'boolean'
+            ? preferences.emailEnabled
+            : DEFAULT_NOTIFICATION_PREFERENCES.emailEnabled,
+        challengeInvitations: typeof preferences?.challengeInvitations === 'boolean'
+            ? preferences.challengeInvitations
+            : DEFAULT_NOTIFICATION_PREFERENCES.challengeInvitations,
+        streakReminders: typeof preferences?.streakReminders === 'boolean'
+            ? preferences.streakReminders
+            : DEFAULT_NOTIFICATION_PREFERENCES.streakReminders,
+    };
+}
+
 // Centralized lookup for the JWT secret.
 function getJwtSecret() {
     const secret = config.jwtSecret;
@@ -143,6 +163,7 @@ export function toPublicUser(user) {
         emailVerifiedAt: user.emailVerifiedAt,
         coins: user.coins,
         streak: user.streak,
+        notificationPreferences: normalizeNotificationPreferences(user.notificationPreferences),
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
     };

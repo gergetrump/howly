@@ -11,6 +11,91 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+function baseEmailShell({ title, eyebrow, heading, body, actionUrl, actionText, icon = 'H', note }) {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>${title}</title>
+</head>
+<body style="margin:0; padding:0; background:#0f172a; font-family:Arial, Helvetica, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a; padding:40px 16px;">
+        <tr>
+            <td align="center">
+                <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+                    <tr>
+                        <td style="padding-bottom:20px;">
+                            <table cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td>
+                                        <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg, #8b5cf6, #ec4899); color:#ffffff; font-size:24px; font-weight:800; line-height:44px; text-align:center;">
+                                            H
+                                        </div>
+                                    </td>
+                                    <td style="padding-left:12px;">
+                                        <div style="font-size:22px; font-weight:800; color:#ffffff; letter-spacing:-0.03em;">Howly</div>
+                                        <div style="font-size:13px; color:#94a3b8; margin-top:2px;">Habit companion</div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background:rgba(15, 23, 42, 0.96); border:1px solid rgba(148, 163, 184, 0.25); border-radius:24px; box-shadow:0 24px 60px rgba(0,0,0,0.35); overflow:hidden;">
+                            <div style="height:6px; background:linear-gradient(90deg, #8b5cf6, #ec4899, #22c55e);"></div>
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding:36px 34px 32px;">
+                                        <div style="width:56px; height:56px; border-radius:18px; background:rgba(139, 92, 246, 0.14); color:#a78bfa; font-size:28px; line-height:56px; text-align:center; margin-bottom:22px;">${icon}</div>
+                                        <div style="font-size:12px; font-weight:700; color:#a78bfa; text-transform:uppercase; letter-spacing:0.22em; margin-bottom:10px;">${eyebrow}</div>
+                                        <h1 style="margin:0; color:#ffffff; font-size:30px; line-height:1.2; letter-spacing:-0.04em;">${heading}</h1>
+                                        <p style="margin:16px 0 0; color:#cbd5e1; font-size:16px; line-height:1.65;">${body}</p>
+                                        <div style="text-align:center; margin:34px 0 30px;">
+                                            <a href="${actionUrl}" style="display:inline-block; background:linear-gradient(135deg, #8b5cf6, #ec4899); color:#ffffff; text-decoration:none; padding:15px 30px; border-radius:999px; font-size:16px; font-weight:700; box-shadow:0 12px 28px rgba(236, 72, 153, 0.28);">${actionText}</a>
+                                        </div>
+                                        ${note ? `<div style="background:rgba(15, 23, 42, 0.8); border:1px solid rgba(148, 163, 184, 0.18); border-radius:16px; padding:16px 18px; color:#94a3b8; font-size:14px; line-height:1.6;">${note}</div>` : ''}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding:22px 12px 0; color:#64748b; font-size:12px; line-height:1.6;">© ${new Date().getFullYear()} Howly. Keep your habits growing.</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
+}
+
+export function challengeInvitationEmailTemplate({ inviterName, challengeTitle, challengeUrl }) {
+    return baseEmailShell({
+        title: 'You have a Howly challenge invitation',
+        eyebrow: 'Challenge invitation',
+        heading: `${inviterName} invited you to a challenge`,
+        body: `You have a new invitation for <strong style="color:#ffffff;">${challengeTitle}</strong>. Open Howly to accept or decline it.`,
+        actionUrl: challengeUrl,
+        actionText: 'View invitation',
+        icon: '??',
+        note: 'You can turn challenge invitation emails off in Profile > Notifications.',
+    });
+}
+
+export function streakReminderEmailTemplate({ streak, deadline, appUrl }) {
+    return baseEmailShell({
+        title: 'Your Howly streak needs attention',
+        eyebrow: 'Streak reminder',
+        heading: 'Your streak is almost at risk',
+        body: `Your ${streak}-day streak repair window ends soon. Complete a habit or use a streak freeze before <strong style="color:#ffffff;">${deadline}</strong>.`,
+        actionUrl: appUrl,
+        actionText: 'Open Howly',
+        icon: '??',
+        note: 'This reminder is sent around two hours before your streak repair window expires.',
+    });
+}
 
 export function passwordResetEmailTemplate(resetUrl) {
     return `
@@ -253,5 +338,30 @@ export async function sendAccountVerificationEmail(email, verificationLink) {
         to: email,
         subject: 'Confirm your Howly account',
         html: accountVerificationEmailTemplate(verificationLink),
+    });
+}
+export async function sendChallengeInvitationEmail(email, invitationDetails) {
+    if (config.disableEmailSending) {
+        return;
+    }
+
+    return transporter.sendMail({
+        from: config.smtp.from,
+        to: email,
+        subject: 'You have a Howly challenge invitation',
+        html: challengeInvitationEmailTemplate(invitationDetails),
+    });
+}
+
+export async function sendStreakReminderEmail(email, reminderDetails) {
+    if (config.disableEmailSending) {
+        return;
+    }
+
+    return transporter.sendMail({
+        from: config.smtp.from,
+        to: email,
+        subject: 'Your Howly streak needs attention',
+        html: streakReminderEmailTemplate(reminderDetails),
     });
 }

@@ -118,6 +118,24 @@ const userSchema = new Schema(
       type: Date,
       default: null,
     },
+    notificationPreferences: {
+      emailEnabled: {
+        type: Boolean,
+        default: true,
+      },
+      challengeInvitations: {
+        type: Boolean,
+        default: true,
+      },
+      streakReminders: {
+        type: Boolean,
+        default: true,
+      },
+    },
+    streakReminderEmailLastSentFor: {
+      type: Date,
+      default: null,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

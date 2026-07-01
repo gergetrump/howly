@@ -4,6 +4,7 @@ import { PLANS, getPlanForUser, getPlanKeyForUser } from '../../config/plans.js'
 import {
     validateSearchUsersInput,
     validateUpdateUserInput,
+    validateNotificationPreferencesInput,
     validateUserId,
 } from './user.validation.js';
 
@@ -136,6 +137,28 @@ export async function completeOnboarding(req, res) {
     }
 
     const user = await userService.completeOnboarding(req.user.id);
+
+    if (!user) {
+        return notFound(res);
+    }
+
+    return res.status(200).json(userService.toPublicUser(user));
+}
+
+export async function updateCurrentUserNotificationPreferences(req, res) {
+    const { error: idError } = validateUserId(req.user?.id);
+
+    if (idError) {
+        return badRequest(res, idError);
+    }
+
+    const { error, value } = validateNotificationPreferencesInput(req.body);
+
+    if (error) {
+        return badRequest(res, error);
+    }
+
+    const user = await userService.updateNotificationPreferences(req.user.id, value);
 
     if (!user) {
         return notFound(res);

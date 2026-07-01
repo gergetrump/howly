@@ -94,3 +94,31 @@ export function validateUpdateUserInput(body = {}) {
 
     return { value: updates };
 }
+
+export function validateNotificationPreferencesInput(body = {}) {
+    const allowedFields = ['emailEnabled', 'challengeInvitations', 'streakReminders'];
+    const updates = {};
+    const errors = [];
+
+    for (const field of allowedFields) {
+        if (body[field] === undefined) {
+            continue;
+        }
+
+        if (typeof body[field] !== 'boolean') {
+            errors.push(`${field} must be a boolean`);
+        } else {
+            updates[field] = body[field];
+        }
+    }
+
+    if (Object.keys(updates).length === 0 && errors.length === 0) {
+        errors.push('no valid notification preferences provided');
+    }
+
+    if (errors.length) {
+        return { error: errors.join(', ') };
+    }
+
+    return { value: updates };
+}

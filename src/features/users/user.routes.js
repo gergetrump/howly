@@ -3,6 +3,7 @@ import {
     getCurrentUser, 
     getCurrentUserPlan,
     updateCurrentUser, 
+    updateCurrentUserNotificationPreferences,
     deleteCurrentUser, 
     completeOnboarding,
     uploadCurrentUserProfilePicture,
@@ -22,6 +23,7 @@ router.get('/profile/:username', getUserByUsername);
 router.get('/me/plan', getCurrentUserPlan);
 router.get('/me', getCurrentUser);
 router.patch('/me', updateCurrentUser);
+router.patch('/me/notification-preferences', updateCurrentUserNotificationPreferences);
 router.post('/me/complete-onboarding', completeOnboarding);
 router.delete('/me', deleteCurrentUser);
 
