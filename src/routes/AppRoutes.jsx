@@ -29,6 +29,7 @@ import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { CompanionSelectionPage } from '@/pages/CompanionSelectionPage.jsx';
 import { HabitSelectionPage } from '@/pages/HabitSelectionPage.jsx';
 import { PremiumPage } from '@/pages/PremiumPage.jsx';
+import { StoryArchivePage } from '@/pages/StoryArchivePage.jsx';
 
 export function AppRoutes() {
     return (
@@ -57,6 +58,7 @@ export function AppRoutes() {
                     <Route path="/analytics" element={<AnalyticsPage />} />
                     <Route path="/premium" element={<PremiumPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/stories" element={<StoryArchivePage />} />
                 </Route>
             </Route>
 
