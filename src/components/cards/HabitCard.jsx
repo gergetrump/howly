@@ -18,7 +18,7 @@ import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
-import { StreakFreezeIcon } from '@/components/brand/StreakFreezeIcon.jsx';
+import { StreakShieldIcon } from '@/components/brand/StreakShieldIcon.jsx';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
@@ -77,9 +77,9 @@ export function HabitCard({
                             type="button"
                             onClick={onUseFreeze}
                             className="flex items-center gap-1 rounded-full bg-amber-400/15 px-3 py-1.5 text-xs font-semibold text-amber-200 ring-1 ring-amber-400/30 transition-colors hover:bg-amber-400/25"
-                            title="Use a streak freeze to save this streak"
+                            title="Use a streak shield to save this streak"
                         >
-                            <StreakFreezeIcon className="h-3.5 w-auto" />
+                            <StreakShieldIcon className="h-3.5 w-auto" />
                             Save streak
                         </button>
                     ) : null}

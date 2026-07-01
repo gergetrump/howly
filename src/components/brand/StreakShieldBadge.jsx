@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { StreakFreezeIcon } from './StreakFreezeIcon.jsx';
+import { StreakShieldIcon } from './StreakShieldIcon.jsx';
 
 const sizeClasses = {
     sm: 'text-xs gap-1',
@@ -23,10 +23,10 @@ export function StreakShieldBadge({ count = 0, showLabel = true, size = 'md', cl
                 sizeClasses[size] ?? sizeClasses.md,
                 className,
             )}
-            title="Streak freezes"
+            title="Streak shields"
         >
-            <StreakFreezeIcon className={cn('w-auto', iconSizes[size] ?? iconSizes.md)} />
-            {showLabel ? `${count} freeze${count === 1 ? '' : 's'}` : count}
+            <StreakShieldIcon className={cn('w-auto', iconSizes[size] ?? iconSizes.md)} />
+            {showLabel ? `${count} shield${count === 1 ? '' : 's'}` : count}
         </span>
     );
 }

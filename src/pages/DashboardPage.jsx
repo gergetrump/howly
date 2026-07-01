@@ -526,7 +526,7 @@ export function DashboardPage() {
                     <DialogHeader className="space-y-3 pt-4 text-left">
                         <DialogTitle className="text-2xl font-bold tracking-tight">Your streak is at risk</DialogTitle>
                         <DialogDescription className="text-base leading-relaxed text-slate-300">
-                            Completing “{riskConfirmHabit?.title}” now starts a new streak at 1. Your current {riskConfirmHabit?.streakCount}-day streak can still be saved with a freeze.
+                            Completing “{riskConfirmHabit?.title}” now starts a new streak at 1. Your current {riskConfirmHabit?.streakCount}-day streak can still be saved with a shield.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="mt-7 flex w-full flex-col gap-3">
@@ -542,7 +542,7 @@ export function DashboardPage() {
                                 className="h-14 w-full rounded-full bg-amber-400 text-lg font-semibold text-amber-950 shadow-lg shadow-amber-900/20 hover:bg-amber-300"
                                 onClick={() => { setRiskConfirmHabit(null); navigate('/shop?category=powerUp'); }}
                             >
-                                Get a freeze
+                                Get a shield
                             </Button>
                         )}
                         <Button

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 
 import { useAuth } from '@/context/authContext';
-import { StreakFreezeIcon } from '@/components/brand/StreakFreezeIcon.jsx';
+import { StreakShieldIcon } from '@/components/brand/StreakShieldIcon.jsx';
 import { applyOverallStreakFreeze } from '@/services/streakFreezeApi';
 
 export function StreakRepairBanner() {
@@ -56,8 +56,8 @@ export function StreakRepairBanner() {
                 <p className="text-sm font-semibold text-white">Your streak is at risk!</p>
                 <p className="text-xs text-amber-200/90">
                     {canUseFreeze
-                        ? `Use a freeze within ${timeLeft} to save it.`
-                        : `Grab a freeze within ${timeLeft} to save it.`}
+                        ? `Use a shield within ${timeLeft} to save it.`
+                        : `Grab a shield within ${timeLeft} to save it.`}
                 </p>
             </div>
             {canUseFreeze ? (
@@ -67,8 +67,8 @@ export function StreakRepairBanner() {
                     disabled={isSaving}
                     className="flex shrink-0 items-center gap-1.5 rounded-full bg-amber-400 px-4 py-1.5 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-300 disabled:opacity-60"
                 >
-                    <StreakFreezeIcon className="h-4 w-auto" />
-                    {isSaving ? 'Saving…' : 'Use freeze'}
+                    <StreakShieldIcon className="h-4 w-auto" />
+                    {isSaving ? 'Saving…' : 'Use shield'}
                 </button>
             ) : (
                 <button
@@ -76,7 +76,7 @@ export function StreakRepairBanner() {
                     onClick={() => navigate('/shop?category=powerUp')}
                     className="shrink-0 rounded-full bg-amber-400 px-4 py-1.5 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-300"
                 >
-                    Get a freeze
+                    Get a shield
                 </button>
             )}
         </div>
