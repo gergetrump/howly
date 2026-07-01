@@ -4,6 +4,7 @@ import { Page, Heading } from '@/components/layout';
 import { useAuth } from '@/context/authContext';
 import { getMyStoryArchive } from '@/services/storyApi';
 import { StoryDetailDialog } from '@/components/stories/StoryDetailDialog';
+import { cloudinaryUrl } from '@/lib/cloudinary';
 
 function groupByDate(stories) {
     const groups = [];
@@ -118,7 +119,7 @@ export function StoryArchivePage() {
                                             className="group relative aspect-square overflow-hidden rounded-xl bg-slate-800 text-left"
                                         >
                                             <img
-                                                src={story.imageUrl}
+                                                src={cloudinaryUrl(story.imageUrl, { width: 400 })}
                                                 alt={story.sourceTitle}
                                                 loading="lazy"
                                                 className="size-full object-cover transition duration-200 group-hover:scale-105"
