@@ -11,6 +11,20 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function formatUserLine(user) {
+    const name = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.username || 'Unknown user';
+    return `${name} (@${user?.username || 'unknown'}, ${user?.email || 'no email'})`;
+}
+
 
 export function passwordResetEmailTemplate(resetUrl) {
     return `
@@ -254,4 +268,50 @@ export async function sendAccountVerificationEmail(email, verificationLink) {
         subject: 'Confirm your Howly account',
         html: accountVerificationEmailTemplate(verificationLink),
     });
+}
+
+export async function sendUserReportEmail({ report, reporter, reportedUser, attachmentFile }) {
+    if (config.disableEmailSending) {
+        return { skipped: true };
+    }
+
+    const tags = report.tags?.length ? report.tags.join(', ') : 'No tags selected';
+    const attachments = attachmentFile
+        ? [{
+            filename: attachmentFile.originalname,
+            content: attachmentFile.buffer,
+            contentType: attachmentFile.mimetype,
+        }]
+        : [];
+
+    const result = await transporter.sendMail({
+        from: config.smtp.from,
+        to: config.smtp.user,
+        subject: `Howly user report: @${reportedUser.username}`,
+        html: `
+            <h2>New Howly report</h2>
+            <p><strong>Report ID:</strong> ${escapeHtml(report._id.toString())}</p>
+            <p><strong>Reporter:</strong> ${escapeHtml(formatUserLine(reporter))}</p>
+            <p><strong>Reported user:</strong> ${escapeHtml(formatUserLine(reportedUser))}</p>
+            <p><strong>Tags:</strong> ${escapeHtml(tags)}</p>
+            <p><strong>Message:</strong></p>
+            <div style="white-space:pre-wrap; padding:12px; border:1px solid #ddd; border-radius:8px;">
+                ${escapeHtml(report.message)}
+            </div>
+            ${attachmentFile ? '<p>An image attachment was included with this report.</p>' : ''}
+        `,
+        text: [
+            'New Howly report',
+            `Report ID: ${report._id.toString()}`,
+            `Reporter: ${formatUserLine(reporter)}`,
+            `Reported user: ${formatUserLine(reportedUser)}`,
+            `Tags: ${tags}`,
+            '',
+            report.message,
+            attachmentFile ? '\nAn image attachment was included with this report.' : '',
+        ].join('\n'),
+        attachments,
+    });
+
+    return { skipped: false, result };
 }
