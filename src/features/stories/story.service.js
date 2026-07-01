@@ -13,6 +13,7 @@ import Habit from '../habits/habit.model.js';
 import Challenge from '../challenges/challenge.model.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cloudinary.service.js';
 import { toPublicUser } from '../users/user.service.js';
+import { createNotification } from '../notifications/notification.service.js';
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 const DAY_IN_MS = 24 * HOUR_IN_MS;
@@ -322,6 +323,15 @@ export async function toggleStoryLike({ userId, storyId }) {
 
   story.likeCount += 1;
   await story.save();
+
+  await createNotification({
+    recipientId: story.user,
+    actorId: userId,
+    type: 'story_liked',
+    entityType: 'story',
+    entityId: story._id,
+  });
+
   await story.populate('user');
 
   return {
@@ -407,6 +417,15 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
   });
 
   await Story.updateOne({ _id: storyId }, { $inc: { commentCount: 1 } });
+
+  await createNotification({
+    recipientId: story.user,
+    actorId: userId,
+    type: 'story_commented',
+    entityType: 'story',
+    entityId: story._id,
+    metadata: { commentId: comment._id },
+  });
 
   await comment.populate('user');
 

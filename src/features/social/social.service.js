@@ -4,6 +4,7 @@ import { FriendRequest, Friendship } from './social.model.js';
 import { Story, StoryLike, StoryComment } from '../stories/story.model.js';
 import { MilestonePost, MilestoneLike } from '../milestones/milestone.model.js';
 import Habit from '../habits/habit.model.js';
+import { createNotification } from '../notifications/notification.service.js';
 
 function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
@@ -119,6 +120,14 @@ export async function sendFriendRequest({ requesterId, recipientId }) {
     recipient: recipientId,
   });
 
+  await createNotification({
+    recipientId,
+    actorId: requesterId,
+    type: 'friend_request_received',
+    entityType: 'friendRequest',
+    entityId: request._id,
+  });
+
   await request.populate(['requester', 'recipient']);
 
   return { request: toFriendRequestResponse(request) };
@@ -171,6 +180,14 @@ export async function acceptFriendRequest({ requestId, userId }) {
   ).populate(['userA', 'userB']);
 
   await request.populate(['requester', 'recipient']);
+
+  await createNotification({
+    recipientId: request.requester._id ?? request.requester,
+    actorId: userId,
+    type: 'friend_request_accepted',
+    entityType: 'friendRequest',
+    entityId: request._id,
+  });
 
   return {
     request: toFriendRequestResponse(request),

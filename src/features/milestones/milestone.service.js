@@ -7,6 +7,7 @@ import Companion from '../companion/companion.model.js';
 import UserItem from '../inventory/inventory.model.js';
 import { hasPremiumAccess } from '../../config/plans.js';
 import config from '../../../config.js';
+import { createNotification } from '../notifications/notification.service.js';
 import {
   MilestoneLike,
   MilestonePost,
@@ -487,6 +488,16 @@ export async function toggleMilestoneLike({ userId, milestonePostId, emoji = 'ðŸ
 
   post.likeCount = await MilestoneLike.countDocuments({ milestonePost: milestonePostId });
   await post.save();
+
+  await createNotification({
+    recipientId: post.user,
+    actorId: userId,
+    type: 'milestone_reacted',
+    entityType: 'milestone',
+    entityId: post._id,
+    metadata: { emoji: reactionEmoji },
+  });
+
   const updatedUserReactions = await MilestoneLike.find({
     milestonePost: milestonePostId,
     user: userId,
