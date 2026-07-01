@@ -14,6 +14,7 @@ import Challenge from '../challenges/challenge.model.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cloudinary.service.js';
 import { toPublicUser } from '../users/user.service.js';
 import { createNotification } from '../notifications/notification.service.js';
+import User from '../users/user.model.js';
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 const DAY_IN_MS = 24 * HOUR_IN_MS;
@@ -428,6 +429,57 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
   });
 
   await comment.populate('user');
+
+  // Fire tag notifications for every @mention in the comment.
+  // Rules:
+  //  - Only notifies users who can currently see the story (friends with the owner).
+  //  - Does not notify the commenter themselves.
+  //  - Does not notify the story owner (they already get story_commented).
+  //  - Notifications are NOT created retroactively; this block only runs at
+  //    comment-creation time, so future friendships never backfill old tags.
+  try {
+    const mentionedUsernames = [
+      ...new Set(
+        (content.match(/@(\w+)/g) ?? []).map((m) => m.slice(1).toLowerCase()),
+      ),
+    ];
+
+    if (mentionedUsernames.length > 0) {
+      // Resolve all mentioned usernames to user documents in a single query.
+      const mentionedUsers = await User.find(
+        { username: { $in: mentionedUsernames.map((u) => new RegExp(`^${u}$`, 'i')) } },
+        '_id username',
+      ).lean();
+
+      await Promise.all(
+        mentionedUsers.map(async (tagged) => {
+          const taggedId = tagged._id.toString();
+
+          // Skip: the commenter tagged themselves.
+          if (taggedId === userId.toString()) return;
+
+          // Skip: the story owner already receives story_commented.
+          if (sameId(tagged._id, story.user)) return;
+
+          // Visibility check: tagged user must be friends with the story owner
+          // to be able to see the post — only then send the notification.
+          const canSeePost = await areFriends(tagged._id, story.user);
+          if (!canSeePost) return;
+
+          await createNotification({
+            recipientId: tagged._id,
+            actorId: userId,
+            type: 'story_tagged',
+            entityType: 'story',
+            entityId: story._id,
+            metadata: { commentId: comment._id },
+          });
+        }),
+      );
+    }
+  } catch {
+    // Tag notification failures must never prevent the comment from being returned.
+  }
 
   return { comment: toStoryCommentResponse(comment) };
 }

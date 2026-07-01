@@ -9,6 +9,7 @@ export const NOTIFICATION_TYPES = [
   'milestone_reacted',
   'story_liked',
   'story_commented',
+  'story_tagged',
 ];
 
 const notificationSchema = new Schema(
