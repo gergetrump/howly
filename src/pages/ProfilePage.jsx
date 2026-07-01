@@ -304,7 +304,7 @@ export function ProfilePage() {
                             <p className="truncate text-sm text-slate-400">Your shared moments from the last 90 days</p>
                         </div>
                     </div>
-                    <span aria-hidden="true" className="shrink-0 text-lg text-slate-400">→</span>
+                    <ChevronRight className="size-5 shrink-0 text-slate-400" aria-hidden="true" />
                 </button>
             </PageSection>
 
