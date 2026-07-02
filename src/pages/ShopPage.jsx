@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import { ActionButton } from '@/components/common';
 import { CompanionAvatar } from '@/components/brand';
@@ -32,10 +32,14 @@ const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
 const SINGLE_PREVIEW_SLOTS = new Set(['body', 'face', 'hand', 'head', 'neck']);
 const MAX_OWNED_POWER_UP_QUANTITY = 20;
 
+function isItemCategoryValue(value) {
+    return ITEM_CATEGORIES.some((category) => category.value === value);
+}
+
 export function ShopPage() {
-    const navigate = useNavigate();
     const { user, setUser, companion } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
+    const initialCategory = searchParams.get('category');
     const [items, setItems] = useState([]);
     const [ownedItemSignatures, setOwnedItemSignatures] = useState(new Set());
     const [ownedPowerUpQuantities, setOwnedPowerUpQuantities] = useState({});
@@ -50,8 +54,9 @@ export function ShopPage() {
     const [premiumDialogDescription, setPremiumDialogDescription] = useState(undefined);
     const [premiumDialogShowsUpgradeActions, setPremiumDialogShowsUpgradeActions] = useState(true);
     const [error, setError] = useState('');
-    const [activeCategory, setActiveCategory] = useState('all');
-    const [syncedCategoryParam, setSyncedCategoryParam] = useState(null);
+    const [activeCategory, setActiveCategory] = useState(() => (
+        initialCategory && isItemCategoryValue(initialCategory) ? initialCategory : 'all'
+    ));
     const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
     const [selectedCustomItemId, setSelectedCustomItemId] = useState('');
     const [planInfo, setPlanInfo] = useState(null);
@@ -209,9 +214,11 @@ export function ShopPage() {
             setError('');
 
             try {
-                const nextItems = await getItems();
                 const token = localStorage.getItem('howly_token');
-                const nextInventory = token ? await getMyInventory() : [];
+                const [nextItems, nextInventory] = await Promise.all([
+                    getItems(),
+                    token ? getMyInventory() : Promise.resolve([]),
+                ]);
 
                 if (isCurrent) {
                     setItems(nextItems);
@@ -264,14 +271,20 @@ export function ShopPage() {
     const confirmationTotalPrice = itemsToBuy.reduce((total, entry) => total + ((getPurchaseEntryItem(entry)?.price ?? 0) * getPurchaseEntryQuantity(entry)), 0);
     const cartItemCount = cartItems.reduce((total, entry) => total + getPurchaseEntryQuantity(entry), 0);
 
-    // Select the tab from the ?category= URL param (e.g. the dashboard banner's
-    // "Get a freeze" deep-links to ?category=powerUp). Adjusted during render — not
-    // an effect — so it also applies when navigating to an already-mounted shop.
     const requestedCategory = searchParams.get('category');
-    if (requestedCategory !== syncedCategoryParam) {
-        setSyncedCategoryParam(requestedCategory);
-        if (requestedCategory && ITEM_CATEGORIES.some((category) => category.value === requestedCategory)) {
-            setActiveCategory(requestedCategory);
+    const selectedCategory = requestedCategory && isItemCategoryValue(requestedCategory)
+        ? requestedCategory
+        : activeCategory;
+
+    function handleCategoryChange(nextCategory) {
+        setActiveCategory(nextCategory);
+
+        if (searchParams.has('category')) {
+            setSearchParams((currentParams) => {
+                const nextParams = new URLSearchParams(currentParams);
+                nextParams.delete('category');
+                return nextParams;
+            }, { replace: true });
         }
     }
 
@@ -280,11 +293,11 @@ export function ShopPage() {
     const filteredItems = useMemo(
         () => {
             const wearableItems = items.filter((item) => item.type !== 'powerUp');
-            return activeCategory === 'all'
+            return selectedCategory === 'all'
                 ? wearableItems
-                : wearableItems.filter((item) => itemMatchesCategory(item, activeCategory));
+                : wearableItems.filter((item) => itemMatchesCategory(item, selectedCategory));
         },
-        [activeCategory, items],
+        [items, selectedCategory],
     );
     const selectedCustomItem = useMemo(() => {
         const selectedItem = items.find((item) => item._id === selectedCustomItemId);
@@ -734,7 +747,7 @@ export function ShopPage() {
 
                 <PageSection title="Shop Items" className="min-w-0">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                        <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+                        <Tabs value={selectedCategory} onValueChange={handleCategoryChange}>
                             <TabsList className="h-auto flex-wrap border border-white/10 bg-white/10 p-1 text-slate-300">
                                 {ITEM_CATEGORIES.map((category) => (
                                     <TabsTrigger
@@ -778,7 +791,7 @@ export function ShopPage() {
                         openBuyConfirmation={openBuyConfirmation}
                         createPurchaseEntry={createPurchaseEntry}
                         buyingItemId={buyingItemId}
-                        leadingCard={activeCategory === 'all' || activeCategory === 'powerUp' ? (
+                        leadingCard={selectedCategory === 'all' || selectedCategory === 'powerUp' ? (
                             <>
                                 <StreakFreezeCard key="streak-freeze" />
                                 <BoostPowerUpCards

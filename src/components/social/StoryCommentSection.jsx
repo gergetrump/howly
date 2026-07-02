@@ -43,6 +43,7 @@ export function StoryCommentSection({
     onCommentAdded,
     onCommentDeleted,
     targetCommentId = null,
+    targetCommentToken = null,
 }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [newComment, setNewComment] = useState('');
@@ -55,6 +56,9 @@ export function StoryCommentSection({
     const [highlightedCommentId, setHighlightedCommentId] = useState(null);
     const inputRef = useRef(null);
     const containerRef = useRef(null);
+    // Tracks which notification click has already been highlighted so background
+    // refreshes never replay the same jump while the section is mounted.
+    const hasHighlightedRef = useRef(null);
 
     const confirmDelete = async () => {
         if (commentIdToDelete) {
@@ -63,10 +67,29 @@ export function StoryCommentSection({
         }
     };
 
-    // When a targetCommentId is provided (from a notification link), scroll to
-    // that comment within the section's scroll container and briefly highlight it.
+    // When a notification click provides a target comment, scroll to that
+    // comment and briefly highlight it once for that click.
     useEffect(() => {
         if (!targetCommentId || isLoading || comments.length === 0) return;
+        const highlightKey = targetCommentToken ?? targetCommentId;
+        if (hasHighlightedRef.current === highlightKey) return;
+        hasHighlightedRef.current = highlightKey;
+
+        const targetComment = comments.find((comment) => comment.id === targetCommentId);
+        const parentCommentId = targetComment?.parentComment?.id ?? targetComment?.parentComment;
+
+        let fadeTimer;
+
+        const expandTimer = setTimeout(() => {
+            if (parentCommentId) {
+                setExpandedParentIds((current) => {
+                    if (current.has(parentCommentId)) return current;
+                    const next = new Set(current);
+                    next.add(parentCommentId);
+                    return next;
+                });
+            }
+        }, 0);
 
         const timer = setTimeout(() => {
             const container = containerRef.current;
@@ -77,12 +100,15 @@ export function StoryCommentSection({
             setHighlightedCommentId(targetCommentId);
 
             // Fade the highlight out after 2.5 s.
-            const fadeTimer = setTimeout(() => setHighlightedCommentId(null), 2500);
-            return () => clearTimeout(fadeTimer);
-        }, 300); // wait for the list to paint
+            fadeTimer = setTimeout(() => setHighlightedCommentId(null), 2500);
+        }, 300);
 
-        return () => clearTimeout(timer);
-    }, [targetCommentId, isLoading, comments]);
+        return () => {
+            clearTimeout(expandTimer);
+            clearTimeout(timer);
+            clearTimeout(fadeTimer);
+        };
+    }, [targetCommentId, targetCommentToken, isLoading, comments]);
 
 
     useEffect(() => {

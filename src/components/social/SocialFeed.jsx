@@ -35,6 +35,7 @@ export function SocialFeed({
     blockers = [],
     targetStoryId = null,
     targetCommentId = null,
+    targetCommentToken = null,
 }) {
     return (
         <PageSection title="Feed" className="min-w-0 lg:max-w-[64rem]">
@@ -61,6 +62,7 @@ export function SocialFeed({
                                 fullImage
                                 defaultOpenComments={post.id === targetStoryId}
                                 targetCommentId={post.id === targetStoryId ? targetCommentId : null}
+                                targetCommentToken={post.id === targetStoryId ? targetCommentToken : null}
                             >
                                 <ReactionButton
                                     liked={post.likedByCurrentUser}

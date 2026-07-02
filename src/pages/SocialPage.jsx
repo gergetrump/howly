@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Page, Heading } from '@/components/layout';
 import { FriendsPanel } from '@/components/social/FriendsPanel.jsx';
 import { ReactionUsersDialog } from '@/components/social/ReactionUsersDialog.jsx';
@@ -33,6 +33,7 @@ const SOCIAL_REFRESH_INTERVAL_MS = 10000;
 
 export function SocialPage() {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState({ incoming: [], outgoing: [] });
     const [feed, setFeed] = useState([]);
@@ -52,9 +53,14 @@ export function SocialPage() {
     const [selectedReaction, setSelectedReaction] = useState(null);
     const [selectedProfileUser, setSelectedProfileUser] = useState(null);
     const location = useLocation();
-    const searchParams = new URLSearchParams(location.search);
-    const targetStoryId = searchParams.get('storyId') ?? null;
-    const targetCommentId = searchParams.get('commentId') ?? null;
+    // Capture notification jump state once. Query params alone should not
+    // replay the scroll/highlight behavior after reloads or normal navigation.
+    const [notificationJump, setNotificationJump] = useState(() => location.state?.notificationJump ?? null);
+    const targetStoryId = notificationJump?.storyId ?? null;
+    const targetCommentId = notificationJump?.commentId ?? null;
+    const targetCommentToken = notificationJump?.token ?? null;
+    const notificationSearchParams = new URLSearchParams(location.search);
+    const hasNotificationQuery = notificationSearchParams.has('storyId') || notificationSearchParams.has('commentId');
     const pendingFriendRequestCount = requests.incoming?.length ?? 0;
     const selectedFeedPost = selectedReaction?.post?.id
         ? feed.find((post) => post.id === selectedReaction.post.id)
@@ -67,6 +73,8 @@ export function SocialPage() {
                 ?? [],
         }
         : null;
+    const hasScrolledRef = useRef(false);
+    const refreshPromiseRef = useRef(null);
 
     function getProfileRelationship(profileUser) {
         if (!profileUser) {
@@ -98,7 +106,7 @@ export function SocialPage() {
         return { status: 'none' };
     }
 
-    const refreshSocialData = useCallback(async ({ showLoading = false, silent = false } = {}) => {
+    const refreshSocialData = useCallback(({ showLoading = false, silent = false } = {}) => {
         if (showLoading) {
             setIsLoading(true);
         }
@@ -107,35 +115,69 @@ export function SocialPage() {
             setError('');
         }
 
-        try {
-            const [friendsData, requestsData, feedData, blockedData, blockersData] = await Promise.all([
-                getFriends(),
-                getFriendRequests(),
-                getSocialFeed(),
-                getBlockedUsers(),
-                getBlockers(),
-            ]);
-
-            setFriends(friendsData ?? []);
-            setRequests(requestsData ?? { incoming: [], outgoing: [] });
-            setFeed(feedData ?? []);
-            setBlockedUsers(blockedData ?? []);
-            setBlockers(blockersData ?? []);
-            window.dispatchEvent(new Event('howly:social-requests-updated'));
-        } catch (err) {
-            if (!silent) {
-                setError(err.message);
-            }
-        } finally {
-            setIsLoading(false);
+        if (refreshPromiseRef.current) {
+            return refreshPromiseRef.current;
         }
+
+        let request;
+        request = (async () => {
+            try {
+                const [friendsData, requestsData, feedData, blockedData, blockersData] = await Promise.all([
+                    getFriends(),
+                    getFriendRequests(),
+                    getSocialFeed(),
+                    getBlockedUsers(),
+                    getBlockers(),
+                ]);
+
+                setFriends(friendsData ?? []);
+                setRequests(requestsData ?? { incoming: [], outgoing: [] });
+                setFeed(feedData ?? []);
+                setBlockedUsers(blockedData ?? []);
+                setBlockers(blockersData ?? []);
+                window.dispatchEvent(new Event('howly:social-requests-updated'));
+            } catch (err) {
+                if (!silent) {
+                    setError(err.message);
+                }
+            } finally {
+                if (refreshPromiseRef.current === request) {
+                    refreshPromiseRef.current = null;
+                }
+                setIsLoading(false);
+            }
+        })();
+
+        refreshPromiseRef.current = request;
+        return request;
     }, []);
 
-    // After the feed loads, scroll the target story card into view if we arrived
-    // from a notification link with ?storyId=...
+    // Clean notification-only URL/state immediately after the state above has
+    // captured the one-time jump intent.
     useEffect(() => {
-        if (!targetStoryId || feed.length === 0) return;
-        // Give React one render cycle to paint the cards into the DOM.
+        if (location.state?.notificationJump || hasNotificationQuery) {
+            navigate('/social', { replace: true, state: null });
+        }
+    }, [hasNotificationQuery, location.state, navigate]);
+
+    useEffect(() => {
+        const nextJump = location.state?.notificationJump;
+        if (!nextJump || nextJump.token === notificationJump?.token) return undefined;
+
+        const timer = window.setTimeout(() => {
+            setNotificationJump(nextJump);
+            hasScrolledRef.current = false;
+            navigate('/social', { replace: true, state: null });
+        }, 0);
+
+        return () => window.clearTimeout(timer);
+    }, [location.state, navigate, notificationJump?.token]);
+
+    // After the feed loads, scroll the target story card into view.
+    // Uses a ref guard so the scroll never re-fires from background feed polls.
+    useEffect(() => {
+        if (!targetStoryId || feed.length === 0 || hasScrolledRef.current) return;
+        hasScrolledRef.current = true;
         const timer = setTimeout(() => {
             const el = document.querySelector(`[data-story-id="${targetStoryId}"]`);
             el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -521,6 +563,7 @@ export function SocialPage() {
                     blockers={blockers}
                     targetStoryId={targetStoryId}
                     targetCommentId={targetCommentId}
+                    targetCommentToken={targetCommentToken}
                 />
 
                 <FriendsPanel
