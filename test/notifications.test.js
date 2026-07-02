@@ -9,6 +9,7 @@ import { signAccessToken } from '../src/features/auth/auth.service.js';
 import config from '../config.js';
 import { FriendRequest, Friendship } from '../src/features/social/social.model.js';
 import { Notification } from '../src/features/notifications/notification.model.js';
+import { createNotification } from '../src/features/notifications/notification.service.js';
 import User from '../src/features/users/user.model.js';
 
 let mongo;
@@ -85,6 +86,35 @@ test('friend requests create unread notifications for the recipient', async () =
   assert.equal(notification.actor.toString(), requester._id.toString());
 });
 
+test('muted notification preferences suppress matching notifications', async () => {
+  const requester = await buildUser({ username: 'muted_requester' });
+  const recipient = await buildUser({
+    username: 'muted_recipient',
+    notificationPreferences: {
+      muteAll: false,
+      muteTag: false,
+      muteFriendRequest: true,
+      muteComment: false,
+      muteLike: false,
+      muteReaction: false,
+    },
+  });
+
+  await request(app)
+    .post('/api/social/friends/requests')
+    .set('Authorization', authHeader(requester))
+    .send({ recipientId: recipient._id.toString() })
+    .expect(201);
+
+  const recipientCount = await request(app)
+    .get('/api/notifications/unread-count')
+    .set('Authorization', authHeader(recipient))
+    .expect(200);
+
+  assert.equal(recipientCount.body.unreadCount, 0);
+  assert.equal(await Notification.countDocuments({ recipient: recipient._id }), 0);
+});
+
 test('notifications can be marked as read', async () => {
   const actor = await buildUser({ username: 'actor' });
   const recipient = await buildUser({ username: 'reader' });
@@ -109,6 +139,57 @@ test('notifications can be marked as read', async () => {
     .expect(200);
 
   assert.equal(count.body.unreadCount, 0);
+});
+
+test('deduplicated notifications do not become unread again when reused', async () => {
+  const actor = await buildUser({ username: 'dedupe_actor' });
+  const recipient = await buildUser({ username: 'dedupe_recipient' });
+  const storyId = new mongoose.Types.ObjectId();
+
+  await createNotification({
+    recipientId: recipient._id,
+    actorId: actor._id,
+    type: 'story_liked',
+    entityType: 'story',
+    entityId: storyId,
+    metadata: { likeCount: 1 },
+    deduplicate: true,
+  });
+
+  const firstNotification = await Notification.findOne({
+    recipient: recipient._id,
+    actor: actor._id,
+    type: 'story_liked',
+    entityId: storyId,
+  });
+
+  assert.ok(firstNotification);
+  assert.equal(firstNotification.readAt, null);
+
+  const readAt = new Date();
+  firstNotification.readAt = readAt;
+  await firstNotification.save();
+
+  await createNotification({
+    recipientId: recipient._id,
+    actorId: actor._id,
+    type: 'story_liked',
+    entityType: 'story',
+    entityId: storyId,
+    metadata: { likeCount: 2 },
+    deduplicate: true,
+  });
+
+  const notifications = await Notification.find({
+    recipient: recipient._id,
+    actor: actor._id,
+    type: 'story_liked',
+    entityId: storyId,
+  }).lean();
+
+  assert.equal(notifications.length, 1);
+  assert.equal(notifications[0].readAt.toISOString(), readAt.toISOString());
+  assert.equal(notifications[0].metadata.likeCount, 2);
 });
 
 test('accepting a friend request notifies the original requester', async () => {

@@ -8,6 +8,15 @@ import { toPublicUser } from '../users/user.service.js';
 // ---------------------------------------------------------------------------
 const sseClients = new Map();
 
+const NOTIFICATION_PREFERENCE_BY_TYPE = {
+  friend_request_received: 'muteFriendRequest',
+  friend_request_accepted: 'muteFriendRequest',
+  milestone_reacted: 'muteReaction',
+  story_liked: 'muteLike',
+  story_commented: 'muteComment',
+  story_tagged: 'muteTag',
+};
+
 export function registerSSEClient(userId, res) {
   const id = userId.toString();
   if (!sseClients.has(id)) {
@@ -23,9 +32,10 @@ export function registerSSEClient(userId, res) {
     try {
       res.write(': ping\n\n');
     } catch {
-      clearInterval(heartbeat);
+      unregisterSSEClient(id, res);
     }
   }, 25_000);
+  heartbeat.unref?.();
 
   // Store the interval on the response so we can clear it on close.
   res._sseHeartbeat = heartbeat;
@@ -34,6 +44,7 @@ export function registerSSEClient(userId, res) {
 export function unregisterSSEClient(userId, res) {
   const id = userId.toString();
   clearInterval(res._sseHeartbeat);
+  res._sseHeartbeat = null;
   sseClients.get(id)?.delete(res);
   if (sseClients.get(id)?.size === 0) {
     sseClients.delete(id);
@@ -49,7 +60,8 @@ export function pushToUser(userId, eventName, payload) {
     try {
       res.write(data);
     } catch {
-      // Client disconnected mid-write — will be cleaned up on 'close'.
+      // Client disconnected mid-write.
+      unregisterSSEClient(id, res);
     }
   }
 }
@@ -66,6 +78,29 @@ function normalizeTypes(types) {
   const values = Array.isArray(types) ? types : [types];
 
   return values.filter((type) => NOTIFICATION_TYPES.includes(type));
+}
+
+function isMutedByPreference(type, preferences = {}) {
+  if (preferences.muteAll) {
+    return true;
+  }
+
+  const preferenceKey = NOTIFICATION_PREFERENCE_BY_TYPE[type];
+  return Boolean(preferenceKey && preferences[preferenceKey]);
+}
+
+async function shouldCreateNotification(recipientId, type) {
+  try {
+    const recipientUser = await mongoose.model('User')
+      .findById(recipientId)
+      .select('notificationPreferences')
+      .lean();
+
+    return !isMutedByPreference(type, recipientUser?.notificationPreferences);
+  } catch (err) {
+    console.error('Failed to fetch user notification preferences:', err);
+    return true;
+  }
 }
 
 function toNotificationResponse(notification) {
@@ -99,35 +134,21 @@ export async function createNotification({
     throw new Error(`Unsupported notification type: ${type}`);
   }
 
-  // Check recipient's notification preferences
-  try {
-    const recipientUser = await mongoose.model('User').findById(recipientId).select('notificationPreferences').lean();
-    if (recipientUser) {
-      const prefs = recipientUser.notificationPreferences ?? {};
-      if (prefs.muteAll) {
-        return null;
-      }
-      if (type === 'story_tagged' && prefs.muteTag) return null;
-      if (type === 'story_commented' && prefs.muteComment) return null;
-      if (type === 'story_liked' && prefs.muteLike) return null;
-      if (type === 'milestone_reacted' && prefs.muteReaction) return null;
-      if ((type === 'friend_request_received' || type === 'friend_request_accepted') && prefs.muteFriendRequest) return null;
-    }
-  } catch (err) {
-    console.error('Failed to fetch user notification preferences:', err);
+  if (!(await shouldCreateNotification(recipientId, type))) {
+    return null;
   }
 
   if (deduplicate) {
     // Upsert: at most one notification per (recipient, actor, type, entityId).
-    // Re-uses the compound index on the Notification collection.
+    // Matches the compound index on the Notification collection.
     const filter = { recipient: recipientId, actor: actorId, type, entityId };
     const result = await Notification.updateOne(
       filter,
       {
         // Always keep entityType and metadata current.
-        $set: { entityType, metadata, readAt: null },
+        $set: { entityType, metadata },
         // createdAt is only written on insert (ignored on update).
-        $setOnInsert: { createdAt: new Date() },
+        $setOnInsert: { createdAt: new Date(), readAt: null },
       },
       { upsert: true },
     );
