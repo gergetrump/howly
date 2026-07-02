@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { LockKeyhole } from 'lucide-react';
 import { Page, Heading } from '@/components/layout';
 import { FriendsPanel } from '@/components/social/FriendsPanel.jsx';
 import { ReactionUsersDialog } from '@/components/social/ReactionUsersDialog.jsx';
@@ -59,10 +60,19 @@ export function SocialPage() {
     // replay the scroll/highlight behavior after reloads or normal navigation.
     const [notificationJump, setNotificationJump] = useState(() => location.state?.notificationJump ?? null);
     const targetStoryId = notificationJump?.storyId ?? null;
+    const targetPostId = notificationJump?.postId ?? null;
     const targetCommentId = notificationJump?.commentId ?? null;
     const targetCommentToken = notificationJump?.token ?? null;
+    const targetNotificationType = notificationJump?.type ?? null;
+    const targetActorId = notificationJump?.actorId ?? null;
+    const targetMetadata = notificationJump?.metadata ?? {};
+    const targetFeedPostId = targetStoryId ?? targetPostId;
+    const requiresInteractionValidation = targetNotificationType === 'story_liked'
+        || targetNotificationType === 'milestone_reacted';
     const notificationSearchParams = new URLSearchParams(location.search);
-    const hasNotificationQuery = notificationSearchParams.has('storyId') || notificationSearchParams.has('commentId');
+    const hasNotificationQuery = notificationSearchParams.has('storyId')
+        || notificationSearchParams.has('commentId')
+        || notificationSearchParams.has('postId');
     const pendingFriendRequestCount = requests.incoming?.length ?? 0;
     const selectedFeedPost = selectedReaction?.post?.id
         ? feed.find((post) => post.id === selectedReaction.post.id)
@@ -154,6 +164,14 @@ export function SocialPage() {
         return request;
     }, []);
 
+    const showUnavailableNotificationBanner = useCallback((title) => {
+        setBanner({
+            variant: 'unavailable',
+            eyebrow: 'Notification link unavailable',
+            title,
+        });
+    }, []);
+
     // Clean notification-only URL/state immediately after the state above has
     // captured the one-time jump intent.
     useEffect(() => {
@@ -175,10 +193,10 @@ export function SocialPage() {
         return () => window.clearTimeout(timer);
     }, [location.state, navigate, notificationJump?.token]);
 
-    // After the feed loads, scroll the target story card into view.
+    // After the feed loads, scroll the target card into view.
     // Uses a ref guard so the scroll never re-fires from background feed polls.
     useEffect(() => {
-        if (!targetStoryId || feed.length === 0 || hasScrolledRef.current) return;
+        if (!targetFeedPostId || feed.length === 0 || hasScrolledRef.current) return;
         hasScrolledRef.current = true;
         let cancelled = false;
         const cleanupEvents = [];
@@ -194,9 +212,12 @@ export function SocialPage() {
 
         const timer = setTimeout(() => {
             if (cancelled) return;
-            const el = document.querySelector(`[data-story-id="${targetStoryId}"]`);
+            const selector = targetStoryId
+                ? `[data-story-id="${targetStoryId}"]`
+                : `[data-post-id="${targetFeedPostId}"]`;
+            const el = document.querySelector(selector);
             el?.scrollIntoView({ behavior: 'auto', block: 'center' });
-            if (!targetCommentId) {
+            if (!targetCommentId && !requiresInteractionValidation) {
                 setNotificationJump(null);
             }
         }, 150);
@@ -205,23 +226,129 @@ export function SocialPage() {
             cleanupEvents.forEach((cleanup) => cleanup());
             clearTimeout(timer);
         };
-    }, [targetStoryId, targetCommentId, feed]);
+    }, [targetFeedPostId, targetStoryId, targetCommentId, requiresInteractionValidation, feed]);
 
-    // If a notification deep-link target story is not in the loaded feed,
-    // show a temporary 'Post not found' error banner and clear the jump state.
+    // If a notification deep-link target is not in the loaded feed,
+    // show a temporary unavailable-post notice and clear the jump state.
     useEffect(() => {
-        if (!targetStoryId || isLoading) return;
+        if (!targetFeedPostId || isLoading) return undefined;
+
+        const targetExists = feed.some((post) => {
+            if (targetStoryId) {
+                return post.type === 'story' && post.id === targetStoryId;
+            }
+
+            return post.id === targetFeedPostId;
+        });
+
+        if (!targetExists) {
+            const timer = window.setTimeout(() => {
+                showUnavailableNotificationBanner('This post is no longer available');
+                setNotificationJump(null);
+            }, 0);
+
+            return () => window.clearTimeout(timer);
+        }
+
+        return undefined;
+    }, [targetFeedPostId, targetStoryId, isLoading, feed, showUnavailableNotificationBanner]);
+
+    useEffect(() => {
+        if (
+            targetNotificationType !== 'story_liked'
+            || !targetStoryId
+            || !targetActorId
+            || isLoading
+        ) {
+            return undefined;
+        }
 
         const storyExists = feed.some((post) => post.type === 'story' && post.id === targetStoryId);
-        if (!storyExists) {
-            setBanner({
-                variant: 'error',
-                title: 'Post not found',
-                message: 'This post is no longer available or was deleted.'
+        if (!storyExists) return undefined;
+
+        let isCurrent = true;
+        let clearTimer = null;
+
+        getStoryLikes(targetStoryId)
+            .then((likers = []) => {
+                if (!isCurrent) return;
+
+                const likeExists = likers.some((liker) => (
+                    sameId(liker?.id, targetActorId) || sameId(liker?._id, targetActorId)
+                ));
+
+                if (!likeExists) {
+                    showUnavailableNotificationBanner('Like not found');
+                    setNotificationJump(null);
+                    return;
+                }
+
+                clearTimer = window.setTimeout(() => {
+                    setNotificationJump(null);
+                }, 250);
+            })
+            .catch(() => {
+                if (!isCurrent) return;
+                showUnavailableNotificationBanner('Like not found');
+                setNotificationJump(null);
             });
-            setNotificationJump(null);
+
+        return () => {
+            isCurrent = false;
+            window.clearTimeout(clearTimer);
+        };
+    }, [
+        targetNotificationType,
+        targetStoryId,
+        targetActorId,
+        isLoading,
+        feed,
+        showUnavailableNotificationBanner,
+    ]);
+
+    useEffect(() => {
+        if (
+            targetNotificationType !== 'milestone_reacted'
+            || !targetPostId
+            || !targetActorId
+            || isLoading
+        ) {
+            return undefined;
         }
-    }, [targetStoryId, isLoading, feed]);
+
+        const targetPost = feed.find((post) => post.id === targetPostId);
+        if (!targetPost) return undefined;
+
+        const expectedEmojis = Array.isArray(targetMetadata?.emojis) && targetMetadata.emojis.length
+            ? targetMetadata.emojis
+            : [targetMetadata?.emoji].filter(Boolean);
+        const actorReactions = (targetPost.reactions ?? []).filter((reaction) => (
+            sameId(reaction?.user?.id, targetActorId) || sameId(reaction?.user?._id, targetActorId)
+        ));
+        const reactionExists = expectedEmojis.length
+            ? expectedEmojis.every((emoji) => actorReactions.some((reaction) => reaction.emoji === emoji))
+            : actorReactions.length > 0;
+
+        if (!reactionExists) {
+            showUnavailableNotificationBanner('Reaction not found');
+            setNotificationJump(null);
+            return undefined;
+        }
+
+        const clearTimer = window.setTimeout(() => {
+            setNotificationJump(null);
+        }, 250);
+
+        return () => window.clearTimeout(clearTimer);
+    }, [
+        targetNotificationType,
+        targetPostId,
+        targetActorId,
+        targetMetadata,
+        isLoading,
+        feed,
+        showUnavailableNotificationBanner,
+    ]);
 
     function handleActivePanelChange(nextPanel) {
         setActivePanel(nextPanel);
@@ -234,6 +361,11 @@ export function SocialPage() {
     const handleTargetCommentHandled = useCallback(() => {
         setNotificationJump(null);
     }, []);
+
+    const handleTargetCommentUnavailable = useCallback(() => {
+        showUnavailableNotificationBanner('Comment not found');
+        setNotificationJump(null);
+    }, [showUnavailableNotificationBanner]);
 
     function addOutgoingRequest(request) {
         setRequests((currentRequests) => ({
@@ -592,12 +724,15 @@ export function SocialPage() {
             <Heading title="Social" subtitle="See what your friends are building." streakDays={user?.streak ?? 0} />
 
             {banner && (
-                <div className="mb-6">
+                <div className="fixed right-6 top-24 z-[9999] w-[min(92vw,24rem)]">
                     <NotificationBanner
                         variant={banner.variant}
+                        eyebrow={banner.eyebrow}
                         title={banner.title}
+                        icon={<LockKeyhole className="size-5" aria-hidden="true" />}
                         onClose={() => setBanner(null)}
-                        autoCloseMs={5000}
+                        autoCloseMs={6000}
+                        className="px-4 py-3"
                     >
                         {banner.message}
                     </NotificationBanner>
@@ -622,6 +757,7 @@ export function SocialPage() {
                     targetCommentId={targetCommentId}
                     targetCommentToken={targetCommentToken}
                     onTargetCommentHandled={handleTargetCommentHandled}
+                    onTargetCommentUnavailable={handleTargetCommentUnavailable}
                 />
 
                 <FriendsPanel

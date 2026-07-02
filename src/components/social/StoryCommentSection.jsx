@@ -35,6 +35,7 @@ export function StoryCommentSection({
     comments = [],
     setComments,
     isLoading = false,
+    hasLoadedComments = false,
     likers = [],
     onOpenProfile,
     isStoryOwner = false,
@@ -45,6 +46,7 @@ export function StoryCommentSection({
     targetCommentId = null,
     targetCommentToken = null,
     onTargetCommentHandled,
+    onTargetCommentUnavailable,
 }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [newComment, setNewComment] = useState('');
@@ -88,11 +90,18 @@ export function StoryCommentSection({
     // When a notification click provides a target comment, scroll to that
     // comment and briefly highlight it once for that click.
     useEffect(() => {
-        if (!targetCommentId || isLoading || comments.length === 0) return;
+        if (!targetCommentId || isLoading || !hasLoadedComments) return;
         const highlightKey = targetCommentToken ?? targetCommentId;
         if (hasHighlightedRef.current === highlightKey) return;
 
         const targetComment = comments.find((comment) => comment.id === targetCommentId);
+
+        if (!targetComment) {
+            hasHighlightedRef.current = highlightKey;
+            onTargetCommentUnavailable?.();
+            return;
+        }
+
         const parentCommentId = targetComment?.parentComment?.id ?? targetComment?.parentComment;
 
         let cancelled = false;
@@ -125,7 +134,11 @@ export function StoryCommentSection({
             if (cancelled) return;
             const container = containerRef.current;
             const el = container?.querySelector(`[data-comment-id="${targetCommentId}"]`);
-            if (!el) return;
+            if (!el) {
+                hasHighlightedRef.current = highlightKey;
+                onTargetCommentUnavailable?.();
+                return;
+            }
 
             hasHighlightedRef.current = highlightKey;
             el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
@@ -146,7 +159,15 @@ export function StoryCommentSection({
             clearTimeout(expandTimer);
             clearTimeout(timer);
         };
-    }, [targetCommentId, targetCommentToken, isLoading, comments, onTargetCommentHandled]);
+    }, [
+        targetCommentId,
+        targetCommentToken,
+        isLoading,
+        hasLoadedComments,
+        comments,
+        onTargetCommentHandled,
+        onTargetCommentUnavailable,
+    ]);
 
     function handleSelectSuggestion(user) {
         const mention = `@${user.username} `;

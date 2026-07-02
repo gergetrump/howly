@@ -56,8 +56,13 @@ function getNotificationMessage(notification) {
             return `${actorName} sent you a friend request`;
         case 'friend_request_accepted':
             return `${actorName} accepted your friend request`;
-        case 'milestone_reacted':
-            return `${actorName} reacted to your milestone${notification.metadata?.emoji ? ` ${notification.metadata.emoji}` : ''}`;
+        case 'milestone_reacted': {
+            const reactions = Array.isArray(notification.metadata?.emojis) && notification.metadata.emojis.length
+                ? notification.metadata.emojis.join(' ')
+                : notification.metadata?.emoji;
+
+            return `${actorName} reacted to your milestone${reactions ? ` ${reactions}` : ''}`;
+        }
         case 'story_liked':
             return `${actorName} liked your post`;
         case 'story_commented':
@@ -78,36 +83,54 @@ function getNotificationMessage(notification) {
 }
 
 function getNotificationLink(notification) {
-    const storyId = notification.entityId;
+    const entityId = notification.entityId;
     const commentId = notification.metadata?.commentId;
 
     switch (notification.type) {
         case 'story_tagged':
         case 'story_commented':
-            if (storyId && commentId) {
-                return `/social?storyId=${storyId}&commentId=${commentId}`;
+            if (entityId && commentId) {
+                return `/social?storyId=${entityId}&commentId=${commentId}`;
             }
             return '/social';
         case 'story_liked':
-            return storyId ? `/social?storyId=${storyId}` : '/social';
+            return entityId ? `/social?storyId=${entityId}` : '/social';
+        case 'milestone_reacted':
+            return entityId ? `/social?postId=${entityId}` : '/social';
         default:
             return '/social';
     }
 }
 
 function getNotificationNavigationState(notification) {
-    const storyId = notification.entityId;
+    const entityId = notification.entityId;
     const commentId = notification.metadata?.commentId;
 
-    if (!storyId) {
+    if (!entityId) {
         return undefined;
     }
 
     if (notification.type === 'story_tagged' || notification.type === 'story_commented' || notification.type === 'story_liked') {
         return {
             notificationJump: {
-                storyId,
+                storyId: entityId,
                 commentId: commentId ?? null,
+                type: notification.type,
+                actorId: notification.actor?.id ?? notification.actor?._id ?? null,
+                metadata: notification.metadata ?? {},
+                token: `${notification.id}-${Date.now()}`,
+            },
+        };
+    }
+
+    if (notification.type === 'milestone_reacted') {
+        return {
+            notificationJump: {
+                postId: entityId,
+                postType: 'milestone',
+                type: notification.type,
+                actorId: notification.actor?.id ?? notification.actor?._id ?? null,
+                metadata: notification.metadata ?? {},
                 token: `${notification.id}-${Date.now()}`,
             },
         };
