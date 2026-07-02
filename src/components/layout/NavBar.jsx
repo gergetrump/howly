@@ -156,6 +156,9 @@ export function NavBar({
     const notificationMenuRef = useRef(null);
     const notificationListRef = useRef(null);
     const readingNotificationIdsRef = useRef(new Set());
+    // Stays true while the notification dropdown is open so background refreshes
+    // don't overwrite the bell counter mid-session.
+    const isMenuOpenRef = useRef(false);
     const brandSizeClasses = brandSizes[brandSize] ?? brandSizes.md;
     const profileItem = items.find((item) => item.to === '/profile');
     const navigationItems = items.filter((item) => item.to !== '/profile');
@@ -174,6 +177,9 @@ export function NavBar({
         let isMounted = true;
 
         async function refreshNotifications() {
+            // Don't update the bell counter while the dropdown is open — the
+            // count will be re-synced from the server when the dropdown closes.
+            if (isMenuOpenRef.current) return;
             try {
                 const result = await getUnreadNotificationCount();
 
@@ -222,8 +228,12 @@ export function NavBar({
     useEffect(() => {
         function handleDocumentPointerDown(event) {
             if (!notificationMenuRef.current?.contains(event.target)) {
+                // Sync ref first so refreshNotifications sees the menu as closed.
+                isMenuOpenRef.current = false;
                 setIsNotificationMenuOpen(false);
                 setVisibleUnreadNotificationIds(new Set());
+                // Re-fetch the true unread count now that the dropdown is closed.
+                window.dispatchEvent(new Event('howly:notifications-updated'));
             }
         }
 
@@ -267,8 +277,9 @@ export function NavBar({
                                         : notification
                                 )
                             );
-                            setUnreadNotificationCount((currentCount) => Math.max(0, currentCount - 1));
-                            window.dispatchEvent(new Event('howly:notifications-updated'));
+                            // Do NOT update unreadNotificationCount or dispatch the
+                            // refresh event here — the bell counter is frozen while
+                            // the dropdown is open and will sync when it closes.
                         })
                         .catch(() => {
                             readingNotificationIdsRef.current.delete(notificationId);
@@ -293,10 +304,13 @@ export function NavBar({
     async function handleNotificationBellClick() {
         const nextIsOpen = !isNotificationMenuOpen;
 
+        isMenuOpenRef.current = nextIsOpen;
         setIsNotificationMenuOpen(nextIsOpen);
 
         if (!nextIsOpen) {
             setVisibleUnreadNotificationIds(new Set());
+            // Re-sync the bell counter with the server now that the dropdown closed.
+            window.dispatchEvent(new Event('howly:notifications-updated'));
             return;
         }
 
@@ -371,7 +385,10 @@ export function NavBar({
             nextIds.delete(notificationId);
             return nextIds;
         });
+        // Close the menu and re-sync the bell counter.
+        isMenuOpenRef.current = false;
         setIsNotificationMenuOpen(false);
+        window.dispatchEvent(new Event('howly:notifications-updated'));
     }
 
     return (
