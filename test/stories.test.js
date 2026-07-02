@@ -14,6 +14,7 @@ import {
   STORY_FEED_VISIBLE_HOURS,
 } from '../src/features/stories/story.model.js';
 import { Friendship } from '../src/features/social/social.model.js';
+import { Notification } from '../src/features/notifications/notification.model.js';
 import Habit from '../src/features/habits/habit.model.js';
 import User from '../src/features/users/user.model.js';
 
@@ -90,6 +91,7 @@ afterEach(async () => {
     StoryLike.deleteMany({}),
     StoryComment.deleteMany({}),
     Friendship.deleteMany({}),
+    Notification.deleteMany({}),
     Habit.deleteMany({}),
     User.deleteMany({}),
   ]);
@@ -321,6 +323,75 @@ test('story comment count stays independent from like count', async () => {
   const feedStory = feedResponse.body.find((post) => post.type === 'story');
   assert.equal(feedStory.likeCount, 0);
   assert.equal(feedStory.commentCount, 1);
+});
+
+test('tagging the story owner creates a tagged notification instead of a normal comment notification', async () => {
+  const owner = await buildUser({ username: 'alice', firstName: 'Alice' });
+  const commenter = await buildUser({ username: 'bob', firstName: 'Bob' });
+  await makeFriends(owner, commenter);
+
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  const commentResponse = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(commenter))
+    .send({ content: 'Great post @alice' })
+    .expect(201);
+
+  const ownerNotifications = await Notification.find({ recipient: owner._id }).lean();
+
+  assert.equal(ownerNotifications.length, 1);
+  assert.equal(ownerNotifications[0].type, 'story_tagged');
+  assert.equal(ownerNotifications[0].metadata.commentId.toString(), commentResponse.body.id);
+  assert.equal(ownerNotifications[0].metadata.taggedOnOwnPost, true);
+  assert.equal(await Notification.countDocuments({ recipient: owner._id, type: 'story_commented' }), 0);
+});
+
+test('tagging a friend on another friends story creates a tagged notification with the story owner name', async () => {
+  const storyOwner = await buildUser({ username: 'charlie', firstName: 'Charlie' });
+  const commenter = await buildUser({ username: 'bob', firstName: 'Bob' });
+  const taggedFriend = await buildUser({ username: 'alice', firstName: 'Alice' });
+  await makeFriends(storyOwner, commenter);
+  await makeFriends(storyOwner, taggedFriend);
+
+  const habit = await buildHabit(storyOwner);
+  const story = await buildStory(storyOwner, habit);
+
+  const commentResponse = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(commenter))
+    .send({ content: 'You should see this @alice' })
+    .expect(201);
+
+  const taggedNotification = await Notification.findOne({
+    recipient: taggedFriend._id,
+    type: 'story_tagged',
+  }).lean();
+
+  assert.ok(taggedNotification);
+  assert.equal(taggedNotification.actor.toString(), commenter._id.toString());
+  assert.equal(taggedNotification.entityId.toString(), story._id.toString());
+  assert.equal(taggedNotification.metadata.commentId.toString(), commentResponse.body.id);
+  assert.equal(taggedNotification.metadata.storyOwnerName, 'Charlie');
+});
+
+test('tagging a user who cannot see the story does not create a notification', async () => {
+  const storyOwner = await buildUser({ username: 'charlie', firstName: 'Charlie' });
+  const commenter = await buildUser({ username: 'bob', firstName: 'Bob' });
+  const taggedStranger = await buildUser({ username: 'alice', firstName: 'Alice' });
+  await makeFriends(storyOwner, commenter);
+
+  const habit = await buildHabit(storyOwner);
+  const story = await buildStory(storyOwner, habit);
+
+  await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(commenter))
+    .send({ content: 'This is private to friends @alice' })
+    .expect(201);
+
+  assert.equal(await Notification.countDocuments({ recipient: taggedStranger._id }), 0);
 });
 
 test('non-friends cannot like a story (404)', async () => {

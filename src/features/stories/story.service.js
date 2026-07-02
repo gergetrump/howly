@@ -419,31 +419,40 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
 
   await Story.updateOne({ _id: storyId }, { $inc: { commentCount: 1 } });
 
+  await comment.populate('user');
+
+  const mentionedUsernames = [
+    ...new Set(
+      (content.match(/@(\w+)/g) ?? []).map((m) => m.slice(1).toLowerCase()),
+    ),
+  ];
+  const storyOwner = await User.findById(story.user, '_id username firstName').lean();
+  const storyOwnerName = storyOwner?.firstName || storyOwner?.username || 'someone';
+  const storyOwnerWasTagged = storyOwner?.username
+    ? mentionedUsernames.includes(storyOwner.username.toLowerCase())
+    : false;
+
   await createNotification({
     recipientId: story.user,
     actorId: userId,
-    type: 'story_commented',
+    type: storyOwnerWasTagged ? 'story_tagged' : 'story_commented',
     entityType: 'story',
     entityId: story._id,
-    metadata: { commentId: comment._id },
+    metadata: {
+      commentId: comment._id,
+      ...(storyOwnerWasTagged ? { taggedOnOwnPost: true } : {}),
+    },
   });
-
-  await comment.populate('user');
 
   // Fire tag notifications for every @mention in the comment.
   // Rules:
   //  - Only notifies users who can currently see the story (friends with the owner).
   //  - Does not notify the commenter themselves.
-  //  - Does not notify the story owner (they already get story_commented).
+  //  - Does not notify the story owner here; their comment/tag notification is
+  //    created above so they never receive a duplicate.
   //  - Notifications are NOT created retroactively; this block only runs at
   //    comment-creation time, so future friendships never backfill old tags.
   try {
-    const mentionedUsernames = [
-      ...new Set(
-        (content.match(/@(\w+)/g) ?? []).map((m) => m.slice(1).toLowerCase()),
-      ),
-    ];
-
     if (mentionedUsernames.length > 0) {
       // Resolve all mentioned usernames to user documents in a single query.
       const mentionedUsers = await User.find(
@@ -472,7 +481,10 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
             type: 'story_tagged',
             entityType: 'story',
             entityId: story._id,
-            metadata: { commentId: comment._id },
+            metadata: {
+              commentId: comment._id,
+              storyOwnerName,
+            },
           });
         }),
       );
