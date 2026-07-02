@@ -5,6 +5,7 @@ import { FriendsPanel } from '@/components/social/FriendsPanel.jsx';
 import { ReactionUsersDialog } from '@/components/social/ReactionUsersDialog.jsx';
 import { SocialFeed } from '@/components/social/SocialFeed.jsx';
 import { UserPreviewDialog } from '@/components/social/UserPreviewDialog.jsx';
+import { NotificationBanner } from '@/components/ui/notification-banner.jsx';
 import {
     getSocialErrorMessage,
     getDisplayName,
@@ -52,6 +53,7 @@ export function SocialPage() {
     const [activePanel, setActivePanel] = useState('friends');
     const [selectedReaction, setSelectedReaction] = useState(null);
     const [selectedProfileUser, setSelectedProfileUser] = useState(null);
+    const [banner, setBanner] = useState(null);
     const location = useLocation();
     // Capture notification jump state once. Query params alone should not
     // replay the scroll/highlight behavior after reloads or normal navigation.
@@ -194,13 +196,32 @@ export function SocialPage() {
             if (cancelled) return;
             const el = document.querySelector(`[data-story-id="${targetStoryId}"]`);
             el?.scrollIntoView({ behavior: 'auto', block: 'center' });
+            if (!targetCommentId) {
+                setNotificationJump(null);
+            }
         }, 150);
         return () => {
             cancelled = true;
             cleanupEvents.forEach((cleanup) => cleanup());
             clearTimeout(timer);
         };
-    }, [targetStoryId, feed]);
+    }, [targetStoryId, targetCommentId, feed]);
+
+    // If a notification deep-link target story is not in the loaded feed,
+    // show a temporary 'Post not found' error banner and clear the jump state.
+    useEffect(() => {
+        if (!targetStoryId || isLoading) return;
+
+        const storyExists = feed.some((post) => post.type === 'story' && post.id === targetStoryId);
+        if (!storyExists) {
+            setBanner({
+                variant: 'error',
+                title: 'Post not found',
+                message: 'This post is no longer available or was deleted.'
+            });
+            setNotificationJump(null);
+        }
+    }, [targetStoryId, isLoading, feed]);
 
     function handleActivePanelChange(nextPanel) {
         setActivePanel(nextPanel);
@@ -230,6 +251,7 @@ export function SocialPage() {
         setNotice('Friend request accepted');
         setActivePanel('friends');
         window.dispatchEvent(new Event('howly:social-requests-updated'));
+        window.dispatchEvent(new Event('howly:notifications-updated'));
         void refreshSocialData({ silent: true });
     }
 
@@ -387,6 +409,7 @@ export function SocialPage() {
             }));
             setNotice('Friend request rejected');
             window.dispatchEvent(new Event('howly:social-requests-updated'));
+            window.dispatchEvent(new Event('howly:notifications-updated'));
             void refreshSocialData({ silent: true });
         } catch (err) {
             setError(getSocialErrorMessage(err));
@@ -567,6 +590,19 @@ export function SocialPage() {
     return (
         <Page theme="forest" contentClassName="max-w-[112rem]">
             <Heading title="Social" subtitle="See what your friends are building." streakDays={user?.streak ?? 0} />
+
+            {banner && (
+                <div className="mb-6">
+                    <NotificationBanner
+                        variant={banner.variant}
+                        title={banner.title}
+                        onClose={() => setBanner(null)}
+                        autoCloseMs={5000}
+                    >
+                        {banner.message}
+                    </NotificationBanner>
+                </div>
+            )}
 
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,22rem)] lg:items-start xl:gap-12">
                 <SocialFeed

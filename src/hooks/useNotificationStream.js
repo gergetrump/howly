@@ -42,6 +42,10 @@ export function useNotificationStream(onNotification, enabled = true) {
         }
       });
 
+      es.addEventListener('refresh', () => {
+        window.dispatchEvent(new Event('howly:notifications-updated'));
+      });
+
       // 'connected' confirms the server accepted the stream.
       es.addEventListener('connected', () => {
         // Connected successfully — nothing extra needed.

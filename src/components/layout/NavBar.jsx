@@ -354,10 +354,16 @@ export function NavBar({
             return;
         }
 
+        const targetNotification = notifications.find((n) => n.id === notificationId);
+        const wasUnread = targetNotification && !targetNotification.readAt;
+
         setRemovingNotificationIds((currentIds) => [...currentIds, notificationId]);
 
         try {
             await deleteNotification(notificationId);
+            if (wasUnread) {
+                setUnreadNotificationCount((currentCount) => Math.max(0, currentCount - 1));
+            }
             window.setTimeout(() => {
                 setNotifications((currentNotifications) =>
                     currentNotifications.filter((notification) => notification.id !== notificationId)
