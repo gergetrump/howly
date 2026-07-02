@@ -36,7 +36,7 @@ export default function Dress({ className, color = '#F2E6FF',
     return (
         <svg className={className} width="1375" height="550" viewBox="0 0 1375 550" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
             <g id="Group 118">
-                <foreignObject x="34.8254" y="13" width="1322.42" height="505.593"><div xmlns="http://www.w3.org/1999/xhtml" style={{ backdropFilter: 'blur(2px)', clipPath: 'url(#bgblur_0_178_461_clip_path)', height: '100%', width: '100%' }}></div></foreignObject><g id="Union" data-figma-bg-blur-radius="4">
+                <g id="Union">
                 <mask id="path-1-inside-1_178_461" fill="white">
                     <path d="M1199.25 17C1252.55 17 1305.83 58.2406 1305.83 127C1305.83 186.418 1266.04 246.94 1220.84 262.288C1288.13 316.141 1319 363.772 1353.25 449.25C1307.17 463.444 1245.62 471.437 1186.19 474.894C1183.35 477.16 1179.87 478.682 1176.05 479.141C836.898 519.852 624.79 527.579 300.094 491.425C219.473 500.308 110.096 492.602 38.8254 440.416C73.3509 357.886 104.449 312.147 172.801 260.067C122.84 247.98 67.8254 181.245 67.8254 119C67.8254 50.2406 131.03 28 184.325 28C192.62 28 200.766 28.9873 208.608 30.9131C212.069 29.8858 215.866 29.764 219.657 30.793C591.33 131.647 806.499 135.594 1145.18 38.3691C1160.6 24.8802 1179.21 17 1199.25 17Z"/>
                 </mask>
@@ -172,8 +172,7 @@ export default function Dress({ className, color = '#F2E6FF',
                 </g>
             </g>
             <defs>
-                <clipPath id="bgblur_0_178_461_clip_path" transform="translate(-34.8254 -13)"><path d="M1199.25 17C1252.55 17 1305.83 58.2406 1305.83 127C1305.83 186.418 1266.04 246.94 1220.84 262.288C1288.13 316.141 1319 363.772 1353.25 449.25C1307.17 463.444 1245.62 471.437 1186.19 474.894C1183.35 477.16 1179.87 478.682 1176.05 479.141C836.898 519.852 624.79 527.579 300.094 491.425C219.473 500.308 110.096 492.602 38.8254 440.416C73.3509 357.886 104.449 312.147 172.801 260.067C122.84 247.98 67.8254 181.245 67.8254 119C67.8254 50.2406 131.03 28 184.325 28C192.62 28 200.766 28.9873 208.608 30.9131C212.069 29.8858 215.866 29.764 219.657 30.793C591.33 131.647 806.499 135.594 1145.18 38.3691C1160.6 24.8802 1179.21 17 1199.25 17Z"/>
-                </clipPath><filter id="filter1_f_178_461" x="168.325" y="250.5" width="1064.5" height="52.0898" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                <filter id="filter1_f_178_461" x="168.325" y="250.5" width="1064.5" height="52.0898" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
                 <feFlood floodOpacity="0" result="BackgroundImageFix"/>
                 <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
                 <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_178_461"/>
