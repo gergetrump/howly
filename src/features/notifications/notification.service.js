@@ -99,6 +99,24 @@ export async function createNotification({
     throw new Error(`Unsupported notification type: ${type}`);
   }
 
+  // Check recipient's notification preferences
+  try {
+    const recipientUser = await mongoose.model('User').findById(recipientId).select('notificationPreferences').lean();
+    if (recipientUser) {
+      const prefs = recipientUser.notificationPreferences ?? {};
+      if (prefs.muteAll) {
+        return null;
+      }
+      if (type === 'story_tagged' && prefs.muteTag) return null;
+      if (type === 'story_commented' && prefs.muteComment) return null;
+      if (type === 'story_liked' && prefs.muteLike) return null;
+      if (type === 'milestone_reacted' && prefs.muteReaction) return null;
+      if ((type === 'friend_request_received' || type === 'friend_request_accepted') && prefs.muteFriendRequest) return null;
+    }
+  } catch (err) {
+    console.error('Failed to fetch user notification preferences:', err);
+  }
+
   if (deduplicate) {
     // Upsert: at most one notification per (recipient, actor, type, entityId).
     // Re-uses the compound index on the Notification collection.

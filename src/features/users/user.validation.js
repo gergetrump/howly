@@ -88,6 +88,17 @@ export function validateUpdateUserInput(body = {}) {
         updates.ghostMode = Boolean(body.ghostMode);
     }
 
+    if (body.notificationPreferences !== undefined && typeof body.notificationPreferences === 'object' && body.notificationPreferences !== null) {
+        updates.notificationPreferences = {
+            muteAll: Boolean(body.notificationPreferences.muteAll),
+            muteTag: Boolean(body.notificationPreferences.muteTag),
+            muteFriendRequest: Boolean(body.notificationPreferences.muteFriendRequest),
+            muteComment: Boolean(body.notificationPreferences.muteComment),
+            muteLike: Boolean(body.notificationPreferences.muteLike),
+            muteReaction: Boolean(body.notificationPreferences.muteReaction),
+        };
+    }
+
     if (Object.keys(updates).length === 0 && errors.length === 0) {
         errors.push('no valid fields provided');
     }
