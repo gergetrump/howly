@@ -11,7 +11,7 @@ import User from '../src/features/users/user.model.js';
 import Habit from '../src/features/habits/habit.model.js';
 import { MilestonePost, MilestoneLike } from '../src/features/milestones/milestone.model.js';
 import { Story, StoryLike, StoryComment } from '../src/features/stories/story.model.js';
-import { Friendship } from '../src/features/social/social.model.js';
+import { FriendRequest, Friendship } from '../src/features/social/social.model.js';
 import { Notification } from '../src/features/notifications/notification.model.js';
 
 let mongo;
@@ -85,6 +85,7 @@ before(async () => {
 afterEach(async () => {
   await Promise.all([
     User.deleteMany({}),
+    FriendRequest.deleteMany({}),
     Friendship.deleteMany({}),
     Habit.deleteMany({}),
     MilestonePost.deleteMany({}),
@@ -285,6 +286,35 @@ test('unfriending after a comment preserves historical owner notification but re
     .get(`/api/stories/${storyB._id}/comments`)
     .set('Authorization', authHeader(userA))
     .expect(404);
+});
+
+test('blocking deletes pending friend request and its notification', async () => {
+  const userA = await buildUser({ username: 'request_blocker_a', firstName: 'Alex' });
+  const userB = await buildUser({ username: 'request_blocker_b', firstName: 'Blair' });
+
+  await request(app)
+    .post('/api/social/friends/requests')
+    .set('Authorization', authHeader(userA))
+    .send({ recipientId: userB._id.toString() })
+    .expect(201);
+
+  assert.equal(await FriendRequest.countDocuments({ requester: userA._id, recipient: userB._id }), 1);
+  assert.equal(
+    await Notification.countDocuments({
+      recipient: userB._id,
+      actor: userA._id,
+      type: 'friend_request_received',
+    }),
+    1,
+  );
+
+  await request(app)
+    .post(`/api/social/block/${userA._id}`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+
+  assert.equal(await FriendRequest.countDocuments({}), 0);
+  assert.equal(await Notification.countDocuments(notificationBetweenUsers(userA, userB)), 0);
 });
 
 test('blocking the post owner after commenting removes the comment and related notifications', async () => {
