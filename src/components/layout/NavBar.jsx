@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNotificationStream } from '@/hooks/useNotificationStream';
 import { BarChart3, Bell, Dumbbell, Home, PackageOpen, ShoppingBag, Trash2, Trophy, UserRound, UsersRound } from 'lucide-react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
@@ -156,6 +156,8 @@ export function NavBar({
     const notificationMenuRef = useRef(null);
     const notificationListRef = useRef(null);
     const readingNotificationIdsRef = useRef(new Set());
+    const pendingNotificationReadPromisesRef = useRef(new Map());
+    const hasLoadedNotificationsRef = useRef(false);
     // Stays true while the notification dropdown is open so background refreshes
     // don't overwrite the bell counter mid-session.
     const isMenuOpenRef = useRef(false);
@@ -168,6 +170,43 @@ export function NavBar({
     const navProfilePictureUrl = user?.profilePictureUrl;
     const isPremium = user?.isPremium === true || user?.role === 'admin';
     const displayedUnreadNotificationCount = user ? unreadNotificationCount : 0;
+
+    const markNotificationReadOnce = useCallback((notificationId, { keepVisibleUnread = false } = {}) => {
+        const pendingPromise = pendingNotificationReadPromisesRef.current.get(notificationId);
+        if (pendingPromise) {
+            return pendingPromise;
+        }
+
+        readingNotificationIdsRef.current.add(notificationId);
+
+        const readPromise = markNotificationRead(notificationId)
+            .then((updatedNotification) => {
+                setNotifications((currentNotifications) =>
+                    currentNotifications.map((notification) =>
+                        notification.id === notificationId
+                            ? { ...notification, readAt: updatedNotification.readAt }
+                            : notification
+                    )
+                );
+
+                if (!keepVisibleUnread) {
+                    setVisibleUnreadNotificationIds((currentIds) => {
+                        const nextIds = new Set(currentIds);
+                        nextIds.delete(notificationId);
+                        return nextIds;
+                    });
+                }
+
+                return updatedNotification;
+            })
+            .finally(() => {
+                readingNotificationIdsRef.current.delete(notificationId);
+                pendingNotificationReadPromisesRef.current.delete(notificationId);
+            });
+
+        pendingNotificationReadPromisesRef.current.set(notificationId, readPromise);
+        return readPromise;
+    }, []);
 
     useEffect(() => {
         if (!user) {
@@ -208,15 +247,15 @@ export function NavBar({
 
     // Real-time SSE: prepend new notifications instantly.
     useNotificationStream((notification) => {
-        setUnreadNotificationCount((c) => c + 1);
-        // Only mutate the visible list if the dropdown is already open (it has
-        // been fetched). If it's closed the next bell-click fetch will include
-        // it anyway.
+        setUnreadNotificationCount((currentCount) => (
+            isMenuOpenRef.current ? currentCount : currentCount + 1
+        ));
         setNotifications((current) => {
-            if (current.length === 0) return current; // dropdown not yet opened
+            if (!hasLoadedNotificationsRef.current) return current;
+            if (current.some((currentNotification) => currentNotification.id === notification.id)) return current;
             return [notification, ...current];
         });
-        if (isNotificationMenuOpen) {
+        if (isMenuOpenRef.current) {
             setVisibleUnreadNotificationIds((currentIds) => {
                 const nextIds = new Set(currentIds);
                 nextIds.add(notification.id);
@@ -266,24 +305,8 @@ export function NavBar({
                         return;
                     }
 
-                    readingNotificationIdsRef.current.add(notificationId);
-
-                    markNotificationRead(notificationId)
-                        .then((updatedNotification) => {
-                            setNotifications((currentNotifications) =>
-                                currentNotifications.map((notification) =>
-                                    notification.id === notificationId
-                                        ? { ...notification, readAt: updatedNotification.readAt }
-                                        : notification
-                                )
-                            );
-                            // Do NOT update unreadNotificationCount or dispatch the
-                            // refresh event here — the bell counter is frozen while
-                            // the dropdown is open and will sync when it closes.
-                        })
-                        .catch(() => {
-                            readingNotificationIdsRef.current.delete(notificationId);
-                        });
+                    markNotificationReadOnce(notificationId, { keepVisibleUnread: true })
+                        .catch(() => {});
                 });
             },
             {
@@ -299,7 +322,7 @@ export function NavBar({
         return () => {
             observer.disconnect();
         };
-    }, [isNotificationMenuOpen, notifications]);
+    }, [isNotificationMenuOpen, markNotificationReadOnce, notifications]);
 
     async function handleNotificationBellClick() {
         const nextIsOpen = !isNotificationMenuOpen;
@@ -315,6 +338,7 @@ export function NavBar({
         }
 
         setIsLoadingNotifications(true);
+        hasLoadedNotificationsRef.current = true;
 
         try {
             const notificationList = await getNotifications();
@@ -386,6 +410,9 @@ export function NavBar({
     }
 
     function handleNotificationClick(notificationId) {
+        const targetNotification = notifications.find((notification) => notification.id === notificationId);
+        const wasUnread = targetNotification && !targetNotification.readAt;
+
         setVisibleUnreadNotificationIds((currentIds) => {
             const nextIds = new Set(currentIds);
             nextIds.delete(notificationId);
@@ -394,7 +421,18 @@ export function NavBar({
         // Close the menu and re-sync the bell counter.
         isMenuOpenRef.current = false;
         setIsNotificationMenuOpen(false);
-        window.dispatchEvent(new Event('howly:notifications-updated'));
+
+        if (!wasUnread) {
+            window.dispatchEvent(new Event('howly:notifications-updated'));
+            return;
+        }
+
+        setUnreadNotificationCount((currentCount) => Math.max(0, currentCount - 1));
+        markNotificationReadOnce(notificationId)
+            .catch(() => {})
+            .finally(() => {
+                window.dispatchEvent(new Event('howly:notifications-updated'));
+            });
     }
 
     return (
