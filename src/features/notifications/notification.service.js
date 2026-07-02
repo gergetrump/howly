@@ -66,6 +66,17 @@ export function pushToUser(userId, eventName, payload) {
   }
 }
 
+export function notifyNotificationsChanged(...userIds) {
+  const uniqueUserIds = new Set(
+    userIds
+      .flat()
+      .filter(Boolean)
+      .map((id) => id.toString())
+  );
+
+  uniqueUserIds.forEach((id) => pushToUser(id, 'refresh', {}));
+}
+
 function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
 }
@@ -115,6 +126,17 @@ function toNotificationResponse(notification) {
     createdAt: notification.createdAt,
     updatedAt: notification.updatedAt,
   };
+}
+
+export async function deleteNotificationsByFilter(filter) {
+  const recipients = await Notification.distinct('recipient', filter);
+  const result = await Notification.deleteMany(filter);
+
+  if ((result.deletedCount ?? 0) > 0) {
+    notifyNotificationsChanged(recipients);
+  }
+
+  return result;
 }
 
 export async function createNotification({
@@ -231,6 +253,10 @@ export async function markAsRead({ userId, types }) {
     $set: { readAt: new Date() },
   });
 
+  if ((result.modifiedCount ?? 0) > 0) {
+    notifyNotificationsChanged(userId);
+  }
+
   return { modifiedCount: result.modifiedCount ?? 0 };
 }
 
@@ -253,6 +279,10 @@ export async function markNotificationAsRead({ userId, notificationId }) {
   )
     .populate('actor');
 
+  if (notification) {
+    notifyNotificationsChanged(userId);
+  }
+
   return {
     notification: notification ? toNotificationResponse(notification) : null,
   };
@@ -260,6 +290,10 @@ export async function markNotificationAsRead({ userId, notificationId }) {
 
 export async function clearAll({ userId }) {
   const result = await Notification.deleteMany({ recipient: userId });
+
+  if ((result.deletedCount ?? 0) > 0) {
+    notifyNotificationsChanged(userId);
+  }
 
   return { deletedCount: result.deletedCount ?? 0 };
 }
@@ -273,6 +307,10 @@ export async function deleteNotification({ userId, notificationId }) {
     _id: notificationId,
     recipient: userId,
   });
+
+  if (result) {
+    notifyNotificationsChanged(userId);
+  }
 
   return { deleted: Boolean(result) };
 }

@@ -254,6 +254,10 @@ test('a friend can like and unlike a story (toggle)', async () => {
   assert.equal(likeResponse.body.liked, true);
   assert.equal(likeResponse.body.story.likeCount, 1);
   assert.equal(likeResponse.body.story.likedByCurrentUser, true);
+  assert.equal(
+    await Notification.countDocuments({ recipient: owner._id, actor: friend._id, type: 'story_liked' }),
+    1,
+  );
 
   const unlikeResponse = await request(app)
     .post(`/api/stories/${story._id}/like`)
@@ -262,6 +266,10 @@ test('a friend can like and unlike a story (toggle)', async () => {
 
   assert.equal(unlikeResponse.body.liked, false);
   assert.equal(unlikeResponse.body.story.likeCount, 0);
+  assert.equal(
+    await Notification.countDocuments({ recipient: owner._id, actor: friend._id, type: 'story_liked' }),
+    0,
+  );
 });
 
 test('users can like and unlike their own story', async () => {
@@ -497,6 +505,7 @@ test('the owner can delete their story along with its likes', async () => {
     .post(`/api/stories/${story._id}/like`)
     .set('Authorization', authHeader(friend))
     .expect(200);
+  assert.equal(await Notification.countDocuments({ entityType: 'story', entityId: story._id }), 1);
 
   await request(app)
     .delete(`/api/stories/${story._id}`)
@@ -505,6 +514,7 @@ test('the owner can delete their story along with its likes', async () => {
 
   assert.equal(await Story.countDocuments({}), 0);
   assert.equal(await StoryLike.countDocuments({}), 0);
+  assert.equal(await Notification.countDocuments({ entityType: 'story', entityId: story._id }), 0);
 });
 
 test('users cannot delete stories of other users (404)', async () => {
@@ -600,6 +610,15 @@ test('a friend can comment on a story and delete their comment', async () => {
     .expect(201);
 
   const commentId = commentResponse.body.id;
+  assert.equal(
+    await Notification.countDocuments({
+      recipient: owner._id,
+      actor: friend._id,
+      type: 'story_commented',
+      entityId: story._id,
+    }),
+    1,
+  );
 
   const stranger = await buildUser();
 
@@ -621,6 +640,15 @@ test('a friend can comment on a story and delete their comment', async () => {
     .expect(200);
 
   assert.equal(getResponse.body.length, 0);
+  assert.equal(
+    await Notification.countDocuments({
+      recipient: owner._id,
+      actor: friend._id,
+      type: 'story_commented',
+      entityId: story._id,
+    }),
+    0,
+  );
 });
 
 test('strangers cannot comment on a story (404)', async () => {
@@ -661,6 +689,7 @@ test('a user can reply to a comment, and deleting the parent comment deletes rep
     .expect(201);
 
   assert.equal(replyRes.body.parentComment, parentId);
+  assert.equal(await Notification.countDocuments({ entityType: 'story', entityId: story._id }), 1);
 
   // Check comment count on story document
   const updatedStory = await Story.findById(story._id);
@@ -693,6 +722,7 @@ test('a user can reply to a comment, and deleting the parent comment deletes rep
   // Check if story commentCount is decremented by 2 (back to 0)
   const finalStory = await Story.findById(story._id);
   assert.equal(finalStory.commentCount, 0);
+  assert.equal(await Notification.countDocuments({ entityType: 'story', entityId: story._id }), 0);
 });
 
 test('requests without auth token are rejected', async () => {

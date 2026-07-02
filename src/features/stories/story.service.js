@@ -13,7 +13,7 @@ import Habit from '../habits/habit.model.js';
 import Challenge from '../challenges/challenge.model.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cloudinary.service.js';
 import { toPublicUser } from '../users/user.service.js';
-import { createNotification } from '../notifications/notification.service.js';
+import { createNotification, deleteNotificationsByFilter } from '../notifications/notification.service.js';
 import User from '../users/user.model.js';
 
 const HOUR_IN_MS = 60 * 60 * 1000;
@@ -31,6 +31,33 @@ function buildFriendshipPair(firstUserId, secondUserId) {
 async function areFriends(firstUserId, secondUserId) {
   const friendship = await Friendship.findOne(buildFriendshipPair(firstUserId, secondUserId)).lean();
   return Boolean(friendship);
+}
+
+async function deleteStoryLikeNotification({ storyId, actorId, recipientId }) {
+  await deleteNotificationsByFilter({
+    recipient: recipientId,
+    actor: actorId,
+    type: 'story_liked',
+    entityType: 'story',
+    entityId: storyId,
+  });
+}
+
+async function deleteStoryCommentNotifications(commentIds) {
+  if (!commentIds.length) return;
+
+  await deleteNotificationsByFilter({
+    type: { $in: ['story_commented', 'story_tagged'] },
+    entityType: 'story',
+    'metadata.commentId': { $in: commentIds },
+  });
+}
+
+async function deleteStoryNotifications(storyId) {
+  await deleteNotificationsByFilter({
+    entityType: 'story',
+    entityId: storyId,
+  });
 }
 
 export function toStoryResponse(story, likedStoryIds = new Set()) {
@@ -299,6 +326,11 @@ export async function toggleStoryLike({ userId, storyId }) {
 
   if (existingLike) {
     await existingLike.deleteOne();
+    await deleteStoryLikeNotification({
+      storyId: story._id,
+      actorId: userId,
+      recipientId: story.user,
+    });
     story.likeCount = Math.max(0, story.likeCount - 1);
     await story.save();
     await story.populate('user');
@@ -384,6 +416,7 @@ export async function deleteStory({ userId, storyId }) {
 
   await StoryLike.deleteMany({ story: story._id });
   await StoryComment.deleteMany({ story: story._id });
+  await deleteStoryNotifications(story._id);
   await story.deleteOne();
 
   return { deleted: true };
@@ -541,12 +574,17 @@ export async function deleteStoryComment({ userId, storyId, commentId }) {
     return { errorCode: 'COMMENT_NOT_FOUND' };
   }
 
+  const deletedCommentIds = [comment._id];
+
   // If this is a parent comment, delete all its replies as well
   if (!comment.parentComment) {
+    const replies = await StoryComment.find({ parentComment: comment._id }, '_id').lean();
+    deletedCommentIds.push(...replies.map((reply) => reply._id));
     await StoryComment.deleteMany({ parentComment: comment._id });
   }
 
   await comment.deleteOne();
+  await deleteStoryCommentNotifications(deletedCommentIds);
 
   const remainingCommentCount = await StoryComment.countDocuments({ story: storyId });
   await Story.updateOne({ _id: storyId }, { commentCount: remainingCommentCount });
