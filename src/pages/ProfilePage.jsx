@@ -24,6 +24,7 @@ import {
     updateCurrentUser,
 } from '@/services/userService';
 import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
+import { NotificationMuteDialog } from '@/components/social/NotificationMuteDialog.jsx';
 import { useAuth } from '@/context/authContext';
 import { createManagePremiumSession } from '@/services/paymentService';
 
@@ -112,6 +113,7 @@ export function ProfilePage() {
     const [isDeletingPicture, setIsDeletingPicture] = useState(false);
     const [pictureError, setPictureError] = useState('');
     const [isBlockedUsersDialogOpen, setIsBlockedUsersDialogOpen] = useState(false);
+    const [isMuteDialogOpen, setIsMuteDialogOpen] = useState(false);
 
     function handleUpgradeToPremium() {
         navigate('/premium', {
@@ -367,7 +369,12 @@ export function ProfilePage() {
                             onClick={handleUpgradeToPremium}
                         />
                     )}
-                    <SettingsRow icon={Bell} title="Notifications" />
+                    <SettingsRow
+                        icon={Bell}
+                        title="Notifications"
+                        subtitle="Mute likes, tags, comments, friend requests, or reactions"
+                        onClick={() => setIsMuteDialogOpen(true)}
+                    />
                     <SettingsRow icon={Lock} title="Privacy & Security" />
                 </div>
                 {premiumError && (
@@ -398,6 +405,11 @@ export function ProfilePage() {
             <BlockedUsersDialog
                 open={isBlockedUsersDialogOpen}
                 onOpenChange={setIsBlockedUsersDialogOpen}
+            />
+
+            <NotificationMuteDialog
+                open={isMuteDialogOpen}
+                onOpenChange={setIsMuteDialogOpen}
             />
         </Page>
     );
