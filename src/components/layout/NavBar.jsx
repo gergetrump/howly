@@ -150,6 +150,7 @@ export function NavBar({
     const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
     const [notifications, setNotifications] = useState([]);
     const [removingNotificationIds, setRemovingNotificationIds] = useState([]);
+    const [visibleUnreadNotificationIds, setVisibleUnreadNotificationIds] = useState(new Set());
     const [isNotificationMenuOpen, setIsNotificationMenuOpen] = useState(false);
     const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
     const notificationMenuRef = useRef(null);
@@ -209,12 +210,20 @@ export function NavBar({
             if (current.length === 0) return current; // dropdown not yet opened
             return [notification, ...current];
         });
+        if (isNotificationMenuOpen) {
+            setVisibleUnreadNotificationIds((currentIds) => {
+                const nextIds = new Set(currentIds);
+                nextIds.add(notification.id);
+                return nextIds;
+            });
+        }
     }, Boolean(user));
 
     useEffect(() => {
         function handleDocumentPointerDown(event) {
             if (!notificationMenuRef.current?.contains(event.target)) {
                 setIsNotificationMenuOpen(false);
+                setVisibleUnreadNotificationIds(new Set());
             }
         }
 
@@ -287,6 +296,7 @@ export function NavBar({
         setIsNotificationMenuOpen(nextIsOpen);
 
         if (!nextIsOpen) {
+            setVisibleUnreadNotificationIds(new Set());
             return;
         }
 
@@ -294,11 +304,16 @@ export function NavBar({
 
         try {
             const notificationList = await getNotifications();
+            const nextNotifications = notificationList ?? [];
 
-            setNotifications(notificationList ?? []);
+            setNotifications(nextNotifications);
             setRemovingNotificationIds([]);
+            setVisibleUnreadNotificationIds(
+                new Set(nextNotifications.filter((notification) => !notification.readAt).map((notification) => notification.id))
+            );
         } catch {
             setNotifications([]);
+            setVisibleUnreadNotificationIds(new Set());
         } finally {
             setIsLoadingNotifications(false);
         }
@@ -309,6 +324,7 @@ export function NavBar({
             await clearNotifications();
             setNotifications([]);
             setRemovingNotificationIds([]);
+            setVisibleUnreadNotificationIds(new Set());
             setUnreadNotificationCount(0);
             window.dispatchEvent(new Event('howly:notifications-updated'));
         } catch {
@@ -332,6 +348,11 @@ export function NavBar({
                 setNotifications((currentNotifications) =>
                     currentNotifications.filter((notification) => notification.id !== notificationId)
                 );
+                setVisibleUnreadNotificationIds((currentIds) => {
+                    const nextIds = new Set(currentIds);
+                    nextIds.delete(notificationId);
+                    return nextIds;
+                });
                 setRemovingNotificationIds((currentIds) =>
                     currentIds.filter((currentId) => currentId !== notificationId)
                 );
@@ -342,6 +363,15 @@ export function NavBar({
                 currentIds.filter((currentId) => currentId !== notificationId)
             );
         }
+    }
+
+    function handleNotificationClick(notificationId) {
+        setVisibleUnreadNotificationIds((currentIds) => {
+            const nextIds = new Set(currentIds);
+            nextIds.delete(notificationId);
+            return nextIds;
+        });
+        setIsNotificationMenuOpen(false);
     }
 
     return (
@@ -442,6 +472,7 @@ export function NavBar({
                                             notifications.map((notification) => {
                                                 const isRemoving = removingNotificationIds.includes(notification.id);
                                                 const isUnread = !notification.readAt;
+                                                const isVisuallyUnread = visibleUnreadNotificationIds.has(notification.id);
 
                                                 return (
                                                 <Link
@@ -452,29 +483,34 @@ export function NavBar({
                                                     data-unread={isUnread ? 'true' : 'false'}
                                                     className={cn(
                                                         'group notification-row flex gap-3 rounded-xl px-3 py-3 transition duration-200',
-                                                        isUnread
-                                                            ? 'bg-slate-700/30 text-slate-300 hover:bg-slate-700/45'
-                                                            : 'bg-violet-500/10 text-violet-100 hover:bg-violet-500/20',
+                                                        isVisuallyUnread
+                                                            ? 'bg-violet-500/10 text-violet-100 hover:bg-violet-500/20'
+                                                            : 'bg-slate-700/30 text-slate-300 hover:bg-slate-700/45',
                                                         isRemoving && 'translate-x-8 opacity-0',
                                                     )}
-                                                    onClick={() => setIsNotificationMenuOpen(false)}
+                                                    onClick={() => handleNotificationClick(notification.id)}
                                                 >
                                                     <span
                                                         className={cn(
                                                             'mt-1 flex size-8 shrink-0 items-center justify-center rounded-full text-sm',
-                                                            isUnread ? 'bg-slate-600/50' : 'bg-violet-400/20',
+                                                            isVisuallyUnread ? 'bg-violet-400/20' : 'bg-slate-600/50',
                                                         )}
                                                     >
                                                         <Bell
-                                                            className={cn('size-4', isUnread ? 'text-slate-300' : 'text-violet-100')}
+                                                            className={cn('size-4', isVisuallyUnread ? 'text-violet-100' : 'text-slate-300')}
                                                             aria-hidden="true"
                                                         />
                                                     </span>
                                                     <span className="min-w-0 flex-1">
-                                                        <span className={cn('block text-sm font-semibold leading-snug', isUnread ? 'text-slate-300' : 'text-white')}>
-                                                            {getNotificationMessage(notification)}
+                                                        <span className="flex items-start gap-2">
+                                                            {isVisuallyUnread ? (
+                                                                <span className="mt-1.5 size-2 shrink-0 rounded-full bg-red-500" aria-hidden="true" />
+                                                            ) : null}
+                                                            <span className={cn('block text-sm font-semibold leading-snug', isVisuallyUnread ? 'text-white' : 'text-slate-300')}>
+                                                                {getNotificationMessage(notification)}
+                                                            </span>
                                                         </span>
-                                                        <span className={cn('mt-1 block text-xs', isUnread ? 'text-slate-500' : 'text-violet-200/70')}>
+                                                        <span className={cn('mt-1 block text-xs', isVisuallyUnread ? 'text-violet-200/70' : 'text-slate-500')}>
                                                             {formatNotificationTime(notification.createdAt)}
                                                         </span>
                                                     </span>
