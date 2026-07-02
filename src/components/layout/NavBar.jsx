@@ -62,8 +62,16 @@ function getNotificationMessage(notification) {
             return `${actorName} liked your post`;
         case 'story_commented':
             return `${actorName} commented on your post`;
-        case 'story_tagged':
-            return `${actorName} tagged you in a post`;
+        case 'story_tagged': {
+            if (notification.metadata?.taggedOnOwnPost) {
+                return `${actorName} tagged you on your post`;
+            }
+
+            const storyOwnerName = notification.metadata?.storyOwnerName;
+            return storyOwnerName
+                ? `${actorName} tagged you on ${storyOwnerName}'s post`
+                : `${actorName} tagged you in a post`;
+        }
         default:
             return `${actorName} has an update for you`;
     }
