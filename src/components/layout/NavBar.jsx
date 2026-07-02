@@ -87,6 +87,27 @@ function getNotificationLink(notification) {
     }
 }
 
+function getNotificationNavigationState(notification) {
+    const storyId = notification.entityId;
+    const commentId = notification.metadata?.commentId;
+
+    if (!storyId) {
+        return undefined;
+    }
+
+    if (notification.type === 'story_tagged' || notification.type === 'story_commented' || notification.type === 'story_liked') {
+        return {
+            notificationJump: {
+                storyId,
+                commentId: commentId ?? null,
+                token: `${notification.id}-${Date.now()}`,
+            },
+        };
+    }
+
+    return undefined;
+}
+
 function formatNotificationTime(createdAt) {
     if (!createdAt) {
         return '';
@@ -418,6 +439,7 @@ export function NavBar({
                                                 <Link
                                                     key={notification.id}
                                                     to={getNotificationLink(notification)}
+                                                    state={getNotificationNavigationState(notification)}
                                                     data-notification-id={notification.id}
                                                     data-unread={isUnread ? 'true' : 'false'}
                                                     className={cn(
