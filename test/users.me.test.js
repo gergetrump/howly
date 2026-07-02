@@ -115,3 +115,42 @@ test('PATCH /api/users/me updates profile fields', async () => {
     assert.equal(updatedUser.lastName, 'Updated Last Name');
     assert.equal(updatedUser.email, 'updated@example.com');
 });
+
+test('PATCH /api/users/me merges partial notification preference updates', async () => {
+    const user = await buildUser({
+        notificationPreferences: {
+            muteAll: false,
+            muteTag: true,
+            muteFriendRequest: true,
+            muteComment: false,
+            muteLike: false,
+            muteReaction: true,
+        },
+    });
+    const token = signAccessToken(user);
+
+    const response = await request(app)
+        .patch('/api/users/me')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+            notificationPreferences: {
+                muteLike: true,
+            },
+        })
+        .expect(200);
+
+    assert.deepEqual(response.body.notificationPreferences, {
+        muteAll: false,
+        muteTag: true,
+        muteFriendRequest: true,
+        muteComment: false,
+        muteLike: true,
+        muteReaction: true,
+    });
+
+    const updatedUser = await User.findById(user._id).lean();
+    assert.equal(updatedUser.notificationPreferences.muteTag, true);
+    assert.equal(updatedUser.notificationPreferences.muteFriendRequest, true);
+    assert.equal(updatedUser.notificationPreferences.muteLike, true);
+    assert.equal(updatedUser.notificationPreferences.muteReaction, true);
+});

@@ -5,6 +5,14 @@ const isNonEmptyString = (value) => typeof value === 'string' && value.trim().le
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
+const NOTIFICATION_PREFERENCE_KEYS = [
+    'muteAll',
+    'muteTag',
+    'muteFriendRequest',
+    'muteComment',
+    'muteLike',
+    'muteReaction',
+];
 
 // Validate user id params coming from the request
 export function validateUserId(id) {
@@ -88,15 +96,16 @@ export function validateUpdateUserInput(body = {}) {
         updates.ghostMode = Boolean(body.ghostMode);
     }
 
-    if (body.notificationPreferences !== undefined && typeof body.notificationPreferences === 'object' && body.notificationPreferences !== null) {
-        updates.notificationPreferences = {
-            muteAll: Boolean(body.notificationPreferences.muteAll),
-            muteTag: Boolean(body.notificationPreferences.muteTag),
-            muteFriendRequest: Boolean(body.notificationPreferences.muteFriendRequest),
-            muteComment: Boolean(body.notificationPreferences.muteComment),
-            muteLike: Boolean(body.notificationPreferences.muteLike),
-            muteReaction: Boolean(body.notificationPreferences.muteReaction),
-        };
+    if (body.notificationPreferences !== undefined) {
+        if (typeof body.notificationPreferences !== 'object' || body.notificationPreferences === null || Array.isArray(body.notificationPreferences)) {
+            errors.push('notificationPreferences must be an object');
+        } else {
+            NOTIFICATION_PREFERENCE_KEYS.forEach((key) => {
+                if (body.notificationPreferences[key] !== undefined) {
+                    updates[`notificationPreferences.${key}`] = Boolean(body.notificationPreferences[key]);
+                }
+            });
+        }
     }
 
     if (Object.keys(updates).length === 0 && errors.length === 0) {
