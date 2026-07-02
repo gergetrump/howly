@@ -36,6 +36,7 @@ export function SocialFeed({
     targetStoryId = null,
     targetCommentId = null,
     targetCommentToken = null,
+    onTargetCommentHandled,
 }) {
     return (
         <PageSection title="Feed" className="min-w-0 lg:max-w-[64rem]">
@@ -63,6 +64,7 @@ export function SocialFeed({
                                 defaultOpenComments={post.id === targetStoryId}
                                 targetCommentId={post.id === targetStoryId ? targetCommentId : null}
                                 targetCommentToken={post.id === targetStoryId ? targetCommentToken : null}
+                                onTargetCommentHandled={onTargetCommentHandled}
                             >
                                 <ReactionButton
                                     liked={post.likedByCurrentUser}

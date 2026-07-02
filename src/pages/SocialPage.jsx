@@ -178,11 +178,28 @@ export function SocialPage() {
     useEffect(() => {
         if (!targetStoryId || feed.length === 0 || hasScrolledRef.current) return;
         hasScrolledRef.current = true;
+        let cancelled = false;
+        const cleanupEvents = [];
+
+        function cancelPendingJump() {
+            cancelled = true;
+        }
+
+        ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach((eventName) => {
+            window.addEventListener(eventName, cancelPendingJump, { once: true, passive: true, capture: true });
+            cleanupEvents.push(() => window.removeEventListener(eventName, cancelPendingJump, { capture: true }));
+        });
+
         const timer = setTimeout(() => {
+            if (cancelled) return;
             const el = document.querySelector(`[data-story-id="${targetStoryId}"]`);
-            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el?.scrollIntoView({ behavior: 'auto', block: 'center' });
         }, 150);
-        return () => clearTimeout(timer);
+        return () => {
+            cancelled = true;
+            cleanupEvents.forEach((cleanup) => cleanup());
+            clearTimeout(timer);
+        };
     }, [targetStoryId, feed]);
 
     function handleActivePanelChange(nextPanel) {
@@ -192,6 +209,10 @@ export function SocialPage() {
             void refreshSocialData({ silent: true });
         }
     }
+
+    const handleTargetCommentHandled = useCallback(() => {
+        setNotificationJump(null);
+    }, []);
 
     function addOutgoingRequest(request) {
         setRequests((currentRequests) => ({
@@ -564,6 +585,7 @@ export function SocialPage() {
                     targetStoryId={targetStoryId}
                     targetCommentId={targetCommentId}
                     targetCommentToken={targetCommentToken}
+                    onTargetCommentHandled={handleTargetCommentHandled}
                 />
 
                 <FriendsPanel

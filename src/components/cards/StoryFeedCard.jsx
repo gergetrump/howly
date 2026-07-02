@@ -122,6 +122,7 @@ export function StoryFeedCard({
     defaultOpenComments = false,
     targetCommentId = null,
     targetCommentToken = null,
+    onTargetCommentHandled,
 }) {
     const [likers, setLikers] = useState([]);
     const [comments, setComments] = useState([]);
@@ -314,6 +315,7 @@ export function StoryFeedCard({
                             blockers={blockers}
                             targetCommentId={targetCommentId}
                             targetCommentToken={targetCommentToken}
+                            onTargetCommentHandled={onTargetCommentHandled}
                             onCommentAdded={() => setLocalStory(prev => ({ ...prev, commentCount: (prev.commentCount || 0) + 1 }))}
                             onCommentDeleted={(count) => setLocalStory(prev => ({ ...prev, commentCount: Math.max(0, (prev.commentCount || 0) - (count || 1)) }))}
                         />

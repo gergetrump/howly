@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Send, Trash2 } from 'lucide-react';
 import { postStoryComment, deleteStoryComment } from '@/services/storyApi';
 import { getUserByUsername } from '@/services/userApi';
@@ -44,13 +44,12 @@ export function StoryCommentSection({
     onCommentDeleted,
     targetCommentId = null,
     targetCommentToken = null,
+    onTargetCommentHandled,
 }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [newComment, setNewComment] = useState('');
     const [replyingTo, setReplyingTo] = useState(null);
     const [expandedParentIds, setExpandedParentIds] = useState(new Set());
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [suggestions, setSuggestions] = useState([]);
     const [error, setError] = useState('');
     const [commentIdToDelete, setCommentIdToDelete] = useState(null);
     const [highlightedCommentId, setHighlightedCommentId] = useState(null);
@@ -59,6 +58,21 @@ export function StoryCommentSection({
     // Tracks which notification click has already been highlighted so background
     // refreshes never replay the same jump while the section is mounted.
     const hasHighlightedRef = useRef(null);
+    const highlightFadeTimerRef = useRef(null);
+    const mentionQuery = newComment.match(/@(\w*)$/)?.[1].toLowerCase() ?? null;
+    const suggestions = useMemo(() => {
+        if (mentionQuery === null) return [];
+
+        const allUsers = [...likers, ...comments.map((c) => c.user)];
+        const uniqueUsers = getUniqueUsers(allUsers);
+
+        return uniqueUsers.filter((u) => {
+            const username = (u?.username || '').toLowerCase();
+            const firstName = (u?.firstName || '').toLowerCase();
+            return username.includes(mentionQuery) || firstName.includes(mentionQuery);
+        });
+    }, [mentionQuery, comments, likers]);
+    const showSuggestions = mentionQuery !== null && suggestions.length > 0;
 
     const confirmDelete = async () => {
         if (commentIdToDelete) {
@@ -67,20 +81,36 @@ export function StoryCommentSection({
         }
     };
 
+    useEffect(() => {
+        return () => clearTimeout(highlightFadeTimerRef.current);
+    }, []);
+
     // When a notification click provides a target comment, scroll to that
     // comment and briefly highlight it once for that click.
     useEffect(() => {
         if (!targetCommentId || isLoading || comments.length === 0) return;
         const highlightKey = targetCommentToken ?? targetCommentId;
         if (hasHighlightedRef.current === highlightKey) return;
-        hasHighlightedRef.current = highlightKey;
 
         const targetComment = comments.find((comment) => comment.id === targetCommentId);
         const parentCommentId = targetComment?.parentComment?.id ?? targetComment?.parentComment;
 
-        let fadeTimer;
+        let cancelled = false;
+        const cleanupEvents = [];
+
+        function cancelPendingJump() {
+            cancelled = true;
+            clearTimeout(highlightFadeTimerRef.current);
+            setHighlightedCommentId(null);
+        }
+
+        ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach((eventName) => {
+            window.addEventListener(eventName, cancelPendingJump, { once: true, passive: true, capture: true });
+            cleanupEvents.push(() => window.removeEventListener(eventName, cancelPendingJump, { capture: true }));
+        });
 
         const expandTimer = setTimeout(() => {
+            if (cancelled) return;
             if (parentCommentId) {
                 setExpandedParentIds((current) => {
                     if (current.has(parentCommentId)) return current;
@@ -92,44 +122,31 @@ export function StoryCommentSection({
         }, 0);
 
         const timer = setTimeout(() => {
+            if (cancelled) return;
             const container = containerRef.current;
             const el = container?.querySelector(`[data-comment-id="${targetCommentId}"]`);
             if (!el) return;
 
-            el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            hasHighlightedRef.current = highlightKey;
+            el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+            clearTimeout(highlightFadeTimerRef.current);
             setHighlightedCommentId(targetCommentId);
+            onTargetCommentHandled?.();
 
-            // Fade the highlight out after 2.5 s.
-            fadeTimer = setTimeout(() => setHighlightedCommentId(null), 2500);
+            // Fade the highlight out after 3 seconds.
+            highlightFadeTimerRef.current = setTimeout(() => {
+                setHighlightedCommentId(null);
+                highlightFadeTimerRef.current = null;
+            }, 3000);
         }, 300);
 
         return () => {
+            cancelled = true;
+            cleanupEvents.forEach((cleanup) => cleanup());
             clearTimeout(expandTimer);
             clearTimeout(timer);
-            clearTimeout(fadeTimer);
         };
-    }, [targetCommentId, targetCommentToken, isLoading, comments]);
-
-
-    useEffect(() => {
-        const match = newComment.match(/@(\w*)$/);
-        if (match) {
-            const query = match[1].toLowerCase();
-            const allUsers = [...likers, ...comments.map((c) => c.user)];
-            const uniqueUsers = getUniqueUsers(allUsers);
-            
-            const filtered = uniqueUsers.filter((u) => {
-                const username = (u?.username || '').toLowerCase();
-                const firstName = (u?.firstName || '').toLowerCase();
-                return username.includes(query) || firstName.includes(query);
-            });
-            
-            setSuggestions(filtered);
-            setShowSuggestions(true);
-        } else {
-            setShowSuggestions(false);
-        }
-    }, [newComment, comments, likers]);
+    }, [targetCommentId, targetCommentToken, isLoading, comments, onTargetCommentHandled]);
 
     function handleSelectSuggestion(user) {
         const mention = `@${user.username} `;
@@ -138,7 +155,6 @@ export function StoryCommentSection({
             if (lastIndex === -1) return prev;
             return prev.substring(0, lastIndex) + mention;
         });
-        setShowSuggestions(false);
     }
 
     const toggleReplies = (parentId) => {
@@ -262,11 +278,11 @@ export function StoryCommentSection({
         return (
             <div
                 data-comment-id={comment.id}
-                className={`flex items-start gap-3 text-sm rounded-lg transition-all duration-700 ${
+                className={`flex items-start gap-3 text-sm rounded-lg transition-colors duration-700 ${
                     isReply ? 'pl-8 mt-2 border-l border-slate-800' : ''
                 } ${
                     isHighlighted
-                        ? 'ring-2 ring-violet-400/60 bg-violet-400/10 p-2 -mx-2'
+                        ? 'ring-2 ring-violet-400/60 bg-violet-400/10'
                         : ''
                 }`}
             >
