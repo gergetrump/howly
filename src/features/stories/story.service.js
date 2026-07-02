@@ -331,6 +331,7 @@ export async function toggleStoryLike({ userId, storyId }) {
     type: 'story_liked',
     entityType: 'story',
     entityId: story._id,
+    deduplicate: true, // one notification per (actor, story) — prevents like-spam
   });
 
   await story.populate('user');

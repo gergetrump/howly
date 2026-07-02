@@ -89,6 +89,7 @@ export async function createNotification({
   entityType,
   entityId,
   metadata = {},
+  deduplicate = false,
 }) {
   if (!recipientId || !actorId || sameId(recipientId, actorId)) {
     return null;
@@ -98,6 +99,39 @@ export async function createNotification({
     throw new Error(`Unsupported notification type: ${type}`);
   }
 
+  if (deduplicate) {
+    // Upsert: at most one notification per (recipient, actor, type, entityId).
+    // Re-uses the compound index on the Notification collection.
+    const filter = { recipient: recipientId, actor: actorId, type, entityId };
+    const result = await Notification.updateOne(
+      filter,
+      {
+        // Always keep entityType and metadata current.
+        $set: { entityType, metadata, readAt: null },
+        // createdAt is only written on insert (ignored on update).
+        $setOnInsert: { createdAt: new Date() },
+      },
+      { upsert: true },
+    );
+
+    // Only push an SSE event when the document is brand-new.
+    // If the actor spam-likes, the owner won't receive repeated pings.
+    if (result.upsertedCount > 0) {
+      try {
+        const notification = await Notification.findOne(filter).populate('actor');
+        if (notification) {
+          pushToUser(recipientId, 'notification', toNotificationResponse(notification));
+        }
+      } catch {
+        // SSE push failure must never break the main flow.
+      }
+    }
+
+    return null;
+  }
+
+  // Default: always create a new document (suitable for types that are
+  // meaningfully distinct even when they share the same entity, e.g. comments).
   const notification = await Notification.create({
     recipient: recipientId,
     actor: actorId,
