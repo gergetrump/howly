@@ -4,7 +4,8 @@ import { FriendRequest, Friendship } from './social.model.js';
 import { Story, StoryLike, StoryComment } from '../stories/story.model.js';
 import { MilestonePost, MilestoneLike } from '../milestones/milestone.model.js';
 import Habit from '../habits/habit.model.js';
-import { createNotification } from '../notifications/notification.service.js';
+import { createNotification, pushToUser } from '../notifications/notification.service.js';
+import { Notification } from '../notifications/notification.model.js';
 
 function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
@@ -189,6 +190,12 @@ export async function acceptFriendRequest({ requestId, userId }) {
     entityId: request._id,
   });
 
+  // Mark the incoming friend request notification as read automatically
+  await Notification.updateOne(
+    { recipient: userId, type: 'friend_request_received', entityId: requestId },
+    { $set: { readAt: new Date() } }
+  );
+
   return {
     request: toFriendRequestResponse(request),
     friendship: toFriendshipResponse(friendship, userId),
@@ -211,6 +218,14 @@ export async function rejectFriendRequest({ requestId, userId }) {
       runValidators: true,
     }
   ).populate(['requester', 'recipient']);
+
+  if (request) {
+    // Mark the incoming friend request notification as read automatically
+    await Notification.updateOne(
+      { recipient: userId, type: 'friend_request_received', entityId: requestId },
+      { $set: { readAt: new Date() } }
+    );
+  }
 
   if (!request) {
     return { errorCode: 'PENDING_FRIEND_REQUEST_NOT_FOUND' };
@@ -367,6 +382,18 @@ export async function blockUser({ userId, targetUserId }) {
       })
     );
   }
+
+  // Remove all notifications between these two users in both directions.
+  await Notification.deleteMany({
+    $or: [
+      { actor: userId,       recipient: targetUserId },
+      { actor: targetUserId, recipient: userId },
+    ],
+  });
+
+  // Notify both users' active clients to refresh their notification counts
+  pushToUser(userId, 'refresh', {});
+  pushToUser(targetUserId, 'refresh', {});
 
   return { blocked: true };
 }
