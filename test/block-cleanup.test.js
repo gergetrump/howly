@@ -12,9 +12,12 @@ import Habit from '../src/features/habits/habit.model.js';
 import { MilestonePost, MilestoneLike } from '../src/features/milestones/milestone.model.js';
 import { Story, StoryLike, StoryComment } from '../src/features/stories/story.model.js';
 import { Friendship } from '../src/features/social/social.model.js';
+import { Notification } from '../src/features/notifications/notification.model.js';
 
 let mongo;
 let app;
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 async function buildUser(overrides = {}) {
   const suffix = Math.random().toString(36).slice(2, 10);
@@ -32,6 +35,40 @@ async function buildUser(overrides = {}) {
 async function makeFriends(firstUser, secondUser) {
   const [userA, userB] = [firstUser._id.toString(), secondUser._id.toString()].sort();
   return Friendship.create({ userA, userB });
+}
+
+async function buildHabit(owner, overrides = {}) {
+  return Habit.create({
+    title: overrides.title || 'Reading',
+    icon: overrides.icon || '📚',
+    type: 'boolean',
+    frequency: 'Daily',
+    ownerId: owner._id,
+    ...overrides,
+  });
+}
+
+async function buildStory(owner, habit, overrides = {}) {
+  return Story.create({
+    user: owner._id,
+    sourceType: 'habit',
+    sourceId: habit._id,
+    sourceTitle: habit.title,
+    imageUrl: 'https://example.com/story.jpg',
+    imagePublicId: overrides.imagePublicId || `howly/stories/${owner.username}`,
+    feedExpiresAt: new Date(Date.now() + 7 * DAY_IN_MS),
+    archiveExpiresAt: new Date(Date.now() + 90 * DAY_IN_MS),
+    ...overrides,
+  });
+}
+
+function notificationBetweenUsers(firstUser, secondUser) {
+  return {
+    $or: [
+      { actor: firstUser._id, recipient: secondUser._id },
+      { actor: secondUser._id, recipient: firstUser._id },
+    ],
+  };
 }
 
 function authHeader(user) {
@@ -55,6 +92,7 @@ afterEach(async () => {
     Story.deleteMany({}),
     StoryLike.deleteMany({}),
     StoryComment.deleteMany({}),
+    Notification.deleteMany({}),
   ]);
 });
 
@@ -207,6 +245,104 @@ test('blocking a user hides their comments on a mutual friend story', async () =
 
   // User A should not see User B's comment
   assert.equal(commentsRes.body.length, 0);
+});
+
+test('unfriending after a comment preserves historical owner notification but removes future story access', async () => {
+  const userA = await buildUser({ username: 'case1_a', firstName: 'Alex' });
+  const userB = await buildUser({ username: 'case1_b', firstName: 'Blair' });
+  const friendship = await makeFriends(userA, userB);
+  const habitB = await buildHabit(userB);
+  const storyB = await buildStory(userB, habitB, { imagePublicId: 'howly/stories/unfriend-after-comment' });
+
+  const commentResponse = await request(app)
+    .post(`/api/stories/${storyB._id}/comments`)
+    .set('Authorization', authHeader(userA))
+    .send({ content: 'Nice post @case1_b' })
+    .expect(201);
+
+  await request(app)
+    .delete(`/api/social/friends/${friendship._id}`)
+    .set('Authorization', authHeader(userA))
+    .expect(204);
+
+  assert.ok(await StoryComment.exists({ _id: commentResponse.body.id }));
+
+  const notification = await Notification.findOne({
+    recipient: userB._id,
+    actor: userA._id,
+    type: 'story_tagged',
+  }).lean();
+
+  assert.ok(notification);
+  assert.equal(notification.metadata.commentId.toString(), commentResponse.body.id);
+
+  await request(app)
+    .get(`/api/stories/${storyB._id}/comments`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+
+  await request(app)
+    .get(`/api/stories/${storyB._id}/comments`)
+    .set('Authorization', authHeader(userA))
+    .expect(404);
+});
+
+test('blocking the post owner after commenting removes the comment and related notifications', async () => {
+  const userA = await buildUser({ username: 'case2_a', firstName: 'Alex' });
+  const userB = await buildUser({ username: 'case2_b', firstName: 'Blair' });
+  await makeFriends(userA, userB);
+  const habitB = await buildHabit(userB);
+  const storyB = await buildStory(userB, habitB, { imagePublicId: 'howly/stories/commenter-blocks-owner' });
+
+  const commentResponse = await request(app)
+    .post(`/api/stories/${storyB._id}/comments`)
+    .set('Authorization', authHeader(userA))
+    .send({ content: 'Nice post @case2_b' })
+    .expect(201);
+
+  assert.ok(await StoryComment.exists({ _id: commentResponse.body.id }));
+  assert.equal(await Notification.countDocuments(notificationBetweenUsers(userA, userB)), 1);
+
+  await request(app)
+    .post(`/api/social/block/${userB._id}`)
+    .set('Authorization', authHeader(userA))
+    .expect(200);
+
+  assert.equal(await StoryComment.countDocuments({ story: storyB._id }), 0);
+  assert.equal(await Notification.countDocuments(notificationBetweenUsers(userA, userB)), 0);
+  assert.equal(await Friendship.countDocuments(), 0);
+
+  const updatedStory = await Story.findById(storyB._id).lean();
+  assert.equal(updatedStory.commentCount, 0);
+});
+
+test('blocking the commenter after they commented removes the comment and related notifications', async () => {
+  const userA = await buildUser({ username: 'case3_a', firstName: 'Alex' });
+  const userB = await buildUser({ username: 'case3_b', firstName: 'Blair' });
+  await makeFriends(userA, userB);
+  const habitB = await buildHabit(userB);
+  const storyB = await buildStory(userB, habitB, { imagePublicId: 'howly/stories/owner-blocks-commenter' });
+
+  const commentResponse = await request(app)
+    .post(`/api/stories/${storyB._id}/comments`)
+    .set('Authorization', authHeader(userA))
+    .send({ content: 'Nice post @case3_b' })
+    .expect(201);
+
+  assert.ok(await StoryComment.exists({ _id: commentResponse.body.id }));
+  assert.equal(await Notification.countDocuments(notificationBetweenUsers(userA, userB)), 1);
+
+  await request(app)
+    .post(`/api/social/block/${userA._id}`)
+    .set('Authorization', authHeader(userB))
+    .expect(200);
+
+  assert.equal(await StoryComment.countDocuments({ story: storyB._id }), 0);
+  assert.equal(await Notification.countDocuments(notificationBetweenUsers(userA, userB)), 0);
+  assert.equal(await Friendship.countDocuments(), 0);
+
+  const updatedStory = await Story.findById(storyB._id).lean();
+  assert.equal(updatedStory.commentCount, 0);
 });
 
 test('story comment count stays viewer-visible after blocking when liking a mutual friend story', async () => {
