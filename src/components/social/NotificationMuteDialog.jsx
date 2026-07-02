@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BellOff, Loader2 } from 'lucide-react';
+import { BellOff } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -10,18 +10,80 @@ import {
 import { useAuth } from '@/context/authContext';
 import { updateCurrentUser } from '@/services/userService';
 
+const DEFAULT_NOTIFICATION_PREFERENCES = {
+    muteAll: false,
+    muteTag: false,
+    muteFriendRequest: false,
+    muteComment: false,
+    muteLike: false,
+    muteReaction: false,
+};
+
+const MUTE_OPTIONS = [
+    {
+        key: 'muteAll',
+        label: 'Mute All',
+        description: 'Silence all notification types',
+        featured: true,
+    },
+    {
+        key: 'muteTag',
+        label: 'Tags & Mentions',
+        description: 'Notifications when users tag you in stories',
+    },
+    {
+        key: 'muteFriendRequest',
+        label: 'Friend Requests',
+        description: 'Sent and accepted friend requests',
+    },
+    {
+        key: 'muteComment',
+        label: 'Comments',
+        description: 'Replies and comments on your stories',
+    },
+    {
+        key: 'muteLike',
+        label: 'Likes',
+        description: 'When users like your stories',
+    },
+    {
+        key: 'muteReaction',
+        label: 'Reactions',
+        description: 'Reactions to your milestones',
+    },
+];
+
+function NotificationToggleRow({ option, checked, disabled, onToggle }) {
+    return (
+        <div className={`flex items-center justify-between p-3 ${option.featured ? 'rounded-2xl border border-white/5' : 'rounded-xl'} bg-white/5`}>
+            <div>
+                <p className="font-semibold text-sm text-white">{option.label}</p>
+                <p className="text-xs text-slate-400">{option.description}</p>
+            </div>
+            <button
+                type="button"
+                onClick={onToggle}
+                disabled={disabled}
+                role="switch"
+                aria-checked={checked}
+                className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${
+                    checked ? 'justify-end bg-violet-500' : 'justify-start bg-slate-600'
+                }`}
+            >
+                <span className="size-5 rounded-full bg-white shadow-sm" />
+            </button>
+        </div>
+    );
+}
+
 export function NotificationMuteDialog({ open, onOpenChange }) {
     const { user, setUser } = useAuth();
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
 
-    const prefs = user?.notificationPreferences ?? {
-        muteAll: false,
-        muteTag: false,
-        muteFriendRequest: false,
-        muteComment: false,
-        muteLike: false,
-        muteReaction: false,
+    const prefs = {
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        ...(user?.notificationPreferences ?? {}),
     };
 
     async function handleToggle(key) {
@@ -29,13 +91,10 @@ export function NotificationMuteDialog({ open, onOpenChange }) {
         setIsSaving(true);
         setError('');
 
-        const nextPrefs = {
-            ...prefs,
-            [key]: !prefs[key],
-        };
+        const nextPrefs = { ...prefs, [key]: !prefs[key] };
 
         try {
-            const updated = await updateCurrentUser({ notificationPreferences: nextPrefs });
+            const updated = await updateCurrentUser({ notificationPreferences: { [key]: nextPrefs[key] } });
             setUser((current) => (current ? { ...current, notificationPreferences: updated?.notificationPreferences ?? nextPrefs } : current));
         } catch (err) {
             setError(err.message || 'Failed to update preferences');
@@ -60,132 +119,29 @@ export function NotificationMuteDialog({ open, onOpenChange }) {
                 {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
 
                 <div className="mt-4 space-y-4">
-                    {/* Mute All Toggle */}
-                    <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5">
-                        <div>
-                            <p className="font-semibold text-sm text-white">Mute All</p>
-                            <p className="text-xs text-slate-400">Silence all notification types</p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => handleToggle('muteAll')}
+                    {MUTE_OPTIONS.filter((option) => option.featured).map((option) => (
+                        <NotificationToggleRow
+                            key={option.key}
+                            option={option}
+                            checked={prefs[option.key]}
                             disabled={isSaving}
-                            role="switch"
-                            aria-checked={prefs.muteAll}
-                            className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${
-                                prefs.muteAll ? 'justify-end bg-violet-500' : 'justify-start bg-slate-600'
-                            }`}
-                        >
-                            <span className="size-5 rounded-full bg-white shadow-sm" />
-                        </button>
-                    </div>
+                            onToggle={() => handleToggle(option.key)}
+                        />
+                    ))}
 
                     <div className={`space-y-3 transition-all duration-300 ${prefs.muteAll ? 'opacity-40 pointer-events-none' : ''}`}>
-                        {/* Mute Tags */}
-                        <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
-                            <div>
-                                <p className="font-semibold text-sm text-white">Tags & Mentions</p>
-                                <p className="text-xs text-slate-400">Notifications when users tag you in stories</p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => handleToggle('muteTag')}
+                        {MUTE_OPTIONS.filter((option) => !option.featured).map((option) => (
+                            <NotificationToggleRow
+                                key={option.key}
+                                option={option}
+                                checked={prefs[option.key]}
                                 disabled={isSaving || prefs.muteAll}
-                                role="switch"
-                                aria-checked={prefs.muteTag}
-                                className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${
-                                    prefs.muteTag ? 'justify-end bg-violet-500' : 'justify-start bg-slate-600'
-                                }`}
-                            >
-                                <span className="size-5 rounded-full bg-white shadow-sm" />
-                            </button>
-                        </div>
-
-                        {/* Mute Friend Requests */}
-                        <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
-                            <div>
-                                <p className="font-semibold text-sm text-white">Friend Requests</p>
-                                <p className="text-xs text-slate-400">Sent and accepted friend requests</p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => handleToggle('muteFriendRequest')}
-                                disabled={isSaving || prefs.muteAll}
-                                role="switch"
-                                aria-checked={prefs.muteFriendRequest}
-                                className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${
-                                    prefs.muteFriendRequest ? 'justify-end bg-violet-500' : 'justify-start bg-slate-600'
-                                }`}
-                            >
-                                <span className="size-5 rounded-full bg-white shadow-sm" />
-                            </button>
-                        </div>
-
-                        {/* Mute Comments */}
-                        <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
-                            <div>
-                                <p className="font-semibold text-sm text-white">Comments</p>
-                                <p className="text-xs text-slate-400">Replies and comments on your stories</p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => handleToggle('muteComment')}
-                                disabled={isSaving || prefs.muteAll}
-                                role="switch"
-                                aria-checked={prefs.muteComment}
-                                className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${
-                                    prefs.muteComment ? 'justify-end bg-violet-500' : 'justify-start bg-slate-600'
-                                }`}
-                            >
-                                <span className="size-5 rounded-full bg-white shadow-sm" />
-                            </button>
-                        </div>
-
-                        {/* Mute Likes */}
-                        <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
-                            <div>
-                                <p className="font-semibold text-sm text-white">Likes</p>
-                                <p className="text-xs text-slate-400">When users like your stories</p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => handleToggle('muteLike')}
-                                disabled={isSaving || prefs.muteAll}
-                                role="switch"
-                                aria-checked={prefs.muteLike}
-                                className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${
-                                    prefs.muteLike ? 'justify-end bg-violet-500' : 'justify-start bg-slate-600'
-                                }`}
-                            >
-                                <span className="size-5 rounded-full bg-white shadow-sm" />
-                            </button>
-                        </div>
-
-                        {/* Mute Reactions */}
-                        <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
-                            <div>
-                                <p className="font-semibold text-sm text-white">Reactions</p>
-                                <p className="text-xs text-slate-400">Reactions to your milestones</p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => handleToggle('muteReaction')}
-                                disabled={isSaving || prefs.muteAll}
-                                role="switch"
-                                aria-checked={prefs.muteReaction}
-                                className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${
-                                    prefs.muteReaction ? 'justify-end bg-violet-500' : 'justify-start bg-slate-600'
-                                }`}
-                            >
-                                <span className="size-5 rounded-full bg-white shadow-sm" />
-                            </button>
-                        </div>
+                                onToggle={() => handleToggle(option.key)}
+                            />
+                        ))}
                     </div>
                 </div>
-
-
             </DialogContent>
         </Dialog>
     );
 }
-

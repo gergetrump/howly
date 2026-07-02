@@ -292,31 +292,55 @@ export function NavBar({
             return undefined;
         }
 
+        const notificationsById = new Map(notifications.map((notification) => [notification.id, notification]));
+
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
                     const notificationId = entry.target.dataset.notificationId;
 
-                    if (
-                        !notificationId
-                        || entry.intersectionRatio < 0.98
-                        || readingNotificationIdsRef.current.has(notificationId)
-                    ) {
+                    if (!notificationId) {
                         return;
                     }
 
-                    markNotificationReadOnce(notificationId, { keepVisibleUnread: true })
-                        .catch(() => {});
+                    const notification = notificationsById.get(notificationId);
+                    const isRead = Boolean(notification?.readAt);
+                    const isFullyVisible = entry.intersectionRatio >= 0.98;
+
+                    if (isFullyVisible && !isRead) {
+                        setVisibleUnreadNotificationIds((currentIds) => {
+                            if (currentIds.has(notificationId)) return currentIds;
+                            const nextIds = new Set(currentIds);
+                            nextIds.add(notificationId);
+                            return nextIds;
+                        });
+
+                        if (!readingNotificationIdsRef.current.has(notificationId)) {
+                            markNotificationReadOnce(notificationId, { keepVisibleUnread: true })
+                                .catch(() => {});
+                        }
+
+                        return;
+                    }
+
+                    if (!isFullyVisible && (isRead || readingNotificationIdsRef.current.has(notificationId))) {
+                        setVisibleUnreadNotificationIds((currentIds) => {
+                            if (!currentIds.has(notificationId)) return currentIds;
+                            const nextIds = new Set(currentIds);
+                            nextIds.delete(notificationId);
+                            return nextIds;
+                        });
+                    }
                 });
             },
             {
                 root: listElement,
-                threshold: 0.98,
+                threshold: [0, 0.98],
             }
         );
 
         listElement
-            .querySelectorAll('[data-unread="true"]')
+            .querySelectorAll('[data-notification-id]')
             .forEach((element) => observer.observe(element));
 
         return () => {
