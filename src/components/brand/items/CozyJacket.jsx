@@ -66,10 +66,10 @@ export default function CozyJacket({
             <g id="Group 45">
                 <g id="Group 44">
                     <path id="Rectangle 4" d="M228 546C172.771 546 128 501.228 128 446V150.918C128 79.319 201.044 30.9188 266.98 58.8285L526.48 168.671C563.468 184.328 587.5 220.596 587.5 260.761V446C587.5 501.228 542.728 546 487.5 546H228Z" fill={jacketColor}/>
-                    <g id="Vector 4" filter="url(#filter1_f_123_53)">
+                    <g id="Vector 4">
                         <path d="M415.5 544.5V475.5C467.985 461.726 488.74 442.757 505 382M907.5 544.5V475.5" stroke={jacketSeamColor} strokeWidth="8"/>
                     </g>
-                    <g id="Vector 5" filter="url(#filter2_f_123_53)">
+                    <g id="Vector 5">
                         <path d="M133 148L580 230" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
                     </g>
                     <g id="Group 21">
@@ -91,10 +91,10 @@ export default function CozyJacket({
             <g id="Group 46">
                 <g id="Group 44_2">
                     <path id="Rectangle 4_2" d="M1095.5 546C1150.73 546 1195.5 501.228 1195.5 446V150.918C1195.5 79.319 1122.46 30.9188 1056.52 58.8285L797.02 168.671C760.032 184.328 736 220.596 736 260.761V446C736 501.228 780.772 546 836 546H1095.5Z" fill={jacketColor}/>
-                    <g id="Vector 4_2" filter="url(#filter4_f_123_53)">
+                    <g id="Vector 4_2">
                         <path d="M908 544.5V475.5C855.515 461.726 834.76 442.757 818.5 382M416 544.5V475.5" stroke={jacketSeamColor} strokeWidth="8"/>
                     </g>
-                    <g id="Vector 5_2" filter="url(#filter5_f_123_53)">
+                    <g id="Vector 5_2">
                         <path d="M1190.5 148L743.5 230" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
                     </g>
                     <g id="Group 21_2">
@@ -124,16 +124,6 @@ export default function CozyJacket({
             <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_123_53"/>
             <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_123_53" result="shape"/>
         </filter>
-        <filter id="filter1_f_123_53" x="407.5" y="376.966" width="508" height="171.534" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-            <feFlood floodOpacity="0" result="BackgroundImageFix"/>
-            <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
-            <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_123_53"/>
-        </filter>
-        <filter id="filter2_f_123_53" x="125.999" y="141" width="461.001" height="96.001" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-            <feFlood floodOpacity="0" result="BackgroundImageFix"/>
-            <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
-            <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_123_53"/>
-        </filter>
         <filter id="filter3_d_123_53" x="175.999" y="63" width="14" height="99" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
             <feFlood floodOpacity="0" result="BackgroundImageFix"/>
             <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
@@ -143,16 +133,6 @@ export default function CozyJacket({
             <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
             <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_123_53"/>
             <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_123_53" result="shape"/>
-        </filter>
-        <filter id="filter4_f_123_53" x="408" y="376.966" width="508" height="171.534" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-            <feFlood floodOpacity="0" result="BackgroundImageFix"/>
-            <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
-            <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_123_53"/>
-        </filter>
-        <filter id="filter5_f_123_53" x="736.5" y="141" width="461.001" height="96.001" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-            <feFlood floodOpacity="0" result="BackgroundImageFix"/>
-            <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
-            <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_123_53"/>
         </filter>
     </defs>
         </svg>
