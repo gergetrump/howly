@@ -247,7 +247,7 @@ export function FriendsPanel({
                                     busy={busyRequestId === request.id}
                                     onAccept={onAcceptRequest}
                                     onReject={onRejectRequest}
-                                    onBlock={onBlockUser}
+                                    onOpenProfile={onOpenProfile}
                                 />
                             ))}
                         </div>

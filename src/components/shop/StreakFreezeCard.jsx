@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import { CircleHelp } from 'lucide-react';
 
 import { useAuth } from '@/context/authContext';
 import { getItems } from '@/services/itemApi';
-import { buyItem } from '@/services/inventoryApi';
 import { ItemCard } from '@/components/cards';
 import { ActionButton } from '@/components/common';
 import { StreakShieldIcon } from '@/components/brand/StreakShieldIcon.jsx';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Catalog asset key for the consumable Streak Freeze (mirrors the backend).
 const STREAK_FREEZE_ASSET_KEY = 'streak-freeze';
@@ -13,14 +14,23 @@ const STREAK_FREEZE_ASSET_KEY = 'streak-freeze';
 const MAX_STREAK_SHIELDS = 3;
 
 // Shop card for the Streak Freeze power-up. Renders as a normal ItemCard (same
-// look as the wearable items) but with a single Buy button — no try-on, since
-// it's a consumable. Buying grants +1 shield (capped) via the shared inventory
-// endpoint; the backend special-cases this asset, so we apply the returned wallet.
-export function StreakFreezeCard() {
-    const { user, setUser } = useAuth();
+// look as the wearable items) but with cart/buy controls like boost power-ups.
+// Buying grants +1 shield through the shared inventory endpoint; the backend
+// special-cases this asset and keeps the reserve capped.
+export function StreakFreezeCard({
+    onAddToCart,
+    onBuy,
+    getCartQuantity,
+    isCartQuantityMax,
+    isOwnedQuantityMax,
+    isBuying,
+    isFreeUser,
+    onPremiumRequired,
+}) {
+    const { user } = useAuth();
     const [item, setItem] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isBuying, setIsBuying] = useState(false);
+    const [isHelpOpen, setIsHelpOpen] = useState(false);
 
     useEffect(() => {
         let active = true;
@@ -53,41 +63,17 @@ export function StreakFreezeCard() {
     }
 
     const owned = user?.streakShields ?? 0;
-    const isAtMax = owned >= MAX_STREAK_SHIELDS;
-    const canAfford = (user?.coins ?? 0) >= item.price;
-    const isDisabled = isBuying || isAtMax || !canAfford;
+    const cartQuantity = getCartQuantity?.(item) ?? 0;
+    const cartQuantityMax = isCartQuantityMax?.(item) ?? false;
+    const ownedQuantityMax = isOwnedQuantityMax?.(item) ?? owned >= MAX_STREAK_SHIELDS;
 
-    let label = 'Buy';
-    if (isBuying) {
-        label = 'Buying…';
-    } else if (isAtMax) {
-        label = 'Full';
-    }
-
-    async function handleBuy() {
-        if (isDisabled) {
+    function guardPremium(action) {
+        if (isFreeUser && item?.premiumOnly) {
+            onPremiumRequired?.();
             return;
         }
 
-        setIsBuying(true);
-
-        try {
-            const result = await buyItem(item._id);
-
-            // Consumable purchase returns the fresh wallet — apply it so the header
-            // coins and freeze count update instantly.
-            setUser((current) => (current
-                ? {
-                    ...current,
-                    coins: result?.coins ?? current.coins,
-                    streakShields: result?.streakShields ?? current.streakShields,
-                }
-                : current));
-        } catch {
-            // The disabled states cover the expected cases; ignore transient errors.
-        } finally {
-            setIsBuying(false);
-        }
+        action();
     }
 
     return (
@@ -96,16 +82,46 @@ export function StreakFreezeCard() {
             price={item.price}
             showOwnedBadge={false}
             dense
+            titleAction={(
+                <Popover open={isHelpOpen} onOpenChange={setIsHelpOpen}>
+                    <PopoverTrigger asChild>
+                        <button
+                            type="button"
+                            className="grid h-6 w-6 place-items-center rounded-full border border-white/10 bg-white/10 text-slate-200 transition hover:bg-white/20 hover:text-white"
+                            aria-label="What does Streak Shield do?"
+                        >
+                            <CircleHelp className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                        align="end"
+                        side="bottom"
+                        sideOffset={8}
+                        className="z-[120] w-56 rounded-xl border border-violet-200/20 bg-slate-950/95 p-3 text-left text-[11px] font-semibold leading-snug text-slate-100 shadow-xl shadow-slate-950/30"
+                    >
+                        Save one habit streak or your overall streak before the repair time runs out. You can hold up to 3 shields.
+                    </PopoverContent>
+                </Popover>
+            )}
             visual={<StreakShieldIcon className="h-full w-auto py-1" />}
         >
             <ActionButton
                 type="button"
                 fullWidth
-                className="col-span-2 h-8 px-3 text-xs"
-                disabled={isDisabled}
-                onClick={handleBuy}
+                className="h-8 px-3 text-xs disabled:bg-white/10 disabled:text-slate-500"
+                disabled={cartQuantityMax}
+                onClick={() => guardPremium(() => onAddToCart?.(item))}
             >
-                {label}
+                {cartQuantity > 0 ? `${cartQuantity}x in cart` : cartQuantityMax ? 'Max 3' : 'Add to cart'}
+            </ActionButton>
+            <ActionButton
+                type="button"
+                fullWidth
+                className="h-8 px-3 text-xs disabled:bg-white/10 disabled:text-slate-500"
+                disabled={isBuying || ownedQuantityMax}
+                onClick={() => guardPremium(() => onBuy?.(item))}
+            >
+                {isBuying ? 'Buying...' : ownedQuantityMax ? 'Full' : 'Buy'}
             </ActionButton>
         </ItemCard>
     );

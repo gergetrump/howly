@@ -30,6 +30,7 @@ import {
     updateCurrentUser,
 } from '@/services/userService';
 import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
+import { NotificationMuteDialog } from '@/components/social/NotificationMuteDialog.jsx';
 import { useAuth } from '@/context/authContext';
 import { createManagePremiumSession } from '@/services/paymentService';
 import { sendFeedback } from '@/services/feedbackService';
@@ -302,6 +303,7 @@ export function ProfilePage() {
     const [isSendingFeedback, setIsSendingFeedback] = useState(false);
     const [feedbackError, setFeedbackError] = useState('');
     const [feedbackSuccess, setFeedbackSuccess] = useState('');
+    const [isMuteDialogOpen, setIsMuteDialogOpen] = useState(false);
 
     function handleUpgradeToPremium() {
         navigate('/premium', {
@@ -594,7 +596,13 @@ export function ProfilePage() {
                             onClick={handleUpgradeToPremium}
                         />
                     )}
-                    <SettingsRow icon={Bell} title="Notifications" subtitle="Email preferences" onClick={() => setIsNotificationsDialogOpen(true)} />
+                    <SettingsRow
+                        icon={Bell}
+                        title="Notifications"
+                        subtitle="Mute likes, tags, comments, friend requests, or reactions"
+                        onClick={() => setIsMuteDialogOpen(true)}
+                    />
+                    <SettingsRow icon={Lock} title="Privacy & Security" />
                 </div>
                 {premiumError && (
                     <p className="mt-3 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -641,6 +649,11 @@ export function ProfilePage() {
                 isSubmitting={isSendingFeedback}
                 error={feedbackError}
                 success={feedbackSuccess}
+            />
+
+            <NotificationMuteDialog
+                open={isMuteDialogOpen}
+                onOpenChange={setIsMuteDialogOpen}
             />
         </Page>
     );

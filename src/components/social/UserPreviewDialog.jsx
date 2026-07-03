@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { AlertTriangle, Plus } from 'lucide-react';
 import { AlertDialog as AlertDialogPrimitive } from 'radix-ui';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +18,7 @@ import {
     ConfirmationDialogTitle,
 } from '@/components/ui/confirmation-dialog';
 import { UserAvatar } from '@/components/social/UserProfileTrigger.jsx';
+import { ReportUserDialog } from '@/components/social/ReportUserDialog.jsx';
 import { getDisplayName, getUsername } from '@/components/social/socialHelpers.js';
 import { getFriendHabits } from '@/services/socialApi';
 
@@ -26,6 +27,8 @@ export function UserPreviewDialog({
     relationship,
     busy,
     isBlocked = false,
+    isBlockedByMe = false,
+    hasBlockedCurrentUser = false,
     onClose,
     onAddFriend,
     onAcceptRequest,
@@ -34,13 +37,18 @@ export function UserPreviewDialog({
 }) {
     const isOpen = Boolean(user);
     const [isBlockConfirmOpen, setIsBlockConfirmOpen] = useState(false);
+    const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
 
     const friendId = user?.id || user?._id;
     const isFriend = relationship?.status === 'friends';
+    const isProfileRestricted = isBlockedByMe || hasBlockedCurrentUser;
     const [loadedHabits, setLoadedHabits] = useState({ userId: null, habits: [] });
+    const previewUser = isProfileRestricted && user
+        ? { ...user, profilePictureUrl: null, isPremium: false, role: undefined }
+        : user;
 
     useEffect(() => {
-        if (!friendId || !isFriend) {
+        if (!friendId || !isFriend || isProfileRestricted) {
             return undefined;
         }
 
@@ -60,7 +68,7 @@ export function UserPreviewDialog({
         return () => {
             active = false;
         };
-    }, [friendId, isFriend]);
+    }, [friendId, isFriend, isProfileRestricted]);
 
     const habitsLoaded = loadedHabits.userId === friendId;
     const friendHabits = habitsLoaded ? loadedHabits.habits : [];
@@ -134,17 +142,17 @@ export function UserPreviewDialog({
 
                     {user ? (
                         <div className="flex flex-col items-center gap-4 text-center">
-                            <UserAvatar user={user} className="size-20" />
+                            <UserAvatar user={previewUser} className="size-20" />
                             <div>
                                 <h3 className="text-2xl font-bold">{getDisplayName(user)}</h3>
                                 <p className="text-slate-300">@{getUsername(user)}</p>
-                                {isGhostFriend ? (
+                                {!isProfileRestricted && isGhostFriend ? (
                                     <p className="mt-2 text-sm font-medium text-slate-300">👻 In Ghost Mode</p>
-                                ) : (
+                                ) : !isProfileRestricted ? (
                                     <p className="mt-2 text-sm font-medium text-slate-200">🔥 {user?.streak ?? 0} days</p>
-                                )}
+                                ) : null}
                             </div>
-                            {isFriend && !isGhostFriend ? (
+                            {isFriend && !isGhostFriend && !isProfileRestricted ? (
                                 <div className="w-full">
                                     <p className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Habits</p>
                                     {!habitsLoaded ? (
@@ -169,7 +177,16 @@ export function UserPreviewDialog({
                             ) : (
                                 <div className="flex flex-col gap-2.5 w-full mt-2 items-center">
                                     {renderAction()}
-                                    {isBlocked ? (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        className="bg-white/10 text-slate-200 hover:bg-white/15 hover:text-white w-auto px-6 h-8 text-xs font-semibold rounded-full mx-auto"
+                                        onClick={() => setIsReportDialogOpen(true)}
+                                    >
+                                        <AlertTriangle className="mr-1 size-3.5" aria-hidden="true" />
+                                        Report
+                                    </Button>
+                                    {isBlockedByMe ? (
                                         <Button
                                             type="button"
                                             size="sm"
@@ -233,6 +250,12 @@ export function UserPreviewDialog({
                     </ConfirmationDialogFooter>
                 </ConfirmationDialogContent>
             </ConfirmationDialog>
+
+            <ReportUserDialog
+                user={user}
+                open={isReportDialogOpen}
+                onOpenChange={setIsReportDialogOpen}
+            />
         </>
     );
 }

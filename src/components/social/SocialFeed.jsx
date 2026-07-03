@@ -33,6 +33,11 @@ export function SocialFeed({
     onOpenProfile,
     blockedUsers = [],
     blockers = [],
+    targetStoryId = null,
+    targetCommentId = null,
+    targetCommentToken = null,
+    onTargetCommentHandled,
+    onTargetCommentUnavailable,
 }) {
     return (
         <PageSection title="Feed" className="min-w-0 lg:max-w-[64rem]">
@@ -57,6 +62,11 @@ export function SocialFeed({
                                 blockedUsers={blockedUsers}
                                 blockers={blockers}
                                 fullImage
+                                defaultOpenComments={post.id === targetStoryId}
+                                targetCommentId={post.id === targetStoryId ? targetCommentId : null}
+                                targetCommentToken={post.id === targetStoryId ? targetCommentToken : null}
+                                onTargetCommentHandled={onTargetCommentHandled}
+                                onTargetCommentUnavailable={onTargetCommentUnavailable}
                             >
                                 <ReactionButton
                                     liked={post.likedByCurrentUser}
@@ -67,25 +77,26 @@ export function SocialFeed({
                                 />
                             </StoryFeedCard>
                         ) : (
-                            <FeedPostCard
-                                key={`milestone-${post.id}`}
-                                authorName={getDisplayName(post.user)}
-                                authorUsername={getUsername(post.user)}
-                                authorAvatarSrc={post.user?.profilePictureUrl}
-                                authorIsPremium={post.user?.isPremium === true || post.user?.role === 'admin'}
-                                meta={formatRelativeTime(post.createdAt)}
-                                companionName={post.companion?.name || 'Howly'}
-                                companionType={post.companion?.type || 'wolf'}
-                                companionEquippedItemConfigs={post.companion?.equippedItemConfigs ?? []}
-                                milestoneTitle={buildMilestoneTitle(post)}
-                            >
-                                <MilestoneReactionPicker
-                                    post={post}
-                                    busy={busyPostId === post.id}
-                                    onReact={onReact}
-                                    onOpenReactions={onOpenReactions}
-                                />
-                            </FeedPostCard>
+                            <div key={`milestone-${post.id}`} data-post-id={post.id}>
+                                <FeedPostCard
+                                    authorName={getDisplayName(post.user)}
+                                    authorUsername={getUsername(post.user)}
+                                    authorAvatarSrc={post.user?.profilePictureUrl}
+                                    authorIsPremium={post.user?.isPremium === true || post.user?.role === 'admin'}
+                                    meta={formatRelativeTime(post.createdAt)}
+                                    companionName={post.companion?.name || 'Howly'}
+                                    companionType={post.companion?.type || 'wolf'}
+                                    companionEquippedItemConfigs={post.companion?.equippedItemConfigs ?? []}
+                                    milestoneTitle={buildMilestoneTitle(post)}
+                                >
+                                    <MilestoneReactionPicker
+                                        post={post}
+                                        busy={busyPostId === post.id}
+                                        onReact={onReact}
+                                        onOpenReactions={onOpenReactions}
+                                    />
+                                </FeedPostCard>
+                            </div>
                         ),
                     )}
                 </CardGrid>

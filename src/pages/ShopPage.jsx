@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import { ActionButton } from '@/components/common';
 import { CompanionAvatar } from '@/components/brand';
@@ -22,7 +22,7 @@ import {
 import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import { StreakFreezeCard } from '@/components/shop/StreakFreezeCard.jsx';
-import { buyItem, getMyInventory } from '@/services/inventoryApi';
+import { buyItem, getBoostPurchaseLimits, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
 import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
 import { confirmCheckoutSession } from '@/services/paymentService';
@@ -31,14 +31,24 @@ import { itemMatchesCategory } from '@/lib/inventoryItems';
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
 const SINGLE_PREVIEW_SLOTS = new Set(['body', 'face', 'hand', 'head', 'neck']);
 const MAX_OWNED_POWER_UP_QUANTITY = 20;
+const MAX_MONTHLY_BOOST_PURCHASE_QUANTITY = 20;
+const STREAK_FREEZE_ASSET_KEY = 'streak-freeze';
+const MAX_STREAK_SHIELDS = 3;
+const BOOST_ASSET_KEYS = new Set(['small-boost', 'medium-boost', 'big-boost']);
+
+function isItemCategoryValue(value) {
+    return ITEM_CATEGORIES.some((category) => category.value === value);
+}
 
 export function ShopPage() {
-    const navigate = useNavigate();
     const { user, setUser, companion } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
+    const initialCategory = searchParams.get('category');
     const [items, setItems] = useState([]);
     const [ownedItemSignatures, setOwnedItemSignatures] = useState(new Set());
     const [ownedPowerUpQuantities, setOwnedPowerUpQuantities] = useState({});
+    const [monthlyBoostPurchaseQuantities, setMonthlyBoostPurchaseQuantities] = useState({});
+    const [monthlyBoostPurchaseLimit, setMonthlyBoostPurchaseLimit] = useState(MAX_MONTHLY_BOOST_PURCHASE_QUANTITY);
     const [previewItems, setPreviewItems] = useState([]);
     const [cartItems, setCartItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -50,8 +60,9 @@ export function ShopPage() {
     const [premiumDialogDescription, setPremiumDialogDescription] = useState(undefined);
     const [premiumDialogShowsUpgradeActions, setPremiumDialogShowsUpgradeActions] = useState(true);
     const [error, setError] = useState('');
-    const [activeCategory, setActiveCategory] = useState('all');
-    const [syncedCategoryParam, setSyncedCategoryParam] = useState(null);
+    const [activeCategory, setActiveCategory] = useState(() => (
+        initialCategory && isItemCategoryValue(initialCategory) ? initialCategory : 'all'
+    ));
     const [premiumReturnItemId, setPremiumReturnItemId] = useState('');
     const [selectedCustomItemId, setSelectedCustomItemId] = useState('');
     const [planInfo, setPlanInfo] = useState(null);
@@ -115,6 +126,14 @@ export function ShopPage() {
 
         return refreshedUser;
     }, [setUser]);
+
+    const refreshBoostPurchaseLimits = useCallback(async () => {
+        const limits = await getBoostPurchaseLimits();
+        setMonthlyBoostPurchaseQuantities(limits?.purchases ?? {});
+        setMonthlyBoostPurchaseLimit(limits?.maxQuantity ?? MAX_MONTHLY_BOOST_PURCHASE_QUANTITY);
+
+        return limits;
+    }, []);
 
     useEffect(() => {
         getCurrentUserPlan()
@@ -209,9 +228,12 @@ export function ShopPage() {
             setError('');
 
             try {
-                const nextItems = await getItems();
                 const token = localStorage.getItem('howly_token');
-                const nextInventory = token ? await getMyInventory() : [];
+                const [nextItems, nextInventory, boostPurchaseLimits] = await Promise.all([
+                    getItems(),
+                    token ? getMyInventory() : Promise.resolve([]),
+                    token ? getBoostPurchaseLimits() : Promise.resolve(null),
+                ]);
 
                 if (isCurrent) {
                     setItems(nextItems);
@@ -225,6 +247,8 @@ export function ShopPage() {
                             .filter((entry) => entry.item?.type === 'powerUp')
                             .map((entry) => [entry.item.assetKey, entry.quantity ?? 1]),
                     ));
+                    setMonthlyBoostPurchaseQuantities(boostPurchaseLimits?.purchases ?? {});
+                    setMonthlyBoostPurchaseLimit(boostPurchaseLimits?.maxQuantity ?? MAX_MONTHLY_BOOST_PURCHASE_QUANTITY);
                 }
             } catch {
                 if (isCurrent) {
@@ -264,14 +288,20 @@ export function ShopPage() {
     const confirmationTotalPrice = itemsToBuy.reduce((total, entry) => total + ((getPurchaseEntryItem(entry)?.price ?? 0) * getPurchaseEntryQuantity(entry)), 0);
     const cartItemCount = cartItems.reduce((total, entry) => total + getPurchaseEntryQuantity(entry), 0);
 
-    // Select the tab from the ?category= URL param (e.g. the dashboard banner's
-    // "Get a freeze" deep-links to ?category=powerUp). Adjusted during render — not
-    // an effect — so it also applies when navigating to an already-mounted shop.
     const requestedCategory = searchParams.get('category');
-    if (requestedCategory !== syncedCategoryParam) {
-        setSyncedCategoryParam(requestedCategory);
-        if (requestedCategory && ITEM_CATEGORIES.some((category) => category.value === requestedCategory)) {
-            setActiveCategory(requestedCategory);
+    const selectedCategory = requestedCategory && isItemCategoryValue(requestedCategory)
+        ? requestedCategory
+        : activeCategory;
+
+    function handleCategoryChange(nextCategory) {
+        setActiveCategory(nextCategory);
+
+        if (searchParams.has('category')) {
+            setSearchParams((currentParams) => {
+                const nextParams = new URLSearchParams(currentParams);
+                nextParams.delete('category');
+                return nextParams;
+            }, { replace: true });
         }
     }
 
@@ -280,11 +310,11 @@ export function ShopPage() {
     const filteredItems = useMemo(
         () => {
             const wearableItems = items.filter((item) => item.type !== 'powerUp');
-            return activeCategory === 'all'
+            return selectedCategory === 'all'
                 ? wearableItems
-                : wearableItems.filter((item) => itemMatchesCategory(item, activeCategory));
+                : wearableItems.filter((item) => itemMatchesCategory(item, selectedCategory));
         },
-        [activeCategory, items],
+        [items, selectedCategory],
     );
     const selectedCustomItem = useMemo(() => {
         const selectedItem = items.find((item) => item._id === selectedCustomItemId);
@@ -386,9 +416,37 @@ export function ShopPage() {
     }
 
     function getOwnedPowerUpQuantity(item) {
+        if (item?.assetKey === STREAK_FREEZE_ASSET_KEY) {
+            return Number(user?.streakShields ?? 0);
+        }
+
         return item?.type === 'powerUp'
             ? Number(ownedPowerUpQuantities[item.assetKey] ?? 0)
             : 0;
+    }
+
+    function isBoostPowerUp(item) {
+        return BOOST_ASSET_KEYS.has(item?.assetKey);
+    }
+
+    function getMonthlyBoostPurchaseQuantity(item) {
+        return isBoostPowerUp(item)
+            ? Number(monthlyBoostPurchaseQuantities[item.assetKey] ?? 0)
+            : 0;
+    }
+
+    function getMaxOwnedQuantityForPowerUp(item) {
+        if (item?.assetKey === STREAK_FREEZE_ASSET_KEY) {
+            return MAX_STREAK_SHIELDS;
+        }
+
+        return MAX_OWNED_POWER_UP_QUANTITY;
+    }
+
+    function getMaxMonthlyQuantityForPowerUp(item) {
+        return isBoostPowerUp(item)
+            ? monthlyBoostPurchaseLimit
+            : Number.POSITIVE_INFINITY;
     }
 
     function getMaxCartQuantityForEntry(entry) {
@@ -398,7 +456,10 @@ export function ShopPage() {
             return 1;
         }
 
-        return Math.max(0, MAX_OWNED_POWER_UP_QUANTITY - getOwnedPowerUpQuantity(item));
+        const ownedRemainingQuantity = getMaxOwnedQuantityForPowerUp(item) - getOwnedPowerUpQuantity(item);
+        const monthlyRemainingQuantity = getMaxMonthlyQuantityForPowerUp(item) - getMonthlyBoostPurchaseQuantity(item);
+
+        return Math.max(0, Math.min(ownedRemainingQuantity, monthlyRemainingQuantity));
     }
 
     function isCartEntryAtQuantityLimit(entry) {
@@ -412,6 +473,26 @@ export function ShopPage() {
         }
 
         return ownedItemSignatures.has(getPurchaseEntrySignature(entry));
+    }
+
+    function isOwnedPowerUpQuantityMax(item) {
+        return getOwnedPowerUpQuantity(item) >= getMaxOwnedQuantityForPowerUp(item);
+    }
+
+    function isMonthlyBoostPurchaseQuantityMax(item) {
+        return isBoostPowerUp(item) && getMonthlyBoostPurchaseQuantity(item) >= monthlyBoostPurchaseLimit;
+    }
+
+    function getPowerUpLimitLabel(item) {
+        if (isOwnedPowerUpQuantityMax(item)) {
+            return 'Inventory full';
+        }
+
+        if (isMonthlyBoostPurchaseQuantityMax(item)) {
+            return 'Monthly limit';
+        }
+
+        return 'Limit reached';
     }
 
     function isCurrentItemInCart(item) {
@@ -591,8 +672,32 @@ export function ShopPage() {
                 const purchasedQuantity = purchasedQuantitiesByCartKey[entry.cartKey] ?? 0;
 
                 if (item?.type === 'powerUp' && purchasedQuantity > 0) {
+                    if (item.assetKey === STREAK_FREEZE_ASSET_KEY) {
+                        return;
+                    }
+
                     nextQuantities[item.assetKey] = Math.min(
                         MAX_OWNED_POWER_UP_QUANTITY,
+                        Number(nextQuantities[item.assetKey] ?? 0) + purchasedQuantity,
+                    );
+                }
+            });
+
+            return nextQuantities;
+        });
+    }
+
+    function addPurchasedMonthlyBoostQuantities(purchasedQuantitiesByCartKey, purchasedEntries) {
+        setMonthlyBoostPurchaseQuantities((currentQuantities) => {
+            const nextQuantities = { ...currentQuantities };
+
+            purchasedEntries.forEach((entry) => {
+                const item = getPurchaseEntryItem(entry);
+                const purchasedQuantity = purchasedQuantitiesByCartKey[entry.cartKey] ?? 0;
+
+                if (isBoostPowerUp(item) && purchasedQuantity > 0) {
+                    nextQuantities[item.assetKey] = Math.min(
+                        monthlyBoostPurchaseLimit,
                         Number(nextQuantities[item.assetKey] ?? 0) + purchasedQuantity,
                     );
                 }
@@ -634,6 +739,7 @@ export function ShopPage() {
                 return nextOwnedItemSignatures;
             });
             addPurchasedPowerUpQuantities(purchasedQuantitiesByCartKey, entriesForPurchase);
+            addPurchasedMonthlyBoostQuantities(purchasedQuantitiesByCartKey, entriesForPurchase);
             setCartItems((currentCartItems) => currentCartItems.flatMap((entry) => {
                 const purchasedQuantity = purchasedQuantitiesByCartKey[entry.cartKey] ?? 0;
 
@@ -644,7 +750,10 @@ export function ShopPage() {
                 const remainingQuantity = getPurchaseEntryQuantity(entry) - purchasedQuantity;
                 return remainingQuantity > 0 ? [{ ...entry, quantity: remainingQuantity }] : [];
             }));
-            await refreshCurrentUser();
+            await Promise.all([
+                refreshCurrentUser(),
+                refreshBoostPurchaseLimits(),
+            ]);
             setItemsToBuy([]);
         } catch (buyError) {
             if (Object.keys(purchasedQuantitiesByCartKey).length > 0) {
@@ -658,6 +767,7 @@ export function ShopPage() {
                     return nextOwnedItemSignatures;
                 });
                 addPurchasedPowerUpQuantities(purchasedQuantitiesByCartKey, entriesForPurchase);
+                addPurchasedMonthlyBoostQuantities(purchasedQuantitiesByCartKey, entriesForPurchase);
                 setCartItems((currentCartItems) => currentCartItems.flatMap((entry) => {
                     const purchasedQuantity = purchasedQuantitiesByCartKey[entry.cartKey] ?? 0;
 
@@ -668,7 +778,10 @@ export function ShopPage() {
                     const remainingQuantity = getPurchaseEntryQuantity(entry) - purchasedQuantity;
                     return remainingQuantity > 0 ? [{ ...entry, quantity: remainingQuantity }] : [];
                 }));
-                await refreshCurrentUser();
+                await Promise.all([
+                    refreshCurrentUser(),
+                    refreshBoostPurchaseLimits(),
+                ]);
             }
 
             const failedItem = getPurchaseEntryItem(failedEntry);
@@ -678,6 +791,11 @@ export function ShopPage() {
             if (buyError.code === 'ITEM_ALREADY_OWNED') {
                 setError('One of these items is already in your inventory');
             } else if (buyError.code === 'BOOST_QUANTITY_LIMIT_REACHED') {
+                await refreshCurrentUser();
+            } else if (buyError.code === 'BOOST_MONTHLY_LIMIT_REACHED') {
+                setError('Monthly boost purchase limit reached for this boost.');
+                await refreshBoostPurchaseLimits();
+            } else if (buyError.code === 'SHIELDS_AT_MAX') {
                 await refreshCurrentUser();
             } else if (buyError.code === 'PREMIUM_REQUIRED') {
                 if (isFreeUser) {
@@ -734,7 +852,7 @@ export function ShopPage() {
 
                 <PageSection title="Shop Items" className="min-w-0">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                        <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+                        <Tabs value={selectedCategory} onValueChange={handleCategoryChange}>
                             <TabsList className="h-auto flex-wrap border border-white/10 bg-white/10 p-1 text-slate-300">
                                 {ITEM_CATEGORIES.map((category) => (
                                     <TabsTrigger
@@ -778,9 +896,26 @@ export function ShopPage() {
                         openBuyConfirmation={openBuyConfirmation}
                         createPurchaseEntry={createPurchaseEntry}
                         buyingItemId={buyingItemId}
-                        leadingCard={activeCategory === 'all' || activeCategory === 'powerUp' ? (
+                        leadingCard={selectedCategory === 'all' || selectedCategory === 'powerUp' ? (
                             <>
-                                <StreakFreezeCard key="streak-freeze" />
+                                <StreakFreezeCard
+                                    key="streak-freeze"
+                                    onAddToCart={handleAddCurrentItemToCart}
+                                    onBuy={(item) => openBuyConfirmation([createPurchaseEntry(item)])}
+                                    getCartQuantity={(item) => {
+                                        const cartEntry = cartItems.find((entry) => entry.cartKey === createPurchaseEntry(item).cartKey);
+                                        return cartEntry ? getPurchaseEntryQuantity(cartEntry) : 0;
+                                    }}
+                                    isCartQuantityMax={(item) => {
+                                        const cartEntry = cartItems.find((entry) => entry.cartKey === createPurchaseEntry(item).cartKey);
+                                        const entry = cartEntry ?? createPurchaseEntry(item);
+                                        return getMaxCartQuantityForEntry(entry) <= 0 || (cartEntry ? isCartEntryAtQuantityLimit(cartEntry) : false);
+                                    }}
+                                    isOwnedQuantityMax={isOwnedPowerUpQuantityMax}
+                                    isBuying={buyingItemId === 'cart'}
+                                    isFreeUser={isFreeUser}
+                                    onPremiumRequired={handlePremiumRequired}
+                                />
                                 <BoostPowerUpCards
                                     key="habit-boosts"
                                     onAddToCart={handleAddCurrentItemToCart}
@@ -794,7 +929,9 @@ export function ShopPage() {
                                         const entry = cartEntry ?? createPurchaseEntry(item);
                                         return getMaxCartQuantityForEntry(entry) <= 0 || (cartEntry ? isCartEntryAtQuantityLimit(cartEntry) : false);
                                     }}
-                                    isOwnedQuantityMax={(item) => getOwnedPowerUpQuantity(item) >= MAX_OWNED_POWER_UP_QUANTITY}
+                                    isOwnedQuantityMax={isOwnedPowerUpQuantityMax}
+                                    isMonthlyQuantityMax={isMonthlyBoostPurchaseQuantityMax}
+                                    getLimitLabel={getPowerUpLimitLabel}
                                     isBuying={buyingItemId === 'cart'}
                                     isFreeUser={isFreeUser}
                                     onPremiumRequired={handlePremiumRequired}
