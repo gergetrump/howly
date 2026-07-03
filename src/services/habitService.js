@@ -19,6 +19,26 @@ export async function getHabitById(habitId) {
 }
 
 /**
+ * Poll until background taxonomy assignment sets a category, or give up.
+ */
+export async function waitForHabitTaxonomy(habitId, { maxAttempts = 10, intervalMs = 1500 } = {}) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        if (attempt > 0) {
+            await new Promise((resolve) => {
+                setTimeout(resolve, intervalMs);
+            });
+        }
+
+        const response = await getHabitById(habitId);
+        if (response?.data?.category) {
+            return response.data;
+        }
+    }
+
+    return null;
+}
+
+/**
  * Create a new habit.
  * data should include: title, frequency, type, description, icon, category
  */
