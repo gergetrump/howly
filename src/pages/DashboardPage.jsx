@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { CardGrid, CompletionCircle, PlanLimitDialog } from '@/components/common';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
@@ -69,7 +70,7 @@ export function DashboardPage() {
     const [habitToEdit, setHabitToEdit] = useState(null);
     const [prefillHabit, setPrefillHabit] = useState(null);
     const [consumeSuggestion, setConsumeSuggestion] = useState(null);
-    const [allHabitsOpen, setAllHabitsOpen] = useState(false);
+    const [habitsTab, setHabitsTab] = useState('today');
     const [milestoneNotice, setMilestoneNotice] = useState(null);
     const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
     const [storyHabit, setStoryHabit] = useState(null);
@@ -420,44 +421,44 @@ export function DashboardPage() {
                 </div>
             )}
 
-            <PageSection 
-                title="Today's Habits" 
+            <PageSection
+                title="My Habits"
                 actionLabel="Add Habit"
                 onAction={openAddHabitDialog}
             >
-                {todaysHabits.length === 0 ? (
-                    <p className="text-sm text-slate-400 text-center py-4">No habits scheduled for today. Take a break!</p>
+                <Tabs value={habitsTab} onValueChange={setHabitsTab}>
+                    <TabsList className="w-full border border-white/10 bg-white/10 text-white">
+                        <TabsTrigger
+                            value="today"
+                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                        >
+                            Today ({todaysHabits.length})
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="all"
+                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                        >
+                            All Habits ({habits.length})
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
+
+                {habitsTab === 'today' ? (
+                    todaysHabits.length === 0 ? (
+                        <p className="text-sm text-slate-400 text-center py-4">No habits scheduled for today. Take a break!</p>
+                    ) : (
+                        <CardGrid columns={todaysHabits.length === 1 ? 1 : 2}>
+                            {todaysHabits.map((habit) => renderHabitCard(habit, true))}
+                        </CardGrid>
+                    )
+                ) : habits.length === 0 ? (
+                    <p className="text-sm text-slate-400 text-center py-4">No habits yet. Click "Add Habit" to start!</p>
                 ) : (
-                    <CardGrid columns={todaysHabits.length === 1 ? 1 : 2}>
-                        {todaysHabits.map((habit) => renderHabitCard(habit, true))}
+                    <CardGrid columns={habits.length === 1 ? 1 : 2}>
+                        {habits.map((habit) => renderHabitCard(habit, false))}
                     </CardGrid>
                 )}
             </PageSection>
-
-            <div className="px-4">
-                <button
-                    type="button"
-                    onClick={() => setAllHabitsOpen(prev => !prev)}
-                    className="flex w-full items-center justify-between rounded-xl bg-white/5 px-4 py-3 text-left transition-colors hover:bg-white/10"
-                >
-                    <span className="text-base font-semibold text-white">All Habits <span className="text-sm font-normal text-slate-400">({habits.length})</span></span>
-                    <ChevronDown
-                        size={20}
-                        className={`text-slate-400 transition-transform duration-200 ${allHabitsOpen ? 'rotate-180' : ''}`}
-                    />
-                </button>
-                {allHabitsOpen && (
-                    <div className="mt-4 space-y-4">
-                        {habits.length === 0 ? (
-                            <p className="text-sm text-slate-400 text-center py-4">No habits yet. Click "Add Habit" to start!</p>
-                        ) : (
-                            <CardGrid columns={habits.length === 1 ? 1 : 2}>
-                                {habits.map((habit) => renderHabitCard(habit, false))}
-                            </CardGrid>
-                        )}
-                    </div>
-                )}
-            </div>
 
             <PageSection title="My Challenges">
                 <CardGrid columns={challengeHabits.length === 1 ? 1 : 2}>
