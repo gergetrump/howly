@@ -44,12 +44,6 @@ const reportSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    status: {
-      type: String,
-      enum: ['open', 'reviewed', 'dismissed'],
-      default: 'open',
-      index: true,
-    },
   },
   {
     timestamps: true,

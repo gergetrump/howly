@@ -82,6 +82,8 @@ test('creating a user report stores tags, text, and attachment metadata', async 
   assert.equal(report.message, 'This user sent suspicious messages.');
   assert.equal(report.attachment.filename, 'evidence.png');
   assert.equal(report.attachment.mimeType, 'image/png');
+  assert.equal(Object.hasOwn(response.body.report, 'status'), false);
+  assert.equal(Object.hasOwn(report, 'status'), false);
 });
 
 test('creating a user report works without optional tags or attachment', async () => {

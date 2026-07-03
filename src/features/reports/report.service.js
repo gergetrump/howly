@@ -10,7 +10,6 @@ function toPublicReport(report) {
     message: report.message,
     attachment: report.attachment,
     emailSent: report.emailSent,
-    status: report.status,
     createdAt: report.createdAt,
   };
 }
