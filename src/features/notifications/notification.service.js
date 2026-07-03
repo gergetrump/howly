@@ -15,6 +15,7 @@ const NOTIFICATION_PREFERENCE_BY_TYPE = {
   story_liked: 'muteLike',
   story_commented: 'muteComment',
   story_tagged: 'muteTag',
+  challenge_invitation_received: 'muteChallengeInvitation',
 };
 
 export function registerSSEClient(userId, res) {

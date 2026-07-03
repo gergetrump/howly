@@ -5,6 +5,7 @@ import Habit from '../habits/habit.model.js';
 import User from '../users/user.model.js';
 import { Friendship } from '../social/social.model.js';
 import { getPlanForUser, hasPremiumAccess } from '../../config/plans.js';
+import { createNotification } from '../notifications/notification.service.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const COINS_PER_CHALLENGE_DAY = 5;
@@ -60,8 +61,71 @@ async function getFriendIds(userId) {
     ));
 }
 
+async function getBlockedRelationshipUserIds(userId) {
+    const [user, blockedMe] = await Promise.all([
+        User.findById(userId).select('blockedUsers').lean(),
+        User.find({ blockedUsers: userId }, '_id').lean(),
+    ]);
+
+    return new Set([
+        ...(user?.blockedUsers ?? []).map((id) => id.toString()),
+        ...blockedMe.map((blockedUser) => blockedUser._id.toString()),
+    ]);
+}
+
+async function hasBlockRelationship(firstUserId, secondUserId) {
+    if (sameId(firstUserId, secondUserId)) {
+        return false;
+    }
+
+    const secondUserIdString = secondUserId.toString();
+    const blockedRelationshipIds = await getBlockedRelationshipUserIds(firstUserId);
+
+    return blockedRelationshipIds.has(secondUserIdString);
+}
+
+function canViewChallengeFromContext(challenge, user, { friendIds = new Set(), blockedRelationshipIds = new Set(), viewerParticipant = null } = {}) {
+    if (isChallengeOwner(challenge, user)) {
+        return true;
+    }
+
+    if (viewerParticipant && viewerParticipant.status !== 'left') {
+        return true;
+    }
+
+    const creatorId = challenge.createdBy.toString();
+
+    if (blockedRelationshipIds.has(creatorId)) {
+        return false;
+    }
+
+    if (challenge.visibility === 'public') {
+        return true;
+    }
+
+    return friendIds.has(creatorId);
+}
+
 async function canViewChallenge(challenge, user) {
-    if (challenge.visibility === 'public' || isChallengeOwner(challenge, user)) {
+    if (isChallengeOwner(challenge, user)) {
+        return true;
+    }
+
+    const viewerParticipant = await ChallengeParticipant.findOne({
+        challenge: challenge._id,
+        user: user.id,
+        status: { $ne: 'left' },
+    }).lean();
+
+    if (viewerParticipant) {
+        return true;
+    }
+
+    if (await hasBlockRelationship(user.id, challenge.createdBy)) {
+        return false;
+    }
+
+    if (challenge.visibility === 'public') {
         return true;
     }
 
@@ -504,12 +568,22 @@ export async function listChallenges(filters = {}, user) {
     const query = conditions.length ? { $and: conditions } : {};
     const challenges = await Challenge.find(query).sort({ createdAt: -1 });
     const challengeIds = challenges.map((challenge) => challenge._id);
-    const [participantCounts, viewerParticipations] = await Promise.all([
+    const [participantCounts, viewerParticipations, visibilityFriendIds, blockedRelationshipIds] = await Promise.all([
         getParticipantCounts(challengeIds),
         getViewerParticipations(challengeIds, user.id),
+        getFriendIds(user.id),
+        getBlockedRelationshipUserIds(user.id),
     ]);
+    const visibilityFriendIdSet = new Set(visibilityFriendIds.map((id) => id.toString()));
+    const visibleChallenges = challenges.filter((challenge) => (
+        canViewChallengeFromContext(challenge, user, {
+            friendIds: visibilityFriendIdSet,
+            blockedRelationshipIds,
+            viewerParticipant: viewerParticipations.get(challenge._id.toString()),
+        })
+    ));
 
-    return challenges.map((challenge) => (
+    return visibleChallenges.map((challenge) => (
         serializeChallenge(
             challenge,
             participantCounts.get(challenge._id.toString()) ?? 0,
@@ -757,6 +831,18 @@ export async function createInvitation(challengeId, inviteeId, user) {
     });
 
     await invitation.populate('challenge');
+
+    await createNotification({
+        recipientId: inviteeId,
+        actorId: user.id,
+        type: 'challenge_invitation_received',
+        entityType: 'challengeInvitation',
+        entityId: invitation._id,
+        metadata: {
+            challengeId: challenge._id.toString(),
+            challengeTitle: challenge.title,
+        },
+    });
 
     const participantCount = await ChallengeParticipant.countDocuments({
         challenge: challengeId,

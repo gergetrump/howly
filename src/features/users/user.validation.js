@@ -12,6 +12,7 @@ const NOTIFICATION_PREFERENCE_KEYS = [
     'muteComment',
     'muteLike',
     'muteReaction',
+    'muteChallengeInvitation',
 ];
 
 // Validate user id params coming from the request

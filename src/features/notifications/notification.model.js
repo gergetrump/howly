@@ -10,6 +10,7 @@ export const NOTIFICATION_TYPES = [
   'story_liked',
   'story_commented',
   'story_tagged',
+  'challenge_invitation_received',
 ];
 
 const notificationSchema = new Schema(
@@ -33,7 +34,7 @@ const notificationSchema = new Schema(
     },
     entityType: {
       type: String,
-      enum: ['friendRequest', 'milestone', 'story'],
+      enum: ['friendRequest', 'milestone', 'story', 'challengeInvitation'],
       required: true,
     },
     entityId: {

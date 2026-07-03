@@ -160,6 +160,7 @@ const userSchema = new Schema(
       muteComment: { type: Boolean, default: false },
       muteLike: { type: Boolean, default: false },
       muteReaction: { type: Boolean, default: false },
+      muteChallengeInvitation: { type: Boolean, default: false },
     },
   },
   {

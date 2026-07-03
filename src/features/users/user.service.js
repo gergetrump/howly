@@ -131,6 +131,7 @@ export function toPublicUser(user) {
             muteComment: false,
             muteLike: false,
             muteReaction: false,
+            muteChallengeInvitation: false,
         },
         premiumStatus: user.premiumStatus,
         premiumUntil: user.premiumUntil,

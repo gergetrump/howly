@@ -4,8 +4,9 @@ import { FriendRequest, Friendship } from './social.model.js';
 import { Story, StoryLike, StoryComment } from '../stories/story.model.js';
 import { MilestonePost, MilestoneLike } from '../milestones/milestone.model.js';
 import Habit from '../habits/habit.model.js';
-import { createNotification, pushToUser } from '../notifications/notification.service.js';
+import { createNotification, deleteNotificationsByFilter, pushToUser } from '../notifications/notification.service.js';
 import { Notification } from '../notifications/notification.model.js';
+import ChallengeInvitation from '../challenges/challengeInvitation.model.js';
 
 function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
@@ -71,7 +72,14 @@ async function deleteFriendRequestsBetweenUsers(firstUserId, secondUserId) {
 }
 
 async function deleteNotificationsBetweenUsers(firstUserId, secondUserId) {
-  return Notification.deleteMany(buildTwoUserQuery(firstUserId, secondUserId, 'actor', 'recipient'));
+  return deleteNotificationsByFilter(buildTwoUserQuery(firstUserId, secondUserId, 'actor', 'recipient'));
+}
+
+async function deletePendingChallengeInvitationsBetweenUsers(firstUserId, secondUserId) {
+  return ChallengeInvitation.deleteMany({
+    status: 'pending',
+    ...buildTwoUserQuery(firstUserId, secondUserId, 'inviter', 'invitee'),
+  });
 }
 
 async function getOwnedInteractionTargets(userId, targetUserId) {
@@ -413,6 +421,7 @@ export async function blockUser({ userId, targetUserId }) {
   await Promise.all([
     removeFriendshipBetweenUsers(userId, targetUserId),
     deleteFriendRequestsBetweenUsers(userId, targetUserId),
+    deletePendingChallengeInvitationsBetweenUsers(userId, targetUserId),
     deleteMutualStoryInteractions({ userId, targetUserId, ...interactionTargets }),
     deleteMutualMilestoneReactions({ userId, targetUserId, ...interactionTargets }),
     deleteNotificationsBetweenUsers(userId, targetUserId),
