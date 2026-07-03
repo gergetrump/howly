@@ -13,6 +13,12 @@ import User from '../users/user.model.js';
 import { PLAN_KEYS, getPlanForUser } from '../../config/plans.js';
 import { applyHabitBoostReward, revertHabitBoostReward } from '../boosts/habitBoost.service.js';
 import HabitBoost from '../boosts/habitBoost.model.js';
+import { toTaxonomyDto } from '../taxonomy/taxonomy.schema.js';
+import {
+    copyTaxonomyToHabit,
+    clearTaxonomyFields,
+    scheduleTaxonomyForHabit,
+} from '../taxonomy/taxonomy.service.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -152,6 +158,7 @@ function toHabitDto(habit) {
         frequency: habit.frequency,
         customDays: habit.customDays || [],
         category: habit.category ?? null,
+        taxonomy: toTaxonomyDto(habit.taxonomy),
         goal: habit.goal ?? null,
         source: habit.source ?? 'manual',
         challengeId: habit.challengeId ? habit.challengeId.toString() : null,
@@ -258,13 +265,21 @@ export async function getHabitById(habitId, userId) {
     return populated;
 }
 
+function stripClientCategory(data) {
+    const payload = { ...data };
+    delete payload.category;
+    return payload;
+}
+
 /**
  * Create a single habit.
  */
 export async function createHabit(userId, data) {
     await assertCanCreateHabits(userId);
 
-    const habit = await Habit.create({ ...data, ownerId: userId });
+    const habit = await Habit.create({ ...stripClientCategory(data), ownerId: userId });
+    scheduleTaxonomyForHabit(habit._id);
+
     const dto = toHabitDto(habit);
     const [populated] = await populateActiveBoosts(userId, [dto]);
     return populated;
@@ -281,7 +296,6 @@ export async function createHabitsFromTemplates(userId, templates) {
         icon: t.icon ?? '🎯',
         frequency: t.frequency,
         customDays: t.customDays || [],
-        category: t.category,
         goal: t.goal ?? null,
         ownerId: userId,
         source: 'onboarding',
@@ -289,6 +303,11 @@ export async function createHabitsFromTemplates(userId, templates) {
     }));
 
     const habits = await Habit.insertMany(docs);
+
+    for (const habit of habits) {
+        scheduleTaxonomyForHabit(habit._id);
+    }
+
     return habits.map(toHabitDto);
 }
 
@@ -302,8 +321,22 @@ export async function updateHabit(habitId, userId, data) {
         throw ApiError.notFound('Habit not found.');
     }
 
-    Object.assign(habit, data);
+    const shouldReassignTaxonomy = (
+        (data.title !== undefined && data.title !== habit.title)
+        || (data.description !== undefined && data.description !== habit.description)
+    );
+
+    Object.assign(habit, stripClientCategory(data));
+
+    if (shouldReassignTaxonomy) {
+        clearTaxonomyFields(habit);
+    }
+
     await habit.save();
+
+    if (shouldReassignTaxonomy) {
+        scheduleTaxonomyForHabit(habit._id);
+    }
 
     const dto = toHabitDto(habit);
     const [populated] = await populateActiveBoosts(userId, [dto]);

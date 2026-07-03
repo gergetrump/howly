@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { taxonomySchema } from '../taxonomy/taxonomy.schema.js';
 
 const { Schema } = mongoose;
 
@@ -132,6 +133,10 @@ const challengeSchema = new Schema(
       enum: CHALLENGE_VISIBILITIES,
       default: "public",
       index: true,
+    },
+    taxonomy: {
+      type: taxonomySchema,
+      default: null,
     },
   },
   {
