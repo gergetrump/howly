@@ -12,6 +12,10 @@ import { useAuth } from '@/context/authContext';
 import { updateCurrentUser } from '@/services/userService';
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
+    emailEnabled: false,
+    challengeInvitations: false,
+    friendRequests: false,
+    streakReminders: false,
     muteAll: false,
     muteTag: false,
     muteFriendRequest: false,
@@ -24,19 +28,24 @@ const DEFAULT_NOTIFICATION_PREFERENCES = {
 const MUTE_OPTIONS = [
     {
         key: 'muteAll',
-        label: 'Mute All',
-        description: 'Silence all notification types',
+        label: 'All in-app notifications',
+        description: 'Receive all in-app notification types',
         featured: true,
-    },
-    {
-        key: 'muteTag',
-        label: 'Tags & Mentions',
-        description: 'Notifications when users tag you in stories',
     },
     {
         key: 'muteFriendRequest',
         label: 'Friend Requests',
         description: 'Sent and accepted friend requests',
+    },
+    {
+        key: 'muteChallengeInvitation',
+        label: 'Challenge Invites',
+        description: 'Invitations to join challenges',
+    },
+    {
+        key: 'muteTag',
+        label: 'Tags & Mentions',
+        description: 'Notifications when users tag you in stories',
     },
     {
         key: 'muteComment',
@@ -53,23 +62,29 @@ const MUTE_OPTIONS = [
         label: 'Reactions',
         description: 'Reactions to your milestones',
     },
-    {
-        key: 'muteChallengeInvitation',
-        label: 'Challenge Invites',
-        description: 'Invitations to join challenges',
-    },
 ];
 
 const EMAIL_NOTIFICATION_OPTIONS = [
     {
-        key: 'emailFriendInvite',
-        label: 'Friend Invites',
+        key: 'emailEnabled',
+        label: 'All optional emails',
+        description: 'Turn this off to disable every optional Howly email below at once',
+        featured: true,
+    },
+    {
+        key: 'challengeInvitations',
+        label: 'Challenge invitations',
+        description: 'Email when a friend invites you to a challenge',
+    },
+    {
+        key: 'friendRequests',
+        label: 'Friend requests',
         description: 'Email when someone sends you a friend request',
     },
     {
-        key: 'emailStreakSafe',
-        label: 'Streak Safe',
-        description: 'Email reminders before a streak is at risk',
+        key: 'streakReminders',
+        label: 'Streak reminders',
+        description: 'Email around 2 hours before your streak repair window expires',
     },
 ];
 
@@ -129,10 +144,10 @@ export function NotificationMuteDialog({ open, onOpenChange }) {
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold flex items-center gap-2">
                         <BellOff className="size-5 text-violet-400" />
-                        Mute Notifications
+                        Notification Settings
                     </DialogTitle>
                     <DialogDescription className="text-slate-400 text-sm">
-                        Select which types of notifications you want to temporarily mute.
+                        Choose which in-app notifications and optional emails you want to receive.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -159,7 +174,7 @@ export function NotificationMuteDialog({ open, onOpenChange }) {
                             <NotificationToggleRow
                                 key={option.key}
                                 option={option}
-                                checked={prefs[option.key]}
+                                checked={!prefs[option.key]}
                                 disabled={isSaving}
                                 onToggle={() => handleToggle(option.key)}
                             />
@@ -170,7 +185,7 @@ export function NotificationMuteDialog({ open, onOpenChange }) {
                                 <NotificationToggleRow
                                     key={option.key}
                                     option={option}
-                                    checked={prefs[option.key]}
+                                    checked={!prefs.muteAll && !prefs[option.key]}
                                     disabled={isSaving || prefs.muteAll}
                                     onToggle={() => handleToggle(option.key)}
                                 />
@@ -179,15 +194,27 @@ export function NotificationMuteDialog({ open, onOpenChange }) {
                     </TabsContent>
 
                     <TabsContent value="email" className="min-h-[33rem] space-y-3">
-                        {EMAIL_NOTIFICATION_OPTIONS.map((option) => (
+                        {EMAIL_NOTIFICATION_OPTIONS.filter((option) => option.featured).map((option) => (
                             <NotificationToggleRow
                                 key={option.key}
                                 option={option}
-                                checked={false}
-                                disabled
-                                onToggle={() => {}}
+                                checked={prefs[option.key]}
+                                disabled={isSaving}
+                                onToggle={() => handleToggle(option.key)}
                             />
                         ))}
+
+                        <div className={`space-y-3 transition-all duration-300 ${prefs.emailEnabled ? '' : 'opacity-40 pointer-events-none'}`}>
+                            {EMAIL_NOTIFICATION_OPTIONS.filter((option) => !option.featured).map((option) => (
+                                <NotificationToggleRow
+                                    key={option.key}
+                                    option={option}
+                                    checked={prefs.emailEnabled && prefs[option.key]}
+                                    disabled={isSaving || !prefs.emailEnabled}
+                                    onToggle={() => handleToggle(option.key)}
+                                />
+                            ))}
+                        </div>
                     </TabsContent>
                 </Tabs>
             </DialogContent>
