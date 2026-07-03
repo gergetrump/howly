@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, AlertTriangle, Crown } from 'lucide-react';
 import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
+import { ChangeCompanionDialog } from '@/components/habits/ChangeCompanionDialog';
+import { PremiumRequiredDialog } from '@/components/shop';
 import { getItemDisplayName, getItemEquipSlot, hasItemSideOptions, renderShopItemVisual } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -36,7 +38,7 @@ function isSideableHeadItem(assetKey) {
 
 export function InventoryPage() {
     const navigate = useNavigate();
-    const { user, setUser, companion } = useAuth();
+    const { user, setUser, companion, setCompanion } = useAuth();
     const [inventory, setInventory] = useState([]);
     const [habits, setHabits] = useState([]);
     const [draftEquippedItemIds, setDraftEquippedItemIds] = useState(new Set());
@@ -50,7 +52,25 @@ export function InventoryPage() {
     const [error, setError] = useState('');
     const [companionMessage, setCompanionMessage] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
+    const [isChangeCompanionOpen, setIsChangeCompanionOpen] = useState(false);
+    const [isCompanionPremiumPromptOpen, setIsCompanionPremiumPromptOpen] = useState(false);
+    const isPremiumUser = user?.isPremium === true || user?.role === 'admin';
     const handsFullMessage = 'My hands are full! Remove at least one item from either hand.';
+
+    function handleChangeCompanionClick() {
+        if (isPremiumUser) {
+            setIsChangeCompanionOpen(true);
+        } else {
+            setIsCompanionPremiumPromptOpen(true);
+        }
+    }
+
+    function handleCompanionChanged(nextCompanion) {
+        if (nextCompanion) {
+            setCompanion(nextCompanion);
+        }
+        setIsChangeCompanionOpen(false);
+    }
 
     const getInventorySides = useCallback((inventoryEntries) => (
         Object.fromEntries(
@@ -448,18 +468,30 @@ export function InventoryPage() {
                             {companionMessage}
                         </div>
                     ) : null}
-                    <ActionButton
-                        type="button"
-                        className="h-9 bg-white/10 px-4 text-sm text-white hover:bg-white/20 disabled:text-slate-500"
-                        disabled={draftEquippedItemIds.size === 0 || isSavingOutfit}
-                        onClick={() => {
-                            setError('');
-                            setCompanionMessage('');
-                            setDraftEquippedItemIds(new Set());
-                        }}
-                    >
-                        Unequip all
-                    </ActionButton>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                        <ActionButton
+                            type="button"
+                            className="h-9 bg-white/10 px-4 text-sm text-white hover:bg-white/20 disabled:text-slate-500"
+                            disabled={draftEquippedItemIds.size === 0 || isSavingOutfit}
+                            onClick={() => {
+                                setError('');
+                                setCompanionMessage('');
+                                setDraftEquippedItemIds(new Set());
+                            }}
+                        >
+                            Unequip all
+                        </ActionButton>
+                        <ActionButton
+                            type="button"
+                            className="h-9 bg-howly-primary/20 px-4 text-sm font-semibold text-howly-primary hover:bg-howly-primary/30"
+                            onClick={handleChangeCompanionClick}
+                        >
+                            <span className="flex items-center gap-1.5">
+                                {!isPremiumUser ? <Crown className="h-3.5 w-3.5" aria-hidden="true" /> : null}
+                                Change companion
+                            </span>
+                        </ActionButton>
+                    </div>
                 </section>
 
                 <div className="min-w-0 space-y-3">
@@ -544,6 +576,19 @@ export function InventoryPage() {
                 </div>
             </PageSection>
         </Page>
+        <ChangeCompanionDialog
+            open={isChangeCompanionOpen}
+            onOpenChange={setIsChangeCompanionOpen}
+            currentType={companion?.type}
+            currentName={companion?.name}
+            onSaved={handleCompanionChanged}
+        />
+        <PremiumRequiredDialog
+            isOpen={isCompanionPremiumPromptOpen}
+            onClose={() => setIsCompanionPremiumPromptOpen(false)}
+            title="Change your companion"
+            description="Switching your companion is a Premium perk. Upgrade to pick a new buddy anytime."
+        />
         <Dialog
             open={Boolean(boostDialogItem)}
             onOpenChange={(nextOpen) => {

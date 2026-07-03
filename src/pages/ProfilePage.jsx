@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Bell,
@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
-import { StoryArchive } from '@/components/stories/StoryArchive.jsx';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -28,14 +27,11 @@ import {
     uploadCurrentUserProfilePicture,
     deleteCurrentUserProfilePicture,
     updateNotificationPreferences,
+    updateCurrentUser,
 } from '@/services/userService';
 import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
 import { useAuth } from '@/context/authContext';
 import { createManagePremiumSession } from '@/services/paymentService';
-// TEMP: companion type tester
-import { CompanionAvatar } from '@/components/brand';
-import { COMPANIONS, getDefaultCompanionName } from '@/constants/companions';
-import { getMyCompanion, selectCompanion } from '@/services/companionService';
 import { sendFeedback } from '@/services/feedbackService';
 
 
@@ -238,6 +234,27 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
     );
 }
 function GhostModeRow() {
+    const { user, setUser } = useAuth();
+    const [isSaving, setIsSaving] = useState(false);
+    const isGhost = user?.ghostMode === true;
+
+    async function handleToggle() {
+        if (isSaving) {
+            return;
+        }
+
+        setIsSaving(true);
+
+        try {
+            const updated = await updateCurrentUser({ ghostMode: !isGhost });
+            setUser((current) => (current ? { ...current, ghostMode: updated?.ghostMode ?? !isGhost } : current));
+        } catch (error) {
+            console.error('Failed to toggle ghost mode:', error);
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
     return (
         <div className="flex items-center justify-between rounded-2xl bg-slate-800/80 px-5 py-4">
             <div className="flex items-center gap-4">
@@ -245,15 +262,19 @@ function GhostModeRow() {
                 <div>
                     <p className="font-semibold text-white">Ghost Mode</p>
                     <p className="mt-1 text-sm text-slate-400">
-                        Hide your metrics from friends
+                        Hide your streak from friends
                     </p>
                 </div>
             </div>
 
             <button
                 type="button"
-                className="flex h-7 w-12 items-center rounded-full bg-slate-600 px-1"
+                onClick={handleToggle}
+                disabled={isSaving}
+                role="switch"
+                aria-checked={isGhost}
                 aria-label="Toggle ghost mode"
+                className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${isGhost ? 'justify-end bg-howly-primary' : 'justify-start bg-slate-600'}`}
             >
                 <span className="size-5 rounded-full bg-white" />
             </button>
@@ -264,7 +285,7 @@ function GhostModeRow() {
 export function ProfilePage() {
     const navigate = useNavigate();
 
-    const { user, setUser, isLoadingUser, refreshUser } = useAuth();
+    const { user, setUser, isLoadingUser } = useAuth();
     // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState('');
     const [premiumError, setPremiumError] = useState('');
@@ -281,32 +302,6 @@ export function ProfilePage() {
     const [isSendingFeedback, setIsSendingFeedback] = useState(false);
     const [feedbackError, setFeedbackError] = useState('');
     const [feedbackSuccess, setFeedbackSuccess] = useState('');
-
-    // TEMP: companion type tester (remove once "companion everywhere" is verified)
-    const [testType, setTestType] = useState('wolf');
-    const [testMsg, setTestMsg] = useState('');
-
-    useEffect(() => {
-        getMyCompanion()
-            .then((res) => {
-                if (res?.data?.type) setTestType(res.data.type);
-            })
-            .catch(() => { });
-    }, []);
-
-    async function applyTestCompanion(type) {
-        setTestType(type);
-        setTestMsg('Saving...');
-        try {
-            await selectCompanion({ type, name: getDefaultCompanionName(type) });
-            setTestMsg(`Saved "${type}". Open other pages to see it everywhere.`);
-            if (refreshUser) {
-                await refreshUser();
-            }
-        } catch (err) {
-            setTestMsg(err.message || 'Failed to save');
-        }
-    }
 
     function handleUpgradeToPremium() {
         navigate('/premium', {
@@ -547,32 +542,23 @@ export function ProfilePage() {
                 </div>
             </section>
 
-
-            {/* TEMP: companion type tester — remove once verified */}
-            <PageSection title="Companion (test)">
-                <div className="flex flex-col items-center gap-4 rounded-2xl bg-slate-800/80 px-6 py-6">
-                    <CompanionAvatar type={testType} size="xl" showName={false} />
-                    <div className="flex gap-3">
-                        {COMPANIONS.map((companion) => (
-                            <button
-                                key={companion.type}
-                                type="button"
-                                onClick={() => applyTestCompanion(companion.type)}
-                                className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${testType === companion.type
-                                    ? 'border-howly-primary bg-howly-primary/10 text-white'
-                                    : 'border-slate-600 bg-slate-800 text-slate-200 hover:border-slate-500'
-                                    }`}
-                            >
-                                {companion.label}
-                            </button>
-                        ))}
-                    </div>
-                    {testMsg && <p className="text-sm text-slate-400">{testMsg}</p>}
-                </div>
-            </PageSection>
-
             <PageSection title="My Stories">
-                <StoryArchive />
+                <button
+                    type="button"
+                    onClick={() => navigate('/stories')}
+                    className="flex w-full items-center justify-between gap-4 rounded-2xl bg-slate-800/80 px-5 py-4 text-left transition-colors hover:bg-slate-800"
+                >
+                    <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-howly-primary/15 text-xl">
+                            <span aria-hidden="true">📸</span>
+                        </div>
+                        <div className="min-w-0">
+                            <p className="font-semibold text-white">Story Archive</p>
+                            <p className="truncate text-sm text-slate-400">Your shared moments from the last 90 days</p>
+                        </div>
+                    </div>
+                    <ChevronRight className="size-5 shrink-0 text-slate-400" aria-hidden="true" />
+                </button>
             </PageSection>
 
             <PageSection title="Privacy">

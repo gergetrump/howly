@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { getItemLayerPriority, renderCompanionItemLayer } from '@/components/brand/items/itemRegistry';
 import { WolfSkin } from '@/components/brand/companions/WolfSkin';
 import { PandaSkin } from '@/components/brand/companions/PandaSkin';
@@ -69,6 +70,22 @@ export function CompanionAvatar({
                                     equippedItemConfigs = [],
                                     className,
                                 }) {
+    const [isHopping, setIsHopping] = useState(false);
+
+    useEffect(() => {
+        let timeoutId;
+        function handleHabitCompleted() {
+            setIsHopping(true);
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => setIsHopping(false), 700);
+        }
+        window.addEventListener('howly:habit-completed', handleHabitCompleted);
+        return () => {
+            window.removeEventListener('howly:habit-completed', handleHabitCompleted);
+            clearTimeout(timeoutId);
+        };
+    }, []);
+
     const companionItems = [...equippedItemKeys, ...equippedItemConfigs, ...previewItemKeys, previewItemKey, ...previewItemConfigs]
         .map(toCompanionItem)
         .filter((item) => item?.assetKey);
@@ -82,7 +99,7 @@ export function CompanionAvatar({
                 viewBox="0 0 1522 1564"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className={cn(sizeClasses[size], 'overflow-visible drop-shadow-2xl')}
+                className={cn(sizeClasses[size], 'overflow-visible drop-shadow-2xl', isHopping && 'howly-hop')}
             >
                 <g transform={`translate(${offsetX} 0)`}>
                     {/* Animal body + face, behind the equipped items */}

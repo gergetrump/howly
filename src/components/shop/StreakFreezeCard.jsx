@@ -5,7 +5,7 @@ import { getItems } from '@/services/itemApi';
 import { buyItem } from '@/services/inventoryApi';
 import { ItemCard } from '@/components/cards';
 import { ActionButton } from '@/components/common';
-import { StreakFreezeIcon } from '@/components/brand/StreakFreezeIcon.jsx';
+import { StreakShieldIcon } from '@/components/brand/StreakShieldIcon.jsx';
 
 // Catalog asset key for the consumable Streak Freeze (mirrors the backend).
 const STREAK_FREEZE_ASSET_KEY = 'streak-freeze';
@@ -92,11 +92,11 @@ export function StreakFreezeCard() {
 
     return (
         <ItemCard
-            name="Streak Freeze"
+            name="Streak Shield"
             price={item.price}
             showOwnedBadge={false}
             dense
-            visual={<StreakFreezeIcon className="h-full w-auto py-1" />}
+            visual={<StreakShieldIcon className="h-full w-auto py-1" />}
         >
             <ActionButton
                 type="button"

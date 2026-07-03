@@ -66,7 +66,6 @@ export function HabitSelectionPage() {
                     title: habit.title,
                     icon: habit.icon,
                     frequency: habit.frequency,
-                    category: habit.category,
                     templateKey: habit.id,
                 }));
 
