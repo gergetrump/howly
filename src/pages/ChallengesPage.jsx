@@ -589,6 +589,7 @@ export function ChallengesPage() {
                                     title={challenge.title}
                                     description={challenge.description}
                                     habitTitle={challenge.habitTitle}
+                                    category={challenge.habitTemplate?.category}
                                     status={challenge.status}
                                     visibility={challenge.visibility}
                                     participants={challenge.participantCount ?? 0}

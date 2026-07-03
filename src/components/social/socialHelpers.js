@@ -101,7 +101,7 @@ export function getSocialErrorMessage(error, user) {
             return 'You cannot send a friend request to yourself';
         case 'FRIEND_REQUEST_RECIPIENT_NOT_FOUND':
         case 'USER_BLOCKED':
-            return 'Hmm, that didn\'t work. Check if the username is correct';
+            return 'Hmm, that didn\'t work. Check if the username is correct.';
         case 'USERS_ALREADY_FRIENDS':
             return `You and ${getDisplayName(user)} are already friends`;
         case 'PENDING_FRIEND_REQUEST_EXISTS':

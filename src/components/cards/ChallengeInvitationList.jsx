@@ -29,6 +29,7 @@ export function ChallengeInvitationList({ invitations, busyAction, onAccept, onR
                             title={challenge?.title ?? 'Challenge invitation'}
                             description={challenge?.description}
                             habitTitle={challenge?.habitTitle}
+                            category={challenge?.habitTemplate?.category}
                             status={challenge?.status ?? invitation.status}
                             visibility={challenge?.visibility}
                             participants={challenge?.participantCount ?? 0}

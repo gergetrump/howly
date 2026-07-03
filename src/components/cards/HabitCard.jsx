@@ -28,6 +28,7 @@ export function HabitCard({
     emoji = '🔥',
     title,
     frequency,
+    category = null,
     goal = null,
     streakDays = 0,
     completed = false,
@@ -60,6 +61,11 @@ export function HabitCard({
                                 </span>
                             ) : null}
                             {frequency ? <Badge variant="secondary">{frequency}</Badge> : null}
+                            {category ? (
+                                <Badge className="border border-purple-400/30 bg-purple-500/15 text-purple-100 hover:bg-purple-500/15">
+                                    {category}
+                                </Badge>
+                            ) : null}
                             {activeBoost ? (
                                 <Badge className="bg-slate-700 hover:bg-slate-800 text-white border-0 font-medium capitalize text-[10px] py-0 h-5 px-1.5 flex gap-1 items-center">
                                     {renderShopItemVisual(activeBoost, 'h-3 w-3')}
