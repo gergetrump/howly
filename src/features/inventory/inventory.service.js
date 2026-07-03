@@ -1,6 +1,7 @@
 import User from '../users/user.model.js';
 import Item from '../items/item.model.js';
 import UserItem from './inventory.model.js';
+import BoostPurchaseLimit from './boostPurchaseLimit.model.js';
 import { getPlanForUser, MAX_STREAK_SHIELDS } from '../../config/plans.js';
 import {
     activateHabitBoost,
@@ -20,12 +21,14 @@ export const INVENTORY_ERROR_CODES = {
     SHIELDS_AT_MAX: 'SHIELDS_AT_MAX',
     BOOST_NOT_AVAILABLE: 'BOOST_NOT_AVAILABLE',
     BOOST_QUANTITY_LIMIT_REACHED: 'BOOST_QUANTITY_LIMIT_REACHED',
+    BOOST_MONTHLY_LIMIT_REACHED: 'BOOST_MONTHLY_LIMIT_REACHED',
     ...BOOST_ERROR_CODES,
 };
 
 // Consumable power-up in the catalog: buying it grants a streak shield instead
 export const STREAK_FREEZE_ASSET_KEY = 'streak-freeze';
 export const MAX_OWNED_BOOST_QUANTITY = 20;
+export const MAX_MONTHLY_BOOST_PURCHASE_QUANTITY = 20;
 
 const SINGLE_EQUIP_ITEM_TYPES = new Set(['clothing', 'shoes']);
 const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
@@ -218,6 +221,62 @@ function inventoryError(code) {
     return error;
 }
 
+export function getBoostPurchaseMonthKey(date = new Date()) {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+async function incrementMonthlyBoostPurchaseCount({ userId, assetKey, date = new Date() }) {
+    const monthKey = getBoostPurchaseMonthKey(date);
+
+    try {
+        const counter = await BoostPurchaseLimit.findOneAndUpdate(
+            {
+                user: userId,
+                assetKey,
+                monthKey,
+                quantity: { $lt: MAX_MONTHLY_BOOST_PURCHASE_QUANTITY },
+            },
+            {
+                $inc: { quantity: 1 },
+                $setOnInsert: {
+                    user: userId,
+                    assetKey,
+                    monthKey,
+                },
+            },
+            {
+                returnDocument: 'after',
+                upsert: true,
+                setDefaultsOnInsert: true,
+            },
+        );
+
+        if (!counter || counter.quantity > MAX_MONTHLY_BOOST_PURCHASE_QUANTITY) {
+            throw inventoryError(INVENTORY_ERROR_CODES.BOOST_MONTHLY_LIMIT_REACHED);
+        }
+
+        return { monthKey, quantity: counter.quantity };
+    } catch (error) {
+        if (error.code === 11000) {
+            throw inventoryError(INVENTORY_ERROR_CODES.BOOST_MONTHLY_LIMIT_REACHED);
+        }
+
+        throw error;
+    }
+}
+
+async function decrementMonthlyBoostPurchaseCount({ userId, assetKey, monthKey }) {
+    await BoostPurchaseLimit.updateOne(
+        {
+            user: userId,
+            assetKey,
+            monthKey,
+            quantity: { $gt: 0 },
+        },
+        { $inc: { quantity: -1 } },
+    );
+}
+
 function normalizeCustomizationForItem(item, customization = {}) {
     const defaults = CUSTOMIZABLE_ITEM_DEFAULTS[item.assetKey];
 
@@ -307,6 +366,19 @@ export async function listUserItems({ userId }) {
     })
         .populate('item')
         .sort({ createdAt: -1 });
+}
+
+export async function listCurrentBoostPurchaseLimits({ userId, date = new Date() }) {
+    const monthKey = getBoostPurchaseMonthKey(date);
+    const counters = await BoostPurchaseLimit.find({ user: userId, monthKey }).lean();
+
+    return {
+        monthKey,
+        maxQuantity: MAX_MONTHLY_BOOST_PURCHASE_QUANTITY,
+        purchases: Object.fromEntries(
+            counters.map((counter) => [counter.assetKey, counter.quantity ?? 0]),
+        ),
+    };
 }
 
 export async function buyItem({ userId, itemId, customization = {} }) {
@@ -419,29 +491,46 @@ async function buyBoostPowerUp({ user, item }) {
         throw inventoryError(INVENTORY_ERROR_CODES.NOT_ENOUGH_COINS);
     }
 
-    user.coins -= item.price;
-    await user.save();
+    const monthlyPurchase = await incrementMonthlyBoostPurchaseCount({
+        userId: user._id,
+        assetKey: item.assetKey,
+    });
 
+    let coinsCharged = false;
+    let savedUserItem;
     try {
+        user.coins -= item.price;
+        await user.save();
+        coinsCharged = true;
+
         if (existingUserItem) {
             existingUserItem.quantity = (existingUserItem.quantity ?? 1) + 1;
-            return existingUserItem.save().then((savedItem) => savedItem.populate('item'));
+            savedUserItem = await existingUserItem.save();
+        } else {
+            savedUserItem = await UserItem.create({
+                user: user._id,
+                item: item._id,
+                quantity: 1,
+                customization: {},
+                customizationKey: 'default',
+            });
         }
-
-        const userItem = await UserItem.create({
-            user: user._id,
-            item: item._id,
-            quantity: 1,
-            customization: {},
-            customizationKey: 'default',
+    } catch (error) {
+        await decrementMonthlyBoostPurchaseCount({
+            userId: user._id,
+            assetKey: item.assetKey,
+            monthKey: monthlyPurchase.monthKey,
         });
 
-        return userItem.populate('item');
-    } catch (error) {
-        user.coins += item.price;
-        await user.save();
+        if (coinsCharged) {
+            user.coins += item.price;
+            await user.save();
+        }
+
         throw error;
     }
+
+    return savedUserItem.populate('item');
 }
 
 export async function useInventoryItem({ userId, userItemId, habitId }) {
