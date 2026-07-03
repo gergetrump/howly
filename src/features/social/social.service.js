@@ -4,6 +4,9 @@ import { FriendRequest, Friendship } from './social.model.js';
 import { Story, StoryLike, StoryComment } from '../stories/story.model.js';
 import { MilestonePost, MilestoneLike } from '../milestones/milestone.model.js';
 import Habit from '../habits/habit.model.js';
+import { createNotification, deleteNotificationsByFilter, pushToUser } from '../notifications/notification.service.js';
+import { Notification } from '../notifications/notification.model.js';
+import ChallengeInvitation from '../challenges/challengeInvitation.model.js';
 
 function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
@@ -48,6 +51,147 @@ async function areFriends(firstUserId, secondUserId) {
   const friendship = await Friendship.findOne(pair).lean();
 
   return Boolean(friendship);
+}
+
+async function removeFriendshipBetweenUsers(firstUserId, secondUserId) {
+  const pair = buildFriendshipPair(firstUserId, secondUserId);
+  return Friendship.deleteOne(pair);
+}
+
+function buildTwoUserQuery(firstUserId, secondUserId, firstKey, secondKey) {
+  return {
+    $or: [
+      { [firstKey]: firstUserId, [secondKey]: secondUserId },
+      { [firstKey]: secondUserId, [secondKey]: firstUserId },
+    ],
+  };
+}
+
+async function deleteFriendRequestsBetweenUsers(firstUserId, secondUserId) {
+  return FriendRequest.deleteMany(buildTwoUserQuery(firstUserId, secondUserId, 'requester', 'recipient'));
+}
+
+async function deleteNotificationsBetweenUsers(firstUserId, secondUserId) {
+  return deleteNotificationsByFilter(buildTwoUserQuery(firstUserId, secondUserId, 'actor', 'recipient'));
+}
+
+async function deletePendingChallengeInvitationsBetweenUsers(firstUserId, secondUserId) {
+  return ChallengeInvitation.deleteMany({
+    status: 'pending',
+    ...buildTwoUserQuery(firstUserId, secondUserId, 'inviter', 'invitee'),
+  });
+}
+
+async function getOwnedInteractionTargets(userId, targetUserId) {
+  const [userStories, targetStories, userMilestones, targetMilestones] = await Promise.all([
+    Story.find({ user: userId }, '_id').lean(),
+    Story.find({ user: targetUserId }, '_id').lean(),
+    MilestonePost.find({ user: userId }, '_id').lean(),
+    MilestonePost.find({ user: targetUserId }, '_id').lean(),
+  ]);
+
+  const userStoryIds = userStories.map((story) => story._id);
+  const targetStoryIds = targetStories.map((story) => story._id);
+  const userMilestoneIds = userMilestones.map((milestone) => milestone._id);
+  const targetMilestoneIds = targetMilestones.map((milestone) => milestone._id);
+
+  return {
+    userStoryIds,
+    targetStoryIds,
+    userMilestoneIds,
+    targetMilestoneIds,
+    affectedStoryIds: [...userStoryIds, ...targetStoryIds],
+    affectedMilestoneIds: [...userMilestoneIds, ...targetMilestoneIds],
+  };
+}
+
+async function deleteMutualStoryInteractions({ userId, targetUserId, userStoryIds, targetStoryIds }) {
+  const deletedComments = await StoryComment.find({
+    $or: [
+      { story: { $in: userStoryIds }, user: targetUserId },
+      { story: { $in: targetStoryIds }, user: userId },
+    ],
+  }, '_id').lean();
+  const deletedCommentIds = deletedComments.map((comment) => comment._id);
+
+  await Promise.all([
+    StoryLike.deleteMany({
+      $or: [
+        { story: { $in: userStoryIds }, user: targetUserId },
+        { story: { $in: targetStoryIds }, user: userId },
+      ],
+    }),
+    deletedCommentIds.length > 0
+      ? StoryComment.deleteMany({
+          $or: [
+            { _id: { $in: deletedCommentIds } },
+            { parentComment: { $in: deletedCommentIds } },
+          ],
+        })
+      : Promise.resolve(),
+  ]);
+}
+
+async function deleteMutualMilestoneReactions({ userId, targetUserId, userMilestoneIds, targetMilestoneIds }) {
+  return MilestoneLike.deleteMany({
+    $or: [
+      { milestonePost: { $in: userMilestoneIds }, user: targetUserId },
+      { milestonePost: { $in: targetMilestoneIds }, user: userId },
+    ],
+  });
+}
+
+async function recalculateStoryEngagementCounts(storyIds) {
+  if (storyIds.length === 0) return;
+
+  const [updatedStoryLikes, updatedStoryComments] = await Promise.all([
+    StoryLike.aggregate([
+      { $match: { story: { $in: storyIds } } },
+      { $group: { _id: '$story', count: { $sum: 1 } } },
+    ]),
+    StoryComment.aggregate([
+      { $match: { story: { $in: storyIds } } },
+      { $group: { _id: '$story', count: { $sum: 1 } } },
+    ]),
+  ]);
+
+  const likesMap = new Map(updatedStoryLikes.map((group) => [group._id.toString(), group.count]));
+  const commentsMap = new Map(updatedStoryComments.map((group) => [group._id.toString(), group.count]));
+
+  await Promise.all(
+    storyIds.map((storyId) =>
+      Story.updateOne(
+        { _id: storyId },
+        {
+          $set: {
+            likeCount: likesMap.get(storyId.toString()) || 0,
+            commentCount: commentsMap.get(storyId.toString()) || 0,
+          },
+        },
+      )
+    ),
+  );
+}
+
+async function recalculateMilestoneReactionCounts(milestoneIds) {
+  if (milestoneIds.length === 0) return;
+
+  const updatedMilestoneLikes = await MilestoneLike.aggregate([
+    { $match: { milestonePost: { $in: milestoneIds } } },
+    { $group: { _id: '$milestonePost', count: { $sum: 1 } } },
+  ]);
+  const reactionsMap = new Map(updatedMilestoneLikes.map((group) => [group._id.toString(), group.count]));
+
+  await Promise.all(
+    milestoneIds.map((milestoneId) => {
+      const count = reactionsMap.get(milestoneId.toString()) || 0;
+      return MilestonePost.updateOne({ _id: milestoneId }, { $set: { likeCount: count } });
+    }),
+  );
+}
+
+function refreshNotificationsForUsers(...userIds) {
+  userIds.forEach((id) => pushToUser(id, 'refresh', {}));
 }
 
 export async function getFriendHabits({ userId, targetUserId }) {
@@ -119,6 +263,14 @@ export async function sendFriendRequest({ requesterId, recipientId }) {
     recipient: recipientId,
   });
 
+  await createNotification({
+    recipientId,
+    actorId: requesterId,
+    type: 'friend_request_received',
+    entityType: 'friendRequest',
+    entityId: request._id,
+  });
+
   await request.populate(['requester', 'recipient']);
 
   return { request: toFriendRequestResponse(request) };
@@ -172,6 +324,20 @@ export async function acceptFriendRequest({ requestId, userId }) {
 
   await request.populate(['requester', 'recipient']);
 
+  await createNotification({
+    recipientId: request.requester._id ?? request.requester,
+    actorId: userId,
+    type: 'friend_request_accepted',
+    entityType: 'friendRequest',
+    entityId: request._id,
+  });
+
+  // Mark the incoming friend request notification as read automatically
+  await Notification.updateOne(
+    { recipient: userId, type: 'friend_request_received', entityId: requestId },
+    { $set: { readAt: new Date() } }
+  );
+
   return {
     request: toFriendRequestResponse(request),
     friendship: toFriendshipResponse(friendship, userId),
@@ -194,6 +360,14 @@ export async function rejectFriendRequest({ requestId, userId }) {
       runValidators: true,
     }
   ).populate(['requester', 'recipient']);
+
+  if (request) {
+    // Mark the incoming friend request notification as read automatically
+    await Notification.updateOne(
+      { recipient: userId, type: 'friend_request_received', entityId: requestId },
+      { $set: { readAt: new Date() } }
+    );
+  }
 
   if (!request) {
     return { errorCode: 'PENDING_FRIEND_REQUEST_NOT_FOUND' };
@@ -222,6 +396,8 @@ export async function deleteFriend({ friendshipId, userId }) {
     return { errorCode: 'FRIENDSHIP_NOT_FOUND' };
   }
 
+  // Unfriending only removes future friend-only access. Historical comments,
+  // tags, and notifications remain; blocking owns privacy cleanup.
   return { friendship: toFriendshipResponse(friendship, userId) };
 }
 
@@ -235,121 +411,28 @@ export async function blockUser({ userId, targetUserId }) {
     return { errorCode: 'USER_NOT_FOUND' };
   }
 
-  // Add targetUserId to current user's blockedUsers
   await User.updateOne(
     { _id: userId },
     { $addToSet: { blockedUsers: targetUserId } }
   );
 
-  // Sever friendship
-  const pair = buildFriendshipPair(userId, targetUserId);
-  await Friendship.deleteOne(pair);
-
-  // Delete pending/accepted friend requests
-  await FriendRequest.deleteMany({
-    $or: [
-      { requester: userId, recipient: targetUserId },
-      { requester: targetUserId, recipient: userId }
-    ]
-  });
-
-  // Delete likes and reactions on each other's posts
-  const [myStories, targetStories, myMilestones, targetMilestones] = await Promise.all([
-    Story.find({ user: userId }, '_id').lean(),
-    Story.find({ user: targetUserId }, '_id').lean(),
-    MilestonePost.find({ user: userId }, '_id').lean(),
-    MilestonePost.find({ user: targetUserId }, '_id').lean(),
-  ]);
-
-  const myStoryIds = myStories.map((s) => s._id);
-  const targetStoryIds = targetStories.map((s) => s._id);
-  const myMilestoneIds = myMilestones.map((m) => m._id);
-  const targetMilestoneIds = targetMilestones.map((m) => m._id);
-
-  // Deletions
-  const deletedComments = await StoryComment.find({
-    $or: [
-      { story: { $in: myStoryIds }, user: targetUserId },
-      { story: { $in: targetStoryIds }, user: userId }
-    ]
-  }, '_id').lean();
-  const deletedCommentIds = deletedComments.map((c) => c._id);
+  const interactionTargets = await getOwnedInteractionTargets(userId, targetUserId);
 
   await Promise.all([
-    // StoryLikes
-    StoryLike.deleteMany({
-      $or: [
-        { story: { $in: myStoryIds }, user: targetUserId },
-        { story: { $in: targetStoryIds }, user: userId }
-      ]
-    }),
-    // MilestoneLikes
-    MilestoneLike.deleteMany({
-      $or: [
-        { milestonePost: { $in: myMilestoneIds }, user: targetUserId },
-        { milestonePost: { $in: targetMilestoneIds }, user: userId }
-      ]
-    }),
-    // StoryComments (direct + replies)
-    deletedCommentIds.length > 0
-      ? StoryComment.deleteMany({
-          $or: [
-            { _id: { $in: deletedCommentIds } },
-            { parentComment: { $in: deletedCommentIds } }
-          ]
-        })
-      : Promise.resolve()
+    removeFriendshipBetweenUsers(userId, targetUserId),
+    deleteFriendRequestsBetweenUsers(userId, targetUserId),
+    deletePendingChallengeInvitationsBetweenUsers(userId, targetUserId),
+    deleteMutualStoryInteractions({ userId, targetUserId, ...interactionTargets }),
+    deleteMutualMilestoneReactions({ userId, targetUserId, ...interactionTargets }),
+    deleteNotificationsBetweenUsers(userId, targetUserId),
   ]);
 
-  // Recalculate likeCount for affected stories
-  const affectedStoryIds = [...myStoryIds, ...targetStoryIds];
-  if (affectedStoryIds.length > 0) {
-    const updatedStoryLikes = await StoryLike.aggregate([
-      { $match: { story: { $in: affectedStoryIds } } },
-      { $group: { _id: '$story', count: { $sum: 1 } } }
-    ]);
-    const likesMap = new Map(updatedStoryLikes.map((group) => [group._id.toString(), group.count]));
+  await Promise.all([
+    recalculateStoryEngagementCounts(interactionTargets.affectedStoryIds),
+    recalculateMilestoneReactionCounts(interactionTargets.affectedMilestoneIds),
+  ]);
 
-    await Promise.all(
-      affectedStoryIds.map((storyId) => {
-        const count = likesMap.get(storyId.toString()) || 0;
-        return Story.updateOne({ _id: storyId }, { $set: { likeCount: count } });
-      })
-    );
-  }
-
-  // Recalculate commentCount for affected stories
-  if (affectedStoryIds.length > 0) {
-    const updatedStoryComments = await StoryComment.aggregate([
-      { $match: { story: { $in: affectedStoryIds } } },
-      { $group: { _id: '$story', count: { $sum: 1 } } }
-    ]);
-    const commentsMap = new Map(updatedStoryComments.map((group) => [group._id.toString(), group.count]));
-
-    await Promise.all(
-      affectedStoryIds.map((storyId) => {
-        const count = commentsMap.get(storyId.toString()) || 0;
-        return Story.updateOne({ _id: storyId }, { $set: { commentCount: count } });
-      })
-    );
-  }
-
-  // Recalculate likeCount for affected milestones
-  const affectedMilestoneIds = [...myMilestoneIds, ...targetMilestoneIds];
-  if (affectedMilestoneIds.length > 0) {
-    const updatedMilestoneLikes = await MilestoneLike.aggregate([
-      { $match: { milestonePost: { $in: affectedMilestoneIds } } },
-      { $group: { _id: '$milestonePost', count: { $sum: 1 } } }
-    ]);
-    const reactionsMap = new Map(updatedMilestoneLikes.map((group) => [group._id.toString(), group.count]));
-
-    await Promise.all(
-      affectedMilestoneIds.map((milestoneId) => {
-        const count = reactionsMap.get(milestoneId.toString()) || 0;
-        return MilestonePost.updateOne({ _id: milestoneId }, { $set: { likeCount: count } });
-      })
-    );
-  }
+  refreshNotificationsForUsers(userId, targetUserId);
 
   return { blocked: true };
 }

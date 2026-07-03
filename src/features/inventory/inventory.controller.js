@@ -19,6 +19,7 @@ const statusByErrorCode = {
     [INVENTORY_ERROR_CODES.SHIELDS_AT_MAX]: 400,
     [INVENTORY_ERROR_CODES.BOOST_NOT_AVAILABLE]: 400,
     [INVENTORY_ERROR_CODES.BOOST_QUANTITY_LIMIT_REACHED]: 400,
+    [INVENTORY_ERROR_CODES.BOOST_MONTHLY_LIMIT_REACHED]: 400,
     [INVENTORY_ERROR_CODES.BOOST_HABIT_REQUIRED]: 400,
     [INVENTORY_ERROR_CODES.BOOST_HABIT_NOT_FOUND]: 404,
     [INVENTORY_ERROR_CODES.BOOST_ALREADY_ACTIVE]: 409,
@@ -28,6 +29,12 @@ export async function listMyInventory(req, res) {
     const inventory = await inventoryService.listUserItems({ userId: req.user.id });
 
     return res.status(200).json(inventory);
+}
+
+export async function listBoostPurchaseLimits(req, res) {
+    const limits = await inventoryService.listCurrentBoostPurchaseLimits({ userId: req.user.id });
+
+    return res.status(200).json(limits);
 }
 
 async function setEquipped(req, res, equipped) {

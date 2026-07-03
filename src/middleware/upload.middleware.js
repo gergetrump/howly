@@ -35,3 +35,11 @@ export const uploadStoryImage = multer({
         fileSize: 5 * 1024 * 1024, // 5 MB — photos can be larger
     },
 });
+
+export const uploadReportAttachment = multer({
+    storage: multer.memoryStorage(),
+    fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5 MB
+    },
+});
