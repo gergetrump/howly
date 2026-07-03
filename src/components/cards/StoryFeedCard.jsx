@@ -317,7 +317,6 @@ export function StoryFeedCard({
                             setComments={setComments}
                             isLoading={isLoadingComments}
                             hasLoadedComments={hasLoadedComments}
-                            likers={visibleLikers}
                             onOpenProfile={onOpenProfile}
                             blockedUsers={blockedUsers}
                             blockers={blockers}

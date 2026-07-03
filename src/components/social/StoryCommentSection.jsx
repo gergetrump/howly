@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Send, Trash2 } from 'lucide-react';
-import { postStoryComment, deleteStoryComment } from '@/services/storyApi';
+import { postStoryComment, deleteStoryComment, getStoryMentionCandidates } from '@/services/storyApi';
 import { getUserByUsername } from '@/services/userApi';
 import {
     formatRelativeTime,
@@ -36,7 +36,6 @@ export function StoryCommentSection({
     setComments,
     isLoading = false,
     hasLoadedComments = false,
-    likers = [],
     onOpenProfile,
     isStoryOwner = false,
     blockedUsers = [],
@@ -55,6 +54,7 @@ export function StoryCommentSection({
     const [error, setError] = useState('');
     const [commentIdToDelete, setCommentIdToDelete] = useState(null);
     const [highlightedCommentId, setHighlightedCommentId] = useState(null);
+    const [mentionCandidates, setMentionCandidates] = useState([]);
     const inputRef = useRef(null);
     const containerRef = useRef(null);
     // Tracks which notification click has already been highlighted so background
@@ -65,15 +65,14 @@ export function StoryCommentSection({
     const suggestions = useMemo(() => {
         if (mentionQuery === null) return [];
 
-        const allUsers = [...likers, ...comments.map((c) => c.user)];
-        const uniqueUsers = getUniqueUsers(allUsers);
+        const uniqueUsers = getUniqueUsers(mentionCandidates);
 
         return uniqueUsers.filter((u) => {
             const username = (u?.username || '').toLowerCase();
             const firstName = (u?.firstName || '').toLowerCase();
             return username.includes(mentionQuery) || firstName.includes(mentionQuery);
         });
-    }, [mentionQuery, comments, likers]);
+    }, [mentionQuery, mentionCandidates]);
     const showSuggestions = mentionQuery !== null && suggestions.length > 0;
 
     const confirmDelete = async () => {
@@ -86,6 +85,31 @@ export function StoryCommentSection({
     useEffect(() => {
         return () => clearTimeout(highlightFadeTimerRef.current);
     }, []);
+
+    useEffect(() => {
+        if (!story?.id) {
+            setMentionCandidates([]);
+            return undefined;
+        }
+
+        let active = true;
+
+        getStoryMentionCandidates(story.id)
+            .then((candidates) => {
+                if (active) {
+                    setMentionCandidates(candidates ?? []);
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setMentionCandidates([]);
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [story?.id]);
 
     // When a notification click provides a target comment, scroll to that
     // comment and briefly highlight it once for that click.
