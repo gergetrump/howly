@@ -102,6 +102,17 @@ test('GET /api/users/profile/:username returns 404 when user does not exist', as
   assert.strictEqual(res.status, 404);
 });
 
+test('GET /api/users/profile/:username treats regex-looking usernames literally', async () => {
+  const userA = await buildUser({ username: 'usera' });
+  await buildUser({ username: 'targetuser' });
+
+  const res = await request(app)
+    .get('/api/users/profile/.*')
+    .set('Authorization', authHeader(userA));
+
+  assert.strictEqual(res.status, 404);
+});
+
 test('GET /api/social/blockers returns usernames of users who blocked the current user', async () => {
   const userA = await buildUser({ username: 'usera' });
   const userB = await buildUser({ username: 'userb' });

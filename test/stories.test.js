@@ -333,6 +333,43 @@ test('story comment count stays independent from like count', async () => {
   assert.equal(feedStory.commentCount, 1);
 });
 
+test('stored story captions and comments are returned as JSON text, not HTML', async () => {
+  const owner = await buildUser({ username: 'stored_xss_owner' });
+  const friend = await buildUser({ username: 'stored_xss_friend' });
+  await makeFriends(owner, friend);
+
+  const habit = await buildHabit(owner);
+  const payload = '<script>alert("stored-xss")</script><p>Hello</p>';
+  const story = await buildStory(owner, habit, { caption: payload });
+
+  const commentResponse = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(friend))
+    .send({ content: payload })
+    .expect(201);
+
+  assert.match(commentResponse.headers['content-type'], /application\/json/);
+  assert.equal(commentResponse.body.content, payload);
+
+  const feedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(friend))
+    .expect(200);
+
+  const storedStory = feedResponse.body.find((entry) => entry.type === 'story' && entry.id === story._id.toString());
+
+  assert.match(feedResponse.headers['content-type'], /application\/json/);
+  assert.equal(storedStory.caption, payload);
+
+  const commentsResponse = await request(app)
+    .get(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(friend))
+    .expect(200);
+
+  assert.match(commentsResponse.headers['content-type'], /application\/json/);
+  assert.equal(commentsResponse.body[0].content, payload);
+});
+
 test('tagging the story owner creates a tagged notification instead of a normal comment notification', async () => {
   const owner = await buildUser({ username: 'alice', firstName: 'Alice' });
   const commenter = await buildUser({ username: 'bob', firstName: 'Bob' });

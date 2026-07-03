@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import path from 'path';
 import habitRoutes from './features/habits/habit.routes.js';
 import authRoutes from './features/auth/auth.routes.js';
@@ -20,10 +19,13 @@ import reportRoutes from './features/reports/report.routes.js';
 import notificationRoutes from './features/notifications/notification.routes.js';
 import { handleStripeWebhook } from './payment/payment.controller.js';
 import paymentRoutes from './payment/payment.routes.js';
+import { applySecurityMiddleware, rejectUnsafeRequestKeys } from './security/security.middleware.js';
 
 // Build an Express app instance for both server and tests.
 export default function createApp() {
     const app = express();
+
+    applySecurityMiddleware(app);
 
     app.use((req, res, next) => {
         const allowedOrigins = new Set([
@@ -50,6 +52,7 @@ export default function createApp() {
     app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
     app.use(express.json());
+    app.use(rejectUnsafeRequestKeys);
 
     app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
