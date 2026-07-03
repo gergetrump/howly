@@ -22,7 +22,7 @@ import {
 import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import { StreakFreezeCard } from '@/components/shop/StreakFreezeCard.jsx';
-import { buyItem, getMyInventory } from '@/services/inventoryApi';
+import { buyItem, getBoostPurchaseLimits, getMyInventory } from '@/services/inventoryApi';
 import { getItems } from '@/services/itemApi';
 import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
 import { confirmCheckoutSession } from '@/services/paymentService';
@@ -31,8 +31,10 @@ import { itemMatchesCategory } from '@/lib/inventoryItems';
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
 const SINGLE_PREVIEW_SLOTS = new Set(['body', 'face', 'hand', 'head', 'neck']);
 const MAX_OWNED_POWER_UP_QUANTITY = 20;
+const MAX_MONTHLY_BOOST_PURCHASE_QUANTITY = 20;
 const STREAK_FREEZE_ASSET_KEY = 'streak-freeze';
 const MAX_STREAK_SHIELDS = 3;
+const BOOST_ASSET_KEYS = new Set(['small-boost', 'medium-boost', 'big-boost']);
 
 function isItemCategoryValue(value) {
     return ITEM_CATEGORIES.some((category) => category.value === value);
@@ -45,6 +47,8 @@ export function ShopPage() {
     const [items, setItems] = useState([]);
     const [ownedItemSignatures, setOwnedItemSignatures] = useState(new Set());
     const [ownedPowerUpQuantities, setOwnedPowerUpQuantities] = useState({});
+    const [monthlyBoostPurchaseQuantities, setMonthlyBoostPurchaseQuantities] = useState({});
+    const [monthlyBoostPurchaseLimit, setMonthlyBoostPurchaseLimit] = useState(MAX_MONTHLY_BOOST_PURCHASE_QUANTITY);
     const [previewItems, setPreviewItems] = useState([]);
     const [cartItems, setCartItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -122,6 +126,14 @@ export function ShopPage() {
 
         return refreshedUser;
     }, [setUser]);
+
+    const refreshBoostPurchaseLimits = useCallback(async () => {
+        const limits = await getBoostPurchaseLimits();
+        setMonthlyBoostPurchaseQuantities(limits?.purchases ?? {});
+        setMonthlyBoostPurchaseLimit(limits?.maxQuantity ?? MAX_MONTHLY_BOOST_PURCHASE_QUANTITY);
+
+        return limits;
+    }, []);
 
     useEffect(() => {
         getCurrentUserPlan()
@@ -217,9 +229,10 @@ export function ShopPage() {
 
             try {
                 const token = localStorage.getItem('howly_token');
-                const [nextItems, nextInventory] = await Promise.all([
+                const [nextItems, nextInventory, boostPurchaseLimits] = await Promise.all([
                     getItems(),
                     token ? getMyInventory() : Promise.resolve([]),
+                    token ? getBoostPurchaseLimits() : Promise.resolve(null),
                 ]);
 
                 if (isCurrent) {
@@ -234,6 +247,8 @@ export function ShopPage() {
                             .filter((entry) => entry.item?.type === 'powerUp')
                             .map((entry) => [entry.item.assetKey, entry.quantity ?? 1]),
                     ));
+                    setMonthlyBoostPurchaseQuantities(boostPurchaseLimits?.purchases ?? {});
+                    setMonthlyBoostPurchaseLimit(boostPurchaseLimits?.maxQuantity ?? MAX_MONTHLY_BOOST_PURCHASE_QUANTITY);
                 }
             } catch {
                 if (isCurrent) {
@@ -410,6 +425,30 @@ export function ShopPage() {
             : 0;
     }
 
+    function isBoostPowerUp(item) {
+        return BOOST_ASSET_KEYS.has(item?.assetKey);
+    }
+
+    function getMonthlyBoostPurchaseQuantity(item) {
+        return isBoostPowerUp(item)
+            ? Number(monthlyBoostPurchaseQuantities[item.assetKey] ?? 0)
+            : 0;
+    }
+
+    function getMaxOwnedQuantityForPowerUp(item) {
+        if (item?.assetKey === STREAK_FREEZE_ASSET_KEY) {
+            return MAX_STREAK_SHIELDS;
+        }
+
+        return MAX_OWNED_POWER_UP_QUANTITY;
+    }
+
+    function getMaxMonthlyQuantityForPowerUp(item) {
+        return isBoostPowerUp(item)
+            ? monthlyBoostPurchaseLimit
+            : Number.POSITIVE_INFINITY;
+    }
+
     function getMaxCartQuantityForEntry(entry) {
         const item = getPurchaseEntryItem(entry);
 
@@ -417,11 +456,10 @@ export function ShopPage() {
             return 1;
         }
 
-        const maxOwnedQuantity = item?.assetKey === STREAK_FREEZE_ASSET_KEY
-            ? MAX_STREAK_SHIELDS
-            : MAX_OWNED_POWER_UP_QUANTITY;
+        const ownedRemainingQuantity = getMaxOwnedQuantityForPowerUp(item) - getOwnedPowerUpQuantity(item);
+        const monthlyRemainingQuantity = getMaxMonthlyQuantityForPowerUp(item) - getMonthlyBoostPurchaseQuantity(item);
 
-        return Math.max(0, maxOwnedQuantity - getOwnedPowerUpQuantity(item));
+        return Math.max(0, Math.min(ownedRemainingQuantity, monthlyRemainingQuantity));
     }
 
     function isCartEntryAtQuantityLimit(entry) {
@@ -435,6 +473,26 @@ export function ShopPage() {
         }
 
         return ownedItemSignatures.has(getPurchaseEntrySignature(entry));
+    }
+
+    function isOwnedPowerUpQuantityMax(item) {
+        return getOwnedPowerUpQuantity(item) >= getMaxOwnedQuantityForPowerUp(item);
+    }
+
+    function isMonthlyBoostPurchaseQuantityMax(item) {
+        return isBoostPowerUp(item) && getMonthlyBoostPurchaseQuantity(item) >= monthlyBoostPurchaseLimit;
+    }
+
+    function getPowerUpLimitLabel(item) {
+        if (isOwnedPowerUpQuantityMax(item)) {
+            return 'Inventory full';
+        }
+
+        if (isMonthlyBoostPurchaseQuantityMax(item)) {
+            return 'Monthly limit';
+        }
+
+        return 'Limit reached';
     }
 
     function isCurrentItemInCart(item) {
@@ -629,6 +687,26 @@ export function ShopPage() {
         });
     }
 
+    function addPurchasedMonthlyBoostQuantities(purchasedQuantitiesByCartKey, purchasedEntries) {
+        setMonthlyBoostPurchaseQuantities((currentQuantities) => {
+            const nextQuantities = { ...currentQuantities };
+
+            purchasedEntries.forEach((entry) => {
+                const item = getPurchaseEntryItem(entry);
+                const purchasedQuantity = purchasedQuantitiesByCartKey[entry.cartKey] ?? 0;
+
+                if (isBoostPowerUp(item) && purchasedQuantity > 0) {
+                    nextQuantities[item.assetKey] = Math.min(
+                        monthlyBoostPurchaseLimit,
+                        Number(nextQuantities[item.assetKey] ?? 0) + purchasedQuantity,
+                    );
+                }
+            });
+
+            return nextQuantities;
+        });
+    }
+
     async function handleBuyItems(entriesForPurchase) {
         setBuyingItemId('cart');
         setError('');
@@ -661,6 +739,7 @@ export function ShopPage() {
                 return nextOwnedItemSignatures;
             });
             addPurchasedPowerUpQuantities(purchasedQuantitiesByCartKey, entriesForPurchase);
+            addPurchasedMonthlyBoostQuantities(purchasedQuantitiesByCartKey, entriesForPurchase);
             setCartItems((currentCartItems) => currentCartItems.flatMap((entry) => {
                 const purchasedQuantity = purchasedQuantitiesByCartKey[entry.cartKey] ?? 0;
 
@@ -671,7 +750,10 @@ export function ShopPage() {
                 const remainingQuantity = getPurchaseEntryQuantity(entry) - purchasedQuantity;
                 return remainingQuantity > 0 ? [{ ...entry, quantity: remainingQuantity }] : [];
             }));
-            await refreshCurrentUser();
+            await Promise.all([
+                refreshCurrentUser(),
+                refreshBoostPurchaseLimits(),
+            ]);
             setItemsToBuy([]);
         } catch (buyError) {
             if (Object.keys(purchasedQuantitiesByCartKey).length > 0) {
@@ -685,6 +767,7 @@ export function ShopPage() {
                     return nextOwnedItemSignatures;
                 });
                 addPurchasedPowerUpQuantities(purchasedQuantitiesByCartKey, entriesForPurchase);
+                addPurchasedMonthlyBoostQuantities(purchasedQuantitiesByCartKey, entriesForPurchase);
                 setCartItems((currentCartItems) => currentCartItems.flatMap((entry) => {
                     const purchasedQuantity = purchasedQuantitiesByCartKey[entry.cartKey] ?? 0;
 
@@ -695,7 +778,10 @@ export function ShopPage() {
                     const remainingQuantity = getPurchaseEntryQuantity(entry) - purchasedQuantity;
                     return remainingQuantity > 0 ? [{ ...entry, quantity: remainingQuantity }] : [];
                 }));
-                await refreshCurrentUser();
+                await Promise.all([
+                    refreshCurrentUser(),
+                    refreshBoostPurchaseLimits(),
+                ]);
             }
 
             const failedItem = getPurchaseEntryItem(failedEntry);
@@ -706,6 +792,9 @@ export function ShopPage() {
                 setError('One of these items is already in your inventory');
             } else if (buyError.code === 'BOOST_QUANTITY_LIMIT_REACHED') {
                 await refreshCurrentUser();
+            } else if (buyError.code === 'BOOST_MONTHLY_LIMIT_REACHED') {
+                setError('Monthly boost purchase limit reached for this boost.');
+                await refreshBoostPurchaseLimits();
             } else if (buyError.code === 'SHIELDS_AT_MAX') {
                 await refreshCurrentUser();
             } else if (buyError.code === 'PREMIUM_REQUIRED') {
@@ -822,7 +911,7 @@ export function ShopPage() {
                                         const entry = cartEntry ?? createPurchaseEntry(item);
                                         return getMaxCartQuantityForEntry(entry) <= 0 || (cartEntry ? isCartEntryAtQuantityLimit(cartEntry) : false);
                                     }}
-                                    isOwnedQuantityMax={(item) => getOwnedPowerUpQuantity(item) >= MAX_STREAK_SHIELDS}
+                                    isOwnedQuantityMax={isOwnedPowerUpQuantityMax}
                                     isBuying={buyingItemId === 'cart'}
                                     isFreeUser={isFreeUser}
                                     onPremiumRequired={handlePremiumRequired}
@@ -840,7 +929,9 @@ export function ShopPage() {
                                         const entry = cartEntry ?? createPurchaseEntry(item);
                                         return getMaxCartQuantityForEntry(entry) <= 0 || (cartEntry ? isCartEntryAtQuantityLimit(cartEntry) : false);
                                     }}
-                                    isOwnedQuantityMax={(item) => getOwnedPowerUpQuantity(item) >= MAX_OWNED_POWER_UP_QUANTITY}
+                                    isOwnedQuantityMax={isOwnedPowerUpQuantityMax}
+                                    isMonthlyQuantityMax={isMonthlyBoostPurchaseQuantityMax}
+                                    getLimitLabel={getPowerUpLimitLabel}
                                     isBuying={buyingItemId === 'cart'}
                                     isFreeUser={isFreeUser}
                                     onPremiumRequired={handlePremiumRequired}
