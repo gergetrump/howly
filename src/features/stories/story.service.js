@@ -400,6 +400,42 @@ export async function getStoryLikes({ userId, storyId }) {
   return { likers: filteredLikes.map((like) => toPublicUser(like.user)).filter(Boolean) };
 }
 
+export async function getStoryMentionCandidates({ userId, storyId }) {
+  const story = await Story.findById(storyId).lean();
+
+  if (
+    !story
+    || story.feedExpiresAt <= new Date()
+    || (!sameId(story.user, userId) && !(await areFriends(userId, story.user)))
+  ) {
+    return { errorCode: 'STORY_NOT_FOUND' };
+  }
+
+  const friendships = await Friendship.find({
+    $or: [{ userA: story.user }, { userB: story.user }],
+  }).lean();
+  const candidateIds = new Set([story.user.toString()]);
+
+  friendships.forEach((friendship) => {
+    const friendId = sameId(friendship.userA, story.user) ? friendship.userB : friendship.userA;
+    candidateIds.add(friendId.toString());
+  });
+
+  candidateIds.delete(userId.toString());
+
+  const blockedSet = await getBlockedUserIds(userId);
+  blockedSet.forEach((blockedUserId) => candidateIds.delete(blockedUserId));
+
+  const candidates = await User.find({
+    _id: { $in: [...candidateIds].map((id) => new mongoose.Types.ObjectId(id)) },
+    isDeleted: false,
+  })
+    .sort({ firstName: 1, username: 1 })
+    .lean();
+
+  return { candidates: candidates.map(toPublicUser).filter(Boolean) };
+}
+
 export async function deleteStory({ userId, storyId }) {
   const story = await Story.findOne({ _id: storyId, user: userId });
 

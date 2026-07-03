@@ -402,6 +402,66 @@ test('tagging a user who cannot see the story does not create a notification', a
   assert.equal(await Notification.countDocuments({ recipient: taggedStranger._id }), 0);
 });
 
+test('story mention candidates come from users who can see the story, not interactions', async () => {
+  const storyOwner = await buildUser({ username: 'charlie', firstName: 'Charlie' });
+  const commenter = await buildUser({ username: 'bob', firstName: 'Bob' });
+  const visibleFriend = await buildUser({ username: 'alice', firstName: 'Alice' });
+  const stranger = await buildUser({ username: 'zoe', firstName: 'Zoe' });
+  await makeFriends(storyOwner, commenter);
+  await makeFriends(storyOwner, visibleFriend);
+
+  const habit = await buildHabit(storyOwner);
+  const story = await buildStory(storyOwner, habit);
+
+  await StoryLike.create({ story: story._id, user: stranger._id });
+  await StoryComment.create({ story: story._id, user: stranger._id, content: 'I should not appear' });
+
+  const response = await request(app)
+    .get(`/api/stories/${story._id}/mention-candidates`)
+    .set('Authorization', authHeader(commenter))
+    .expect(200);
+
+  const usernames = response.body.map((user) => user.username).sort();
+
+  assert.deepEqual(usernames, ['alice', 'charlie']);
+});
+
+test('story mention candidates exclude blocked relationships', async () => {
+  const storyOwner = await buildUser({ username: 'charlie', firstName: 'Charlie' });
+  const commenter = await buildUser({ username: 'bob', firstName: 'Bob' });
+  const blockedFriend = await buildUser({ username: 'alice', firstName: 'Alice' });
+  await makeFriends(storyOwner, commenter);
+  await makeFriends(storyOwner, blockedFriend);
+  await User.updateOne(
+    { _id: commenter._id },
+    { $addToSet: { blockedUsers: blockedFriend._id } },
+  );
+
+  const habit = await buildHabit(storyOwner);
+  const story = await buildStory(storyOwner, habit);
+
+  const response = await request(app)
+    .get(`/api/stories/${story._id}/mention-candidates`)
+    .set('Authorization', authHeader(commenter))
+    .expect(200);
+
+  const usernames = response.body.map((user) => user.username).sort();
+
+  assert.deepEqual(usernames, ['charlie']);
+});
+
+test('story mention candidates are unavailable to users who cannot see the story', async () => {
+  const storyOwner = await buildUser({ username: 'charlie', firstName: 'Charlie' });
+  const stranger = await buildUser({ username: 'zoe', firstName: 'Zoe' });
+  const habit = await buildHabit(storyOwner);
+  const story = await buildStory(storyOwner, habit);
+
+  await request(app)
+    .get(`/api/stories/${story._id}/mention-candidates`)
+    .set('Authorization', authHeader(stranger))
+    .expect(404);
+});
+
 test('non-friends cannot like a story (404)', async () => {
   const owner = await buildUser();
   const stranger = await buildUser();
