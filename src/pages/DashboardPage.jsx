@@ -85,7 +85,7 @@ export function DashboardPage() {
     const [equippedItemConfigs, setEquippedItemConfigs] = useState([]);
     const [limitPrompt, setLimitPrompt] = useState(null);
     const [planInfo, setPlanInfo] = useState(null);
-    // Habit ids that already have an active story in the 7-day feed window
+    // Habit ids that already have an active story in the 30-day feed window
     const [sharedHabitIds, setSharedHabitIds] = useState(new Set());
     const planLimits = planInfo?.currentPlan?.limits;
     const isPremiumUser = planInfo?.currentPlanKey === 'premium' || user?.role === 'admin' || user?.isPremium === true;

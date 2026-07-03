@@ -14,8 +14,8 @@ import { cn } from '@/lib/utils';
 
 // Mirrors the backend plan limits (config/plans.js) so we can cap selection
 // before hitting the server; the server stays the source of truth.
-const FREE_MAX_HABITS = 2;
-const PREMIUM_MAX_HABITS = 6;
+const FREE_MAX_HABITS = 9999;
+const PREMIUM_MAX_HABITS = 9999;
 
 function fallbackSuggestions() {
     return STARTER_HABITS.slice(0, 3).map((habit) => ({
