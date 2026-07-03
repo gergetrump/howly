@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Send, Trash2 } from 'lucide-react';
-import { postStoryComment, deleteStoryComment } from '@/services/storyApi';
+import { postStoryComment, deleteStoryComment, getStoryMentionCandidates } from '@/services/storyApi';
 import { getUserByUsername } from '@/services/userApi';
 import {
     formatRelativeTime,
@@ -35,24 +35,45 @@ export function StoryCommentSection({
     comments = [],
     setComments,
     isLoading = false,
-    likers = [],
+    hasLoadedComments = false,
     onOpenProfile,
     isStoryOwner = false,
     blockedUsers = [],
     blockers = [],
     onCommentAdded,
     onCommentDeleted,
+    targetCommentId = null,
+    targetCommentToken = null,
+    onTargetCommentHandled,
+    onTargetCommentUnavailable,
 }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [newComment, setNewComment] = useState('');
     const [replyingTo, setReplyingTo] = useState(null);
     const [expandedParentIds, setExpandedParentIds] = useState(new Set());
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [suggestions, setSuggestions] = useState([]);
     const [error, setError] = useState('');
     const [commentIdToDelete, setCommentIdToDelete] = useState(null);
+    const [highlightedCommentId, setHighlightedCommentId] = useState(null);
+    const [mentionCandidates, setMentionCandidates] = useState([]);
     const inputRef = useRef(null);
     const containerRef = useRef(null);
+    // Tracks which notification click has already been highlighted so background
+    // refreshes never replay the same jump while the section is mounted.
+    const hasHighlightedRef = useRef(null);
+    const highlightFadeTimerRef = useRef(null);
+    const mentionQuery = newComment.match(/@(\w*)$/)?.[1].toLowerCase() ?? null;
+    const suggestions = useMemo(() => {
+        if (mentionQuery === null) return [];
+
+        const uniqueUsers = getUniqueUsers(mentionCandidates);
+
+        return uniqueUsers.filter((u) => {
+            const username = (u?.username || '').toLowerCase();
+            const firstName = (u?.firstName || '').toLowerCase();
+            return username.includes(mentionQuery) || firstName.includes(mentionQuery);
+        });
+    }, [mentionQuery, mentionCandidates]);
+    const showSuggestions = mentionQuery !== null && suggestions.length > 0;
 
     const confirmDelete = async () => {
         if (commentIdToDelete) {
@@ -61,26 +82,116 @@ export function StoryCommentSection({
         }
     };
 
+    useEffect(() => {
+        return () => clearTimeout(highlightFadeTimerRef.current);
+    }, []);
 
     useEffect(() => {
-        const match = newComment.match(/@(\w*)$/);
-        if (match) {
-            const query = match[1].toLowerCase();
-            const allUsers = [...likers, ...comments.map((c) => c.user)];
-            const uniqueUsers = getUniqueUsers(allUsers);
-            
-            const filtered = uniqueUsers.filter((u) => {
-                const username = (u?.username || '').toLowerCase();
-                const firstName = (u?.firstName || '').toLowerCase();
-                return username.includes(query) || firstName.includes(query);
-            });
-            
-            setSuggestions(filtered);
-            setShowSuggestions(true);
-        } else {
-            setShowSuggestions(false);
+        if (!story?.id) {
+            setMentionCandidates([]);
+            return undefined;
         }
-    }, [newComment, comments, likers]);
+
+        let active = true;
+
+        getStoryMentionCandidates(story.id)
+            .then((candidates) => {
+                if (active) {
+                    setMentionCandidates(candidates ?? []);
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setMentionCandidates([]);
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [story?.id]);
+
+    // When a notification click provides a target comment, scroll to that
+    // comment and briefly highlight it once for that click.
+    useEffect(() => {
+        if (!targetCommentId || isLoading || !hasLoadedComments) return;
+        const highlightKey = targetCommentToken ?? targetCommentId;
+        if (hasHighlightedRef.current === highlightKey) return;
+
+        const targetComment = comments.find((comment) => comment.id === targetCommentId);
+
+        if (!targetComment) {
+            hasHighlightedRef.current = highlightKey;
+            onTargetCommentUnavailable?.();
+            return;
+        }
+
+        const parentCommentId = targetComment?.parentComment?.id ?? targetComment?.parentComment;
+
+        let cancelled = false;
+        const cleanupEvents = [];
+
+        function cancelPendingJump() {
+            cancelled = true;
+            clearTimeout(highlightFadeTimerRef.current);
+            setHighlightedCommentId(null);
+        }
+
+        ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach((eventName) => {
+            window.addEventListener(eventName, cancelPendingJump, { once: true, passive: true, capture: true });
+            cleanupEvents.push(() => window.removeEventListener(eventName, cancelPendingJump, { capture: true }));
+        });
+
+        const expandTimer = setTimeout(() => {
+            if (cancelled) return;
+            if (parentCommentId) {
+                setExpandedParentIds((current) => {
+                    if (current.has(parentCommentId)) return current;
+                    const next = new Set(current);
+                    next.add(parentCommentId);
+                    return next;
+                });
+            }
+        }, 0);
+
+        const timer = setTimeout(() => {
+            if (cancelled) return;
+            const container = containerRef.current;
+            const el = container?.querySelector(`[data-comment-id="${targetCommentId}"]`);
+            if (!el) {
+                hasHighlightedRef.current = highlightKey;
+                onTargetCommentUnavailable?.();
+                return;
+            }
+
+            hasHighlightedRef.current = highlightKey;
+            el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+            clearTimeout(highlightFadeTimerRef.current);
+            setHighlightedCommentId(targetCommentId);
+            onTargetCommentHandled?.();
+
+            // Fade the highlight out after 3 seconds.
+            highlightFadeTimerRef.current = setTimeout(() => {
+                setHighlightedCommentId(null);
+                highlightFadeTimerRef.current = null;
+            }, 3000);
+        }, 300);
+
+        return () => {
+            cancelled = true;
+            cleanupEvents.forEach((cleanup) => cleanup());
+            clearTimeout(expandTimer);
+            clearTimeout(timer);
+        };
+    }, [
+        targetCommentId,
+        targetCommentToken,
+        isLoading,
+        hasLoadedComments,
+        comments,
+        onTargetCommentHandled,
+        onTargetCommentUnavailable,
+    ]);
 
     function handleSelectSuggestion(user) {
         const mention = `@${user.username} `;
@@ -89,7 +200,6 @@ export function StoryCommentSection({
             if (lastIndex === -1) return prev;
             return prev.substring(0, lastIndex) + mention;
         });
-        setShowSuggestions(false);
     }
 
     const toggleReplies = (parentId) => {
@@ -209,17 +319,38 @@ export function StoryCommentSection({
     }
 
     function CommentItem({ comment, isReply = false }) {
+        const isHighlighted = comment.id === highlightedCommentId;
+        const commentUser = comment.user;
+        const commentUserName = commentUser?.firstName || commentUser?.username || 'user';
+
         return (
-            <div className={`flex items-start gap-3 text-sm ${isReply ? 'pl-8 mt-2 border-l border-slate-800' : ''}`}>
-                <img
-                    src={comment.user?.profilePictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'}
-                    alt={comment.user?.username || 'User'}
-                    className={`${isReply ? 'size-6' : 'size-8'} rounded-full bg-slate-800 object-cover`}
-                />
+            <div
+                data-comment-id={comment.id}
+                className={`flex items-start gap-3 text-sm rounded-lg transition-colors duration-700 ${
+                    isReply ? 'pl-8 mt-2 border-l border-slate-800' : ''
+                } ${
+                    isHighlighted
+                        ? 'ring-2 ring-violet-400/60 bg-violet-400/10'
+                        : ''
+                }`}
+            >
+                <button
+                    type="button"
+                    onClick={() => commentUser && onOpenProfile?.(commentUser)}
+                    disabled={!commentUser || !onOpenProfile}
+                    className="shrink-0 rounded-full transition hover:opacity-85 focus:outline-none focus:ring-2 focus:ring-violet-400/70 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:cursor-default disabled:hover:opacity-100"
+                    aria-label={`Open ${commentUserName}'s profile preview`}
+                >
+                    <img
+                        src={commentUser?.profilePictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'}
+                        alt=""
+                        className={`${isReply ? 'size-6' : 'size-8'} rounded-full bg-slate-800 object-cover`}
+                    />
+                </button>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-2">
                         <span className="font-semibold text-slate-200">
-                            {comment.user?.firstName || comment.user?.username || 'someone'}
+                            {commentUser?.firstName || commentUser?.username || 'someone'}
                         </span>
                         <span className="text-xs text-slate-500 shrink-0">
                             {formatRelativeTime(comment.createdAt)}

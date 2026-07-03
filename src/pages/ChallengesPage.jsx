@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Loader2, Pencil, UserPlus } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Loader2, Pencil, Trophy, UserPlus } from 'lucide-react';
 import { ActionButton, CardGrid, PlanLimitDialog } from '@/components/common';
 import { ChallengeCard } from '@/components/cards/ChallengeCard.jsx';
 import { ChallengeFormDialog } from '@/components/cards/ChallengeFormDialog.jsx';
@@ -8,6 +8,7 @@ import { ChallengeInviteDialog } from '@/components/cards/ChallengeInviteDialog.
 import { ChallengeInvitationList } from '@/components/cards/ChallengeInvitationList.jsx';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
+import { NotificationBanner } from '@/components/ui/notification-banner.jsx';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/authContext';
 import {
@@ -51,6 +52,27 @@ function isActiveChallenge(challenge) {
         && challenge.status !== 'failed'
         && challenge.endsAt
         && new Date(challenge.endsAt).getTime() > Date.now();
+}
+
+function getInvitationChallengeId(invitation) {
+    return typeof invitation?.challenge === 'object'
+        ? invitation.challenge?.id
+        : invitation?.challenge;
+}
+
+function isChallengeNotificationAvailable(notificationJump, { challenges = [], invitations = { incoming: [], outgoing: [] } } = {}) {
+    const challengeId = notificationJump?.challengeId ?? notificationJump?.metadata?.challengeId;
+    const invitationId = notificationJump?.invitationId;
+    const allInvitations = [
+        ...(invitations.incoming ?? []),
+        ...(invitations.outgoing ?? []),
+    ];
+
+    return Boolean(
+        (challengeId && challenges.some((challenge) => challenge?.id === challengeId))
+        || (invitationId && allInvitations.some((invitation) => invitation.id === invitationId))
+        || (challengeId && allInvitations.some((invitation) => getInvitationChallengeId(invitation) === challengeId))
+    );
 }
 
 function isUpgradeError(code) {
@@ -118,10 +140,17 @@ function ChallengeAlert({ error, notice, onUpgrade }) {
 
 export function ChallengesPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('active');
     const [challenges, setChallenges] = useState([]);
     const [invitations, setInvitations] = useState({ incoming: [], outgoing: [] });
+    const [pendingNotificationJump, setPendingNotificationJump] = useState(() => (
+        location.state?.notificationJump?.type === 'challenge_invitation_received'
+            ? location.state.notificationJump
+            : null
+    ));
+    const [banner, setBanner] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingChallenge, setEditingChallenge] = useState(null);
@@ -144,9 +173,13 @@ export function ChallengesPage() {
 
     const visibleChallenges = useMemo(() => challenges.filter(Boolean), [challenges]);
 
-    const loadChallengeData = useCallback(async (scope) => {
-        setIsLoading(true);
-        setError(null);
+    const loadChallengeData = useCallback(async (scope, { showLoading = true, showError = true } = {}) => {
+        if (showLoading) {
+            setIsLoading(true);
+        }
+        if (showError) {
+            setError(null);
+        }
 
         try {
             const [challengeData, invitationData] = await Promise.all([
@@ -154,12 +187,22 @@ export function ChallengesPage() {
                 getChallengeInvitations(),
             ]);
 
-            setChallenges(Array.isArray(challengeData) ? challengeData : []);
-            setInvitations(invitationData ?? { incoming: [], outgoing: [] });
+            const nextChallenges = Array.isArray(challengeData) ? challengeData : [];
+            const nextInvitations = invitationData ?? { incoming: [], outgoing: [] };
+
+            setChallenges(nextChallenges);
+            setInvitations(nextInvitations);
+
+            return { challenges: nextChallenges, invitations: nextInvitations };
         } catch (loadError) {
-            setError({ message: loadError.message || 'Failed to load challenges.', code: loadError.code });
+            if (showError) {
+                setError({ message: loadError.message || 'Failed to load challenges.', code: loadError.code });
+            }
+            return null;
         } finally {
-            setIsLoading(false);
+            if (showLoading) {
+                setIsLoading(false);
+            }
         }
     }, []);
 
@@ -169,6 +212,67 @@ export function ChallengesPage() {
         }, 0);
 
         return () => window.clearTimeout(timerId);
+    }, [activeTab, loadChallengeData]);
+
+    useEffect(() => {
+        const nextJump = location.state?.notificationJump;
+
+        if (nextJump?.type !== 'challenge_invitation_received') {
+            return;
+        }
+
+        setPendingNotificationJump(nextJump);
+        setActiveTab('active');
+        navigate('/challenges', { replace: true, state: null });
+    }, [location.state, navigate]);
+
+    useEffect(() => {
+        if (!pendingNotificationJump) {
+            return undefined;
+        }
+
+        let isCancelled = false;
+
+        async function validateNotificationJump() {
+            setActiveTab('active');
+
+            const latestData = await loadChallengeData('active', {
+                showLoading: false,
+                showError: false,
+            });
+
+            if (isCancelled) {
+                return;
+            }
+
+            if (latestData && !isChallengeNotificationAvailable(pendingNotificationJump, latestData)) {
+                setBanner({
+                    variant: 'unavailable',
+                    eyebrow: 'Notification link unavailable',
+                    title: 'Challenge not found',
+                });
+            }
+
+            setPendingNotificationJump(null);
+        }
+
+        validateNotificationJump();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [loadChallengeData, pendingNotificationJump]);
+
+    useEffect(() => {
+        function refreshChallengeData() {
+            loadChallengeData(activeTab, { showLoading: false, showError: false });
+        }
+
+        window.addEventListener('howly:notifications-updated', refreshChallengeData);
+
+        return () => {
+            window.removeEventListener('howly:notifications-updated', refreshChallengeData);
+        };
     }, [activeTab, loadChallengeData]);
 
     function showActionError(actionError, fallbackMessage) {
@@ -415,6 +519,20 @@ export function ChallengesPage() {
     return (
         <Page theme="forest">
             <Heading title="Challenges" subtitle="Join friendly habit challenges." streakDays={user?.streakCount ?? user?.streak ?? 0} />
+
+            {banner && (
+                <div className="fixed right-6 top-24 z-[9999] w-[min(92vw,24rem)]">
+                    <NotificationBanner
+                        variant={banner.variant}
+                        eyebrow={banner.eyebrow}
+                        title={banner.title}
+                        icon={<Trophy className="size-5" aria-hidden="true" />}
+                        onClose={() => setBanner(null)}
+                        autoCloseMs={6000}
+                        className="px-4 py-3"
+                    />
+                </div>
+            )}
 
             <PageSection
                 width="full"

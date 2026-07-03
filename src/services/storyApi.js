@@ -33,6 +33,10 @@ export function getStoryLikes(storyId) {
     return apiRequest(`/stories/${storyId}/likes`);
 }
 
+export function getStoryMentionCandidates(storyId) {
+    return apiRequest(`/stories/${storyId}/mention-candidates`);
+}
+
 export function deleteStory(storyId) {
     return apiRequest(`/stories/${storyId}`, { method: 'DELETE' });
 }
