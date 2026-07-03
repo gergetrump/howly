@@ -192,7 +192,7 @@ async function toVisibleStoryResponse(story, userId, likedStoryIds = new Set()) 
   return response;
 }
 
-// Stories from the user and their friends that are still inside the 7-day feed window
+// Stories from the user and their friends that are still inside the 30-day feed window
 export async function getFriendFeedStories({ userId }) {
   const friendships = await Friendship.find({
     $or: [{ userA: userId }, { userB: userId }],

@@ -12,8 +12,6 @@ import Item from '../src/features/items/item.model.js';
 import UserItem from '../src/features/inventory/inventory.model.js';
 import HabitBoost from '../src/features/boosts/habitBoost.model.js';
 import config from '../config.js';
-import { getPlanForUser } from '../src/config/plans.js';
-
 let mongo;
 let app;
 
@@ -311,11 +309,11 @@ test('habit custom frequency stores customDays properly', async () => {
   assert.deepEqual(createResponse.body.data.customDays, [1, 3, 5]);
 });
 
-test('free users can create only two habits', async () => {
+test('free users can create multiple habits', async () => {
   const user = await buildUser();
   const token = authHeader(user);
 
-  for (let index = 1; index <= 2; index += 1) {
+  for (let index = 1; index <= 3; index += 1) {
     await request(app)
       .post('/api/habits')
       .set('Authorization', token)
@@ -327,27 +325,13 @@ test('free users can create only two habits', async () => {
       })
       .expect(201);
   }
-
-  const response = await request(app)
-    .post('/api/habits')
-    .set('Authorization', token)
-    .send({
-      title: 'Third Free Habit',
-      type: 'boolean',
-      frequency: 'Daily',
-      category: 'Movement',
-    })
-    .expect(403);
-
-  assert.equal(response.body.errorCode, 'HABIT_LIMIT_REACHED');
 });
 
-test('premium users can create habits up to their plan limit', async () => {
+test('premium users can create habits without hitting the plan limit', async () => {
   const user = await buildUser({ isPremium: true });
   const token = authHeader(user);
-  const maxHabits = getPlanForUser(user).limits.maxHabits;
 
-  for (let index = 1; index <= maxHabits; index += 1) {
+  for (let index = 1; index <= 3; index += 1) {
     await request(app)
       .post('/api/habits')
       .set('Authorization', token)
@@ -359,17 +343,4 @@ test('premium users can create habits up to their plan limit', async () => {
       })
       .expect(201);
   }
-
-  const response = await request(app)
-    .post('/api/habits')
-    .set('Authorization', token)
-    .send({
-      title: 'Habit Over Premium Limit',
-      type: 'boolean',
-      frequency: 'Daily',
-      category: 'Movement',
-    })
-    .expect(403);
-
-  assert.equal(response.body.errorCode, 'HABIT_LIMIT_REACHED');
 });
