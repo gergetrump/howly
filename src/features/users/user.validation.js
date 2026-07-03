@@ -6,6 +6,10 @@ const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 const NOTIFICATION_PREFERENCE_KEYS = [
+    'emailEnabled',
+    'challengeInvitations',
+    'friendRequests',
+    'streakReminders',
     'muteAll',
     'muteTag',
     'muteFriendRequest',
@@ -121,11 +125,10 @@ export function validateUpdateUserInput(body = {}) {
 }
 
 export function validateNotificationPreferencesInput(body = {}) {
-    const allowedFields = ['emailEnabled', 'challengeInvitations', 'friendRequests', 'streakReminders'];
     const updates = {};
     const errors = [];
 
-    for (const field of allowedFields) {
+    for (const field of NOTIFICATION_PREFERENCE_KEYS) {
         if (body[field] === undefined) {
             continue;
         }

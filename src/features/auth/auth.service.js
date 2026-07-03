@@ -15,22 +15,21 @@ const DEFAULT_NOTIFICATION_PREFERENCES = {
     challengeInvitations: false,
     friendRequests: false,
     streakReminders: false,
+    muteAll: false,
+    muteTag: false,
+    muteFriendRequest: false,
+    muteComment: false,
+    muteLike: false,
+    muteReaction: false,
+    muteChallengeInvitation: false,
 };
 
 function normalizeNotificationPreferences(preferences = {}) {
     return {
-        emailEnabled: typeof preferences?.emailEnabled === 'boolean'
-            ? preferences.emailEnabled
-            : DEFAULT_NOTIFICATION_PREFERENCES.emailEnabled,
-        challengeInvitations: typeof preferences?.challengeInvitations === 'boolean'
-            ? preferences.challengeInvitations
-            : DEFAULT_NOTIFICATION_PREFERENCES.challengeInvitations,
-        friendRequests: typeof preferences?.friendRequests === 'boolean'
-            ? preferences.friendRequests
-            : DEFAULT_NOTIFICATION_PREFERENCES.friendRequests,
-        streakReminders: typeof preferences?.streakReminders === 'boolean'
-            ? preferences.streakReminders
-            : DEFAULT_NOTIFICATION_PREFERENCES.streakReminders,
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        ...Object.fromEntries(
+            Object.entries(preferences ?? {}).filter(([, value]) => typeof value === 'boolean')
+        ),
     };
 }
 

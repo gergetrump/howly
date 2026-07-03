@@ -119,22 +119,17 @@ const userSchema = new Schema(
       default: null,
     },
     notificationPreferences: {
-      emailEnabled: {
-        type: Boolean,
-        default: false,
-      },
-      challengeInvitations: {
-        type: Boolean,
-        default: false,
-      },
-      friendRequests: {
-        type: Boolean,
-        default: false,
-      },
-      streakReminders: {
-        type: Boolean,
-        default: false,
-      },
+      emailEnabled: { type: Boolean, default: false },
+      challengeInvitations: { type: Boolean, default: false },
+      friendRequests: { type: Boolean, default: false },
+      streakReminders: { type: Boolean, default: false },
+      muteAll: { type: Boolean, default: false },
+      muteTag: { type: Boolean, default: false },
+      muteFriendRequest: { type: Boolean, default: false },
+      muteComment: { type: Boolean, default: false },
+      muteLike: { type: Boolean, default: false },
+      muteReaction: { type: Boolean, default: false },
+      muteChallengeInvitation: { type: Boolean, default: false },
     },
     streakReminderEmailLastSentFor: {
       type: Date,
@@ -175,15 +170,6 @@ const userSchema = new Schema(
         index: true,
       }
     ],
-    notificationPreferences: {
-      muteAll: { type: Boolean, default: false },
-      muteTag: { type: Boolean, default: false },
-      muteFriendRequest: { type: Boolean, default: false },
-      muteComment: { type: Boolean, default: false },
-      muteLike: { type: Boolean, default: false },
-      muteReaction: { type: Boolean, default: false },
-      muteChallengeInvitation: { type: Boolean, default: false },
-    },
   },
   {
     timestamps: true,

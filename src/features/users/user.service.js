@@ -8,6 +8,13 @@ const DEFAULT_NOTIFICATION_PREFERENCES = {
     challengeInvitations: false,
     friendRequests: false,
     streakReminders: false,
+    muteAll: false,
+    muteTag: false,
+    muteFriendRequest: false,
+    muteComment: false,
+    muteLike: false,
+    muteReaction: false,
+    muteChallengeInvitation: false,
 };
 
 function normalizeNotificationPreferences(preferences = {}) {
@@ -141,15 +148,6 @@ export function toPublicUser(user) {
         streakRepairDeadline: user.streakRepairDeadline ?? null,
         notificationPreferences: normalizeNotificationPreferences(user.notificationPreferences),
         ghostMode: user.ghostMode ?? false,
-        notificationPreferences: user.notificationPreferences ?? {
-            muteAll: false,
-            muteTag: false,
-            muteFriendRequest: false,
-            muteComment: false,
-            muteLike: false,
-            muteReaction: false,
-            muteChallengeInvitation: false,
-        },
         premiumStatus: user.premiumStatus,
         premiumUntil: user.premiumUntil,
         createdAt: user.createdAt,
