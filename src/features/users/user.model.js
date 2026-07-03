@@ -140,6 +140,10 @@ const userSchema = new Schema(
       type: Date,
       default: null,
     },
+    ghostMode: {
+      type: Boolean,
+      default: false,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

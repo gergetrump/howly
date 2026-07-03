@@ -29,8 +29,12 @@ const config = {
             apiKey: 'REDACTED',
             // Any free model from https://openrouter.ai/models?max_price=0
             model: 'openai/gpt-oss-120b:free',
+            embeddingModel: 'openai/text-embedding-3-small',
         },
-    }
+    },
+    taxonomy: {
+        minScore: 0.1,
+    },
 };
 
 export default config;

@@ -1,5 +1,7 @@
 import Companion, { COMPANION_TYPES } from './companion.model.js';
+import User from '../users/user.model.js';
 import { ApiError } from '../../errors/ApiError.js';
+import { hasPremiumAccess } from '../../config/plans.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -48,6 +50,14 @@ export async function selectCompanion(userId, { type, name } = {}) {
     }
     if (trimmedName.length > 30) {
         throw ApiError.badRequest('Companion name must be 30 characters or less.');
+    }
+
+    const existing = await Companion.findOne({ user: userId });
+    if (existing && existing.type !== type) {
+        const user = await User.findById(userId).select('role isPremium');
+        if (!hasPremiumAccess(user)) {
+            throw ApiError.forbidden('Changing your companion is a Premium feature.');
+        }
     }
 
     // One companion per user (unique index on `user`), so upsert keeps the

@@ -7,6 +7,12 @@ import { Friendship } from '../social/social.model.js';
 import { sendChallengeInvitationEmail } from '../mail/mail.service.js';
 import config from '../../../config.js';
 import { getPlanForUser, hasPremiumAccess } from '../../config/plans.js';
+import { toTaxonomyDto } from '../taxonomy/taxonomy.schema.js';
+import {
+    copyTaxonomyToHabit,
+    scheduleTaxonomyForChallenge,
+    scheduleTaxonomyForHabit,
+} from '../taxonomy/taxonomy.service.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const COINS_PER_CHALLENGE_DAY = 5;
@@ -95,7 +101,7 @@ function toHabitTemplate(input = {}) {
         unit: input.unit ?? '',
         frequency: input.frequency,
         customDays: input.customDays ?? [],
-        category: input.category ?? 'Challenge',
+        category: input.category ?? null,
     };
 }
 
@@ -116,12 +122,18 @@ function getHabitFieldsFromTemplate(template) {
 }
 
 async function createChallengeHabitForUser({ challenge, userId }) {
-    return Habit.create({
+    const habit = await Habit.create({
         ...getHabitFieldsFromTemplate(challenge.habitTemplate),
         ownerId: userId,
         source: 'challenge',
         challengeId: challenge._id,
     });
+    copyTaxonomyToHabit(habit, challenge);
+    await habit.save();
+    if (!habit.taxonomy?.canonicalHabitKey) {
+        scheduleTaxonomyForHabit(habit._id);
+    }
+    return habit;
 }
 
 async function getChallengeUserContext(user) {
@@ -278,6 +290,7 @@ function serializeChallenge(challenge, participantCount = 0, viewerParticipant =
         habitTitle: challenge.habitTitle,
         habitTemplate: challenge.habitTemplate,
         description: challenge.description,
+        taxonomy: toTaxonomyDto(challenge.taxonomy),
         coinReward: challenge.coinReward,
         frequency: challenge.frequency,
         durationDays: challenge.durationDays,
@@ -335,6 +348,7 @@ function serializeChallengeHabit(habit) {
         frequency: habit.frequency,
         customDays: habit.customDays || [],
         category: habit.category ?? null,
+        taxonomy: toTaxonomyDto(habit.taxonomy),
         source: habit.source ?? 'challenge',
         challengeId: habit.challengeId ? habit.challengeId.toString() : null,
         isCompletedToday: isCompletedForPeriod(habit),
@@ -445,6 +459,9 @@ export async function createChallenge(input, user) {
         startsAt,
         endsAt: calculateEndDate(startsAt, input.durationDays),
     });
+
+    scheduleTaxonomyForChallenge(challenge._id);
+
     const habit = await createChallengeHabitForUser({ challenge, userId: user.id });
     const participant = await ChallengeParticipant.create({
         challenge: challenge._id,
