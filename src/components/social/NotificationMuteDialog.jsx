@@ -7,6 +7,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/authContext';
 import { updateCurrentUser } from '@/services/userService';
 
@@ -59,10 +60,23 @@ const MUTE_OPTIONS = [
     },
 ];
 
+const EMAIL_NOTIFICATION_OPTIONS = [
+    {
+        key: 'emailFriendInvite',
+        label: 'Friend Invites',
+        description: 'Email when someone sends you a friend request',
+    },
+    {
+        key: 'emailStreakSafe',
+        label: 'Streak Safe',
+        description: 'Email reminders before a streak is at risk',
+    },
+];
+
 function NotificationToggleRow({ option, checked, disabled, onToggle }) {
     return (
-        <div className={`flex items-center justify-between p-3 ${option.featured ? 'rounded-2xl border border-white/5' : 'rounded-xl'} bg-white/5`}>
-            <div>
+        <div className={`flex min-h-[4.5rem] items-center justify-between gap-4 p-3 ${option.featured ? 'rounded-2xl border border-white/5' : 'rounded-xl'} bg-white/5`}>
+            <div className="min-w-0">
                 <p className="font-semibold text-sm text-white">{option.label}</p>
                 <p className="text-xs text-slate-400">{option.description}</p>
             </div>
@@ -72,7 +86,7 @@ function NotificationToggleRow({ option, checked, disabled, onToggle }) {
                 disabled={disabled}
                 role="switch"
                 aria-checked={checked}
-                className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${
+                className={`flex h-7 w-12 shrink-0 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${
                     checked ? 'justify-end bg-violet-500' : 'justify-start bg-slate-600'
                 }`}
             >
@@ -111,7 +125,7 @@ export function NotificationMuteDialog({ open, onOpenChange }) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border-white/10 bg-[#24213d] text-white shadow-2xl sm:max-w-md">
+            <DialogContent className="border-white/10 bg-[#24213d] text-white shadow-2xl sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold flex items-center gap-2">
                         <BellOff className="size-5 text-violet-400" />
@@ -124,29 +138,58 @@ export function NotificationMuteDialog({ open, onOpenChange }) {
 
                 {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
 
-                <div className="mt-4 space-y-4">
-                    {MUTE_OPTIONS.filter((option) => option.featured).map((option) => (
-                        <NotificationToggleRow
-                            key={option.key}
-                            option={option}
-                            checked={prefs[option.key]}
-                            disabled={isSaving}
-                            onToggle={() => handleToggle(option.key)}
-                        />
-                    ))}
+                <Tabs defaultValue="inapp" className="mt-4 gap-4">
+                    <TabsList className="h-10 w-full border border-white/10 bg-white/10 p-1 text-white">
+                        <TabsTrigger
+                            value="inapp"
+                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                        >
+                            In-app
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="email"
+                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                        >
+                            Email
+                        </TabsTrigger>
+                    </TabsList>
 
-                    <div className={`space-y-3 transition-all duration-300 ${prefs.muteAll ? 'opacity-40 pointer-events-none' : ''}`}>
-                        {MUTE_OPTIONS.filter((option) => !option.featured).map((option) => (
+                    <TabsContent value="inapp" className="min-h-[33rem] space-y-4">
+                        {MUTE_OPTIONS.filter((option) => option.featured).map((option) => (
                             <NotificationToggleRow
                                 key={option.key}
                                 option={option}
                                 checked={prefs[option.key]}
-                                disabled={isSaving || prefs.muteAll}
+                                disabled={isSaving}
                                 onToggle={() => handleToggle(option.key)}
                             />
                         ))}
-                    </div>
-                </div>
+
+                        <div className={`space-y-3 transition-all duration-300 ${prefs.muteAll ? 'opacity-40 pointer-events-none' : ''}`}>
+                            {MUTE_OPTIONS.filter((option) => !option.featured).map((option) => (
+                                <NotificationToggleRow
+                                    key={option.key}
+                                    option={option}
+                                    checked={prefs[option.key]}
+                                    disabled={isSaving || prefs.muteAll}
+                                    onToggle={() => handleToggle(option.key)}
+                                />
+                            ))}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="email" className="min-h-[33rem] space-y-3">
+                        {EMAIL_NOTIFICATION_OPTIONS.map((option) => (
+                            <NotificationToggleRow
+                                key={option.key}
+                                option={option}
+                                checked={false}
+                                disabled
+                                onToggle={() => {}}
+                            />
+                        ))}
+                    </TabsContent>
+                </Tabs>
             </DialogContent>
         </Dialog>
     );

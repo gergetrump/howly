@@ -118,6 +118,18 @@ function getNotificationNavigationState(notification) {
         return undefined;
     }
 
+    if (notification.type === 'friend_request_received') {
+        return {
+            notificationJump: {
+                requestId: entityId,
+                type: notification.type,
+                actorId: notification.actor?.id ?? notification.actor?._id ?? null,
+                metadata: notification.metadata ?? {},
+                token: `${notification.id}-${Date.now()}`,
+            },
+        };
+    }
+
     if (notification.type === 'story_tagged' || notification.type === 'story_commented' || notification.type === 'story_liked') {
         return {
             notificationJump: {

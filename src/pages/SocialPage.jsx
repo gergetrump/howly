@@ -66,6 +66,7 @@ export function SocialPage() {
     const targetNotificationType = notificationJump?.type ?? null;
     const targetActorId = notificationJump?.actorId ?? null;
     const targetMetadata = notificationJump?.metadata ?? {};
+    const targetFriendRequestId = notificationJump?.requestId ?? null;
     const targetFeedPostId = targetStoryId ?? targetPostId;
     const requiresInteractionValidation = targetNotificationType === 'story_liked'
         || targetNotificationType === 'milestone_reacted';
@@ -148,10 +149,19 @@ export function SocialPage() {
                 setBlockedUsers(blockedData ?? []);
                 setBlockers(blockersData ?? []);
                 window.dispatchEvent(new Event('howly:social-requests-updated'));
+
+                return {
+                    friends: friendsData ?? [],
+                    requests: requestsData ?? { incoming: [], outgoing: [] },
+                    feed: feedData ?? [],
+                    blockedUsers: blockedData ?? [],
+                    blockers: blockersData ?? [],
+                };
             } catch (err) {
                 if (!silent) {
                     setError(err.message);
                 }
+                return null;
             } finally {
                 if (refreshPromiseRef.current === request) {
                     refreshPromiseRef.current = null;
@@ -192,6 +202,42 @@ export function SocialPage() {
 
         return () => window.clearTimeout(timer);
     }, [location.state, navigate, notificationJump?.token]);
+
+    useEffect(() => {
+        if (targetNotificationType !== 'friend_request_received' || !targetFriendRequestId) return undefined;
+
+        let isCancelled = false;
+
+        async function validateFriendRequestNotification() {
+            const latestData = await refreshSocialData({ silent: true });
+
+            if (isCancelled) {
+                return;
+            }
+
+            const requestExists = [
+                ...(latestData?.requests?.incoming ?? []),
+                ...(latestData?.requests?.outgoing ?? []),
+            ].some((request) => request.id === targetFriendRequestId);
+
+            if (!requestExists) {
+                showUnavailableNotificationBanner('Friend request not found');
+            }
+
+            setNotificationJump(null);
+        }
+
+        validateFriendRequestNotification();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [
+        refreshSocialData,
+        showUnavailableNotificationBanner,
+        targetFriendRequestId,
+        targetNotificationType,
+    ]);
 
     // After the feed loads, scroll the target card into view.
     // Uses a ref guard so the scroll never re-fires from background feed polls.
