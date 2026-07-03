@@ -44,7 +44,7 @@ export function UserPreviewDialog({
     const isProfileRestricted = isBlockedByMe || hasBlockedCurrentUser;
     const [loadedHabits, setLoadedHabits] = useState({ userId: null, habits: [] });
     const previewUser = isProfileRestricted && user
-        ? { ...user, profilePictureUrl: null }
+        ? { ...user, profilePictureUrl: null, isPremium: false, role: undefined }
         : user;
 
     useEffect(() => {
@@ -146,13 +146,11 @@ export function UserPreviewDialog({
                             <div>
                                 <h3 className="text-2xl font-bold">{getDisplayName(user)}</h3>
                                 <p className="text-slate-300">@{getUsername(user)}</p>
-                                {isProfileRestricted ? (
-                                    <p className="mt-2 text-sm font-medium text-slate-300">Profile details hidden</p>
-                                ) : isGhostFriend ? (
+                                {!isProfileRestricted && isGhostFriend ? (
                                     <p className="mt-2 text-sm font-medium text-slate-300">👻 In Ghost Mode</p>
-                                ) : (
+                                ) : !isProfileRestricted ? (
                                     <p className="mt-2 text-sm font-medium text-slate-200">🔥 {user?.streak ?? 0} days</p>
-                                )}
+                                ) : null}
                             </div>
                             {isFriend && !isGhostFriend && !isProfileRestricted ? (
                                 <div className="w-full">
