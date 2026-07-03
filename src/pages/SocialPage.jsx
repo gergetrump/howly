@@ -10,7 +10,9 @@ import { NotificationBanner } from '@/components/ui/notification-banner.jsx';
 import {
     getSocialErrorMessage,
     getDisplayName,
+    hasUserBlockedMe,
     isBlockedByRelationship,
+    isUserBlockedByMe,
     sameId,
 } from '@/components/social/socialHelpers.js';
 import {
@@ -764,6 +766,12 @@ export function SocialPage() {
     const isSelectedUserBlocked = selectedProfileUser
         ? isBlockedByRelationship(selectedProfileUser, blockedUsers, blockers)
         : false;
+    const isSelectedUserBlockedByMe = selectedProfileUser
+        ? isUserBlockedByMe(selectedProfileUser, blockedUsers)
+        : false;
+    const hasSelectedUserBlockedMe = selectedProfileUser
+        ? hasUserBlockedMe(selectedProfileUser, blockers)
+        : false;
 
     return (
         <Page theme="forest" contentClassName="max-w-[112rem]">
@@ -851,6 +859,8 @@ export function SocialPage() {
                 relationship={getProfileRelationship(selectedProfileUser)}
                 busy={isSubmitting || busyRequestId !== null}
                 isBlocked={isSelectedUserBlocked}
+                isBlockedByMe={isSelectedUserBlockedByMe}
+                hasBlockedCurrentUser={hasSelectedUserBlockedMe}
                 onClose={() => setSelectedProfileUser(null)}
                 onAddFriend={handleSendProfileFriendRequest}
                 onAcceptRequest={handleAcceptProfileFriendRequest}

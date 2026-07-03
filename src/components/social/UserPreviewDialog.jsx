@@ -27,6 +27,8 @@ export function UserPreviewDialog({
     relationship,
     busy,
     isBlocked = false,
+    isBlockedByMe = false,
+    hasBlockedCurrentUser = false,
     onClose,
     onAddFriend,
     onAcceptRequest,
@@ -39,10 +41,14 @@ export function UserPreviewDialog({
 
     const friendId = user?.id || user?._id;
     const isFriend = relationship?.status === 'friends';
+    const isProfileRestricted = isBlockedByMe || hasBlockedCurrentUser;
     const [loadedHabits, setLoadedHabits] = useState({ userId: null, habits: [] });
+    const previewUser = isProfileRestricted && user
+        ? { ...user, profilePictureUrl: null }
+        : user;
 
     useEffect(() => {
-        if (!friendId || !isFriend) {
+        if (!friendId || !isFriend || isProfileRestricted) {
             return undefined;
         }
 
@@ -62,7 +68,7 @@ export function UserPreviewDialog({
         return () => {
             active = false;
         };
-    }, [friendId, isFriend]);
+    }, [friendId, isFriend, isProfileRestricted]);
 
     const habitsLoaded = loadedHabits.userId === friendId;
     const friendHabits = habitsLoaded ? loadedHabits.habits : [];
@@ -136,17 +142,19 @@ export function UserPreviewDialog({
 
                     {user ? (
                         <div className="flex flex-col items-center gap-4 text-center">
-                            <UserAvatar user={user} className="size-20" />
+                            <UserAvatar user={previewUser} className="size-20" />
                             <div>
                                 <h3 className="text-2xl font-bold">{getDisplayName(user)}</h3>
                                 <p className="text-slate-300">@{getUsername(user)}</p>
-                                {isGhostFriend ? (
+                                {isProfileRestricted ? (
+                                    <p className="mt-2 text-sm font-medium text-slate-300">Profile details hidden</p>
+                                ) : isGhostFriend ? (
                                     <p className="mt-2 text-sm font-medium text-slate-300">👻 In Ghost Mode</p>
                                 ) : (
                                     <p className="mt-2 text-sm font-medium text-slate-200">🔥 {user?.streak ?? 0} days</p>
                                 )}
                             </div>
-                            {isFriend && !isGhostFriend ? (
+                            {isFriend && !isGhostFriend && !isProfileRestricted ? (
                                 <div className="w-full">
                                     <p className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Habits</p>
                                     {!habitsLoaded ? (
@@ -180,7 +188,7 @@ export function UserPreviewDialog({
                                         <AlertTriangle className="mr-1 size-3.5" aria-hidden="true" />
                                         Report
                                     </Button>
-                                    {isBlocked ? (
+                                    {isBlockedByMe ? (
                                         <Button
                                             type="button"
                                             size="sm"
