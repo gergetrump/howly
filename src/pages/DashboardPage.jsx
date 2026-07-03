@@ -15,10 +15,11 @@ import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
 
 import { toast } from 'sonner';
 import { NotificationBanner } from '@/components/ui/notification-banner';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
+import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit, waitForHabitTaxonomy } from '@/services/habitService';
 import { applyHabitStreakFreeze } from '@/services/streakFreezeApi';
 import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
 import { getMyInventory } from '@/services/inventoryApi';
@@ -41,7 +42,14 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                    <h3 className="truncate font-semibold text-white">{item.habit.title}</h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="truncate font-semibold text-white">{item.habit.title}</h3>
+                        {item.habit.category ? (
+                            <Badge className="border border-purple-400/30 bg-purple-500/15 text-purple-100 hover:bg-purple-500/15">
+                                {item.habit.category}
+                            </Badge>
+                        ) : null}
+                    </div>
                     <p className="mt-1 truncate text-sm text-slate-300">{item.challenge?.title}</p>
                     <StreakBadge days={item.participant?.daysCompleted ?? 0} icon={'\uD83D\uDD25'} className="mt-1" />
                 </div>
@@ -280,6 +288,15 @@ export function DashboardPage() {
         setIsAddModalOpen(true);
     }
 
+    function refreshHabitTaxonomyInBackground(habitId) {
+        void waitForHabitTaxonomy(habitId).then((updated) => {
+            if (!updated) {
+                return;
+            }
+            setHabits((prev) => prev.map((habit) => (habit.id === habitId ? updated : habit)));
+        });
+    }
+
     function renderHabitCard(habit, withCompletion) {
         return (
             <HabitCard
@@ -287,6 +304,7 @@ export function DashboardPage() {
                 emoji={habit.icon}
                 title={habit.title}
                 frequency={habit.frequency}
+                category={habit.category}
                 goal={habit.goal}
                 streakDays={habit.streakCount}
                 completed={habit.isCompletedToday}
@@ -485,11 +503,13 @@ export function DashboardPage() {
                         setHabits(prev => prev.map(h => h.id === savedHabit.id ? savedHabit : h));
                     } else {
                         setHabits(prev => [savedHabit, ...prev]);
-                        // Came from an AI suggestion → drop it from the panel now that it's saved.
                         if (consumeSuggestion) {
                             consumeSuggestion();
                             setConsumeSuggestion(null);
                         }
+                    }
+                    if (!savedHabit.category) {
+                        refreshHabitTaxonomyInBackground(savedHabit.id);
                     }
                 }}
             />

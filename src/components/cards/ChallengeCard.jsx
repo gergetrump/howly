@@ -33,6 +33,7 @@ export function ChallengeCard({
     title,
     description,
     habitTitle,
+    category = null,
     status,
     visibility,
     participants = 0,
@@ -64,6 +65,11 @@ export function ChallengeCard({
                     </div>
                 ) : null}
                 <div className="flex flex-wrap items-center gap-2">
+                    {category ? (
+                        <Badge className="border border-purple-400/30 bg-purple-500/15 text-purple-100 hover:bg-purple-500/15">
+                            {category}
+                        </Badge>
+                    ) : null}
                     {status ? (
                         <Badge className="border border-white/15 bg-white/10 text-slate-100">
                             {toTitleCase(status)}
