@@ -721,7 +721,7 @@ export function SocialPage() {
 
     return (
         <Page theme="forest" contentClassName="max-w-[112rem]">
-            <Heading title="Social" subtitle="See what your friends are building." streakDays={user?.streak ?? 0} />
+            <Heading title="Friends" subtitle="See what your friends are building." streakDays={user?.streak ?? 0} />
 
             {banner && (
                 <div className="fixed right-6 top-24 z-[9999] w-[min(92vw,24rem)]">

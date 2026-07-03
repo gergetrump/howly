@@ -18,7 +18,7 @@ import { useAuth } from '@/context/authContext';
 
 const defaultItems = [
     { label: 'Home', to: '/dashboard', icon: Home },
-    { label: 'Social', to: '/social', icon: UsersRound },
+    { label: 'Friends', to: '/social', icon: UsersRound },
     { label: 'Shop', to: '/shop', icon: ShoppingBag },
     { label: 'Inventory', to: '/inventory', icon: PackageOpen },
     { label: 'Challenges', to: '/challenges', icon: Trophy },
@@ -77,6 +77,12 @@ function getNotificationMessage(notification) {
                 ? `${actorName} tagged you on ${storyOwnerName}'s post`
                 : `${actorName} tagged you in a post`;
         }
+        case 'challenge_invitation_received': {
+            const challengeTitle = notification.metadata?.challengeTitle;
+            return challengeTitle
+                ? `${actorName} invited you to ${challengeTitle}`
+                : `${actorName} invited you to a challenge`;
+        }
         default:
             return `${actorName} has an update for you`;
     }
@@ -97,6 +103,8 @@ function getNotificationLink(notification) {
             return entityId ? `/social?storyId=${entityId}` : '/social';
         case 'milestone_reacted':
             return entityId ? `/social?postId=${entityId}` : '/social';
+        case 'challenge_invitation_received':
+            return '/challenges';
         default:
             return '/social';
     }
@@ -128,6 +136,19 @@ function getNotificationNavigationState(notification) {
             notificationJump: {
                 postId: entityId,
                 postType: 'milestone',
+                type: notification.type,
+                actorId: notification.actor?.id ?? notification.actor?._id ?? null,
+                metadata: notification.metadata ?? {},
+                token: `${notification.id}-${Date.now()}`,
+            },
+        };
+    }
+
+    if (notification.type === 'challenge_invitation_received') {
+        return {
+            notificationJump: {
+                invitationId: entityId,
+                challengeId: notification.metadata?.challengeId ?? null,
                 type: notification.type,
                 actorId: notification.actor?.id ?? notification.actor?._id ?? null,
                 metadata: notification.metadata ?? {},

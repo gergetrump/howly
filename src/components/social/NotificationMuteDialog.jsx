@@ -17,6 +17,7 @@ const DEFAULT_NOTIFICATION_PREFERENCES = {
     muteComment: false,
     muteLike: false,
     muteReaction: false,
+    muteChallengeInvitation: false,
 };
 
 const MUTE_OPTIONS = [
@@ -50,6 +51,11 @@ const MUTE_OPTIONS = [
         key: 'muteReaction',
         label: 'Reactions',
         description: 'Reactions to your milestones',
+    },
+    {
+        key: 'muteChallengeInvitation',
+        label: 'Challenge Invites',
+        description: 'Invitations to join challenges',
     },
 ];
 
