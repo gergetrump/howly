@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "node src/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "seed:taxonomy": "node scripts/seed-taxonomy.js",
+    "backfill:taxonomy": "node scripts/backfill-taxonomy.js"
   },
   "repository": {
     "type": "git",
