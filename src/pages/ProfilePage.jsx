@@ -26,7 +26,6 @@ import { logoutUser } from '@/services/authService';
 import {
     uploadCurrentUserProfilePicture,
     deleteCurrentUserProfilePicture,
-    updateNotificationPreferences,
     updateCurrentUser,
 } from '@/services/userService';
 import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
@@ -35,28 +34,13 @@ import { useAuth } from '@/context/authContext';
 import { createManagePremiumSession } from '@/services/paymentService';
 import { sendFeedback } from '@/services/feedbackService';
 
-
-const DEFAULT_NOTIFICATION_PREFERENCES = {
-    emailEnabled: false,
-    challengeInvitations: false,
-    friendRequests: false,
-    streakReminders: false,
-};
-
-function getNotificationPreferences(user) {
-    return {
-        ...DEFAULT_NOTIFICATION_PREFERENCES,
-        ...(user?.notificationPreferences ?? {}),
-    };
-}
-
 function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle, onClick, disabled }) {
     return (
         <button
             type="button"
             onClick={onClick}
             disabled={disabled}
-            className="flex w-full items-center justify-between border-b border-slate-700/50 bg-slate-800/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-slate-700/70 disabled:opacity-50"
+            className="flex min-h-20 w-full items-center justify-between border-b border-slate-700/50 bg-slate-800/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-slate-700/70 disabled:opacity-50"
         >
             <div className="flex items-center gap-4">
                 <Icon className={`size-5 ${iconColor}`} />
@@ -73,99 +57,6 @@ function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle
     );
 }
 
-
-function ToggleControl({ checked, onChange, disabled, label }) {
-    return (
-        <button
-            type="button"
-            onClick={() => onChange(!checked)}
-            disabled={disabled}
-            aria-label={label}
-            aria-pressed={checked}
-            className={`flex h-7 w-12 shrink-0 items-center rounded-full px-1 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${checked ? 'bg-emerald-400' : 'bg-slate-600'}`}
-        >
-            <span className={`size-5 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
-        </button>
-    );
-}
-
-function NotificationPreferenceRow({ title, description, checked, onChange, disabled, variant = 'default' }) {
-    const isPrimary = variant === 'primary';
-
-    return (
-        <div className={`flex min-h-24 items-center justify-between gap-4 rounded-2xl px-5 py-4 ${isPrimary ? 'border border-emerald-300/25 bg-emerald-400/10' : 'bg-slate-800/80'}`}>
-            <div className="min-w-0">
-                <p className={`font-semibold ${isPrimary ? 'text-emerald-100' : 'text-white'}`}>{title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-slate-400">{description}</p>
-            </div>
-            <ToggleControl checked={checked} onChange={onChange} disabled={disabled} label={title} />
-        </div>
-    );
-}
-
-function NotificationPreferencesDialog({ open, onOpenChange, preferences, onToggle, isSaving, error }) {
-    const emailEnabled = preferences.emailEnabled;
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border border-white/10 bg-slate-950 p-6 text-white sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-white">Notifications</DialogTitle>
-                    <DialogDescription className="text-slate-400">
-                        Choose which email updates Howly may send you.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-4">
-                    <section className="space-y-2">
-                        <p className="px-1 text-xs font-semibold uppercase tracking-wider text-emerald-300">
-                            General email notifications
-                        </p>
-                        <NotificationPreferenceRow
-                            title="All optional emails"
-                            description="Turn this off to disable every optional Howly email below at once. Account emails still work."
-                            checked={preferences.emailEnabled}
-                            onChange={(value) => onToggle('emailEnabled', value)}
-                            disabled={isSaving}
-                            variant="primary"
-                        />
-                    </section>
-
-                    <section className="space-y-3">
-                        <p className="px-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            Email types
-                        </p>
-                        <NotificationPreferenceRow
-                            title="Challenge invitations"
-                            description="Get an email when a friend invites you to a challenge."
-                            checked={emailEnabled && preferences.challengeInvitations}
-                            onChange={(value) => onToggle('challengeInvitations', value)}
-                            disabled={isSaving || !emailEnabled}
-                        />
-                        <NotificationPreferenceRow
-                            title="Friend requests"
-                            description="Get an email when someone sends you a friend request."
-                            checked={emailEnabled && preferences.friendRequests}
-                            onChange={(value) => onToggle('friendRequests', value)}
-                            disabled={isSaving || !emailEnabled}
-                        />
-                        <NotificationPreferenceRow
-                            title="Streak reminders"
-                            description="Get an email around 2 hours before your streak repair window expires."
-                            checked={emailEnabled && preferences.streakReminders}
-                            onChange={(value) => onToggle('streakReminders', value)}
-                            disabled={isSaving || !emailEnabled}
-                        />
-                    </section>
-                </div>
-
-                {error ? (
-                    <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p>
-                ) : null}
-            </DialogContent>
-        </Dialog>
-    );
-}
 
 function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSubmitting, error, success }) {
     return (
@@ -234,6 +125,22 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
         </Dialog>
     );
 }
+
+function AboutDialog({ open, onOpenChange }) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="border border-white/10 bg-slate-950 p-6 text-white sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-white">About Howly</DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                        We are four students who want to build a cute, motivating habit tracking website were friends can share their progress.
+                    </DialogDescription>
+                </DialogHeader>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 function GhostModeRow() {
     const { user, setUser } = useAuth();
     const [isSaving, setIsSaving] = useState(false);
@@ -295,15 +202,13 @@ export function ProfilePage() {
     const [isDeletingPicture, setIsDeletingPicture] = useState(false);
     const [pictureError, setPictureError] = useState('');
     const [isBlockedUsersDialogOpen, setIsBlockedUsersDialogOpen] = useState(false);
-    const [isNotificationsDialogOpen, setIsNotificationsDialogOpen] = useState(false);
-    const [isSavingNotificationPreferences, setIsSavingNotificationPreferences] = useState(false);
-    const [notificationError, setNotificationError] = useState('');
     const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
     const [feedbackForm, setFeedbackForm] = useState({ type: 'problem', subject: '', message: '' });
     const [isSendingFeedback, setIsSendingFeedback] = useState(false);
     const [feedbackError, setFeedbackError] = useState('');
     const [feedbackSuccess, setFeedbackSuccess] = useState('');
     const [isMuteDialogOpen, setIsMuteDialogOpen] = useState(false);
+    const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
 
     function handleUpgradeToPremium() {
         navigate('/premium', {
@@ -358,25 +263,6 @@ export function ProfilePage() {
             setPictureError(error.message || 'Could not delete profile picture');
         } finally {
             setIsDeletingPicture(false);
-        }
-    }
-
-    async function handleNotificationPreferenceToggle(key, value) {
-        const currentPreferences = getNotificationPreferences(user);
-        const nextPreferences = {
-            ...currentPreferences,
-            [key]: value,
-        };
-
-        try {
-            setNotificationError('');
-            setIsSavingNotificationPreferences(true);
-            const updatedUser = await updateNotificationPreferences(nextPreferences);
-            setUser(updatedUser);
-        } catch (error) {
-            setNotificationError(error.message || 'Could not update notification settings.');
-        } finally {
-            setIsSavingNotificationPreferences(false);
         }
     }
 
@@ -452,8 +338,6 @@ export function ProfilePage() {
     const streak = user?.streak ?? 0;
     const completed = user?.completedHabits ?? 0;
     const isPremium = user?.isPremium === true || user?.role === 'admin';
-    const notificationPreferences = getNotificationPreferences(user);
-
     return (
         <Page theme="forest">
             <Heading
@@ -599,10 +483,9 @@ export function ProfilePage() {
                     <SettingsRow
                         icon={Bell}
                         title="Notifications"
-                        subtitle="Mute likes, tags, comments, friend requests, or reactions"
+                        subtitle="Mute in-app notifications and manage email preferences"
                         onClick={() => setIsMuteDialogOpen(true)}
                     />
-                    <SettingsRow icon={Lock} title="Privacy & Security" />
                 </div>
                 {premiumError && (
                     <p className="mt-3 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -614,7 +497,7 @@ export function ProfilePage() {
             <PageSection title="Support">
                 <div className="overflow-hidden rounded-2xl">
                     <SettingsRow icon={MessageSquare} title="Help & Feedback" subtitle="Report a problem or share an idea" onClick={() => setIsFeedbackDialogOpen(true)} />
-                    <SettingsRow icon={Info} title="About Howly" />
+                    <SettingsRow icon={Info} title="About Howly" onClick={() => setIsAboutDialogOpen(true)} />
                 </div>
             </PageSection>
 
@@ -632,14 +515,6 @@ export function ProfilePage() {
                 open={isBlockedUsersDialogOpen}
                 onOpenChange={setIsBlockedUsersDialogOpen}
             />
-            <NotificationPreferencesDialog
-                open={isNotificationsDialogOpen}
-                onOpenChange={setIsNotificationsDialogOpen}
-                preferences={notificationPreferences}
-                onToggle={handleNotificationPreferenceToggle}
-                isSaving={isSavingNotificationPreferences}
-                error={notificationError}
-            />
             <FeedbackDialog
                 open={isFeedbackDialogOpen}
                 onOpenChange={setIsFeedbackDialogOpen}
@@ -649,6 +524,10 @@ export function ProfilePage() {
                 isSubmitting={isSendingFeedback}
                 error={feedbackError}
                 success={feedbackSuccess}
+            />
+            <AboutDialog
+                open={isAboutDialogOpen}
+                onOpenChange={setIsAboutDialogOpen}
             />
 
             <NotificationMuteDialog
