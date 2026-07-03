@@ -31,6 +31,8 @@ import { itemMatchesCategory } from '@/lib/inventoryItems';
 const PREMIUM_RETURN_ITEM_STORAGE_KEY = 'howly_premium_return_item_id';
 const SINGLE_PREVIEW_SLOTS = new Set(['body', 'face', 'hand', 'head', 'neck']);
 const MAX_OWNED_POWER_UP_QUANTITY = 20;
+const STREAK_FREEZE_ASSET_KEY = 'streak-freeze';
+const MAX_STREAK_SHIELDS = 3;
 
 function isItemCategoryValue(value) {
     return ITEM_CATEGORIES.some((category) => category.value === value);
@@ -399,6 +401,10 @@ export function ShopPage() {
     }
 
     function getOwnedPowerUpQuantity(item) {
+        if (item?.assetKey === STREAK_FREEZE_ASSET_KEY) {
+            return Number(user?.streakShields ?? 0);
+        }
+
         return item?.type === 'powerUp'
             ? Number(ownedPowerUpQuantities[item.assetKey] ?? 0)
             : 0;
@@ -411,7 +417,11 @@ export function ShopPage() {
             return 1;
         }
 
-        return Math.max(0, MAX_OWNED_POWER_UP_QUANTITY - getOwnedPowerUpQuantity(item));
+        const maxOwnedQuantity = item?.assetKey === STREAK_FREEZE_ASSET_KEY
+            ? MAX_STREAK_SHIELDS
+            : MAX_OWNED_POWER_UP_QUANTITY;
+
+        return Math.max(0, maxOwnedQuantity - getOwnedPowerUpQuantity(item));
     }
 
     function isCartEntryAtQuantityLimit(entry) {
@@ -604,6 +614,10 @@ export function ShopPage() {
                 const purchasedQuantity = purchasedQuantitiesByCartKey[entry.cartKey] ?? 0;
 
                 if (item?.type === 'powerUp' && purchasedQuantity > 0) {
+                    if (item.assetKey === STREAK_FREEZE_ASSET_KEY) {
+                        return;
+                    }
+
                     nextQuantities[item.assetKey] = Math.min(
                         MAX_OWNED_POWER_UP_QUANTITY,
                         Number(nextQuantities[item.assetKey] ?? 0) + purchasedQuantity,
@@ -691,6 +705,8 @@ export function ShopPage() {
             if (buyError.code === 'ITEM_ALREADY_OWNED') {
                 setError('One of these items is already in your inventory');
             } else if (buyError.code === 'BOOST_QUANTITY_LIMIT_REACHED') {
+                await refreshCurrentUser();
+            } else if (buyError.code === 'SHIELDS_AT_MAX') {
                 await refreshCurrentUser();
             } else if (buyError.code === 'PREMIUM_REQUIRED') {
                 if (isFreeUser) {
@@ -793,7 +809,24 @@ export function ShopPage() {
                         buyingItemId={buyingItemId}
                         leadingCard={selectedCategory === 'all' || selectedCategory === 'powerUp' ? (
                             <>
-                                <StreakFreezeCard key="streak-freeze" />
+                                <StreakFreezeCard
+                                    key="streak-freeze"
+                                    onAddToCart={handleAddCurrentItemToCart}
+                                    onBuy={(item) => openBuyConfirmation([createPurchaseEntry(item)])}
+                                    getCartQuantity={(item) => {
+                                        const cartEntry = cartItems.find((entry) => entry.cartKey === createPurchaseEntry(item).cartKey);
+                                        return cartEntry ? getPurchaseEntryQuantity(cartEntry) : 0;
+                                    }}
+                                    isCartQuantityMax={(item) => {
+                                        const cartEntry = cartItems.find((entry) => entry.cartKey === createPurchaseEntry(item).cartKey);
+                                        const entry = cartEntry ?? createPurchaseEntry(item);
+                                        return getMaxCartQuantityForEntry(entry) <= 0 || (cartEntry ? isCartEntryAtQuantityLimit(cartEntry) : false);
+                                    }}
+                                    isOwnedQuantityMax={(item) => getOwnedPowerUpQuantity(item) >= MAX_STREAK_SHIELDS}
+                                    isBuying={buyingItemId === 'cart'}
+                                    isFreeUser={isFreeUser}
+                                    onPremiumRequired={handlePremiumRequired}
+                                />
                                 <BoostPowerUpCards
                                     key="habit-boosts"
                                     onAddToCart={handleAddCurrentItemToCart}
