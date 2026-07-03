@@ -5,6 +5,7 @@ const config = {
     serverBaseUrl: 'http://localhost:3000',
     frontendBaseUrl: 'http://localhost:5173',
     disableEmailSending: false,
+    developerFeedbackEmail: 'yourhowlyteam@gmail.com',
     cloudinary: {
         cloudName: 'dxclpq7wx',
         apiKey: 'REDACTED',

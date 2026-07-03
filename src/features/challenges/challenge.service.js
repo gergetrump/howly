@@ -15,7 +15,7 @@ const CHALLENGE_INVITATIONS_PATH = '/challenges';
 function canSendNotificationEmail(user, preferenceKey) {
     const preferences = user?.notificationPreferences ?? {};
 
-    return preferences.emailEnabled !== false && preferences[preferenceKey] !== false;
+    return preferences.emailEnabled === true && preferences[preferenceKey] === true;
 }
 
 function getUserDisplayName(user) {
@@ -1100,3 +1100,4 @@ export async function claimReward(challengeId, userId) {
         rewardCoins,
     };
 }
+

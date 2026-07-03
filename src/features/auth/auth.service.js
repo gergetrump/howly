@@ -11,9 +11,10 @@ import {
 const TOKEN_EXPIRES_IN = config.jwtExpiresIn || '7d';
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
-    emailEnabled: true,
-    challengeInvitations: true,
-    streakReminders: true,
+    emailEnabled: false,
+    challengeInvitations: false,
+    friendRequests: false,
+    streakReminders: false,
 };
 
 function normalizeNotificationPreferences(preferences = {}) {
@@ -24,6 +25,9 @@ function normalizeNotificationPreferences(preferences = {}) {
         challengeInvitations: typeof preferences?.challengeInvitations === 'boolean'
             ? preferences.challengeInvitations
             : DEFAULT_NOTIFICATION_PREFERENCES.challengeInvitations,
+        friendRequests: typeof preferences?.friendRequests === 'boolean'
+            ? preferences.friendRequests
+            : DEFAULT_NOTIFICATION_PREFERENCES.friendRequests,
         streakReminders: typeof preferences?.streakReminders === 'boolean'
             ? preferences.streakReminders
             : DEFAULT_NOTIFICATION_PREFERENCES.streakReminders,
@@ -264,3 +268,4 @@ export async function resetPassword(token, newPassword) {
 
     return { user };
 }
+

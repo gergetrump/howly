@@ -315,6 +315,44 @@ export function accountVerificationEmailTemplate(verificationUrl) {
 }
 
 
+
+export function friendRequestEmailTemplate({ requesterName, socialUrl }) {
+    return baseEmailShell({
+        title: 'You have a new Howly friend request',
+        eyebrow: 'Friend request',
+        heading: `${requesterName} sent you a friend request`,
+        body: 'Open Howly to accept or decline the request.',
+        actionUrl: socialUrl,
+        actionText: 'View request',
+        icon: '??',
+        note: 'You can turn friend request emails off in Profile > Notifications.',
+    });
+}
+
+export function feedbackEmailTemplate({ user, type, subject, message }) {
+    const safeType = type === 'problem' ? 'Problem report' : 'Suggestion';
+    const name = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() || user?.username || 'Unknown user';
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Howly feedback</title>
+</head>
+<body style="margin:0; padding:24px; background:#0f172a; font-family:Arial, Helvetica, sans-serif; color:#e2e8f0;">
+    <main style="max-width:680px; margin:0 auto; background:#111827; border:1px solid rgba(148,163,184,0.25); border-radius:20px; padding:28px;">
+        <p style="margin:0 0 8px; color:#a78bfa; font-size:12px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase;">${safeType}</p>
+        <h1 style="margin:0 0 20px; color:#ffffff;">New Howly feedback</h1>
+        <p style="margin:0 0 18px; color:#e2e8f0; font-size:18px;"><strong>Subject:</strong> ${subject}</p>
+        <p style="margin:0 0 6px;"><strong>User:</strong> ${name}</p>
+        <p style="margin:0 0 6px;"><strong>Username:</strong> ${user?.username ?? 'unknown'}</p>
+        <p style="margin:0 0 20px;"><strong>Email:</strong> ${user?.email ?? 'unknown'}</p>
+        <div style="white-space:pre-wrap; line-height:1.6; background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.18); border-radius:14px; padding:18px;">${message}</div>
+    </main>
+</body>
+</html>`;
+}
 export async function sendPasswordResetEmail(email, resetLink) {
     if (config.disableEmailSending) {
         return;
@@ -365,3 +403,29 @@ export async function sendStreakReminderEmail(email, reminderDetails) {
         html: streakReminderEmailTemplate(reminderDetails),
     });
 }
+export async function sendFriendRequestEmail(email, requestDetails) {
+    if (config.disableEmailSending) {
+        return;
+    }
+
+    return transporter.sendMail({
+        from: config.smtp.from,
+        to: email,
+        subject: 'You have a new Howly friend request',
+        html: friendRequestEmailTemplate(requestDetails),
+    });
+}
+
+export async function sendFeedbackEmail(feedbackDetails) {
+    if (config.disableEmailSending) {
+        return;
+    }
+
+    return transporter.sendMail({
+        from: config.smtp.from,
+        to: config.developerFeedbackEmail,
+        subject: `Howly feedback: ${feedbackDetails.type === 'problem' ? 'Problem report' : 'Suggestion'} - ${feedbackDetails.subject}`,
+        html: feedbackEmailTemplate(feedbackDetails),
+    });
+}
+

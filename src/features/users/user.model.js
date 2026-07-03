@@ -121,15 +121,19 @@ const userSchema = new Schema(
     notificationPreferences: {
       emailEnabled: {
         type: Boolean,
-        default: true,
+        default: false,
       },
       challengeInvitations: {
         type: Boolean,
-        default: true,
+        default: false,
+      },
+      friendRequests: {
+        type: Boolean,
+        default: false,
       },
       streakReminders: {
         type: Boolean,
-        default: true,
+        default: false,
       },
     },
     streakReminderEmailLastSentFor: {
@@ -184,3 +188,4 @@ userSchema.index(
 );
 
 export default mongoose.model('User', userSchema);
+

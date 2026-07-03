@@ -96,7 +96,7 @@ export function validateUpdateUserInput(body = {}) {
 }
 
 export function validateNotificationPreferencesInput(body = {}) {
-    const allowedFields = ['emailEnabled', 'challengeInvitations', 'streakReminders'];
+    const allowedFields = ['emailEnabled', 'challengeInvitations', 'friendRequests', 'streakReminders'];
     const updates = {};
     const errors = [];
 

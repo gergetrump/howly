@@ -4,9 +4,10 @@ import config from '../../../config.js';
 const SERVER_BASE_URL = config.serverBaseUrl ?? 'http://localhost:3000';
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
-    emailEnabled: true,
-    challengeInvitations: true,
-    streakReminders: true,
+    emailEnabled: false,
+    challengeInvitations: false,
+    friendRequests: false,
+    streakReminders: false,
 };
 
 function normalizeNotificationPreferences(preferences = {}) {
@@ -209,3 +210,4 @@ export async function completeOnboarding(userId) {
         { returnDocument: 'after' }
     );
 }
+

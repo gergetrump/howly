@@ -39,7 +39,7 @@ function graceDeadline(now) {
 function canSendNotificationEmail(user, preferenceKey) {
     const preferences = user?.notificationPreferences ?? {};
 
-    return preferences.emailEnabled !== false && preferences[preferenceKey] !== false;
+    return preferences.emailEnabled === true && preferences[preferenceKey] === true;
 }
 
 function hasReminderAlreadyBeenSent(user) {
@@ -229,3 +229,4 @@ export async function applyFreezeToOverall(userId, now = new Date()) {
 
     return { streakShields: user.streakShields, streak: user.streak };
 }
+
