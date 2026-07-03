@@ -5,6 +5,15 @@ const isNonEmptyString = (value) => typeof value === 'string' && value.trim().le
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
+const NOTIFICATION_PREFERENCE_KEYS = [
+    'muteAll',
+    'muteTag',
+    'muteFriendRequest',
+    'muteComment',
+    'muteLike',
+    'muteReaction',
+    'muteChallengeInvitation',
+];
 
 // Validate user id params coming from the request
 export function validateUserId(id) {
@@ -86,6 +95,18 @@ export function validateUpdateUserInput(body = {}) {
 
     if (body.ghostMode !== undefined) {
         updates.ghostMode = Boolean(body.ghostMode);
+    }
+
+    if (body.notificationPreferences !== undefined) {
+        if (typeof body.notificationPreferences !== 'object' || body.notificationPreferences === null || Array.isArray(body.notificationPreferences)) {
+            errors.push('notificationPreferences must be an object');
+        } else {
+            NOTIFICATION_PREFERENCE_KEYS.forEach((key) => {
+                if (body.notificationPreferences[key] !== undefined) {
+                    updates[`notificationPreferences.${key}`] = Boolean(body.notificationPreferences[key]);
+                }
+            });
+        }
     }
 
     if (Object.keys(updates).length === 0 && errors.length === 0) {

@@ -7,6 +7,7 @@ import {
   getMyArchive,
   toggleStoryLike,
   getStoryLikes,
+  getStoryMentionCandidates,
   deleteStory,
   addStoryComment,
   getStoryComments,
@@ -22,6 +23,7 @@ router.get('/me', getMyActiveStories);
 router.get('/me/archive', getMyArchive);
 router.post('/:storyId/like', toggleStoryLike);
 router.get('/:storyId/likes', getStoryLikes);
+router.get('/:storyId/mention-candidates', getStoryMentionCandidates);
 router.delete('/:storyId', deleteStory);
 
 router.post('/:storyId/comments', addStoryComment);

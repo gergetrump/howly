@@ -13,6 +13,8 @@ import Habit from '../habits/habit.model.js';
 import Challenge from '../challenges/challenge.model.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cloudinary.service.js';
 import { toPublicUser } from '../users/user.service.js';
+import { createNotification, deleteNotificationsByFilter } from '../notifications/notification.service.js';
+import User from '../users/user.model.js';
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 const DAY_IN_MS = 24 * HOUR_IN_MS;
@@ -29,6 +31,33 @@ function buildFriendshipPair(firstUserId, secondUserId) {
 async function areFriends(firstUserId, secondUserId) {
   const friendship = await Friendship.findOne(buildFriendshipPair(firstUserId, secondUserId)).lean();
   return Boolean(friendship);
+}
+
+async function deleteStoryLikeNotification({ storyId, actorId, recipientId }) {
+  await deleteNotificationsByFilter({
+    recipient: recipientId,
+    actor: actorId,
+    type: 'story_liked',
+    entityType: 'story',
+    entityId: storyId,
+  });
+}
+
+async function deleteStoryCommentNotifications(commentIds) {
+  if (!commentIds.length) return;
+
+  await deleteNotificationsByFilter({
+    type: { $in: ['story_commented', 'story_tagged'] },
+    entityType: 'story',
+    'metadata.commentId': { $in: commentIds },
+  });
+}
+
+async function deleteStoryNotifications(storyId) {
+  await deleteNotificationsByFilter({
+    entityType: 'story',
+    entityId: storyId,
+  });
 }
 
 export function toStoryResponse(story, likedStoryIds = new Set()) {
@@ -297,6 +326,11 @@ export async function toggleStoryLike({ userId, storyId }) {
 
   if (existingLike) {
     await existingLike.deleteOne();
+    await deleteStoryLikeNotification({
+      storyId: story._id,
+      actorId: userId,
+      recipientId: story.user,
+    });
     story.likeCount = Math.max(0, story.likeCount - 1);
     await story.save();
     await story.populate('user');
@@ -322,6 +356,16 @@ export async function toggleStoryLike({ userId, storyId }) {
 
   story.likeCount += 1;
   await story.save();
+
+  await createNotification({
+    recipientId: story.user,
+    actorId: userId,
+    type: 'story_liked',
+    entityType: 'story',
+    entityId: story._id,
+    deduplicate: true, // one notification per (actor, story) — prevents like-spam
+  });
+
   await story.populate('user');
 
   return {
@@ -356,6 +400,42 @@ export async function getStoryLikes({ userId, storyId }) {
   return { likers: filteredLikes.map((like) => toPublicUser(like.user)).filter(Boolean) };
 }
 
+export async function getStoryMentionCandidates({ userId, storyId }) {
+  const story = await Story.findById(storyId).lean();
+
+  if (
+    !story
+    || story.feedExpiresAt <= new Date()
+    || (!sameId(story.user, userId) && !(await areFriends(userId, story.user)))
+  ) {
+    return { errorCode: 'STORY_NOT_FOUND' };
+  }
+
+  const friendships = await Friendship.find({
+    $or: [{ userA: story.user }, { userB: story.user }],
+  }).lean();
+  const candidateIds = new Set([story.user.toString()]);
+
+  friendships.forEach((friendship) => {
+    const friendId = sameId(friendship.userA, story.user) ? friendship.userB : friendship.userA;
+    candidateIds.add(friendId.toString());
+  });
+
+  candidateIds.delete(userId.toString());
+
+  const blockedSet = await getBlockedUserIds(userId);
+  blockedSet.forEach((blockedUserId) => candidateIds.delete(blockedUserId));
+
+  const candidates = await User.find({
+    _id: { $in: [...candidateIds].map((id) => new mongoose.Types.ObjectId(id)) },
+    isDeleted: false,
+  })
+    .sort({ firstName: 1, username: 1 })
+    .lean();
+
+  return { candidates: candidates.map(toPublicUser).filter(Boolean) };
+}
+
 export async function deleteStory({ userId, storyId }) {
   const story = await Story.findOne({ _id: storyId, user: userId });
 
@@ -372,6 +452,7 @@ export async function deleteStory({ userId, storyId }) {
 
   await StoryLike.deleteMany({ story: story._id });
   await StoryComment.deleteMany({ story: story._id });
+  await deleteStoryNotifications(story._id);
   await story.deleteOne();
 
   return { deleted: true };
@@ -409,6 +490,78 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
   await Story.updateOne({ _id: storyId }, { $inc: { commentCount: 1 } });
 
   await comment.populate('user');
+
+  const mentionedUsernames = [
+    ...new Set(
+      (content.match(/@(\w+)/g) ?? []).map((m) => m.slice(1).toLowerCase()),
+    ),
+  ];
+  const storyOwner = await User.findById(story.user, '_id username firstName').lean();
+  const storyOwnerName = storyOwner?.firstName || storyOwner?.username || 'someone';
+  const storyOwnerWasTagged = storyOwner?.username
+    ? mentionedUsernames.includes(storyOwner.username.toLowerCase())
+    : false;
+
+  await createNotification({
+    recipientId: story.user,
+    actorId: userId,
+    type: storyOwnerWasTagged ? 'story_tagged' : 'story_commented',
+    entityType: 'story',
+    entityId: story._id,
+    metadata: {
+      commentId: comment._id,
+      ...(storyOwnerWasTagged ? { taggedOnOwnPost: true } : {}),
+    },
+  });
+
+  // Fire tag notifications for every @mention in the comment.
+  // Rules:
+  //  - Only notifies users who can currently see the story (friends with the owner).
+  //  - Does not notify the commenter themselves.
+  //  - Does not notify the story owner here; their comment/tag notification is
+  //    created above so they never receive a duplicate.
+  //  - Notifications are NOT created retroactively; this block only runs at
+  //    comment-creation time, so future friendships never backfill old tags.
+  try {
+    if (mentionedUsernames.length > 0) {
+      // Resolve all mentioned usernames to user documents in a single query.
+      const mentionedUsers = await User.find(
+        { username: { $in: mentionedUsernames.map((u) => new RegExp(`^${u}$`, 'i')) } },
+        '_id username',
+      ).lean();
+
+      await Promise.all(
+        mentionedUsers.map(async (tagged) => {
+          const taggedId = tagged._id.toString();
+
+          // Skip: the commenter tagged themselves.
+          if (taggedId === userId.toString()) return;
+
+          // Skip: the story owner already receives story_commented.
+          if (sameId(tagged._id, story.user)) return;
+
+          // Visibility check: tagged user must be friends with the story owner
+          // to be able to see the post — only then send the notification.
+          const canSeePost = await areFriends(tagged._id, story.user);
+          if (!canSeePost) return;
+
+          await createNotification({
+            recipientId: tagged._id,
+            actorId: userId,
+            type: 'story_tagged',
+            entityType: 'story',
+            entityId: story._id,
+            metadata: {
+              commentId: comment._id,
+              storyOwnerName,
+            },
+          });
+        }),
+      );
+    }
+  } catch {
+    // Tag notification failures must never prevent the comment from being returned.
+  }
 
   return { comment: toStoryCommentResponse(comment) };
 }
@@ -457,12 +610,17 @@ export async function deleteStoryComment({ userId, storyId, commentId }) {
     return { errorCode: 'COMMENT_NOT_FOUND' };
   }
 
+  const deletedCommentIds = [comment._id];
+
   // If this is a parent comment, delete all its replies as well
   if (!comment.parentComment) {
+    const replies = await StoryComment.find({ parentComment: comment._id }, '_id').lean();
+    deletedCommentIds.push(...replies.map((reply) => reply._id));
     await StoryComment.deleteMany({ parentComment: comment._id });
   }
 
   await comment.deleteOne();
+  await deleteStoryCommentNotifications(deletedCommentIds);
 
   const remainingCommentCount = await StoryComment.countDocuments({ story: storyId });
   await Story.updateOne({ _id: storyId }, { commentCount: remainingCommentCount });
