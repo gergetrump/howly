@@ -296,6 +296,9 @@ export function StoryCommentSection({
 
     function CommentItem({ comment, isReply = false }) {
         const isHighlighted = comment.id === highlightedCommentId;
+        const commentUser = comment.user;
+        const commentUserName = commentUser?.firstName || commentUser?.username || 'user';
+
         return (
             <div
                 data-comment-id={comment.id}
@@ -307,15 +310,23 @@ export function StoryCommentSection({
                         : ''
                 }`}
             >
-                <img
-                    src={comment.user?.profilePictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'}
-                    alt={comment.user?.username || 'User'}
-                    className={`${isReply ? 'size-6' : 'size-8'} rounded-full bg-slate-800 object-cover`}
-                />
+                <button
+                    type="button"
+                    onClick={() => commentUser && onOpenProfile?.(commentUser)}
+                    disabled={!commentUser || !onOpenProfile}
+                    className="shrink-0 rounded-full transition hover:opacity-85 focus:outline-none focus:ring-2 focus:ring-violet-400/70 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:cursor-default disabled:hover:opacity-100"
+                    aria-label={`Open ${commentUserName}'s profile preview`}
+                >
+                    <img
+                        src={commentUser?.profilePictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'}
+                        alt=""
+                        className={`${isReply ? 'size-6' : 'size-8'} rounded-full bg-slate-800 object-cover`}
+                    />
+                </button>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-2">
                         <span className="font-semibold text-slate-200">
-                            {comment.user?.firstName || comment.user?.username || 'someone'}
+                            {commentUser?.firstName || commentUser?.username || 'someone'}
                         </span>
                         <span className="text-xs text-slate-500 shrink-0">
                             {formatRelativeTime(comment.createdAt)}
