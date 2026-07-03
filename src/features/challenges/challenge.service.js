@@ -4,6 +4,8 @@ import ChallengeParticipant from './challengeParticipant.model.js';
 import Habit from '../habits/habit.model.js';
 import User from '../users/user.model.js';
 import { Friendship } from '../social/social.model.js';
+import { sendChallengeInvitationEmail } from '../mail/mail.service.js';
+import config from '../../../config.js';
 import { getPlanForUser, hasPremiumAccess } from '../../config/plans.js';
 import { toTaxonomyDto } from '../taxonomy/taxonomy.schema.js';
 import {
@@ -15,6 +17,17 @@ import { createNotification } from '../notifications/notification.service.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const COINS_PER_CHALLENGE_DAY = 5;
+const CHALLENGE_INVITATIONS_PATH = '/challenges';
+
+function canSendNotificationEmail(user, preferenceKey) {
+    const preferences = user?.notificationPreferences ?? {};
+
+    return preferences.emailEnabled === true && preferences[preferenceKey] === true;
+}
+
+function getUserDisplayName(user) {
+    return [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() || user?.username || 'A friend';
+}
 const START_LOCKED_UPDATE_FIELDS = [
     'title',
     'habitTitle',
@@ -849,6 +862,18 @@ export async function createInvitation(challengeId, inviteeId, user) {
 
     await invitation.populate('challenge');
 
+    if (canSendNotificationEmail(invitee, 'challengeInvitations')) {
+        const inviter = await User.findById(user.id).select('firstName lastName username').lean();
+
+        sendChallengeInvitationEmail(invitee.email, {
+            inviterName: getUserDisplayName(inviter),
+            challengeTitle: challenge.title,
+            challengeUrl: `${config.frontendBaseUrl}${CHALLENGE_INVITATIONS_PATH}`,
+        }).catch((error) => {
+            console.error('Failed to send challenge invitation email:', error);
+        });
+    }
+
     await createNotification({
         recipientId: inviteeId,
         actorId: user.id,
@@ -1178,3 +1203,4 @@ export async function claimReward(challengeId, userId) {
         rewardCoins,
     };
 }
+

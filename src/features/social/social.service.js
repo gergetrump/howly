@@ -3,6 +3,18 @@ import { toPublicUser } from '../users/user.service.js';
 import { FriendRequest, Friendship } from './social.model.js';
 import { Story, StoryLike, StoryComment } from '../stories/story.model.js';
 import { MilestonePost, MilestoneLike } from '../milestones/milestone.model.js';
+import { sendFriendRequestEmail } from '../mail/mail.service.js';
+import config from '../../../config.js';
+
+function canSendNotificationEmail(user, preferenceKey) {
+  const preferences = user?.notificationPreferences ?? {};
+
+  return preferences.emailEnabled === true && preferences[preferenceKey] === true;
+}
+
+function getUserDisplayName(user) {
+  return [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() || user?.username || 'A friend';
+}
 import Habit from '../habits/habit.model.js';
 import { createNotification, deleteNotificationsByFilter, pushToUser } from '../notifications/notification.service.js';
 import { Notification } from '../notifications/notification.model.js';
@@ -273,6 +285,15 @@ export async function sendFriendRequest({ requesterId, recipientId }) {
 
   await request.populate(['requester', 'recipient']);
 
+  if (canSendNotificationEmail(recipient, 'friendRequests')) {
+    sendFriendRequestEmail(recipient.email, {
+      requesterName: getUserDisplayName(requester),
+      socialUrl: `${config.frontendBaseUrl}/social`,
+    }).catch((error) => {
+      console.error('Failed to send friend request email:', error);
+    });
+  }
+
   return { request: toFriendRequestResponse(request) };
 }
 
@@ -467,3 +488,4 @@ export async function getUsernamesWhoBlockedMe(userId) {
   const blockers = await User.find({ blockedUsers: userId }, 'username').lean();
   return blockers.map((u) => (u.username || '').toLowerCase());
 }
+

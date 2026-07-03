@@ -1,5 +1,7 @@
 import Habit from '../habits/habit.model.js';
 import User from '../users/user.model.js';
+import { sendStreakReminderEmail } from '../mail/mail.service.js';
+import config from '../../../config.js';
 import { isCompletedForPeriod, isPreviousPeriod } from '../habits/habit.service.js';
 import {
     hasPremiumAccess,
@@ -15,6 +17,7 @@ export const STREAK_FREEZE_ERROR_CODES = {
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const STREAK_REMINDER_WINDOW_MS = 2 * 60 * 60 * 1000;
 
 function startOfDay(date) {
     const value = new Date(date);
@@ -33,6 +36,25 @@ function graceDeadline(now) {
     return deadline;
 }
 
+function canSendNotificationEmail(user, preferenceKey) {
+    const preferences = user?.notificationPreferences ?? {};
+
+    return preferences.emailEnabled === true && preferences[preferenceKey] === true;
+}
+
+function hasReminderAlreadyBeenSent(user) {
+    const sentFor = user.streakReminderEmailLastSentFor;
+    const deadline = user.streakRepairDeadline;
+
+    return sentFor && deadline && sentFor.getTime() === deadline.getTime();
+}
+
+function formatReminderDeadline(deadline) {
+    return new Intl.DateTimeFormat('en', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(deadline);
+}
 function streakFreezeError(code) {
     const error = new Error(code);
     error.code = code;
@@ -131,6 +153,42 @@ export async function runDailyStreakMaintenance(now = new Date()) {
     return { habitsOpened, habitsBroken, overallOpened, overallBroken };
 }
 
+export async function sendStreakRepairReminders(now = new Date()) {
+    const reminderWindowEnd = new Date(now.getTime() + STREAK_REMINDER_WINDOW_MS);
+    const users = await User.find({
+        isDeleted: false,
+        streak: { $gt: 0 },
+        streakRepairDeadline: { $gt: now, $lte: reminderWindowEnd },
+    }).select('email streak streakRepairDeadline notificationPreferences streakReminderEmailLastSentFor');
+
+    let sent = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    for (const user of users) {
+        if (!canSendNotificationEmail(user, 'streakReminders') || hasReminderAlreadyBeenSent(user)) {
+            skipped += 1;
+            continue;
+        }
+
+        try {
+            await sendStreakReminderEmail(user.email, {
+                streak: user.streak ?? 0,
+                deadline: formatReminderDeadline(user.streakRepairDeadline),
+                appUrl: config.frontendBaseUrl,
+            });
+
+            user.streakReminderEmailLastSentFor = user.streakRepairDeadline;
+            await user.save();
+            sent += 1;
+        } catch (error) {
+            failed += 1;
+            console.error('Failed to send streak reminder email:', error);
+        }
+    }
+
+    return { sent, skipped, failed };
+}
 export async function applyFreezeToHabit(userId, habitId, now = new Date()) {
     const [user, habit] = await Promise.all([
         User.findById(userId).select('streakShields'),
@@ -171,3 +229,4 @@ export async function applyFreezeToOverall(userId, now = new Date()) {
 
     return { streakShields: user.streakShields, streak: user.streak };
 }
+
