@@ -145,33 +145,39 @@ async function computeRangeAnalytics(start, end) {
     };
 }
 
-export async function getCommunityAnalytics({ period = 'week' } = {}) {
-    const selectedPeriod = buildPeriod(period);
-    const todayStart = startOfDay(new Date());
-    const todayEnd = endOfDay(new Date());
+function buildCommunityPeriod(periodKey) {
+    if (periodKey === 'today') {
+        const start = startOfDay(new Date());
+        const end = endOfDay(new Date());
 
-    const [todayStats, periodStats] = await Promise.all([
-        computeRangeAnalytics(todayStart, todayEnd),
-        computeRangeAnalytics(selectedPeriod.start, selectedPeriod.end),
-    ]);
+        return {
+            key: 'today',
+            days: 1,
+            start,
+            end,
+        };
+    }
+
+    return buildPeriod(periodKey === 'month' ? 'month' : 'week');
+}
+
+export async function getCommunityAnalytics({ period = 'week' } = {}) {
+    const selectedPeriod = buildCommunityPeriod(period);
+    const stats = await computeRangeAnalytics(selectedPeriod.start, selectedPeriod.end);
 
     return {
-        today: {
-            checkIns: todayStats.checkIns,
-            activeUsers: todayStats.activeUsers,
-            topCategory: todayStats.topCategory,
-        },
         period: {
             key: selectedPeriod.key,
+            days: selectedPeriod.days,
             start: selectedPeriod.start.toISOString(),
             end: selectedPeriod.end.toISOString(),
         },
         summary: {
-            activeUsers: periodStats.activeUsers,
-            checkIns: periodStats.checkIns,
-            topCategory: periodStats.topCategory,
+            activeUsers: stats.activeUsers,
+            checkIns: stats.checkIns,
+            topCategory: stats.topCategory,
         },
-        byCategory: periodStats.byCategory,
-        trendingHabits: periodStats.trendingHabits,
+        byCategory: stats.byCategory,
+        trendingHabits: stats.trendingHabits,
     };
 }

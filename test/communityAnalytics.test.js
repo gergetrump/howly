@@ -116,15 +116,23 @@ test('GET /api/community/analytics returns anonymous community aggregates', asyn
         .set('Authorization', token)
         .expect(200);
 
-    assert.equal(response.body.data.today.checkIns, 3);
-    assert.equal(response.body.data.today.activeUsers, 2);
-    assert.equal(response.body.data.today.topCategory.categoryKey, 'movement');
+    assert.equal(response.body.data.period.key, 'week');
     assert.equal(response.body.data.summary.checkIns, 3);
     assert.equal(response.body.data.summary.activeUsers, 2);
+    assert.equal(response.body.data.summary.topCategory.categoryKey, 'movement');
     assert.equal(response.body.data.byCategory.length, 2);
     assert.equal(response.body.data.trendingHabits.length, 2);
     assert.equal(response.body.data.trendingHabits[0].canonicalHabitKey, 'run');
     assert.equal(response.body.data.trendingHabits[0].checkIns, 2);
+
+    const todayResponse = await request(app)
+        .get('/api/community/analytics?period=today')
+        .set('Authorization', token)
+        .expect(200);
+
+    assert.equal(todayResponse.body.data.period.key, 'today');
+    assert.equal(todayResponse.body.data.summary.checkIns, 3);
+    assert.equal(todayResponse.body.data.summary.activeUsers, 2);
 });
 
 test('GET /api/community/analytics excludes deleted users', async () => {
