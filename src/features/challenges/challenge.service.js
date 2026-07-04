@@ -365,6 +365,12 @@ function serializeChallenge(challenge, participantCount = 0, viewerParticipant =
         participantCount,
         viewerParticipantStatus: viewerParticipant?.status,
         viewerParticipantId: viewerParticipant?._id?.toString(),
+        viewerParticipantDaysCompleted: viewerParticipant?.daysCompleted ?? 0,
+        viewerParticipantRewardClaimed: viewerParticipant?.rewardClaimed ?? false,
+        viewerParticipantRewardCoins: viewerParticipant?.rewardCoins ?? 0,
+        viewerParticipantPendingRewardCoins: viewerParticipant
+            ? getRewardCoins(challenge, viewerParticipant)
+            : 0,
         createdAt: challenge.createdAt,
         updatedAt: challenge.updatedAt,
     };
@@ -1095,20 +1101,44 @@ export async function recordProgressForHabit({ userId, habitId, days = 1 }) {
 }
 
 export async function leaveChallenge(challengeId, userId) {
-    const participant = await ChallengeParticipant.findOneAndUpdate(
-        { challenge: challengeId, user: userId, status: 'active' },
-        { status: 'left' },
-        { new: true }
-    );
+    const participant = await ChallengeParticipant.findOne({
+        challenge: challengeId,
+        user: userId,
+        status: { $in: ['active', 'completed'] },
+    });
 
     if (!participant) {
         return { notFound: true };
     }
 
     const challenge = await Challenge.findById(challengeId);
+    const habitId = participant.habit;
+
+    participant.status = 'left';
+    participant.habit = null;
+    participant.rewardClaimed = false;
+    participant.rewardClaimedAt = null;
+    participant.rewardCoins = 0;
+
+    await participant.save();
+
+    if (habitId) {
+        await Habit.deleteOne({
+            _id: habitId,
+            ownerId: userId,
+            source: 'challenge',
+            challengeId,
+        });
+    }
 
     return {
-        challenge: serializeChallenge(challenge),
+        challenge: serializeChallenge(
+            challenge,
+            await ChallengeParticipant.countDocuments({
+                challenge: challengeId,
+                status: { $ne: 'left' },
+            })
+        ),
         participant: serializeParticipant(participant, challenge),
     };
 }
@@ -1180,12 +1210,23 @@ export async function claimReward(challengeId, userId) {
         return { error: 'user has not joined this challenge' };
     }
 
+    if (participant.status === 'left') {
+        return { error: 'reward cannot be claimed after leaving a challenge' };
+    }
+
     if (participant.rewardClaimed) {
         return { error: 'reward has already been claimed' };
     }
 
     if (!isRewardClaimable(challenge)) {
         return { error: 'reward can only be claimed after the challenge ends' };
+    }
+
+    if (participant.daysCompleted < 1) {
+        return {
+            error: 'You need to complete at least one challenge day to receive a reward.',
+            code: 'CHALLENGE_REWARD_MINIMUM_PROGRESS',
+        };
     }
 
     const rewardCoins = getRewardCoins(challenge, participant);
