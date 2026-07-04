@@ -26,6 +26,7 @@ import {
 
 const COINS_PER_CHALLENGE_DAY = 5;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const MAX_CHALLENGE_DURATION_DAYS = 92;
 
 const ICONS = [
     '\uD83C\uDFAF', '\uD83D\uDCA7', '\uD83C\uDFC3', '\uD83D\uDCD6', '\uD83E\uDDD8', '\uD83E\uDD57',
@@ -35,6 +36,17 @@ const ICONS = [
 
 const UNITS = ['L', 'ml', 'min', 'hours', 'km', 'steps', 'times', 'pages', 'Custom'];
 const FREQUENCIES = ['Daily', 'Weekly', 'Monthly'];
+const UNIT_LABELS = {
+    L: 'l',
+    ml: 'ml',
+    min: 'Min',
+    hours: 'Hours',
+    km: 'km',
+    steps: 'Steps',
+    times: 'Times',
+    pages: 'Pages',
+    Custom: 'Custom',
+};
 
 function toDateInputValue(date = new Date()) {
     const parsedDate = new Date(date);
@@ -117,6 +129,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
     const [form, setForm] = useState(() => buildChallengeForm(challenge));
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
     const durationDays = calculateDurationDays(form.startsAt, form.endsAt);
+    const maxEndDate = addDaysToDateInput(form.startsAt, MAX_CHALLENGE_DURATION_DAYS);
     const calculatedReward = Math.max(durationDays, 0) * COINS_PER_CHALLENGE_DAY;
     const finalHabitUnit = form.habitUnit === 'Custom' ? form.customHabitUnit : form.habitUnit;
     const canSubmit = Boolean(
@@ -124,6 +137,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
             && form.habitTitle.trim()
             && form.habitFrequency
             && durationDays > 0
+            && durationDays <= MAX_CHALLENGE_DURATION_DAYS
             && form.startsAt
             && form.endsAt
     );
@@ -173,13 +187,13 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="rounded-2xl border-0 bg-[#1e1b3a] p-10 text-white shadow-2xl sm:max-w-2xl">
+            <DialogContent className="max-h-[88vh] overflow-y-auto rounded-2xl border-0 bg-[#1e1b3a] p-6 text-white shadow-2xl sm:max-w-2xl sm:p-10">
                 <DialogHeader className="text-center">
                     <DialogTitle className="text-2xl font-bold tracking-tight text-white">
-                        {isEditing ? 'Edit challenge' : 'Create challenge'}
+                        {isEditing ? 'Edit Challenge' : 'Create Challenge'}
                     </DialogTitle>
                     <DialogDescription className="text-slate-300">
-                        Set up the challenge and the habit every participant will receive.
+                        Set up the Challenge and the Habit every participant will receive.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -187,7 +201,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                     <div className="space-y-4">
                         <div className="space-y-2.5">
                             <Label htmlFor="challenge-title" className="text-sm font-medium text-white">
-                                Challenge name
+                                Challenge Name
                             </Label>
                             <Input
                                 id="challenge-title"
@@ -195,7 +209,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 onChange={(event) => updateField('title', event.target.value)}
                                 required
                                 maxLength={120}
-                                placeholder="e.g. 30 day reading challenge"
+                                placeholder="e.g. 30 Day Reading Challenge"
                                 className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white caret-purple-400 placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/20"
                             />
                         </div>
@@ -213,6 +227,29 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 placeholder="What should participants know?"
                                 className="w-full resize-none rounded-2xl border border-purple-500/20 bg-[#2d2b55]/60 px-3 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-purple-500 focus:ring-3 focus:ring-purple-500/20"
                             />
+                        </div>
+
+                        <div className="space-y-2.5">
+                            <Label className="text-sm font-medium text-white">Visibility</Label>
+                            <Select value={form.visibility} onValueChange={(value) => updateField('visibility', value)}>
+                                <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:text-white [&>svg]:opacity-50">
+                                    <SelectValue placeholder="Select Visibility" />
+                                </SelectTrigger>
+                                <SelectContent position="popper" sideOffset={4} className="z-[100] w-[var(--radix-select-trigger-width)] rounded-xl border-purple-500/20 bg-[#1e1b3a]">
+                                    <SelectItem
+                                        value="public"
+                                        className="cursor-pointer text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white [&_*]:!text-white"
+                                    >
+                                        Public - Everyone Can Find and Join
+                                    </SelectItem>
+                                    <SelectItem
+                                        value="friends"
+                                        className="cursor-pointer text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white [&_*]:!text-white"
+                                    >
+                                        Private - Friends Only
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 
@@ -236,7 +273,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                         align="start"
                                     >
                                         <p className="mb-2 text-xs font-medium text-purple-300">
-                                            Choose an icon
+                                            Choose an Icon
                                         </p>
                                         <div className="grid grid-cols-6 gap-1.5">
                                             {ICONS.map((emoji) => (
@@ -305,7 +342,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 <Label className="text-sm font-medium text-white">Unit</Label>
                                 <Select value={form.habitUnit} onValueChange={(value) => updateField('habitUnit', value)}>
                                     <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:text-white [&>svg]:opacity-50">
-                                        <SelectValue placeholder="Select unit" />
+                                        <SelectValue placeholder="Select Unit" />
                                     </SelectTrigger>
                                     <SelectContent position="popper" sideOffset={4} className="z-[100] w-[var(--radix-select-trigger-width)] rounded-xl border-purple-500/20 bg-[#1e1b3a]">
                                         {UNITS.map((unit) => (
@@ -314,7 +351,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                                 value={unit}
                                                 className="cursor-pointer text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white [&_*]:!text-white"
                                             >
-                                                {unit}
+                                                {UNIT_LABELS[unit] ?? unit.toUpperCase()}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -327,7 +364,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                     <Input
                                         value={form.customHabitUnit}
                                         onChange={(event) => updateField('customHabitUnit', event.target.value)}
-                                        placeholder="e.g. push-ups"
+                                        placeholder="e.g. Push-Ups"
                                         required
                                         maxLength={50}
                                         className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:border-purple-500 focus:ring-purple-500/20"
@@ -362,7 +399,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2.5">
                             <Label htmlFor="challenge-starts-at" className="text-sm font-medium text-white">
-                                Start date
+                                Start Date
                             </Label>
                             <Input
                                 id="challenge-starts-at"
@@ -370,34 +407,46 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 value={form.startsAt}
                                 onChange={(event) => updateField('startsAt', event.target.value)}
                                 required
+                                lang="en"
                                 className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:border-purple-500 focus:ring-purple-500/20 [color-scheme:dark]"
                             />
                         </div>
 
                         <div className="space-y-2.5">
                             <Label htmlFor="challenge-ends-at" className="text-sm font-medium text-white">
-                                End date
+                                End Date
                             </Label>
                             <Input
                                 id="challenge-ends-at"
                                 type="date"
                                 min={form.startsAt}
+                                max={maxEndDate}
                                 value={form.endsAt}
                                 onChange={(event) => updateField('endsAt', event.target.value)}
                                 required
+                                lang="en"
+                                title="Challenges can run for a maximum of 3 months."
                                 className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:border-purple-500 focus:ring-purple-500/20 [color-scheme:dark]"
                             />
+                            <p className="text-xs font-medium text-slate-300">
+                                Maximum Length is 3 Months.
+                            </p>
                         </div>
                     </div>
 
                     <div className="flex items-center justify-between rounded-2xl bg-[#2d2b55]/40 px-4 py-3 text-sm text-slate-200">
                         <span>
-                            {Math.max(durationDays, 0)} challenge days
+                            {Math.max(durationDays, 0)} Challenge Days
                         </span>
                         <span className="font-semibold text-amber-200">
-                            Reward: {calculatedReward} coins
+                            Reward: {calculatedReward} Coins
                         </span>
                     </div>
+                    {durationDays > MAX_CHALLENGE_DURATION_DAYS ? (
+                        <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                            Challenges can run for a maximum of 3 months.
+                        </p>
+                    ) : null}
 
                     <div className="grid gap-3 sm:grid-cols-[auto_1fr]">
                         <Button
