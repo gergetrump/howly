@@ -13,7 +13,7 @@ export function FriendCard({ name, username, streakDays, avatarSrc, action, onCl
         <UserPanelRow
             user={profileUser}
             avatarClassName="size-12"
-            surfaceClassName="bg-theme-accent/10"
+            surfaceClassName="border border-theme-text/10 bg-theme-surface"
             onOpenProfile={onClick}
         >
             {showStreak ? (

@@ -373,6 +373,42 @@ body {
     --t-invert-text: #0a1628;
 }
 
+[data-theme='hogwarts-night'] {
+    /* Scene — castle in the midnight blue */
+    --howly-sky-top: #0d1424;
+    --howly-sky-bottom: #2b3a5c;
+    --howly-moon: #f2e8c9;
+    --howly-forest-back: #131b2e;
+    --howly-forest-front: #1c2740;
+    --howly-trunk: #3f4a63;
+    --howly-ground: #0b101d;
+    --howly-ground-ridge: #16203a;
+    --howly-card: #202940;
+    --howly-primary: #a83232;
+    --howly-blossom: transparent;
+
+    /* Semantic */
+    --t-bg: #161d2e;
+    --t-surface: #202940;
+    --t-surface-2: #2c3752;
+    --t-text: #edf1f7;
+    --t-text-soft: #c3cddd;
+    --t-text-muted: #93a4bd;
+    --t-accent: #e3b34a;
+    --t-accent-strong: #96700f;
+    --t-accent-soft: #f0c75e;
+    --t-on-accent: #241903;
+    --t-success: #6fd097;
+    --t-on-success: #0a2e17;
+    --t-danger: #f28b73;
+    --t-love: #dda8c6;
+    --t-gold: #f0c75e;
+    --t-invert: #edf1f7;
+    --t-invert-text: #141b2b;
+    --t-success-surface: #2c424d;
+    --t-warn-surface: #3f4144;
+}
+
 @keyframes howly-blink {
     0%, 92%, 100% { transform: scaleY(1); }
     96% { transform: scaleY(0.08); }

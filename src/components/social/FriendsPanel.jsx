@@ -24,7 +24,7 @@ import { getDisplayName, getUsername } from '@/components/social/socialHelpers.j
 
 function EmptyState({ children }) {
     return (
-        <Card className="border-theme-text/10 bg-theme-text/5 text-theme-text">
+        <Card className="border-theme-text/10 bg-theme-surface text-theme-text">
             <CardContent>
                 <p className="text-sm text-theme-text-soft">{children}</p>
             </CardContent>

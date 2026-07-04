@@ -10,7 +10,7 @@
         (function () {
             try {
                 var theme = localStorage.getItem('howly_theme');
-                var valid = ['forest-dark', 'sakura-light', 'sunset-warm', 'ocean-dark'];
+                var valid = ['forest-dark', 'sakura-light', 'sunset-warm', 'ocean-dark', 'hogwarts-night'];
                 document.documentElement.dataset.theme =
                     valid.indexOf(theme) !== -1 ? theme : 'forest-dark';
             } catch (e) {

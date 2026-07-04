@@ -547,7 +547,7 @@ export function NavBar({
                                     className={({ isActive }) =>
                                         cn(
                                     'flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm font-medium text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text lg:px-4 lg:text-base',
-                                            isActive && 'bg-theme-love/15 text-theme-love ring-1 ring-theme-love/20',
+                                            isActive && 'bg-theme-accent/15 text-theme-accent-soft ring-1 ring-theme-accent/25',
                                         )
                                     }
                                 >
@@ -692,7 +692,7 @@ export function NavBar({
                                 className={({ isActive }) =>
                                     cn(
                                         'relative flex size-[3.25rem] items-center justify-center rounded-full text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text',
-                                        isActive && 'bg-theme-love/15 text-theme-love ring-1 ring-theme-love/20',
+                                        isActive && 'bg-theme-accent/15 text-theme-accent-soft ring-1 ring-theme-accent/25',
                                         isPremium && 'ring-2 ring-theme-gold ring-offset-2 ring-offset-theme-bg',
                                     )
                                 }

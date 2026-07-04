@@ -31,6 +31,13 @@ export const THEMES = [
         description: 'Calm midnight waters, focused',
         preview: { bg: '#0a1628', card: '#14283d', accent: '#38bdf8', extra: '#2dd4bf' },
     },
+    {
+        id: 'hogwarts-night',
+        name: 'Hogwarts Night',
+        emoji: '🏰',
+        description: 'Candlelit castle after dark',
+        preview: { bg: '#161d2e', card: '#202940', accent: '#e3b34a', extra: '#a83232' },
+    },
 ];
 
 const THEME_IDS = THEMES.map((theme) => theme.id);
