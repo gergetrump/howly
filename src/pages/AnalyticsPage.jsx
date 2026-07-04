@@ -443,7 +443,7 @@ export function AnalyticsPage() {
 
             <PageSection width="full" title={`${PERIOD_LABELS[period]} overview`}>
                 <Tabs value={period} onValueChange={setPeriod}>
-                    <TabsList className="w-full border border-theme-text/10 bg-theme-text/10 text-theme-text">
+                    <TabsList className="w-full border border-theme-text/10 bg-theme-surface text-theme-text">
                         <TabsTrigger
                             value="week"
                             className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"

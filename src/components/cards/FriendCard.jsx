@@ -14,7 +14,6 @@ export function FriendCard({ name, username, streakDays, avatarSrc, action, onCl
             user={profileUser}
             avatarClassName="size-12"
             surfaceClassName="bg-theme-accent/10"
-            className="shadow-xl shadow-slate-950/20 backdrop-blur"
             onOpenProfile={onClick}
         >
             {showStreak ? (

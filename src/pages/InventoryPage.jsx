@@ -498,7 +498,7 @@ export function InventoryPage() {
                     <h2 className="text-xl font-semibold text-theme-text">Owned Items</h2>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-                            <TabsList className="h-auto flex-wrap border border-theme-text/10 bg-theme-text/10 p-1 text-theme-text-soft">
+                            <TabsList className="h-auto flex-wrap border border-theme-text/10 bg-theme-surface p-1 text-theme-text-soft">
                                 {ITEM_CATEGORIES.map((category) => (
                                     <TabsTrigger
                                         key={category.value}
@@ -555,7 +555,7 @@ export function InventoryPage() {
                                     interactive={item.type !== 'powerUp'}
                                     disabled={isSavingOutfit}
                                     cornerBadge={item.type === 'powerUp' ? (
-                                        <span className="rounded-full border border-theme-text/10 bg-theme-text/10 px-2 py-1 text-[10px] font-bold text-theme-text">
+                                        <span className="rounded-full border border-theme-text/10 bg-theme-surface px-2 py-1 text-[10px] font-bold text-theme-text">
                                             x{item.quantity}
                                         </span>
                                     ) : null}

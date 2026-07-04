@@ -472,7 +472,7 @@ export function DashboardPage() {
                 onAction={openAddHabitDialog}
             >
                 <Tabs value={habitsTab} onValueChange={setHabitsTab}>
-                    <TabsList className="w-full border border-theme-text/10 bg-theme-text/10 text-theme-text">
+                    <TabsList className="w-full border border-theme-text/10 bg-theme-surface text-theme-text">
                         <TabsTrigger
                             value="today"
                             className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"

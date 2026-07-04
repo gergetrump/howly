@@ -853,7 +853,7 @@ export function ShopPage() {
                 <PageSection title="Shop Items" className="min-w-0">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <Tabs value={selectedCategory} onValueChange={handleCategoryChange}>
-                            <TabsList className="h-auto flex-wrap border border-theme-text/10 bg-theme-text/10 p-1 text-theme-text-soft">
+                            <TabsList className="h-auto flex-wrap border border-theme-text/10 bg-theme-surface p-1 text-theme-text-soft">
                                 {ITEM_CATEGORIES.map((category) => (
                                     <TabsTrigger
                                         key={category.value}

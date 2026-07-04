@@ -151,7 +151,7 @@ function ChallengeInfoPopover() {
             <PopoverTrigger asChild>
                 <button
                     type="button"
-                    className="grid h-7 w-7 place-items-center rounded-full border border-theme-text/10 bg-theme-text/10 text-theme-text transition hover:bg-theme-text/20 hover:text-theme-text"
+                    className="grid h-7 w-7 place-items-center rounded-full border border-theme-text/10 bg-theme-surface text-theme-text transition hover:bg-theme-text/20 hover:text-theme-text"
                     aria-label="How do challenges work?"
                 >
                     <CircleHelp className="h-3.5 w-3.5" aria-hidden="true" />
@@ -628,7 +628,7 @@ export function ChallengesPage() {
                 titleAction={<ChallengeInfoPopover />}
             >
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="w-full border border-theme-text/10 bg-theme-text/10 text-theme-text">
+                    <TabsList className="w-full border border-theme-text/10 bg-theme-surface text-theme-text">
                         {CHALLENGE_TABS.map((tab) => (
                             <TabsTrigger
                                 key={tab.value}
