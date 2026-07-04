@@ -8,7 +8,7 @@ export const getCommunityAnalyticsSummary = asyncHandler(async (req, res) => {
         : queryPeriod === 'month'
             ? 'month'
             : 'week';
-    const result = await getCommunityAnalytics({ period });
+    const result = await getCommunityAnalytics({ period, userId: req.user.id });
 
     res.status(200).json({ data: result });
 });

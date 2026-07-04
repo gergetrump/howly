@@ -32,6 +32,48 @@ function authHeader(user) {
     return `Bearer ${signAccessToken(user)}`;
 }
 
+function periodKeyForDate(date) {
+    return date.toISOString().slice(0, 10);
+}
+
+async function createDailyHabit(userId, title, createdAt = new Date()) {
+    return Habit.create({
+        title,
+        type: 'boolean',
+        frequency: 'Daily',
+        ownerId: userId,
+        category: 'Movement',
+        createdAt,
+        taxonomy: {
+            categoryKey: 'movement',
+            subcategoryKey: 'cardio',
+            canonicalHabitKey: 'run',
+            score: 0.9,
+            assignedAt: createdAt,
+        },
+    });
+}
+
+async function seedDailyCheckIns(userId, habitId, dayCount) {
+    const today = new Date();
+    const docs = [];
+
+    for (let offset = 0; offset < dayCount; offset += 1) {
+        const completedAt = new Date(today);
+        completedAt.setDate(completedAt.getDate() - offset);
+        docs.push({
+            user: userId,
+            habit: habitId,
+            completedAt,
+            periodKey: periodKeyForDate(completedAt),
+        });
+    }
+
+    if (docs.length) {
+        await HabitCheckIn.create(docs);
+    }
+}
+
 before(async () => {
     config.jwtSecret = 'test-secret';
     mongo = await MongoMemoryServer.create();
@@ -59,6 +101,9 @@ test('GET /api/community/analytics returns anonymous community aggregates', asyn
     const userB = await buildUser({ username: 'user_b', email: 'b@example.com' });
     const token = authHeader(userA);
     const completedAt = new Date();
+    const periodStart = new Date();
+    periodStart.setDate(periodStart.getDate() - 6);
+    periodStart.setHours(0, 0, 0, 0);
 
     const [runHabit, readHabit] = await Promise.all([
         Habit.create({
@@ -66,6 +111,7 @@ test('GET /api/community/analytics returns anonymous community aggregates', asyn
             type: 'boolean',
             frequency: 'Daily',
             ownerId: userA._id,
+            createdAt: periodStart,
             category: 'Movement',
             taxonomy: {
                 categoryKey: 'movement',
@@ -80,6 +126,7 @@ test('GET /api/community/analytics returns anonymous community aggregates', asyn
             type: 'boolean',
             frequency: 'Daily',
             ownerId: userB._id,
+            createdAt: periodStart,
             category: 'Learning',
             taxonomy: {
                 categoryKey: 'learning',
@@ -118,16 +165,15 @@ test('GET /api/community/analytics returns anonymous community aggregates', asyn
         .expect(200);
 
     assert.equal(response.body.data.period.key, 'week');
-    assert.equal(response.body.data.summary.checkIns, 3);
-    assert.equal(response.body.data.summary.activeUsers, 2);
     assert.equal(response.body.data.summary.topCategory.categoryKey, 'movement');
+    assert.equal(response.body.data.summary.standing.display, 'percent');
+    assert.equal(response.body.data.summary.standing.userCompletionRate, 14);
+    assert.equal(response.body.data.summary.standing.aheadPercent, 0);
     assert.equal(response.body.data.byCategory.length, 2);
     assert.equal(response.body.data.trendingHabits.length, 2);
     assert.equal(response.body.data.trendingHabits[0].canonicalHabitKey, 'run');
     assert.equal(response.body.data.trendingHabits[0].checkIns, 2);
     assert.equal(response.body.data.comparisonPeriod.key, 'previous_7_days');
-    assert.equal(response.body.data.summary.trends.checkIns.direction, 'up');
-    assert.equal(response.body.data.summary.trends.checkIns.display, 'new');
     assert.equal(response.body.data.byCategory[0].trend.direction, 'up');
 
     const todayResponse = await request(app)
@@ -137,8 +183,6 @@ test('GET /api/community/analytics returns anonymous community aggregates', asyn
 
     assert.equal(todayResponse.body.data.period.key, '24h');
     assert.equal(todayResponse.body.data.comparisonPeriod.key, 'previous_24h');
-    assert.equal(todayResponse.body.data.summary.checkIns, 3);
-    assert.equal(todayResponse.body.data.summary.activeUsers, 2);
 
     const legacyTodayResponse = await request(app)
         .get('/api/community/analytics?period=today')
@@ -148,7 +192,7 @@ test('GET /api/community/analytics returns anonymous community aggregates', asyn
     assert.equal(legacyTodayResponse.body.data.period.key, '24h');
 });
 
-test('GET /api/community/analytics excludes deleted users', async () => {
+test('GET /api/community/analytics excludes deleted users from standing pool', async () => {
     const activeUser = await buildUser({ username: 'active_user', email: 'active@example.com' });
     const deletedUser = await buildUser({
         username: 'deleted_user',
@@ -157,6 +201,9 @@ test('GET /api/community/analytics excludes deleted users', async () => {
     });
     const token = authHeader(activeUser);
     const completedAt = new Date();
+    const periodStart = new Date();
+    periodStart.setDate(periodStart.getDate() - 6);
+    periodStart.setHours(0, 0, 0, 0);
 
     const habits = await Promise.all([
         Habit.create({
@@ -164,6 +211,7 @@ test('GET /api/community/analytics excludes deleted users', async () => {
             type: 'boolean',
             frequency: 'Daily',
             ownerId: activeUser._id,
+            createdAt: periodStart,
             category: 'Movement',
             taxonomy: {
                 categoryKey: 'movement',
@@ -178,6 +226,7 @@ test('GET /api/community/analytics excludes deleted users', async () => {
             type: 'boolean',
             frequency: 'Daily',
             ownerId: deletedUser._id,
+            createdAt: periodStart,
             category: 'Learning',
             taxonomy: {
                 categoryKey: 'learning',
@@ -209,11 +258,13 @@ test('GET /api/community/analytics excludes deleted users', async () => {
         .set('Authorization', token)
         .expect(200);
 
-    assert.equal(response.body.data.summary.checkIns, 1);
-    assert.equal(response.body.data.summary.activeUsers, 1);
+    assert.equal(response.body.data.summary.standing.display, 'percent');
+    assert.equal(response.body.data.summary.standing.userCompletionRate, 14);
+    assert.equal(response.body.data.summary.standing.aheadPercent, 0);
+    assert.equal(response.body.data.trendingHabits.length, 1);
 });
 
-test('GET /api/community/analytics keeps check-ins after habit delete', async () => {
+test('GET /api/community/analytics keeps check-ins after habit soft-delete', async () => {
     const user = await buildUser({ username: 'delete_habit_user', email: 'delete@example.com' });
     const token = authHeader(user);
     const completedAt = new Date();
@@ -240,23 +291,26 @@ test('GET /api/community/analytics keeps check-ins after habit delete', async ()
         .set('Authorization', token)
         .expect(200);
 
-    assert.equal(beforeDelete.body.data.summary.checkIns, 1);
     assert.equal(beforeDelete.body.data.trendingHabits[0].canonicalHabitKey, 'run');
 
-    await Habit.findOneAndDelete({ _id: runHabit._id });
+    await request(app)
+        .delete(`/api/habits/${runHabit._id}`)
+        .set('Authorization', token)
+        .expect(204);
+
+    const softDeleted = await Habit.findById(runHabit._id);
+    assert.ok(softDeleted.deletedAt);
 
     const afterDelete = await request(app)
         .get('/api/community/analytics?period=week')
         .set('Authorization', token)
         .expect(200);
 
-    assert.equal(afterDelete.body.data.summary.checkIns, 1);
-    assert.equal(afterDelete.body.data.summary.activeUsers, 1);
     assert.equal(afterDelete.body.data.trendingHabits[0].canonicalHabitKey, 'run');
     assert.equal(afterDelete.body.data.byCategory[0].categoryKey, 'movement');
 });
 
-test('GET /api/community/analytics returns period-over-period trends', async () => {
+test('GET /api/community/analytics returns period-over-period category trends', async () => {
     const user = await buildUser({ username: 'trend_user', email: 'trend@example.com' });
     const token = authHeader(user);
     const completedAt = new Date();
@@ -304,13 +358,139 @@ test('GET /api/community/analytics returns period-over-period trends', async () 
         .set('Authorization', token)
         .expect(200);
 
-    assert.equal(response.body.data.summary.checkIns, 2);
-    assert.equal(response.body.data.summary.trends.checkIns.display, 'percent');
-    assert.equal(response.body.data.summary.trends.checkIns.changePercent, 100);
-    assert.equal(response.body.data.summary.trends.checkIns.direction, 'up');
     assert.equal(response.body.data.byCategory[0].categoryKey, 'movement');
     assert.equal(response.body.data.byCategory[0].trend.display, 'percent');
     assert.equal(response.body.data.byCategory[0].trend.changePercent, 100);
     assert.equal(response.body.data.trendingHabits[0].trend.display, 'percent');
     assert.equal(response.body.data.trendingHabits[0].trend.changePercent, 100);
+});
+
+test('GET /api/community/analytics returns completion standing percentile', async () => {
+    const periodStart = new Date();
+    periodStart.setDate(periodStart.getDate() - 6);
+    periodStart.setHours(0, 0, 0, 0);
+
+    const users = [];
+    for (let index = 0; index < 10; index += 1) {
+        users.push(await buildUser({
+            username: `standing_user_${index}`,
+            email: `standing_${index}@example.com`,
+        }));
+    }
+
+    for (let index = 0; index < users.length; index += 1) {
+        const habit = await createDailyHabit(users[index]._id, `Habit ${index}`, periodStart);
+        const completedDays = index === 0 ? 7 : index <= 4 ? 6 : 0;
+        await seedDailyCheckIns(users[index]._id, habit._id, completedDays);
+    }
+
+    const response = await request(app)
+        .get('/api/community/analytics?period=week')
+        .set('Authorization', authHeader(users[0]))
+        .expect(200);
+
+    assert.equal(response.body.data.summary.standing.display, 'percent');
+    assert.equal(response.body.data.summary.standing.eligible, true);
+    assert.equal(response.body.data.summary.standing.userCompletionRate, 100);
+    assert.equal(response.body.data.summary.standing.aheadPercent, 90);
+});
+
+test('GET /api/community/analytics excludes mid-period habits from standing', async () => {
+    const periodStart = new Date();
+    periodStart.setDate(periodStart.getDate() - 6);
+    periodStart.setHours(0, 0, 0, 0);
+
+    const users = [];
+    for (let index = 0; index < 10; index += 1) {
+        users.push(await buildUser({
+            username: `midperiod_user_${index}`,
+            email: `midperiod_${index}@example.com`,
+        }));
+    }
+
+    for (let index = 0; index < users.length; index += 1) {
+        const habit = await createDailyHabit(users[index]._id, `Habit ${index}`, periodStart);
+        await seedDailyCheckIns(users[index]._id, habit._id, 7);
+    }
+
+    const viewer = users[0];
+    const midPeriodHabit = await createDailyHabit(viewer._id, 'Late habit', new Date());
+    await seedDailyCheckIns(viewer._id, midPeriodHabit._id, 1);
+
+    const response = await request(app)
+        .get('/api/community/analytics?period=week')
+        .set('Authorization', authHeader(viewer))
+        .expect(200);
+
+    assert.equal(response.body.data.summary.standing.display, 'percent');
+    assert.equal(response.body.data.summary.standing.userCompletionRate, 100);
+});
+
+test('GET /api/community/analytics keeps soft-deleted habits in standing denominator', async () => {
+    const periodStart = new Date();
+    periodStart.setDate(periodStart.getDate() - 6);
+    periodStart.setHours(0, 0, 0, 0);
+
+    const users = [];
+    for (let index = 0; index < 10; index += 1) {
+        users.push(await buildUser({
+            username: `softdelete_user_${index}`,
+            email: `softdelete_${index}@example.com`,
+        }));
+    }
+
+    for (let index = 0; index < users.length; index += 1) {
+        const firstHabit = await createDailyHabit(users[index]._id, `Primary ${index}`, periodStart);
+        await seedDailyCheckIns(users[index]._id, firstHabit._id, index === 0 ? 7 : 6);
+
+        if (index === 0) {
+            const secondHabit = await createDailyHabit(users[index]._id, `Secondary ${index}`, periodStart);
+            await seedDailyCheckIns(users[index]._id, secondHabit._id, 0);
+            await Habit.findByIdAndUpdate(secondHabit._id, { deletedAt: new Date() });
+        }
+    }
+
+    const response = await request(app)
+        .get('/api/community/analytics?period=week')
+        .set('Authorization', authHeader(users[0]))
+        .expect(200);
+
+    assert.equal(response.body.data.summary.standing.display, 'percent');
+    assert.ok(response.body.data.summary.standing.userCompletionRate < 100);
+});
+
+test('GET /api/community/analytics excludes challenge habits from standing', async () => {
+    const periodStart = new Date();
+    periodStart.setDate(periodStart.getDate() - 6);
+    periodStart.setHours(0, 0, 0, 0);
+
+    const users = [];
+    for (let index = 0; index < 10; index += 1) {
+        users.push(await buildUser({
+            username: `challenge_user_${index}`,
+            email: `challenge_${index}@example.com`,
+        }));
+    }
+
+    for (let index = 0; index < users.length; index += 1) {
+        const habit = await createDailyHabit(users[index]._id, `Habit ${index}`, periodStart);
+        await seedDailyCheckIns(users[index]._id, habit._id, 7);
+    }
+
+    await Habit.create({
+        title: 'Challenge habit',
+        type: 'boolean',
+        frequency: 'Daily',
+        ownerId: users[0]._id,
+        source: 'challenge',
+        createdAt: periodStart,
+    });
+
+    const response = await request(app)
+        .get('/api/community/analytics?period=week')
+        .set('Authorization', authHeader(users[0]))
+        .expect(200);
+
+    assert.equal(response.body.data.summary.standing.display, 'percent');
+    assert.equal(response.body.data.summary.standing.userCompletionRate, 100);
 });

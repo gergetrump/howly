@@ -1,6 +1,7 @@
 import HabitCheckIn from '../analytics/habitCheckIn.model.js';
 import CanonicalHabit from '../taxonomy/canonicalHabit.model.js';
 import { buildPeriod, endOfDay, startOfDay } from '../analytics/analytics.service.js';
+import { computeCompletionStanding } from './communityCompletionBenchmark.service.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -301,26 +302,22 @@ function serializePeriod(period) {
     };
 }
 
-export async function getCommunityAnalytics({ period = 'week' } = {}) {
+export async function getCommunityAnalytics({ period = 'week', userId } = {}) {
     const selectedPeriod = buildCommunityPeriod(period);
     const comparisonPeriod = buildPreviousCommunityPeriod(period);
 
-    const [stats, previousStats] = await Promise.all([
+    const [stats, previousStats, standing] = await Promise.all([
         computeRangeAnalytics(selectedPeriod.start, selectedPeriod.end),
         computeRangeAnalytics(comparisonPeriod.start, comparisonPeriod.end),
+        userId ? computeCompletionStanding(userId, selectedPeriod) : null,
     ]);
 
     return {
         period: serializePeriod(selectedPeriod),
         comparisonPeriod: serializePeriod(comparisonPeriod),
         summary: {
-            activeUsers: stats.activeUsers,
-            checkIns: stats.checkIns,
             topCategory: stats.topCategory,
-            trends: {
-                checkIns: buildTrendMetric(stats.checkIns, previousStats.checkIns),
-                activeUsers: buildTrendMetric(stats.activeUsers, previousStats.activeUsers),
-            },
+            standing,
         },
         byCategory: attachCategoryTrends(stats.byCategory, previousStats.byCategory),
         trendingHabits: attachTrendingTrends(stats.trendingHabits, previousStats.trendingHabits),

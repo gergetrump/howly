@@ -160,6 +160,83 @@ function completionRate(completed, expected) {
     return Math.round((completed / expected) * 100);
 }
 
+function buildLabelsForPeriod(period) {
+    if (period.labels?.length) {
+        return period.labels;
+    }
+
+    const labels = [];
+    let cursor = startOfDay(period.start);
+    const endDay = startOfDay(period.end);
+
+    while (cursor <= endDay) {
+        labels.push({
+            date: new Date(cursor),
+            key: toDateKey(cursor),
+            label: cursor.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            weekday: cursor.getDay() || 7,
+        });
+        cursor = addDays(cursor, 1);
+    }
+
+    return labels;
+}
+
+function buildPeriodStartHabitFilter(periodStart) {
+    return {
+        source: { $ne: 'challenge' },
+        ownerId: { $exists: true, $ne: null },
+        createdAt: { $lte: periodStart },
+        $or: [
+            { deletedAt: null },
+            { deletedAt: { $gt: periodStart } },
+        ],
+    };
+}
+
+function computePersonalCompletionRateFromData(period, habits, checkIns) {
+    if (!habits.length) {
+        return { expected: 0, completed: 0, completionRate: null };
+    }
+
+    const labels = buildLabelsForPeriod(period);
+    const checkInsByHabit = new Map();
+
+    for (const checkIn of checkIns) {
+        const habitId = checkIn.habit.toString();
+        if (!checkInsByHabit.has(habitId)) {
+            checkInsByHabit.set(habitId, []);
+        }
+        checkInsByHabit.get(habitId).push(checkIn);
+    }
+
+    let totalExpected = 0;
+    let totalCompleted = 0;
+
+    for (const habit of habits) {
+        const habitId = habit._id.toString();
+        const habitCheckIns = checkInsByHabit.get(habitId) ?? [];
+        const completedDateSet = new Set(habitCheckIns.map((checkIn) => toDateKey(checkIn.completedAt)));
+        let expectedCount = 0;
+
+        for (const day of labels) {
+            if (isHabitExpectedOnDay(habit, day)) {
+                expectedCount += 1;
+            }
+        }
+
+        const completedCount = Math.min(completedDateSet.size, expectedCount || completedDateSet.size);
+        totalExpected += expectedCount;
+        totalCompleted += completedCount;
+    }
+
+    return {
+        expected: totalExpected,
+        completed: totalCompleted,
+        completionRate: completionRate(totalCompleted, totalExpected),
+    };
+}
+
 function serializeHabit(habit) {
     return {
         id: habit._id.toString(),
@@ -212,7 +289,7 @@ export async function recordHabitCheckIn({ userId, habit, completedAt = new Date
                 ...buildCheckInTaxonomySnapshot(habit),
             },
         },
-        { upsert: true, new: true },
+        { upsert: true, returnDocument: 'after' },
     );
 }
 
@@ -494,4 +571,14 @@ export async function getChallengeAnalytics(userId, { period = 'week' } = {}) {
     };
 }
 
-export { buildPeriod, startOfDay, endOfDay };
+export {
+    buildPeriod,
+    startOfDay,
+    endOfDay,
+    buildLabelsForPeriod,
+    buildPeriodStartHabitFilter,
+    computePersonalCompletionRateFromData,
+    completionRate,
+    isHabitExpectedOnDay,
+    toDateKey,
+};

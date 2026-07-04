@@ -112,13 +112,17 @@ test('habits CRUD operations work correctly', async () => {
     .set('Authorization', token)
     .expect(204);
 
-  // 5. Verify deletion
+  // 5. Verify soft deletion hides the habit from the list but keeps it in the database
   const listAfterDelete = await request(app)
     .get('/api/habits')
     .set('Authorization', token)
     .expect(200);
 
   assert.equal(listAfterDelete.body.data.length, 0);
+
+  const deletedHabit = await Habit.findById(habitId);
+  assert.ok(deletedHabit);
+  assert.ok(deletedHabit.deletedAt);
 });
 
 test('habit check-in and uncheck-in updates streaks correctly', async () => {
