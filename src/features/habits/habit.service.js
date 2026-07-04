@@ -475,7 +475,7 @@ export async function uncompleteHabit(habitId, userId) {
 
 
 async function creditOverallStreak(userId) {
-    const user = await User.findById(userId).select('streak streakLastDay');
+    const user = await User.findById(userId).select('streak streakLastDay streakRepairDeadline');
     if (!user) return null;
 
     // Already credited today → nothing to do.
@@ -500,6 +500,7 @@ async function creditOverallStreak(userId) {
         user.streak = 1;
     }
     user.streakLastDay = new Date();
+    user.streakRepairDeadline = null;
     await user.save();
 
     return { streak: user.streak, creditedToday: true };

@@ -173,6 +173,37 @@ test('habit check-in and uncheck-in updates streaks correctly', async () => {
     .expect(400);
 });
 
+test('completing all due habits clears the overall streak repair deadline', async () => {
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+  const inOneDay = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const user = await buildUser({
+    streak: 7,
+    streakLastDay: twoDaysAgo,
+    streakRepairDeadline: inOneDay,
+  });
+  const token = authHeader(user);
+
+  const createResponse = await request(app)
+    .post('/api/habits')
+    .set('Authorization', token)
+    .send({
+      title: 'Read',
+      type: 'boolean',
+      frequency: 'Daily',
+      category: 'Movement',
+    })
+    .expect(201);
+
+  await request(app)
+    .post(`/api/habits/${createResponse.body.data.id}/check-ins`)
+    .set('Authorization', token)
+    .expect(200);
+
+  const reloaded = await User.findById(user._id).select('streakRepairDeadline streakLastDay');
+  assert.equal(reloaded.streakRepairDeadline, null);
+  assert.ok(reloaded.streakLastDay);
+});
+
 test('habit boost can be bought, used from inventory, and grants bonus coins for the next completions', async () => {
   const user = await buildUser({ coins: 500 });
   const token = authHeader(user);
