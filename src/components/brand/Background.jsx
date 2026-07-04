@@ -1,6 +1,5 @@
 import { cn } from '@/lib/utils';
 import { Starfield } from './background/Starfield.jsx';
-import { Moon } from './background/Moon.jsx';
 import { Tree } from './background/Tree.jsx';
 import { Ground } from './background/Ground.jsx';
 
@@ -21,9 +20,6 @@ export function Background({ theme = 'forest', className, children }) {
             aria-hidden={children ? undefined : 'true'}
         >
             <Starfield />
-
-            {/* The Moon */}
-            <Moon className="top-[8%] right-[12%] size-24 md:size-32" />
 
             {/* ---- Back layer trees (darker, smaller, behind) ---- */}
             <div className="pointer-events-none absolute bottom-4 left-0 right-0 z-0" style={{ height: '38vh' }}>
