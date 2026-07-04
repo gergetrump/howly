@@ -151,7 +151,7 @@ export function validateNotificationPreferencesInput(body = {}) {
     return { value: updates };
 }
 
-export const ALLOWED_THEMES = ['forest-dark', 'sakura-light', 'sunset-warm', 'ocean-dark'];
+export const ALLOWED_THEMES = ['forest-dark', 'sakura-light', 'sunset-warm', 'ocean-dark', 'hogwarts-night'];
 
 // Validate user preference updates (currently only theme)
 export function validateUpdatePreferencesInput(body = {}) {

@@ -76,7 +76,7 @@ const userSchema = new Schema(
     preferences: {
       theme: {
         type: String,
-        enum: ["forest-dark", "sakura-light", "sunset-warm", "ocean-dark"],
+        enum: ["forest-dark", "sakura-light", "sunset-warm", "ocean-dark", "hogwarts-night"],
         default: "forest-dark",
       },
     },
