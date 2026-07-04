@@ -201,11 +201,20 @@ export function DashboardPage() {
         }
     }
 
+    async function refreshHabitsAndUser() {
+        try {
+            const [habitsResponse, freshUser] = await Promise.all([getMyHabits(), getCurrentUser()]);
+            setHabits(habitsResponse.data || []);
+            setUser(freshUser.user ?? freshUser);
+        } catch (error) {
+            console.error('Failed to refresh after streak rescue:', error);
+        }
+    }
+
     async function handleUseHabitFreeze(habit) {
         try {
-            const result = await applyHabitStreakFreeze(habit.id);
-            setHabits(prev => prev.map(h => (h.id === habit.id ? { ...h, ...result.habit } : h)));
-            setUser(current => (current ? { ...current, streakShields: result.streakShields } : current));
+            await applyHabitStreakFreeze(habit.id);
+            await refreshHabitsAndUser();
         } catch (error) {
             console.error('Failed to use streak freeze:', error);
         }
@@ -412,7 +421,7 @@ export function DashboardPage() {
                 </div>
             ) : null}
 
-            <StreakRepairBanner />
+            <StreakRepairBanner onRescued={refreshHabitsAndUser} />
 
             <PageSection className="mt-6">
                 <DailyProgressCard completed={completedCount} total={totalCount} />
