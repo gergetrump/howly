@@ -388,13 +388,13 @@ export function StoryCommentSection({
 
     return (
         <div className="w-full">
-            <div className="rounded-xl bg-black/20 p-4">
+            <div className={readOnly ? '' : 'rounded-xl bg-black/20 p-4'}>
                 {/* Comment List */}
                 <div ref={containerRef} className="space-y-4 max-h-80 overflow-y-auto pr-2">
                     {isLoading ? (
                         <p className="text-sm text-slate-400">Loading comments...</p>
                     ) : parentComments.length === 0 ? (
-                        <p className="text-sm text-slate-400">{readOnly ? 'No comments.' : 'No comments yet. Be the first to comment!'}</p>
+                        <p className="text-sm text-slate-500">{readOnly ? 'No comments yet' : 'No comments yet. Be the first to comment!'}</p>
                     ) : (
                         parentComments.map((parent) => {
                             const replies = getRepliesFor(parent.id);

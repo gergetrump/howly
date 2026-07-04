@@ -253,9 +253,9 @@ export function StoryFeedCard({
                         </div>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className={`flex shrink-0 items-center gap-2 ${readOnlyComments ? 'pr-10' : ''}`}>
                         {meta ? <span className="text-sm text-slate-400">{meta}</span> : null}
-                        {isOwn && onDelete ? (
+                        {isOwn && onDelete && !readOnlyComments ? (
                             <button
                                 type="button"
                                 onClick={() => setIsConfirmingDelete(true)}
@@ -285,30 +285,51 @@ export function StoryFeedCard({
                 {error && <p className="text-sm text-red-300">{error}</p>}
 
                 {readOnlyComments ? (
-                    <div className="flex flex-col gap-3 mt-4">
-                        <button
-                            type="button"
-                            onClick={() => localStory.likeCount && setIsLikersOpen(true)}
-                            disabled={!localStory.likeCount}
-                            className="flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-pink-300 transition enabled:hover:bg-pink-500/10 disabled:cursor-default disabled:text-slate-400"
-                        >
-                            <Heart className={`size-4 ${localStory.likeCount ? 'fill-current' : ''}`} />
-                            {localStory.likeCount}
-                        </button>
+                    <div className="mt-4 space-y-4">
+                        <div className="flex items-center gap-5 text-sm">
+                            <button
+                                type="button"
+                                onClick={() => localStory.likeCount && setIsLikersOpen(true)}
+                                disabled={!localStory.likeCount}
+                                className="inline-flex items-center gap-1.5 font-semibold text-pink-300 transition enabled:hover:text-pink-200 disabled:cursor-default disabled:text-slate-500"
+                            >
+                                <Heart className={`size-4 ${localStory.likeCount ? 'fill-current' : ''}`} />
+                                {localStory.likeCount}
+                            </button>
+                            <span className="inline-flex items-center gap-1.5 font-medium text-slate-400">
+                                <MessageCircle className="size-4" />
+                                {localStory.commentCount}
+                            </span>
+                        </div>
 
-                        <StoryCommentSection
-                            story={localStory}
-                            currentUserId={currentUserId}
-                            isStoryOwner={isOwn}
-                            readOnly
-                            comments={visibleComments}
-                            setComments={setComments}
-                            isLoading={isLoadingComments}
-                            hasLoadedComments={hasLoadedComments}
-                            onOpenProfile={onOpenProfile}
-                            blockedUsers={blockedUsers}
-                            blockers={blockers}
-                        />
+                        <div className="border-t border-white/10 pt-4">
+                            <StoryCommentSection
+                                story={localStory}
+                                currentUserId={currentUserId}
+                                isStoryOwner={isOwn}
+                                readOnly
+                                comments={visibleComments}
+                                setComments={setComments}
+                                isLoading={isLoadingComments}
+                                hasLoadedComments={hasLoadedComments}
+                                onOpenProfile={onOpenProfile}
+                                blockedUsers={blockedUsers}
+                                blockers={blockers}
+                            />
+                        </div>
+
+                        {isOwn && onDelete ? (
+                            <div className="border-t border-white/10 pt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsConfirmingDelete(true)}
+                                    className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition hover:text-red-300"
+                                >
+                                    <Trash2 className="size-4" />
+                                    Delete story
+                                </button>
+                            </div>
+                        ) : null}
                     </div>
                 ) : (
                     <div className="flex flex-col gap-3 mt-4">
