@@ -10,9 +10,11 @@ import Habit from '../src/features/habits/habit.model.js';
 import User from '../src/features/users/user.model.js';
 import Item from '../src/features/items/item.model.js';
 import UserItem from '../src/features/inventory/inventory.model.js';
+import BoostPurchaseLimit from '../src/features/inventory/boostPurchaseLimit.model.js';
 import HabitBoost from '../src/features/boosts/habitBoost.model.js';
 import config from '../config.js';
 import { getPlanForUser } from '../src/config/plans.js';
+import { getBoostPurchaseMonthKey } from '../src/features/inventory/inventory.service.js';
 
 let mongo;
 let app;
@@ -48,6 +50,7 @@ afterEach(async () => {
     User.deleteMany({}),
     Item.deleteMany({}),
     UserItem.deleteMany({}),
+    BoostPurchaseLimit.deleteMany({}),
     HabitBoost.deleteMany({}),
   ]);
 });
@@ -288,6 +291,136 @@ test('habit boost ownership is capped at 20 per boost type', async () => {
 
   assert.equal(rejectedResponse.body.code, 'BOOST_QUANTITY_LIMIT_REACHED');
   assert.equal(userAfterRejectedBuy.coins, 1000);
+
+  const monthlyCounter = await BoostPurchaseLimit.findOne({
+    user: user._id,
+    assetKey: boostItem.assetKey,
+    monthKey: getBoostPurchaseMonthKey(),
+  }).lean();
+
+  assert.equal(monthlyCounter.quantity, 20);
+});
+
+test('habit boost purchases are capped at 20 per boost type each month even after inventory is used', async () => {
+  const user = await buildUser({ coins: 3000 });
+  const token = authHeader(user);
+  const boostItem = await Item.create({
+    name: 'Small Boost',
+    type: 'powerUp',
+    price: 100,
+    assetKey: 'small-boost',
+  });
+
+  for (let index = 0; index < 20; index += 1) {
+    await request(app)
+      .post('/api/inventory/buy')
+      .set('Authorization', token)
+      .send({
+        itemId: boostItem._id.toString(),
+      })
+      .expect(201);
+
+    await UserItem.deleteMany({ user: user._id, item: boostItem._id });
+  }
+
+  assert.equal(await UserItem.countDocuments({ user: user._id, item: boostItem._id }), 0);
+
+  const userBeforeRejectedBuy = await User.findById(user._id).lean();
+  const monthlyCounterBeforeRejectedBuy = await BoostPurchaseLimit.findOne({
+    user: user._id,
+    assetKey: boostItem.assetKey,
+    monthKey: getBoostPurchaseMonthKey(),
+  }).lean();
+
+  assert.equal(userBeforeRejectedBuy.coins, 1000);
+  assert.equal(monthlyCounterBeforeRejectedBuy.quantity, 20);
+
+  const rejectedResponse = await request(app)
+    .post('/api/inventory/buy')
+    .set('Authorization', token)
+    .send({
+      itemId: boostItem._id.toString(),
+    })
+    .expect(400);
+
+  const userAfterRejectedBuy = await User.findById(user._id).lean();
+
+  assert.equal(rejectedResponse.body.code, 'BOOST_MONTHLY_LIMIT_REACHED');
+  assert.equal(userAfterRejectedBuy.coins, 1000);
+  assert.equal(await UserItem.countDocuments({ user: user._id, item: boostItem._id }), 0);
+});
+
+test('habit boost monthly purchase limits are scoped to the current month', async () => {
+  const user = await buildUser({ coins: 500 });
+  const token = authHeader(user);
+  const boostItem = await Item.create({
+    name: 'Small Boost',
+    type: 'powerUp',
+    price: 100,
+    assetKey: 'small-boost',
+  });
+  const previousMonth = new Date();
+  previousMonth.setUTCMonth(previousMonth.getUTCMonth() - 1);
+
+  await BoostPurchaseLimit.create({
+    user: user._id,
+    assetKey: boostItem.assetKey,
+    monthKey: getBoostPurchaseMonthKey(previousMonth),
+    quantity: 20,
+  });
+
+  const response = await request(app)
+    .post('/api/inventory/buy')
+    .set('Authorization', token)
+    .send({
+      itemId: boostItem._id.toString(),
+    })
+    .expect(201);
+
+  const currentMonthCounter = await BoostPurchaseLimit.findOne({
+    user: user._id,
+    assetKey: boostItem.assetKey,
+    monthKey: getBoostPurchaseMonthKey(),
+  }).lean();
+
+  assert.equal(response.body.quantity, 1);
+  assert.equal(currentMonthCounter.quantity, 1);
+});
+
+test('boost purchase limits endpoint returns current month usage', async () => {
+  const user = await buildUser({ coins: 500 });
+  const token = authHeader(user);
+  const boostItem = await Item.create({
+    name: 'Small Boost',
+    type: 'powerUp',
+    price: 100,
+    assetKey: 'small-boost',
+  });
+
+  await request(app)
+    .post('/api/inventory/buy')
+    .set('Authorization', token)
+    .send({
+      itemId: boostItem._id.toString(),
+    })
+    .expect(201);
+
+  await request(app)
+    .post('/api/inventory/buy')
+    .set('Authorization', token)
+    .send({
+      itemId: boostItem._id.toString(),
+    })
+    .expect(201);
+
+  const response = await request(app)
+    .get('/api/inventory/boost-purchase-limits')
+    .set('Authorization', token)
+    .expect(200);
+
+  assert.equal(response.body.monthKey, getBoostPurchaseMonthKey());
+  assert.equal(response.body.maxQuantity, 20);
+  assert.equal(response.body.purchases['small-boost'], 2);
 });
 
 test('habit custom frequency stores customDays properly', async () => {

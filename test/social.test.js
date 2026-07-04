@@ -101,3 +101,108 @@ test('social flow sends and accepts friend requests', async () => {
   assert.equal(friendsResponse.body.length, 1);
   assert.equal(friendsResponse.body[0].friend.id, recipient._id.toString());
 });
+
+// Tests that a pending request blocks duplicate requests in either direction
+test('social flow rejects duplicate pending friend requests in reverse direction', async () => {
+  const requester = await buildUser({ username: 'reverse_sender', email: 'reverse_sender@example.com' });
+  const recipient = await buildUser({ username: 'reverse_receiver', email: 'reverse_receiver@example.com' });
+
+  await request(app)
+    .post('/api/social/friends/requests')
+    .set('Authorization', authHeader(requester))
+    .send({ recipientId: recipient._id.toString() })
+    .expect(201);
+
+  const duplicateResponse = await request(app)
+    .post('/api/social/friends/requests')
+    .set('Authorization', authHeader(recipient))
+    .send({ recipientId: requester._id.toString() })
+    .expect(400);
+
+  assert.equal(duplicateResponse.body.code, 'PENDING_FRIEND_REQUEST_EXISTS');
+  assert.equal(await FriendRequest.countDocuments({ status: 'pending' }), 1);
+});
+
+// Tests that rejecting a request does not create a friendship
+test('social flow rejects friend requests without creating friendships', async () => {
+  const requester = await buildUser({ username: 'reject_sender', email: 'reject_sender@example.com' });
+  const recipient = await buildUser({ username: 'reject_receiver', email: 'reject_receiver@example.com' });
+
+  const createResponse = await request(app)
+    .post('/api/social/friends/requests')
+    .set('Authorization', authHeader(requester))
+    .send({ recipientId: recipient._id.toString() })
+    .expect(201);
+
+  const rejectResponse = await request(app)
+    .post(`/api/social/friends/requests/${createResponse.body.id}/reject`)
+    .set('Authorization', authHeader(recipient))
+    .expect(200);
+
+  assert.equal(rejectResponse.body.status, 'rejected');
+  assert.equal(await Friendship.countDocuments(), 0);
+
+  const requestsResponse = await request(app)
+    .get('/api/social/friends/requests')
+    .set('Authorization', authHeader(recipient))
+    .expect(200);
+
+  assert.equal(requestsResponse.body.incoming.length, 0);
+});
+
+// Tests that only the recipient can accept a pending friend request
+test('social flow prevents non-recipients from accepting friend requests', async () => {
+  const requester = await buildUser({ username: 'owner_sender', email: 'owner_sender@example.com' });
+  const recipient = await buildUser({ username: 'owner_receiver', email: 'owner_receiver@example.com' });
+  const otherUser = await buildUser({ username: 'owner_other', email: 'owner_other@example.com' });
+
+  const createResponse = await request(app)
+    .post('/api/social/friends/requests')
+    .set('Authorization', authHeader(requester))
+    .send({ recipientId: recipient._id.toString() })
+    .expect(201);
+
+  const acceptResponse = await request(app)
+    .post(`/api/social/friends/requests/${createResponse.body.id}/accept`)
+    .set('Authorization', authHeader(otherUser))
+    .expect(404);
+
+  assert.equal(acceptResponse.body.code, 'PENDING_FRIEND_REQUEST_NOT_FOUND');
+  assert.equal(await Friendship.countDocuments(), 0);
+});
+
+// Tests that deleting a friendship removes it from both users' friend lists
+test('social flow deletes friendships for both users', async () => {
+  const requester = await buildUser({ username: 'delete_sender', email: 'delete_sender@example.com' });
+  const recipient = await buildUser({ username: 'delete_receiver', email: 'delete_receiver@example.com' });
+
+  const createResponse = await request(app)
+    .post('/api/social/friends/requests')
+    .set('Authorization', authHeader(requester))
+    .send({ recipientId: recipient._id.toString() })
+    .expect(201);
+
+  const acceptResponse = await request(app)
+    .post(`/api/social/friends/requests/${createResponse.body.id}/accept`)
+    .set('Authorization', authHeader(recipient))
+    .expect(200);
+
+  await request(app)
+    .delete(`/api/social/friends/${acceptResponse.body.friendship.id}`)
+    .set('Authorization', authHeader(requester))
+    .expect(204);
+
+  const requesterFriendsResponse = await request(app)
+    .get('/api/social/friends')
+    .set('Authorization', authHeader(requester))
+    .expect(200);
+
+  const recipientFriendsResponse = await request(app)
+    .get('/api/social/friends')
+    .set('Authorization', authHeader(recipient))
+    .expect(200);
+
+  assert.equal(requesterFriendsResponse.body.length, 0);
+  assert.equal(recipientFriendsResponse.body.length, 0);
+  assert.equal(await Friendship.countDocuments(), 0);
+});

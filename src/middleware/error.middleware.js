@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import multer from 'multer';
 import { ApiError } from '../errors/ApiError.js';
 
 /**
@@ -7,6 +8,17 @@ import { ApiError } from '../errors/ApiError.js';
  * then returns a consistent JSON response.
  */
 export function errorMiddleware(err, req, res, _next) {
+    if (err instanceof multer.MulterError || err.message === 'Only JPEG, PNG and WEBP images are allowed') {
+        return res.status(400).json({
+            timestamp: new Date().toISOString(),
+            status: 400,
+            error: 'Bad Request',
+            message: err.message,
+            errorCode: 'UPLOAD_ERROR',
+            path: req.originalUrl,
+        });
+    }
+
     // --- Mongoose Validation Errors ---
     if (err instanceof mongoose.Error.ValidationError) {
         const message = Object.values(err.errors)

@@ -77,3 +77,47 @@ export async function generateText(prompt, { json = false, temperature = 0.7 } =
 
     throw lastError;
 }
+
+const OPENROUTER_EMBEDDINGS_URL = 'https://openrouter.ai/api/v1/embeddings';
+
+/**
+ * Generate an embedding vector for semantic similarity search.
+ *
+ * @param {string} text
+ * @returns {Promise<number[]>}
+ */
+export async function generateEmbedding(text) {
+    const { apiKey, embeddingModel } = config.ai?.openrouter ?? {};
+
+    if (!apiKey) {
+        throw new Error('OpenRouter API key is not configured (config.ai.openrouter.apiKey).');
+    }
+
+    const response = await fetch(OPENROUTER_EMBEDDINGS_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+            'HTTP-Referer': config.frontendBaseUrl ?? '',
+            'X-Title': 'Howly',
+        },
+        body: JSON.stringify({
+            model: embeddingModel ?? 'openai/text-embedding-3-small',
+            input: text,
+        }),
+    });
+
+    if (!response.ok) {
+        const detail = await response.text().catch(() => '');
+        throw new Error(`OpenRouter embeddings failed (${response.status}): ${detail.slice(0, 300)}`);
+    }
+
+    const data = await response.json();
+    const embedding = data?.data?.[0]?.embedding;
+
+    if (!Array.isArray(embedding) || !embedding.length) {
+        throw new Error('OpenRouter returned an empty embedding.');
+    }
+
+    return embedding;
+}

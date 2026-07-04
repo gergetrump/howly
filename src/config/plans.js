@@ -8,7 +8,7 @@ export const PLANS = Object.freeze({
         key: PLAN_KEYS.FREE,
         label: 'Free',
         limits: Object.freeze({
-            maxHabits: 2,
+            maxHabits: 4,
             maxActiveChallenges: 2,
             maxActiveCreatedChallenges: 0,
         }),
@@ -26,8 +26,8 @@ export const PLANS = Object.freeze({
         label: 'Premium',
         limits: Object.freeze({
             maxHabits: 20,
-            maxActiveChallenges: 5,
-            maxActiveCreatedChallenges: 1,
+            maxActiveChallenges: 8,
+            maxActiveCreatedChallenges: 3,
         }),
         permissions: Object.freeze({
             canCreateChallenges: true,

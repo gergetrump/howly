@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { taxonomySchema } from '../taxonomy/taxonomy.schema.js';
 
 const { Schema } = mongoose;
 
@@ -49,6 +50,10 @@ const habitSchema = new Schema(
         }],
         category: {
             type: String,
+        },
+        taxonomy: {
+            type: taxonomySchema,
+            default: null,
         },
         // Origin metadata for cross-user analytics of onboarding starter habits.
         source: {

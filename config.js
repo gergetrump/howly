@@ -5,6 +5,7 @@ const config = {
     serverBaseUrl: 'http://localhost:3000',
     frontendBaseUrl: 'http://localhost:5173',
     disableEmailSending: false,
+    developerFeedbackEmail: 'yourhowlyteam@gmail.com',
     cloudinary: {
         cloudName: 'dxclpq7wx',
         apiKey: 'REDACTED',
@@ -36,8 +37,12 @@ const config = {
                 'qwen/qwen3-next-80b-a3b-instruct:free',
                 'google/gemma-4-31b-it:free',
             ],
+            embeddingModel: 'openai/text-embedding-3-small',
         },
-    }
+    },
+    taxonomy: {
+        minScore: 0.1,
+    },
 };
 
 export default config;

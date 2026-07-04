@@ -150,6 +150,40 @@ test('free users can still buy non-premium items', async () => {
     assert.equal(await UserItem.countDocuments({ user: user._id, item: item._id }), 1);
 });
 
+test('buying an item rejects missing items without charging coins', async () => {
+    const user = await buildUser({ coins: 500 });
+    const missingItemId = new mongoose.Types.ObjectId().toString();
+
+    const response = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({ itemId: missingItemId })
+        .expect(404);
+
+    assert.equal(response.body.code, 'ITEM_NOT_FOUND');
+    assert.equal(await UserItem.countDocuments({ user: user._id }), 0);
+
+    const updatedUser = await User.findById(user._id).lean();
+    assert.equal(updatedUser.coins, 500);
+});
+
+test('buying an item rejects insufficient coins without creating inventory entries', async () => {
+    const user = await buildUser({ coins: 50 });
+    const item = await buildItem({ premiumOnly: false, price: 100 });
+
+    const response = await request(app)
+        .post('/api/inventory/buy')
+        .set('Authorization', authHeader(user))
+        .send({ itemId: item._id.toString() })
+        .expect(400);
+
+    assert.equal(response.body.code, 'NOT_ENOUGH_COINS');
+    assert.equal(await UserItem.countDocuments({ user: user._id, item: item._id }), 0);
+
+    const updatedUser = await User.findById(user._id).lean();
+    assert.equal(updatedUser.coins, 50);
+});
+
 test('buying an item stores the selected customization on the inventory entry', async () => {
     const user = await buildUser({ coins: 1000 });
     const item = await buildItem({ type: 'clothing', assetKey: 'hoodie', price: 100 });

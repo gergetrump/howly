@@ -4,10 +4,30 @@ import ChallengeParticipant from './challengeParticipant.model.js';
 import Habit from '../habits/habit.model.js';
 import User from '../users/user.model.js';
 import { Friendship } from '../social/social.model.js';
+import { sendChallengeInvitationEmail } from '../mail/mail.service.js';
+import config from '../../../config.js';
 import { getPlanForUser, hasPremiumAccess } from '../../config/plans.js';
+import { toTaxonomyDto } from '../taxonomy/taxonomy.schema.js';
+import {
+    copyTaxonomyToHabit,
+    scheduleTaxonomyForChallenge,
+    scheduleTaxonomyForHabit,
+} from '../taxonomy/taxonomy.service.js';
+import { createNotification } from '../notifications/notification.service.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const COINS_PER_CHALLENGE_DAY = 5;
+const CHALLENGE_INVITATIONS_PATH = '/challenges';
+
+function canSendNotificationEmail(user, preferenceKey) {
+    const preferences = user?.notificationPreferences ?? {};
+
+    return preferences.emailEnabled === true && preferences[preferenceKey] === true;
+}
+
+function getUserDisplayName(user) {
+    return [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() || user?.username || 'A friend';
+}
 const START_LOCKED_UPDATE_FIELDS = [
     'title',
     'habitTitle',
@@ -60,8 +80,71 @@ async function getFriendIds(userId) {
     ));
 }
 
+async function getBlockedRelationshipUserIds(userId) {
+    const [user, blockedMe] = await Promise.all([
+        User.findById(userId).select('blockedUsers').lean(),
+        User.find({ blockedUsers: userId }, '_id').lean(),
+    ]);
+
+    return new Set([
+        ...(user?.blockedUsers ?? []).map((id) => id.toString()),
+        ...blockedMe.map((blockedUser) => blockedUser._id.toString()),
+    ]);
+}
+
+async function hasBlockRelationship(firstUserId, secondUserId) {
+    if (sameId(firstUserId, secondUserId)) {
+        return false;
+    }
+
+    const secondUserIdString = secondUserId.toString();
+    const blockedRelationshipIds = await getBlockedRelationshipUserIds(firstUserId);
+
+    return blockedRelationshipIds.has(secondUserIdString);
+}
+
+function canViewChallengeFromContext(challenge, user, { friendIds = new Set(), blockedRelationshipIds = new Set(), viewerParticipant = null } = {}) {
+    if (isChallengeOwner(challenge, user)) {
+        return true;
+    }
+
+    if (viewerParticipant && viewerParticipant.status !== 'left') {
+        return true;
+    }
+
+    const creatorId = challenge.createdBy.toString();
+
+    if (blockedRelationshipIds.has(creatorId)) {
+        return false;
+    }
+
+    if (challenge.visibility === 'public') {
+        return true;
+    }
+
+    return friendIds.has(creatorId);
+}
+
 async function canViewChallenge(challenge, user) {
-    if (challenge.visibility === 'public' || isChallengeOwner(challenge, user)) {
+    if (isChallengeOwner(challenge, user)) {
+        return true;
+    }
+
+    const viewerParticipant = await ChallengeParticipant.findOne({
+        challenge: challenge._id,
+        user: user.id,
+        status: { $ne: 'left' },
+    }).lean();
+
+    if (viewerParticipant) {
+        return true;
+    }
+
+    if (await hasBlockRelationship(user.id, challenge.createdBy)) {
+        return false;
+    }
+
+    if (challenge.visibility === 'public') {
         return true;
     }
 
@@ -82,7 +165,7 @@ function toHabitTemplate(input = {}) {
         unit: input.unit ?? '',
         frequency: input.frequency,
         customDays: input.customDays ?? [],
-        category: input.category ?? 'Challenge',
+        category: input.category ?? null,
     };
 }
 
@@ -103,12 +186,18 @@ function getHabitFieldsFromTemplate(template) {
 }
 
 async function createChallengeHabitForUser({ challenge, userId }) {
-    return Habit.create({
+    const habit = await Habit.create({
         ...getHabitFieldsFromTemplate(challenge.habitTemplate),
         ownerId: userId,
         source: 'challenge',
         challengeId: challenge._id,
     });
+    copyTaxonomyToHabit(habit, challenge);
+    await habit.save();
+    if (!habit.taxonomy?.canonicalHabitKey) {
+        scheduleTaxonomyForHabit(habit._id);
+    }
+    return habit;
 }
 
 async function getChallengeUserContext(user) {
@@ -265,6 +354,7 @@ function serializeChallenge(challenge, participantCount = 0, viewerParticipant =
         habitTitle: challenge.habitTitle,
         habitTemplate: challenge.habitTemplate,
         description: challenge.description,
+        taxonomy: toTaxonomyDto(challenge.taxonomy),
         coinReward: challenge.coinReward,
         frequency: challenge.frequency,
         durationDays: challenge.durationDays,
@@ -322,6 +412,7 @@ function serializeChallengeHabit(habit) {
         frequency: habit.frequency,
         customDays: habit.customDays || [],
         category: habit.category ?? null,
+        taxonomy: toTaxonomyDto(habit.taxonomy),
         source: habit.source ?? 'challenge',
         challengeId: habit.challengeId ? habit.challengeId.toString() : null,
         isCompletedToday: isCompletedForPeriod(habit),
@@ -432,6 +523,9 @@ export async function createChallenge(input, user) {
         startsAt,
         endsAt: calculateEndDate(startsAt, input.durationDays),
     });
+
+    scheduleTaxonomyForChallenge(challenge._id);
+
     const habit = await createChallengeHabitForUser({ challenge, userId: user.id });
     const participant = await ChallengeParticipant.create({
         challenge: challenge._id,
@@ -504,12 +598,22 @@ export async function listChallenges(filters = {}, user) {
     const query = conditions.length ? { $and: conditions } : {};
     const challenges = await Challenge.find(query).sort({ createdAt: -1 });
     const challengeIds = challenges.map((challenge) => challenge._id);
-    const [participantCounts, viewerParticipations] = await Promise.all([
+    const [participantCounts, viewerParticipations, visibilityFriendIds, blockedRelationshipIds] = await Promise.all([
         getParticipantCounts(challengeIds),
         getViewerParticipations(challengeIds, user.id),
+        getFriendIds(user.id),
+        getBlockedRelationshipUserIds(user.id),
     ]);
+    const visibilityFriendIdSet = new Set(visibilityFriendIds.map((id) => id.toString()));
+    const visibleChallenges = challenges.filter((challenge) => (
+        canViewChallengeFromContext(challenge, user, {
+            friendIds: visibilityFriendIdSet,
+            blockedRelationshipIds,
+            viewerParticipant: viewerParticipations.get(challenge._id.toString()),
+        })
+    ));
 
-    return challenges.map((challenge) => (
+    return visibleChallenges.map((challenge) => (
         serializeChallenge(
             challenge,
             participantCounts.get(challenge._id.toString()) ?? 0,
@@ -757,6 +861,30 @@ export async function createInvitation(challengeId, inviteeId, user) {
     });
 
     await invitation.populate('challenge');
+
+    if (canSendNotificationEmail(invitee, 'challengeInvitations')) {
+        const inviter = await User.findById(user.id).select('firstName lastName username').lean();
+
+        sendChallengeInvitationEmail(invitee.email, {
+            inviterName: getUserDisplayName(inviter),
+            challengeTitle: challenge.title,
+            challengeUrl: `${config.frontendBaseUrl}${CHALLENGE_INVITATIONS_PATH}`,
+        }).catch((error) => {
+            console.error('Failed to send challenge invitation email:', error);
+        });
+    }
+
+    await createNotification({
+        recipientId: inviteeId,
+        actorId: user.id,
+        type: 'challenge_invitation_received',
+        entityType: 'challengeInvitation',
+        entityId: invitation._id,
+        metadata: {
+            challengeId: challenge._id.toString(),
+            challengeTitle: challenge.title,
+        },
+    });
 
     const participantCount = await ChallengeParticipant.countDocuments({
         challenge: challengeId,
@@ -1075,3 +1203,4 @@ export async function claimReward(challengeId, userId) {
         rewardCoins,
     };
 }
+
