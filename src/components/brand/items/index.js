@@ -16,6 +16,7 @@ export { default as Eclipse } from './Eclipse';
 export { default as Flower } from './Flower';
 export { default as Glasses, GlassesLayer, GlassesPreview } from './Glasses';
 export { default as Hairpin, HairpinLayer } from './Hairpin';
+export { default as SensuFan, SensuFanLayer } from './SensuFan';
 export { default as Hat, HatLayer } from './Hat';
 export { default as HatWithPompom, HatWithPompomLayer } from './HatWithPompom';
 export { default as Heart } from './Heart';

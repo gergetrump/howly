@@ -246,6 +246,19 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
         ],
     },
 
+    'sensu-fan': {
+        defaults: {
+            color: '#F6BBC7',
+            borderColor: '#FFF0F6',
+            blossomColor: '#FFF5F9',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Fan' },
+            { key: 'borderColor', label: 'Border' },
+            { key: 'blossomColor', label: 'Blossoms' },
+        ],
+    },
+
     hairpin: {
         defaults: {
             color: '#FCE8EC',

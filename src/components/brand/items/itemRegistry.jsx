@@ -12,6 +12,7 @@ import Dress, { DressLayer } from './Dress';
 import DrinkTogo, { DrinkTogoLayer } from './DrinkTogo';
 import { GlassesLayer, GlassesPreview } from './Glasses';
 import Hairpin, { HairpinLayer } from './Hairpin';
+import SensuFan, { SensuFanLayer } from './SensuFan';
 import Hat, { HatLayer } from './Hat';
 import HatWithPompom, { HatWithPompomLayer } from './HatWithPompom';
 import HogwartsCape, { HogwartsCapeLayer } from './HogwartsCape';
@@ -175,6 +176,18 @@ const itemRegistry = {
         layer: BlossomCrownLayer,
         transform: 'translate(166 10) scale(1.12 1)',
         previewClassName: 'max-h-[58%] max-w-[86%]',
+    },
+    'sensu-fan': {
+        type: 'accessory',
+        equipSlot: 'hand',
+        visual: SensuFan,
+        layer: SensuFanLayer,
+        transform: 'translate(1330 1070) rotate(18) scale(2.3) translate(-124 -143)',
+        sideTransforms: {
+            right: 'translate(1330 1070) rotate(18) scale(2.3) translate(-124 -143)',
+            left: 'translate(192 1070) scale(-1 1) rotate(18) scale(2.3) translate(-124 -143)',
+        },
+        previewClassName: 'max-h-[64%] max-w-[80%]',
     },
     hairpin: {
         type: 'accessory',
