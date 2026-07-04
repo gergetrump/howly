@@ -28,6 +28,18 @@ export async function joinChallenge(challengeId) {
     });
 }
 
+export async function leaveChallenge(challengeId) {
+    return apiRequest(`/challenges/${challengeId}/leave`, {
+        method: 'POST',
+    });
+}
+
+export async function claimChallengeReward(challengeId) {
+    return apiRequest(`/challenges/${challengeId}/reward`, {
+        method: 'POST',
+    });
+}
+
 export async function getMyChallengeHabits() {
     return apiRequest('/challenges/my-habits');
 }

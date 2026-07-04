@@ -22,7 +22,6 @@ function fallbackSuggestions() {
         title: habit.title,
         icon: habit.icon,
         frequency: habit.frequency,
-        category: habit.category,
     }));
 }
 
@@ -114,7 +113,6 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                     title: suggestion.title,
                     icon: suggestion.icon,
                     frequency: suggestion.frequency,
-                    category: suggestion.category,
                 };
             });
 
@@ -235,7 +233,6 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                                                 </span>
                                                 <span className="block text-xs text-purple-300">
                                                     {suggestion.frequency}
-                                                    {suggestion.category ? ` · ${suggestion.category}` : ''}
                                                 </span>
                                             </span>
                                         </button>

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { CardGrid, CompletionCircle, PlanLimitDialog } from '@/components/common';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
@@ -15,10 +16,11 @@ import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
 
 import { toast } from 'sonner';
 import { NotificationBanner } from '@/components/ui/notification-banner';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit } from '@/services/habitService';
+import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit, waitForHabitTaxonomy } from '@/services/habitService';
 import { applyHabitStreakFreeze } from '@/services/streakFreezeApi';
 import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
 import { getMyInventory } from '@/services/inventoryApi';
@@ -41,7 +43,14 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                    <h3 className="truncate font-semibold text-white">{item.habit.title}</h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="truncate font-semibold text-white">{item.habit.title}</h3>
+                        {item.habit.category ? (
+                            <Badge className="border border-purple-400/30 bg-purple-500/15 text-purple-100 hover:bg-purple-500/15">
+                                {item.habit.category}
+                            </Badge>
+                        ) : null}
+                    </div>
                     <p className="mt-1 truncate text-sm text-slate-300">{item.challenge?.title}</p>
                     <StreakBadge days={item.participant?.daysCompleted ?? 0} icon={'\uD83D\uDD25'} className="mt-1" />
                 </div>
@@ -69,7 +78,7 @@ export function DashboardPage() {
     const [habitToEdit, setHabitToEdit] = useState(null);
     const [prefillHabit, setPrefillHabit] = useState(null);
     const [consumeSuggestion, setConsumeSuggestion] = useState(null);
-    const [allHabitsOpen, setAllHabitsOpen] = useState(false);
+    const [habitsTab, setHabitsTab] = useState('today');
     const [milestoneNotice, setMilestoneNotice] = useState(null);
     const [pendingMilestoneNotice, setPendingMilestoneNotice] = useState(null);
     const [storyHabit, setStoryHabit] = useState(null);
@@ -161,6 +170,25 @@ export function DashboardPage() {
         return () => clearTimeout(timeout);
     }, [pendingMilestoneNotice]);
 
+    useEffect(() => {
+        const usedAt = user?.streakShieldAutoUsedAt;
+
+        if (!usedAt) {
+            return;
+        }
+
+        const storageKey = 'howly_shield_notice_seen';
+
+        if (localStorage.getItem(storageKey) === String(usedAt)) {
+            return;
+        }
+
+        localStorage.setItem(storageKey, String(usedAt));
+        toast('🛡️ A streak shield saved your streak', {
+            description: `Your ${user?.streak ?? 0}-day streak is safe.`,
+        });
+    }, [user?.streakShieldAutoUsedAt, user?.streak]);
+
     // After a check-in the day may be complete → refetch the user so the overall
     // streak (🔥) in the header updates right away. Uses a direct fetch (not
     // refreshUser) to avoid the full-screen loading state in ProtectedRoute.
@@ -173,11 +201,20 @@ export function DashboardPage() {
         }
     }
 
+    async function refreshHabitsAndUser() {
+        try {
+            const [habitsResponse, freshUser] = await Promise.all([getMyHabits(), getCurrentUser()]);
+            setHabits(habitsResponse.data || []);
+            setUser(freshUser.user ?? freshUser);
+        } catch (error) {
+            console.error('Failed to refresh after streak rescue:', error);
+        }
+    }
+
     async function handleUseHabitFreeze(habit) {
         try {
-            const result = await applyHabitStreakFreeze(habit.id);
-            setHabits(prev => prev.map(h => (h.id === habit.id ? { ...h, ...result.habit } : h)));
-            setUser(current => (current ? { ...current, streakShields: result.streakShields } : current));
+            await applyHabitStreakFreeze(habit.id);
+            await refreshHabitsAndUser();
         } catch (error) {
             console.error('Failed to use streak freeze:', error);
         }
@@ -280,6 +317,15 @@ export function DashboardPage() {
         setIsAddModalOpen(true);
     }
 
+    function refreshHabitTaxonomyInBackground(habitId) {
+        void waitForHabitTaxonomy(habitId).then((updated) => {
+            if (!updated) {
+                return;
+            }
+            setHabits((prev) => prev.map((habit) => (habit.id === habitId ? updated : habit)));
+        });
+    }
+
     function renderHabitCard(habit, withCompletion) {
         return (
             <HabitCard
@@ -287,7 +333,7 @@ export function DashboardPage() {
                 emoji={habit.icon}
                 title={habit.title}
                 frequency={habit.frequency}
-                goal={habit.goal}
+                category={habit.category}
                 streakDays={habit.streakCount}
                 completed={habit.isCompletedToday}
                 atRisk={Boolean(habit.streakRepairDeadline)}
@@ -374,7 +420,7 @@ export function DashboardPage() {
                 </div>
             ) : null}
 
-            <StreakRepairBanner />
+            <StreakRepairBanner onRescued={refreshHabitsAndUser} />
 
             <PageSection className="mt-6">
                 <DailyProgressCard completed={completedCount} total={totalCount} />
@@ -420,44 +466,45 @@ export function DashboardPage() {
                 </div>
             )}
 
-            <PageSection 
-                title="Today's Habits" 
+            <PageSection
+                title="My Habits"
                 actionLabel="Add Habit"
                 onAction={openAddHabitDialog}
             >
-                {todaysHabits.length === 0 ? (
-                    <p className="text-sm text-theme-text-muted text-center py-4">No habits scheduled for today. Take a break!</p>
+                <Tabs value={habitsTab} onValueChange={setHabitsTab}>
+                    <TabsList className="w-full border border-theme-text/10 bg-theme-text/10 text-theme-text">
+                        <TabsTrigger
+                            value="today"
+                            className="text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                        >
+                            Today ({todaysHabits.length})
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="all"
+                            className="text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                        >
+                            All Habits ({habits.length})
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
+
+                {habitsTab === 'today' ? (
+                    todaysHabits.length === 0 ? (
+                        <p className="text-sm text-theme-text-muted text-center py-4">No habits scheduled for today. Take a break!</p>
+                    ) : (
+                        <CardGrid columns={todaysHabits.length === 1 ? 1 : 2}>
+                            {todaysHabits.map((habit) => renderHabitCard(habit, true))}
+                        </CardGrid>
+                    )
+                ) : habits.length === 0 ? (
+                    <p className="text-sm text-theme-text-muted text-center py-4">No habits yet. Click "Add Habit" to start!</p>
                 ) : (
-                    <CardGrid columns={todaysHabits.length === 1 ? 1 : 2}>
-                        {todaysHabits.map((habit) => renderHabitCard(habit, true))}
+                    <CardGrid columns={habits.length === 1 ? 1 : 2}>
+                        {habits.map((habit) => renderHabitCard(habit, false))}
                     </CardGrid>
                 )}
             </PageSection>
 
-            <div className="px-4">
-                <button
-                    type="button"
-                    onClick={() => setAllHabitsOpen(prev => !prev)}
-                    className="flex w-full items-center justify-between rounded-xl bg-theme-text/5 px-4 py-3 text-left transition-colors hover:bg-theme-text/10"
-                >
-                    <span className="text-base font-semibold text-theme-text">All Habits <span className="text-sm font-normal text-theme-text-muted">({habits.length})</span></span>
-                    <ChevronDown
-                        size={20}
-                        className={`text-theme-text-muted transition-transform duration-200 ${allHabitsOpen ? 'rotate-180' : ''}`}
-                    />
-                </button>
-                {allHabitsOpen && (
-                    <div className="mt-4 space-y-4">
-                        {habits.length === 0 ? (
-                            <p className="text-sm text-theme-text-muted text-center py-4">No habits yet. Click "Add Habit" to start!</p>
-                        ) : (
-                            <CardGrid columns={habits.length === 1 ? 1 : 2}>
-                                {habits.map((habit) => renderHabitCard(habit, false))}
-                            </CardGrid>
-                        )}
-                    </div>
-                )}
-            </div>
 
             <PageSection title="My Challenges">
                 <CardGrid columns={challengeHabits.length === 1 ? 1 : 2}>
@@ -485,11 +532,13 @@ export function DashboardPage() {
                         setHabits(prev => prev.map(h => h.id === savedHabit.id ? savedHabit : h));
                     } else {
                         setHabits(prev => [savedHabit, ...prev]);
-                        // Came from an AI suggestion → drop it from the panel now that it's saved.
                         if (consumeSuggestion) {
                             consumeSuggestion();
                             setConsumeSuggestion(null);
                         }
+                    }
+                    if (!savedHabit.category) {
+                        refreshHabitTaxonomyInBackground(savedHabit.id);
                     }
                 }}
             />

@@ -3,12 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
     Bell,
     ChevronRight,
-    CircleHelp,
     Crown,
     EyeOff,
     Flame,
     Info,
-    Lock,
     MessageSquare,
     Target,
     Ban,
@@ -17,6 +15,13 @@ import {
 import { Page, PageSection, Heading } from '@/components/layout';
 import { ThemePicker } from '@/components/common/ThemePicker.jsx';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { logoutUser } from '@/services/authService';
 import {
     uploadCurrentUserProfilePicture,
@@ -24,9 +29,10 @@ import {
     updateCurrentUser,
 } from '@/services/userService';
 import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
+import { NotificationMuteDialog } from '@/components/social/NotificationMuteDialog.jsx';
 import { useAuth } from '@/context/authContext';
 import { createManagePremiumSession } from '@/services/paymentService';
-
+import { sendFeedback } from '@/services/feedbackService';
 
 function SettingsRow({ icon: Icon, iconColor = 'text-theme-text-muted', title, subtitle, onClick, disabled }) {
     return (
@@ -34,7 +40,7 @@ function SettingsRow({ icon: Icon, iconColor = 'text-theme-text-muted', title, s
             type="button"
             onClick={onClick}
             disabled={disabled}
-            className="flex w-full items-center justify-between border-b border-theme-text/10 bg-theme-surface/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-theme-surface-2/70 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex min-h-20 w-full items-center justify-between border-b border-theme-text/10 bg-theme-surface/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-theme-surface-2/70 disabled:cursor-not-allowed disabled:opacity-60"
         >
             <div className="flex items-center gap-4">
                 <Icon className={`size-5 ${iconColor}`} />
@@ -48,6 +54,90 @@ function SettingsRow({ icon: Icon, iconColor = 'text-theme-text-muted', title, s
 
             <ChevronRight className="size-5 text-theme-text-muted" />
         </button>
+    );
+}
+
+
+function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSubmitting, error, success }) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="border border-white/10 bg-slate-950 p-6 text-white sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-white">Help & Feedback</DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                        Send a problem report or suggestion to the Howly team.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={onSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-900 p-1">
+                        {[
+                            { value: 'problem', label: 'Problem' },
+                            { value: 'suggestion', label: 'Suggestion' },
+                        ].map((option) => (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => onFormChange({ ...form, type: option.value })}
+                                className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${form.type === option.value ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <label className="block space-y-2">
+                        <span className="text-sm font-semibold text-white">Subject</span>
+                        <input
+                            type="text"
+                            value={form.subject}
+                            onChange={(event) => onFormChange({ ...form, subject: event.target.value })}
+                            maxLength={120}
+                            className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition focus:border-howly-primary"
+                            placeholder="Briefly summarize the topic."
+                        />
+                    </label>
+
+                    <label className="block space-y-2">
+                        <span className="text-sm font-semibold text-white">Message</span>
+                        <textarea
+                            value={form.message}
+                            onChange={(event) => onFormChange({ ...form, message: event.target.value })}
+                            rows={6}
+                            maxLength={2000}
+                            className="w-full resize-none rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition focus:border-howly-primary"
+                            placeholder="Tell us what happened or what would make Howly better."
+                        />
+                    </label>
+
+                    {error ? <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p> : null}
+                    {success ? <p className="rounded-xl bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{success}</p> : null}
+
+                    <Button
+                        type="submit"
+                        disabled={isSubmitting || form.subject.trim().length < 3 || form.message.trim().length < 10}
+                        className="w-full rounded-xl bg-white text-slate-950 hover:bg-slate-200"
+                    >
+                        {isSubmitting ? 'Sending...' : 'Send feedback'}
+                    </Button>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function AboutDialog({ open, onOpenChange }) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="border border-white/10 bg-slate-950 p-6 text-white sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-white">About Howly</DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                        We are four students who want to build a cute, motivating habit tracking website were friends can share their progress.
+                    </DialogDescription>
+                </DialogHeader>
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -112,6 +202,13 @@ export function ProfilePage() {
     const [isDeletingPicture, setIsDeletingPicture] = useState(false);
     const [pictureError, setPictureError] = useState('');
     const [isBlockedUsersDialogOpen, setIsBlockedUsersDialogOpen] = useState(false);
+    const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
+    const [feedbackForm, setFeedbackForm] = useState({ type: 'problem', subject: '', message: '' });
+    const [isSendingFeedback, setIsSendingFeedback] = useState(false);
+    const [feedbackError, setFeedbackError] = useState('');
+    const [feedbackSuccess, setFeedbackSuccess] = useState('');
+    const [isMuteDialogOpen, setIsMuteDialogOpen] = useState(false);
+    const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
 
     function handleUpgradeToPremium() {
         navigate('/premium', {
@@ -166,6 +263,23 @@ export function ProfilePage() {
             setPictureError(error.message || 'Could not delete profile picture');
         } finally {
             setIsDeletingPicture(false);
+        }
+    }
+
+    async function handleSendFeedback(event) {
+        event.preventDefault();
+
+        try {
+            setFeedbackError('');
+            setFeedbackSuccess('');
+            setIsSendingFeedback(true);
+            await sendFeedback(feedbackForm);
+            setFeedbackSuccess('Thanks, your feedback was sent.');
+            setFeedbackForm({ type: 'problem', subject: '', message: '' });
+        } catch (error) {
+            setFeedbackError(error.message || 'Could not send feedback right now.');
+        } finally {
+            setIsSendingFeedback(false);
         }
     }
 
@@ -224,7 +338,6 @@ export function ProfilePage() {
     const streak = user?.streak ?? 0;
     const completed = user?.completedHabits ?? 0;
     const isPremium = user?.isPremium === true || user?.role === 'admin';
-
     return (
         <Page theme="forest">
             <Heading
@@ -371,8 +484,12 @@ export function ProfilePage() {
                             onClick={handleUpgradeToPremium}
                         />
                     )}
-                    <SettingsRow icon={Bell} title="Notifications" />
-                    <SettingsRow icon={Lock} title="Privacy & Security" />
+                    <SettingsRow
+                        icon={Bell}
+                        title="Notifications"
+                        subtitle="Mute in-app notifications and manage email preferences"
+                        onClick={() => setIsMuteDialogOpen(true)}
+                    />
                 </div>
                 {premiumError && (
                     <p className="mt-3 rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
@@ -383,9 +500,8 @@ export function ProfilePage() {
 
             <PageSection title="Support">
                 <div className="overflow-hidden rounded-2xl">
-                    <SettingsRow icon={MessageSquare} title="Send Feedback" />
-                    <SettingsRow icon={CircleHelp} title="Help & Support" />
-                    <SettingsRow icon={Info} title="About Howly" />
+                    <SettingsRow icon={MessageSquare} title="Help & Feedback" subtitle="Report a problem or share an idea" onClick={() => setIsFeedbackDialogOpen(true)} />
+                    <SettingsRow icon={Info} title="About Howly" onClick={() => setIsAboutDialogOpen(true)} />
                 </div>
             </PageSection>
 
@@ -403,6 +519,30 @@ export function ProfilePage() {
                 open={isBlockedUsersDialogOpen}
                 onOpenChange={setIsBlockedUsersDialogOpen}
             />
+            <FeedbackDialog
+                open={isFeedbackDialogOpen}
+                onOpenChange={setIsFeedbackDialogOpen}
+                form={feedbackForm}
+                onFormChange={setFeedbackForm}
+                onSubmit={handleSendFeedback}
+                isSubmitting={isSendingFeedback}
+                error={feedbackError}
+                success={feedbackSuccess}
+            />
+            <AboutDialog
+                open={isAboutDialogOpen}
+                onOpenChange={setIsAboutDialogOpen}
+            />
+
+            <NotificationMuteDialog
+                open={isMuteDialogOpen}
+                onOpenChange={setIsMuteDialogOpen}
+            />
         </Page>
     );
 }
+
+
+
+
+

@@ -61,7 +61,7 @@ export default function Hoodie({
             {...props}
         >
             <path d="M79 172.219C79 102.698 148.186 54.39 213.451 78.3412L574.218 210.736C596.66 218.972 621.311 218.895 643.703 210.52L993.967 79.5077C1059.33 55.0597 1129 103.385 1129 173.17V475C1129 530.228 1084.23 575 1029 575H179C123.772 575 79 530.228 79 475V172.219Z" fill={hoodieColor} />
-            <g filter="url(#hoodie-new-filter-bottom)">
+            <g>
                 <path d="M366.5 573.5V504.5C418.985 490.726 439.74 471.757 456 411H769C785.26 471.757 806.015 490.726 858.5 504.5V573.5" stroke={hoodieShadowColor} strokeWidth="8" />
             </g>
             <text
@@ -86,22 +86,22 @@ export default function Hoodie({
             <ellipse cx="83.5" cy="34.0527" rx="83.5" ry="34.0527" transform="matrix(-0.913545 -0.406737 -0.406737 0.913545 180.263 101.925)" fill={hoodieColor} />
             <ellipse cx="83.5" cy="39.0581" rx="83.5" ry="39.0581" transform="matrix(-0.996195 -0.0871557 -0.0871557 0.996195 177.759 107.543)" fill={hoodieColor} />
             <rect width="100" height="100" transform="matrix(-0.406737 0.913545 0.913545 0.406737 126.909 41)" fill={hoodieColor} />
-            <g filter="url(#hoodie-new-filter-left-shoulder)">
+            <g>
                 <path d="M84 177L531 259" stroke={hoodieSeamColor} strokeWidth="6" strokeLinecap="round" />
             </g>
-            <g filter="url(#hoodie-new-filter-right-shoulder)">
+            <g>
                 <path d="M1124 177L684 259" stroke={hoodieSeamColor} strokeWidth="6" strokeLinecap="round" />
             </g>
-            <g filter="url(#hoodie-new-filter-left-sleeve-upper)">
+            <g>
                 <path d="M45.4348 106L393.339 234.036" stroke={hoodieSeamColor} strokeWidth="6" strokeLinecap="round" />
             </g>
-            <g filter="url(#hoodie-new-filter-right-sleeve-upper)">
+            <g>
                 <path d="M1171.6 104L974 202" stroke={hoodieSeamColor} strokeWidth="6" strokeLinecap="round" />
             </g>
-            <g filter="url(#hoodie-new-filter-left-sleeve-lower)">
+            <g>
                 <path d="M35.6932 57L255 145" stroke={hoodieSeamColor} strokeWidth="6" strokeLinecap="round" />
             </g>
-            <g filter="url(#hoodie-new-filter-right-sleeve-lower)">
+            <g>
                 <path d="M1177.13 57L942 154" stroke={hoodieSeamColor} strokeWidth="6" strokeLinecap="round" />
             </g>
             <line x1="793" y1="190" x2="793" y2="326" stroke={stringColor} strokeWidth="14" strokeLinecap="round" />
@@ -109,41 +109,6 @@ export default function Hoodie({
             <line x1="432" y1="190" x2="432" y2="326" stroke={stringColor} strokeWidth="14" strokeLinecap="round" />
             <circle cx="432" cy="298" r="14.5" fill={stringColor} stroke={stringColor} />
             <defs>
-                <filter id="hoodie-new-filter-bottom" x="358.5" y="403" width="508" height="174.5" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                    <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_7_51" />
-                </filter>
-                <filter id="hoodie-new-filter-left-shoulder" x="76.9995" y="169.999" width="461.001" height="96.0011" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                    <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_7_51" />
-                </filter>
-                <filter id="hoodie-new-filter-right-shoulder" x="676.999" y="169.999" width="454.001" height="96.0011" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                    <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_7_51" />
-                </filter>
-                <filter id="hoodie-new-filter-left-sleeve-upper" x="38.434" y="98.9992" width="361.906" height="142.038" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                    <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_7_51" />
-                </filter>
-                <filter id="hoodie-new-filter-right-sleeve-upper" x="966.999" y="96.9993" width="211.599" height="112.001" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                    <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_7_51" />
-                </filter>
-                <filter id="hoodie-new-filter-left-sleeve-lower" x="28.6924" y="49.9992" width="233.308" height="102.002" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                    <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_7_51" />
-                </filter>
-                <filter id="hoodie-new-filter-right-sleeve-lower" x="934.999" y="49.9992" width="249.13" height="111.002" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                    <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_7_51" />
-                </filter>
             </defs>
         </svg>
     );

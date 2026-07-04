@@ -7,6 +7,23 @@ const variantClasses = {
     error: 'border-red-300/30 bg-red-400/15 text-red-50',
     info: 'border-sky-300/30 bg-sky-400/15 text-sky-50',
     milestone: 'border-white/10 bg-[#25243a] text-white',
+    unavailable: 'border-amber-200/25 bg-slate-950/90 text-white ring-1 ring-amber-200/10',
+};
+
+const iconClasses = {
+    success: 'bg-emerald-300/15 text-emerald-100',
+    error: 'bg-red-300/15 text-red-100',
+    info: 'bg-sky-300/15 text-sky-100',
+    milestone: 'bg-slate-950/40 text-2xl',
+    unavailable: 'bg-amber-300/15 text-amber-100',
+};
+
+const eyebrowClasses = {
+    success: 'text-emerald-100/70',
+    error: 'text-red-100/75',
+    info: 'text-sky-100/75',
+    milestone: 'text-slate-400',
+    unavailable: 'text-amber-100/75',
 };
 
 export function NotificationBanner({
@@ -48,22 +65,23 @@ export function NotificationBanner({
                 'relative flex items-start gap-4 overflow-hidden rounded-xl border px-5 py-4 opacity-0 shadow-xl shadow-slate-950/30 backdrop-blur transition duration-300 ease-out',
                 isVisible ? 'translate-y-0 scale-100 opacity-100' : '-translate-y-2 scale-[0.98]',
                 variant === 'milestone' && 'border-l-4 border-l-violet-400',
+                variant === 'unavailable' && 'border-l-4 border-l-amber-300/80',
                 variantClasses[variant] ?? variantClasses.info,
                 className,
             )}
             role="status"
         >
             {icon ? (
-                <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-slate-950/40 text-2xl">
+                <div className={cn('flex size-12 shrink-0 items-center justify-center rounded-2xl', iconClasses[variant] ?? iconClasses.info)}>
                     {icon}
                 </div>
             ) : null}
             <div className="flex-1">
                 {eyebrow ? (
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{eyebrow}</p>
+                    <p className={cn('text-xs font-bold uppercase tracking-wider', eyebrowClasses[variant] ?? eyebrowClasses.info)}>{eyebrow}</p>
                 ) : null}
-                {title ? <p className="mt-1 text-xl font-bold">{title}</p> : null}
-                {children ? <p className="mt-1 text-sm opacity-90">{children}</p> : null}
+                {title ? <p className="mt-1 text-lg font-bold leading-tight sm:text-xl">{title}</p> : null}
+                {children ? <p className="mt-1 max-w-2xl text-sm leading-relaxed opacity-90">{children}</p> : null}
             </div>
             {onClose ? (
                 <button
