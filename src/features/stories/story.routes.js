@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { uploadStoryImage } from '../../middleware/upload.middleware.js';
+import { rejectUnsafeRequestKeys } from '../../security/security.middleware.js';
 import {
   createStory,
   getMyActiveStories,
@@ -18,7 +19,7 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.post('/', uploadStoryImage.single('image'), createStory);
+router.post('/', uploadStoryImage.single('image'), rejectUnsafeRequestKeys, createStory);
 router.get('/me', getMyActiveStories);
 router.get('/me/archive', getMyArchive);
 router.post('/:storyId/like', toggleStoryLike);

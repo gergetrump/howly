@@ -26,6 +26,10 @@ function normalizeNotificationPreferences(preferences = {}) {
     };
 }
 
+function escapeRegex(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // Fetch a user document by id.
 export async function getUserById(userId) {
     return User.findById(userId);
@@ -51,7 +55,7 @@ export async function listDevUsers() {
 }
 
 export async function searchUsersByUsername({ query, currentUserId, limit = 10 }) {
-    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedQuery = escapeRegex(query);
     
     // Find current user's blocked users
     const currentUser = await User.findById(currentUserId).lean();
@@ -73,7 +77,8 @@ export async function searchUsersByUsername({ query, currentUserId, limit = 10 }
 }
 
 export async function getUserByUsername({ username, currentUserId }) {
-    const targetUser = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') }, isDeleted: false });
+    const escapedUsername = escapeRegex(username);
+    const targetUser = await User.findOne({ username: { $regex: new RegExp(`^${escapedUsername}$`, 'i') }, isDeleted: false });
     if (!targetUser) {
         return { errorCode: 'USER_NOT_FOUND' };
     }
@@ -218,4 +223,3 @@ export async function completeOnboarding(userId) {
         { returnDocument: 'after' }
     );
 }
-

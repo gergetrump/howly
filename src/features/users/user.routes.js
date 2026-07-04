@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { 
+import {
     getCurrentUser, 
     getCurrentUserPlan,
     updateCurrentUser, 
@@ -13,6 +13,7 @@ import {
 } from './user.controller.js';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { uploadProfilePicture } from '../../middleware/upload.middleware.js';
+import { rejectUnsafeRequestKeys } from '../../security/security.middleware.js';
 
 const router = Router();
 
@@ -30,6 +31,7 @@ router.delete('/me', deleteCurrentUser);
 router.patch(
     '/me/profile-picture',
     uploadProfilePicture.single('profilePicture'),
+    rejectUnsafeRequestKeys,
     uploadCurrentUserProfilePicture
 );
 
