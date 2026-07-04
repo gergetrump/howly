@@ -1,4 +1,5 @@
 export { default as Bag, BagLayer } from './Bag';
+export { default as BlossomCrown, BlossomCrownLayer } from './BlossomCrown';
 export { default as Ballerina, BallerinaLayer, BallerinaPair } from './Ballerina';
 export { default as BambusFlute, BambusFluteLayer } from './BambusFlute';
 export { default as BambusShoes, BambusShoesLayer, BambusShoesPair } from './BambusShoes';

@@ -1,4 +1,5 @@
 import Bag, { BagLayer } from './Bag';
+import BlossomCrown, { BlossomCrownLayer } from './BlossomCrown';
 import { BallerinaLayer, BallerinaPair } from './Ballerina';
 import BambusFlute, { BambusFluteLayer } from './BambusFlute';
 import { BambusShoesLayer, BambusShoesPair } from './BambusShoes';
@@ -166,6 +167,14 @@ const itemRegistry = {
         layer: GlassesLayer,
         transform: 'translate(485 550)',
         previewClassName: 'max-h-[64%] max-w-[80%]',
+    },
+    'blossom-crown': {
+        type: 'accessory',
+        equipSlot: 'head',
+        visual: BlossomCrown,
+        layer: BlossomCrownLayer,
+        transform: 'translate(166 10) scale(1.12 1)',
+        previewClassName: 'max-h-[58%] max-w-[86%]',
     },
     hairpin: {
         type: 'accessory',

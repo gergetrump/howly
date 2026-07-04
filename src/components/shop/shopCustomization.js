@@ -233,6 +233,19 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
         ],
         symbol: flowerSymbolToggle,
     },
+    'blossom-crown': {
+        defaults: {
+            color: '#FFE1EB',
+            accentColor: '#FFF5F9',
+            leafColor: '#A8C48A',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Blossoms' },
+            { key: 'accentColor', label: 'Center bloom' },
+            { key: 'leafColor', label: 'Band' },
+        ],
+    },
+
     hairpin: {
         defaults: {
             color: '#FCE8EC',
