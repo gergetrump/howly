@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BarChart3, CheckCircle2, Globe, Loader2, Sparkles, Users } from 'lucide-react';
+import { BarChart3, Globe, Loader2, Sparkles, TrendingUp, Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
@@ -9,50 +9,102 @@ import { appCardClassName, appCardInsetClassName } from '@/components/cards/card
 import { cn } from '@/lib/utils';
 
 const PERIOD_HEADINGS = {
-    today: 'Today on Howly',
-    week: 'This week on Howly',
-    month: 'This month on Howly',
+    '24h': 'Last 24 hours on Howly',
+    week: 'Last 7 days on Howly',
+    month: 'Last 30 days on Howly',
 };
 
-const PERIOD_SCOPE_LABELS = {
-    today: 'today',
-    week: 'week',
-    month: 'month',
+const PERIOD_IN_RANGE_LABELS = {
+    '24h': 'in the last 24 hours',
+    week: 'in the last 7 days',
+    month: 'in the last 30 days',
+};
+
+const PERIOD_COMPARISON_LABELS = {
+    '24h': 'vs previous 24 hours',
+    week: 'vs previous 7 days',
+    month: 'vs previous 30 days',
 };
 
 const periodTabTriggerClassName = 'px-3 py-1 text-xs text-white/70 data-active:!bg-white/20 data-active:!text-white sm:text-sm';
 
-function formatCount(value) {
-    if (value === null || value === undefined) {
-        return '0';
-    }
-
-    return value.toLocaleString();
-}
-
 function formatCategory(value) {
     return value?.categoryLabel ?? 'No data';
+}
+
+function formatTrendValue(trend) {
+    if (!trend) {
+        return '—';
+    }
+
+    if (trend.display === 'new') {
+        return 'New';
+    }
+
+    if (trend.direction === 'flat' || trend.changePercent === 0) {
+        return 'Flat';
+    }
+
+    const arrow = trend.direction === 'up' ? '↑' : '↓';
+    return `${arrow} ${Math.abs(trend.changePercent)}%`;
+}
+
+function trendValueClassName(trend) {
+    if (!trend || trend.direction === 'flat' || trend.changePercent === 0) {
+        return 'text-white';
+    }
+
+    if (trend.display === 'new' || trend.direction === 'up') {
+        return 'text-emerald-300';
+    }
+
+    return 'text-amber-300';
+}
+
+function TrendDelta({ trend, className, size = 'sm' }) {
+    if (!trend) {
+        return null;
+    }
+
+    const value = formatTrendValue(trend);
+
+    if (value === '—') {
+        return null;
+    }
+
+    return (
+        <span
+            className={cn(
+                'tabular-nums',
+                size === 'lg' ? 'text-2xl font-bold' : 'text-xs',
+                trendValueClassName(trend),
+                className,
+            )}
+        >
+            {value}
+        </span>
+    );
 }
 
 function PeriodToggle({ period, onPeriodChange }) {
     return (
         <Tabs value={period} onValueChange={onPeriodChange}>
             <TabsList className="h-9 w-auto shrink-0 border border-white/10 bg-white/5 p-1 text-white">
-                <TabsTrigger value="today" className={periodTabTriggerClassName}>
-                    Today
+                <TabsTrigger value="24h" className={periodTabTriggerClassName}>
+                    24 hours
                 </TabsTrigger>
                 <TabsTrigger value="week" className={periodTabTriggerClassName}>
-                    Week
+                    7 days
                 </TabsTrigger>
                 <TabsTrigger value="month" className={periodTabTriggerClassName}>
-                    Month
+                    30 days
                 </TabsTrigger>
             </TabsList>
         </Tabs>
     );
 }
 
-function SummaryCard({ icon: Icon, label, value, helper }) {
+function SummaryCard({ icon: Icon, label, value, helper, valueClassName }) {
     return (
         <Card className={appCardClassName}>
             <CardContent className="flex items-center gap-4">
@@ -61,7 +113,7 @@ function SummaryCard({ icon: Icon, label, value, helper }) {
                 </div>
                 <div>
                     <p className="text-sm text-slate-300">{label}</p>
-                    <p className="text-2xl font-bold text-white">{value}</p>
+                    <p className={cn('text-2xl font-bold tabular-nums', valueClassName ?? 'text-white')}>{value}</p>
                     {helper ? <p className="text-xs text-slate-400">{helper}</p> : null}
                 </div>
             </CardContent>
@@ -69,7 +121,7 @@ function SummaryCard({ icon: Icon, label, value, helper }) {
     );
 }
 
-function CategoryBreakdown({ categories }) {
+function CategoryBreakdown({ categories, showTrends }) {
     if (!categories?.length) {
         return (
             <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
@@ -86,8 +138,9 @@ function CategoryBreakdown({ categories }) {
                 <div key={item.categoryKey} className="space-y-2">
                     <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="font-medium text-white">{item.categoryLabel}</span>
-                        <span className="shrink-0 text-slate-300">
-                            {item.share}% · {formatCount(item.checkIns)} check-ins
+                        <span className="flex shrink-0 items-center gap-2 text-slate-300">
+                            <span>{item.share}%</span>
+                            {showTrends ? <TrendDelta trend={item.trend} className="w-12 text-right" /> : null}
                         </span>
                     </div>
                     <div className="h-3 overflow-hidden rounded-full bg-white/10">
@@ -102,7 +155,7 @@ function CategoryBreakdown({ categories }) {
     );
 }
 
-function TrendingHabits({ habits }) {
+function TrendingHabits({ habits, showTrends }) {
     if (!habits?.length) {
         return (
             <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
@@ -126,10 +179,9 @@ function TrendingHabits({ habits }) {
                             {item.categoryLabel ?? 'Unclassified'}
                         </p>
                     </div>
-                    <div className="shrink-0 text-right text-sm text-slate-300">
-                        <p className="font-semibold text-white">{formatCount(item.checkIns)}</p>
-                        <p>{formatCount(item.uniqueUsers)} users</p>
-                    </div>
+                    {showTrends ? (
+                        <TrendDelta trend={item.trend} className="shrink-0 text-right" />
+                    ) : null}
                 </div>
             ))}
         </div>
@@ -176,10 +228,10 @@ export function CommunityPage() {
     }, [period]);
 
     const summary = communityAnalytics?.summary;
-    const periodScope = PERIOD_SCOPE_LABELS[period] ?? 'week';
-    const activeUsersLabel = period === 'today' ? 'Active today' : 'Active Howly users';
-    const checkInsLabel = period === 'today' ? 'Check-ins today' : 'Habits completed';
-    const topCategoryLabel = period === 'today' ? 'Leading area' : 'Top focus area';
+    const periodInRange = PERIOD_IN_RANGE_LABELS[period] ?? PERIOD_IN_RANGE_LABELS.week;
+    const comparisonLabel = PERIOD_COMPARISON_LABELS[period] ?? PERIOD_COMPARISON_LABELS.week;
+    const activityTrend = summary?.trends?.checkIns;
+    const participationTrend = summary?.trends?.activeUsers;
 
     return (
         <Page theme="forest" contentClassName="max-w-[1400px]">
@@ -212,22 +264,24 @@ export function CommunityPage() {
                     ) : (
                         <div className="grid gap-4 md:grid-cols-3">
                             <SummaryCard
-                                icon={CheckCircle2}
-                                label={checkInsLabel}
-                                value={formatCount(summary?.checkIns)}
-                                helper={`Check-ins this ${periodScope}`}
+                                icon={TrendingUp}
+                                label="Activity"
+                                value={formatTrendValue(activityTrend)}
+                                valueClassName={trendValueClassName(activityTrend)}
+                                helper={`Check-ins ${comparisonLabel}`}
                             />
                             <SummaryCard
                                 icon={Users}
-                                label={activeUsersLabel}
-                                value={formatCount(summary?.activeUsers)}
-                                helper={`Users with check-ins this ${periodScope}`}
+                                label="Participation"
+                                value={formatTrendValue(participationTrend)}
+                                valueClassName={trendValueClassName(participationTrend)}
+                                helper={`Active users ${comparisonLabel}`}
                             />
                             <SummaryCard
                                 icon={Globe}
-                                label={topCategoryLabel}
+                                label="Top focus area"
                                 value={formatCategory(summary?.topCategory)}
-                                helper={`Leading category this ${periodScope}`}
+                                helper={`Leading category ${periodInRange}`}
                             />
                         </div>
                     )}
@@ -240,7 +294,7 @@ export function CommunityPage() {
                             What Howly is working on
                         </CardTitle>
                         <CardDescription className="text-slate-300">
-                            How check-ins split across life areas this {periodScope}.
+                            Share of check-ins across life areas {periodInRange}. Category trends {comparisonLabel}.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -250,7 +304,10 @@ export function CommunityPage() {
                                 Loading categories
                             </div>
                         ) : (
-                            <CategoryBreakdown categories={communityAnalytics?.byCategory ?? []} />
+                            <CategoryBreakdown
+                                categories={communityAnalytics?.byCategory ?? []}
+                                showTrends
+                            />
                         )}
                     </CardContent>
                 </Card>
@@ -262,7 +319,7 @@ export function CommunityPage() {
                             Trending on Howly
                         </CardTitle>
                         <CardDescription className="text-slate-300">
-                            The standard habit types completed most often this {periodScope}.
+                            The standard habit types rising or falling {periodInRange}. Habit trends {comparisonLabel}.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -272,13 +329,16 @@ export function CommunityPage() {
                                 Loading trending habits
                             </div>
                         ) : (
-                            <TrendingHabits habits={communityAnalytics?.trendingHabits ?? []} />
+                            <TrendingHabits
+                                habits={communityAnalytics?.trendingHabits ?? []}
+                                showTrends
+                            />
                         )}
                     </CardContent>
                 </Card>
 
                 <p className="text-center text-xs text-slate-400">
-                    Anonymous totals only. Howly never shows individual habit names or usernames here.
+                    Anonymous patterns only — shares and trends, never individual habit names or usernames.
                 </p>
             </div>
         </Page>
