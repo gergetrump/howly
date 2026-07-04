@@ -170,6 +170,25 @@ export function DashboardPage() {
         return () => clearTimeout(timeout);
     }, [pendingMilestoneNotice]);
 
+    useEffect(() => {
+        const usedAt = user?.streakShieldAutoUsedAt;
+
+        if (!usedAt) {
+            return;
+        }
+
+        const storageKey = 'howly_shield_notice_seen';
+
+        if (localStorage.getItem(storageKey) === String(usedAt)) {
+            return;
+        }
+
+        localStorage.setItem(storageKey, String(usedAt));
+        toast('🛡️ A streak shield saved your streak', {
+            description: `Your ${user?.streak ?? 0}-day streak is safe.`,
+        });
+    }, [user?.streakShieldAutoUsedAt, user?.streak]);
+
     // After a check-in the day may be complete → refetch the user so the overall
     // streak (🔥) in the header updates right away. Uses a direct fetch (not
     // refreshUser) to avoid the full-screen loading state in ProtectedRoute.
