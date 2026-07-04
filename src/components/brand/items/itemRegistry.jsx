@@ -37,6 +37,7 @@ import WinterJacket, { WinterJacketLayer } from './WinterJacket';
 import SmallBoost from '../SmallBoost';
 import MediumBoost from '../MediumBoost';
 import BigBoost from '../BigBoost';
+import { StreakShieldIcon } from '../StreakShieldIcon';
 
 const itemRegistry = {
     bag: {
@@ -54,6 +55,12 @@ const itemRegistry = {
     'big-boost': {
         type: 'powerUp',
         visual: BigBoost,
+        previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'streak-freeze': {
+        type: 'powerUp',
+        displayName: 'Streak Shield',
+        visual: StreakShieldIcon,
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },
     ballerina: {

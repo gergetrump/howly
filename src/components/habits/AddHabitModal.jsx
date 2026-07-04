@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import {
@@ -34,8 +34,6 @@ const UNITS = ['L', 'ml', 'min', 'hours', 'km', 'steps', 'times', 'pages', 'Cust
 
 const FREQUENCIES = ['Daily', 'Weekly', 'Monthly', 'Custom'];
 
-const CATEGORIES = ['Movement', 'Productivity', 'Nutrition', 'Connection'];
-
 const DAYS_OF_WEEK = [
     { label: 'Mon', value: 1 },
     { label: 'Tue', value: 2 },
@@ -50,46 +48,30 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
     const navigate = useNavigate();
     const { user } = useAuth();
     const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
     const [icon, setIcon] = useState('🎯');
     const [target, setTarget] = useState(1);
     const [unit, setUnit] = useState('');
     const [customUnit, setCustomUnit] = useState('');
     const [frequency, setFrequency] = useState('');
     const [customDays, setCustomDays] = useState([]);
-    const [category, setCategory] = useState('');
-    const [customCategory, setCustomCategory] = useState('');
     const [goal, setGoal] = useState(null);
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
     const [formError, setFormError] = useState('');
     const [limitPrompt, setLimitPrompt] = useState(null);
     const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
-    const dynamicCategories = useMemo(() => [...new Set([
-        ...(existingHabits?.map(h => h.category).filter(Boolean) || []),
-        editHabit?.category
-    ].filter(Boolean))], [existingHabits, editHabit?.category]);
-    const ALL_CATEGORIES = useMemo(() => [...new Set([...CATEGORIES, ...dynamicCategories])], [dynamicCategories]);
-    const SELECTABLE_CATEGORIES = useMemo(() => [...ALL_CATEGORIES, 'Custom'], [ALL_CATEGORIES]);
 
-    // Effect to pre-fill form when editHabit is passed
     useEffect(() => {
         if (open && editHabit) {
             setName(editHabit.title || '');
+            setDescription(editHabit.description || '');
             setTarget(editHabit.target || 1);
             setGoal(editHabit.goal ?? null);
             setIcon(editHabit.icon || '🎯');
             setFrequency(editHabit.frequency || '');
-            if (ALL_CATEGORIES.includes(editHabit.category)) {
-                setCategory(editHabit.category);
-                setCustomCategory('');
-            } else if (editHabit.category) {
-                setCategory('Custom');
-                setCustomCategory(editHabit.category);
-            } else {
-                setCategory('');
-            }
             setCustomDays(editHabit.customDays || []);
             setFormError('');
-            
+
             if (UNITS.includes(editHabit.unit)) {
                 setUnit(editHabit.unit);
                 setCustomUnit('');
@@ -100,9 +82,8 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                 setUnit('');
             }
         } else if (open && prefill) {
-            // Pre-fill from an AI suggestion — but submit still CREATES (no id),
-            // since there is no editHabit. Lets the user tweak before adding.
             setName(prefill.title || '');
+            setDescription(prefill.description || '');
             setTarget(1);
             setGoal(prefill.goal ?? null);
             setUnit('');
@@ -110,49 +91,37 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             setFrequency(prefill.frequency || '');
             setCustomDays([]);
             setFormError('');
-            if (ALL_CATEGORIES.includes(prefill.category)) {
-                setCategory(prefill.category);
-                setCustomCategory('');
-            } else if (prefill.category) {
-                setCategory('Custom');
-                setCustomCategory(prefill.category);
-            } else {
-                setCategory('');
-            }
             setIcon(prefill.icon || '🎯');
         } else if (open && !editHabit) {
-            // Reset for new
             setName('');
+            setDescription('');
             setGoal(null);
             setTarget(1);
             setUnit('');
             setCustomUnit('');
             setFrequency('');
             setCustomDays([]);
-            setCategory('');
-            setCustomCategory('');
             setIcon('🎯');
             setFormError('');
         }
-    }, [open, editHabit, prefill, ALL_CATEGORIES]);
+    }, [open, editHabit, prefill]);
 
     async function handleSubmit(e) {
         e.preventDefault();
-        
-        if (!name.trim() || !frequency || !category) return;
+
+        if (!name.trim() || !frequency) return;
         if (frequency === 'Custom' && customDays.length === 0) return;
 
         const finalUnit = unit === 'Custom' ? customUnit : unit;
-        const finalCategory = category === 'Custom' ? customCategory : category;
 
         const data = {
             title: name,
+            description: description.trim(),
             type: 'numeric',
             target: Number(target),
             unit: finalUnit,
             frequency,
             customDays,
-            category: finalCategory,
             icon,
             goal: goal ?? null,
         };
@@ -207,7 +176,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                 ) : null}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Icon picker + Habit name — side by side */}
                     <div className="flex gap-4">
                         <div className="space-y-2.5">
                             <Popover open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
@@ -277,7 +245,21 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                         </div>
                     </div>
 
-                    {/* Target + Unit */}
+                    <div className="space-y-2.5">
+                        <Label htmlFor="habit-description" className="text-sm font-medium text-white">
+                            Description
+                        </Label>
+                        <textarea
+                            id="habit-description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            rows={3}
+                            maxLength={1000}
+                            placeholder="What does this habit mean to you?"
+                            className="w-full resize-none rounded-2xl border border-purple-500/20 bg-[#2d2b55]/60 px-3 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-purple-500 focus:ring-3 focus:ring-purple-500/20"
+                        />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2.5">
                             <Label htmlFor="habit-target" className="text-sm font-medium text-white">
@@ -313,7 +295,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                             </Select>
                         </div>
 
-                        {/* Custom Unit Support */}
                         {unit === 'Custom' && (
                             <div className="col-span-2 space-y-2.5">
                                 <Label className="text-sm font-medium text-white">Custom Unit</Label>
@@ -328,64 +309,26 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                         )}
                     </div>
 
-                    {/* Frequency + Category */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2.5">
-                            <Label className="text-sm font-medium text-white">Frequency</Label>
-                            <Select value={frequency} onValueChange={setFrequency}>
-                                <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:opacity-50 [&>svg]:text-white">
-                                    <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={4} className="rounded-xl border-purple-500/20 bg-[#1e1b3a] w-[var(--radix-select-trigger-width)] z-[100]">
-                                    {FREQUENCIES.map((f) => (
-                                        <SelectItem
-                                            key={f}
-                                            value={f}
-                                            className="capitalize text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white cursor-pointer [&_*]:!text-white"
-                                        >
-                                            {f}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2.5">
-                            <Label className="text-sm font-medium text-white">Category</Label>
-                            <Select value={category} onValueChange={setCategory}>
-                                <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:opacity-50 [&>svg]:text-white">
-                                    <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={4} className="rounded-xl border-purple-500/20 bg-[#1e1b3a] w-[var(--radix-select-trigger-width)] z-[100] max-h-60 overflow-y-auto">
-                                    {SELECTABLE_CATEGORIES.map((c) => (
-                                        <SelectItem
-                                            key={c}
-                                            value={c}
-                                            className="text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white cursor-pointer [&_*]:!text-white"
-                                        >
-                                            {c}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        
-                        {/* Custom Category Support */}
-                        {category === 'Custom' && (
-                            <div className="col-span-2 space-y-2.5">
-                                <Label className="text-sm font-medium text-white">Custom Category</Label>
-                                <Input
-                                    value={customCategory}
-                                    onChange={(e) => setCustomCategory(e.target.value)}
-                                    placeholder="e.g. Finances, Learning"
-                                    required={category === 'Custom'}
-                                    className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:border-purple-500 focus:ring-purple-500/20"
-                                />
-                            </div>
-                        )}
+                    <div className="space-y-2.5">
+                        <Label className="text-sm font-medium text-white">Frequency</Label>
+                        <Select value={frequency} onValueChange={setFrequency}>
+                            <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:opacity-50 [&>svg]:text-white">
+                                <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent position="popper" sideOffset={4} className="rounded-xl border-purple-500/20 bg-[#1e1b3a] w-[var(--radix-select-trigger-width)] z-[100]">
+                                {FREQUENCIES.map((f) => (
+                                    <SelectItem
+                                        key={f}
+                                        value={f}
+                                        className="capitalize text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white cursor-pointer [&_*]:!text-white"
+                                    >
+                                        {f}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
-                    {/* Custom Days Picker — shown when frequency is Custom */}
                     {frequency === 'Custom' && (
                         <div className="space-y-2.5">
                             <Label className="text-sm font-medium text-white">Specific Days</Label>
@@ -395,8 +338,8 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                                         key={day.value}
                                         type="button"
                                         onClick={() => {
-                                            setCustomDays(prev => 
-                                                prev.includes(day.value) 
+                                            setCustomDays(prev =>
+                                                prev.includes(day.value)
                                                     ? prev.filter(d => d !== day.value)
                                                     : [...prev, day.value]
                                             )
@@ -414,7 +357,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                         </div>
                     )}
 
-                    {/* Submit */}
                     <Button
                         type="submit"
                         className="mt-2 h-12 w-full rounded-2xl bg-gradient-to-r from-purple-600 to-purple-500 text-base font-semibold text-white shadow-lg shadow-purple-600/25 transition-all hover:from-purple-700 hover:to-purple-600 hover:shadow-purple-600/40"

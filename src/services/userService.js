@@ -15,6 +15,13 @@ export function updateCurrentUser(userData) {
     });
 }
 
+export function updateNotificationPreferences(preferences) {
+    return apiRequest('/users/me/notification-preferences', {
+        method: 'PATCH',
+        body: JSON.stringify(preferences),
+    });
+}
+
 export function deleteCurrentUser() {
     return apiRequest('/users/me', {
         method: 'DELETE',

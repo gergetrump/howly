@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Loader2, Plus } from 'lucide-react';
 import { ActionButton } from '@/components/common';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,6 @@ const ICONS = [
 
 const UNITS = ['L', 'ml', 'min', 'hours', 'km', 'steps', 'times', 'pages', 'Custom'];
 const FREQUENCIES = ['Daily', 'Weekly', 'Monthly'];
-const CATEGORIES = ['Movement', 'Productivity', 'Nutrition', 'Connection'];
 
 function toDateInputValue(date = new Date()) {
     const parsedDate = new Date(date);
@@ -83,8 +82,6 @@ const INITIAL_CHALLENGE_FORM = {
     habitUnit: '',
     customHabitUnit: '',
     habitFrequency: 'Daily',
-    habitCategory: '',
-    customHabitCategory: '',
 };
 
 function buildChallengeForm(challenge) {
@@ -112,12 +109,6 @@ function buildChallengeForm(challenge) {
             ? challenge.habitTemplate.unit
             : '',
         habitFrequency: challenge.habitTemplate?.frequency ?? 'Daily',
-        habitCategory: challenge.habitTemplate?.category
-            ? (CATEGORIES.includes(challenge.habitTemplate.category) ? challenge.habitTemplate.category : 'Custom')
-            : '',
-        customHabitCategory: challenge.habitTemplate?.category && !CATEGORIES.includes(challenge.habitTemplate.category)
-            ? challenge.habitTemplate.category
-            : '',
     };
 }
 
@@ -128,15 +119,10 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
     const durationDays = calculateDurationDays(form.startsAt, form.endsAt);
     const calculatedReward = Math.max(durationDays, 0) * COINS_PER_CHALLENGE_DAY;
     const finalHabitUnit = form.habitUnit === 'Custom' ? form.customHabitUnit : form.habitUnit;
-    const finalHabitCategory = form.habitCategory === 'Custom'
-        ? form.customHabitCategory
-        : form.habitCategory;
-    const selectableCategories = useMemo(() => [...CATEGORIES, 'Custom'], []);
     const canSubmit = Boolean(
         form.title.trim()
             && form.habitTitle.trim()
             && form.habitFrequency
-            && finalHabitCategory?.trim()
             && durationDays > 0
             && form.startsAt
             && form.endsAt
@@ -170,7 +156,6 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                 target: Number(form.habitTarget || 1),
                 unit: finalHabitUnit,
                 frequency: form.habitFrequency,
-                category: finalHabitCategory || 'Challenge',
             },
         };
 
@@ -351,7 +336,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                             ) : null}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                             <div className="space-y-2.5">
                                 <Label className="text-sm font-medium text-white">Frequency</Label>
                                 <Select value={form.habitFrequency} onValueChange={(value) => updateField('habitFrequency', value)}>
@@ -371,40 +356,6 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                     </SelectContent>
                                 </Select>
                             </div>
-
-                            <div className="space-y-2.5">
-                                <Label className="text-sm font-medium text-white">Category</Label>
-                                <Select value={form.habitCategory} onValueChange={(value) => updateField('habitCategory', value)}>
-                                    <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:text-white [&>svg]:opacity-50">
-                                        <SelectValue placeholder="Select" />
-                                    </SelectTrigger>
-                                    <SelectContent position="popper" sideOffset={4} className="z-[100] max-h-60 w-[var(--radix-select-trigger-width)] overflow-y-auto rounded-xl border-purple-500/20 bg-[#1e1b3a]">
-                                        {selectableCategories.map((category) => (
-                                            <SelectItem
-                                                key={category}
-                                                value={category}
-                                                className="cursor-pointer text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white [&_*]:!text-white"
-                                            >
-                                                {category}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {form.habitCategory === 'Custom' ? (
-                                <div className="col-span-2 space-y-2.5">
-                                    <Label className="text-sm font-medium text-white">Custom Category</Label>
-                                    <Input
-                                        value={form.customHabitCategory}
-                                        onChange={(event) => updateField('customHabitCategory', event.target.value)}
-                                        placeholder="e.g. Finances, Learning"
-                                        required
-                                        maxLength={100}
-                                        className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:border-purple-500 focus:ring-purple-500/20"
-                                    />
-                                </div>
-                            ) : null}
                         </div>
                     </div>
 
