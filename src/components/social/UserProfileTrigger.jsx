@@ -16,7 +16,7 @@ export function UserAvatar({ user, className = 'size-12' }) {
     return (
         <div className="relative shrink-0">
 
-            <div className={`flex ${className} items-center justify-center overflow-hidden rounded-full bg-slate-300 text-lg font-bold text-slate-950 ${isPremium ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-800' : ''}`}>
+            <div className={`flex ${className} items-center justify-center overflow-hidden rounded-full bg-slate-300 text-lg font-bold text-slate-950 ${isPremium ? 'ring-2 ring-theme-gold ring-offset-2 ring-offset-theme-surface' : ''}`}>
                 {user?.profilePictureUrl ? (
                     <img src={user.profilePictureUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
@@ -37,13 +37,13 @@ export function UserProfileTrigger({
     return (
         <button
             type="button"
-            className={`flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left transition hover:bg-white/8 ${className}`}
+            className={`flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left transition hover:bg-theme-text/5 ${className}`}
             onClick={() => onOpen?.(user)}
         >
             <UserAvatar user={user} className={avatarClassName} />
             <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold text-white">{getDisplayName(user)}</p>
-                <p className="truncate text-sm text-slate-300">@{getUsername(user)}</p>
+                <p className="truncate font-semibold text-theme-text">{getDisplayName(user)}</p>
+                <p className="truncate text-sm text-theme-text-soft">@{getUsername(user)}</p>
             </div>
             {children}
         </button>

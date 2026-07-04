@@ -66,7 +66,7 @@ export function ChallengeCard({
                 ) : null}
                 <div className="flex flex-wrap items-center gap-2">
                     {category ? (
-                        <Badge className="border border-purple-400/30 bg-purple-500/15 text-purple-100 hover:bg-purple-500/15">
+                        <Badge className="border border-theme-accent/30 bg-theme-accent/15 text-theme-accent-soft hover:bg-theme-accent/15">
                             {category}
                         </Badge>
                     ) : null}
@@ -89,7 +89,7 @@ export function ChallengeCard({
                         {totalDays} days
                     </Badge>
                 </div>
-                {description ? <p className="text-sm leading-relaxed text-slate-300">{description}</p> : null}
+                {description ? <p className="text-sm leading-relaxed text-theme-text-soft">{description}</p> : null}
                 <div className="space-y-2">
                     <div className="flex justify-between text-sm text-theme-text-soft">
                         <span>Progress</span>

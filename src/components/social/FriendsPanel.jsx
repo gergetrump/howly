@@ -24,9 +24,9 @@ import { getDisplayName, getUsername } from '@/components/social/socialHelpers.j
 
 function EmptyState({ children }) {
     return (
-        <Card className="border-white/10 bg-white/8 text-slate-200 shadow-xl shadow-slate-950/20 backdrop-blur">
+        <Card className="border-theme-text/10 bg-theme-text/5 text-theme-text shadow-xl shadow-slate-950/20 backdrop-blur">
             <CardContent>
-                <p className="text-sm text-slate-300">{children}</p>
+                <p className="text-sm text-theme-text-soft">{children}</p>
             </CardContent>
         </Card>
     );
@@ -45,23 +45,23 @@ function FriendActions({ friend, friendshipId, busy, onDelete, onBlock }) {
                         type="button"
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 rounded-full text-slate-300 hover:bg-white/10 hover:text-white"
+                        className="h-8 w-8 rounded-full text-theme-text-soft hover:bg-theme-text/10 hover:text-theme-text"
                         aria-label={`Open actions for ${friendName}`}
                         disabled={busy}
                     >
                         <MoreVertical aria-hidden="true" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44 border-slate-800 bg-slate-950 text-slate-300">
+                <DropdownMenuContent align="end" className="w-44 border-theme-text/10 bg-theme-bg text-theme-text-soft">
                     <DropdownMenuItem
-                        className="cursor-pointer focus:bg-slate-800 focus:text-white"
+                        className="cursor-pointer focus:bg-theme-surface-2 focus:text-theme-text"
                         onClick={() => setIsDeleteDialogOpen(true)}
                     >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete friend
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                        className="cursor-pointer text-red-400 focus:bg-slate-800 focus:text-red-300"
+                        className="cursor-pointer text-theme-danger focus:bg-theme-surface-2 focus:text-theme-danger"
                         onClick={() => setIsBlockDialogOpen(true)}
                     >
                         <Ban className="mr-2 h-4 w-4" />
@@ -71,12 +71,12 @@ function FriendActions({ friend, friendshipId, busy, onDelete, onBlock }) {
             </DropdownMenu>
 
             <ConfirmationDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <ConfirmationDialogContent className="border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl sm:max-w-md">
+                <ConfirmationDialogContent className="border-0 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
                     <ConfirmationDialogHeader className="space-y-3 text-center">
                         <ConfirmationDialogTitle className="text-xl font-bold">
                             Remove this friend?
                         </ConfirmationDialogTitle>
-                        <ConfirmationDialogDescription className="text-sm text-slate-300">
+                        <ConfirmationDialogDescription className="text-sm text-theme-text-soft">
                             Are you sure you want to remove this friend?
                         </ConfirmationDialogDescription>
                     </ConfirmationDialogHeader>
@@ -85,7 +85,7 @@ function FriendActions({ friend, friendshipId, busy, onDelete, onBlock }) {
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="border-white/15 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                                className="border-theme-text/15 bg-theme-text/10 text-theme-text hover:bg-theme-text/20 hover:text-theme-text"
                             >
                                 Cancel
                             </Button>
@@ -105,12 +105,12 @@ function FriendActions({ friend, friendshipId, busy, onDelete, onBlock }) {
             </ConfirmationDialog>
 
             <ConfirmationDialog open={isBlockDialogOpen} onOpenChange={setIsBlockDialogOpen}>
-                <ConfirmationDialogContent className="border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl sm:max-w-md">
+                <ConfirmationDialogContent className="border-0 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
                     <ConfirmationDialogHeader className="space-y-3 text-center">
                         <ConfirmationDialogTitle className="text-xl font-bold">
                             Block this friend?
                         </ConfirmationDialogTitle>
-                        <ConfirmationDialogDescription className="text-sm text-slate-300">
+                        <ConfirmationDialogDescription className="text-sm text-theme-text-soft">
                             Are you sure you want to block this friend? You will no longer be friends or see each other's progress.
                         </ConfirmationDialogDescription>
                     </ConfirmationDialogHeader>
@@ -119,7 +119,7 @@ function FriendActions({ friend, friendshipId, busy, onDelete, onBlock }) {
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="border-white/15 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                                className="border-theme-text/15 bg-theme-text/10 text-theme-text hover:bg-theme-text/20 hover:text-theme-text"
                             >
                                 Cancel
                             </Button>
@@ -172,17 +172,17 @@ export function FriendsPanel({
     return (
         <aside className="ml-auto w-full max-w-[42rem] space-y-3 lg:sticky lg:top-24 lg:max-w-[22rem] lg:max-h-[calc(100vh-8rem)] lg:flex lg:flex-col">
             <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <div className="inline-flex rounded-lg border border-white/10 bg-white/10 p-1 text-sm text-slate-300">
+                <div className="inline-flex rounded-lg border border-theme-text/10 bg-theme-text/10 p-1 text-sm text-theme-text-soft">
                     <button
                         type="button"
-                        className={`rounded-md px-3 py-2 font-medium transition ${activePanel === 'friends' ? 'bg-white text-slate-950' : 'hover:bg-white/10 hover:text-white'}`}
+                        className={`rounded-md px-3 py-2 font-medium transition ${activePanel === 'friends' ? 'bg-white text-slate-950' : 'hover:bg-theme-text/10 hover:text-theme-text'}`}
                         onClick={() => onActivePanelChange('friends')}
                     >
                         Friends
                     </button>
                     <button
                         type="button"
-                        className={`relative rounded-md px-3 py-2 font-medium transition ${activePanel === 'requests' ? 'bg-white text-slate-950' : 'hover:bg-white/10 hover:text-white'}`}
+                        className={`relative rounded-md px-3 py-2 font-medium transition ${activePanel === 'requests' ? 'bg-white text-slate-950' : 'hover:bg-theme-text/10 hover:text-theme-text'}`}
                         onClick={() => onActivePanelChange('requests')}
                     >
                         Friend Requests
@@ -271,8 +271,8 @@ export function FriendsPanel({
                 ) : null}
             </div>
 
-            {notice ? <p className="text-sm text-emerald-300">{notice}</p> : null}
-            {error ? <p className="text-sm text-red-300">{error}</p> : null}
+            {notice ? <p className="text-sm text-theme-success">{notice}</p> : null}
+            {error ? <p className="text-sm text-theme-danger">{error}</p> : null}
         </aside>
     );
 }

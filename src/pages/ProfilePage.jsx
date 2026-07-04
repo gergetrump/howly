@@ -61,16 +61,16 @@ function SettingsRow({ icon: Icon, iconColor = 'text-theme-text-muted', title, s
 function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSubmitting, error, success }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border border-white/10 bg-slate-950 p-6 text-white sm:max-w-lg">
+            <DialogContent className="border border-theme-text/10 bg-theme-bg p-6 text-theme-text sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-white">Help & Feedback</DialogTitle>
-                    <DialogDescription className="text-slate-400">
+                    <DialogTitle className="text-xl font-bold text-theme-text">Help & Feedback</DialogTitle>
+                    <DialogDescription className="text-theme-text-muted">
                         Send a problem report or suggestion to the Howly team.
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={onSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-900 p-1">
+                    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-theme-surface p-1">
                         {[
                             { value: 'problem', label: 'Problem' },
                             { value: 'suggestion', label: 'Suggestion' },
@@ -79,7 +79,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                                 key={option.value}
                                 type="button"
                                 onClick={() => onFormChange({ ...form, type: option.value })}
-                                className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${form.type === option.value ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                                className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${form.type === option.value ? 'bg-white text-slate-950' : 'text-theme-text-soft hover:bg-theme-text/10 hover:text-theme-text'}`}
                             >
                                 {option.label}
                             </button>
@@ -87,36 +87,36 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                     </div>
 
                     <label className="block space-y-2">
-                        <span className="text-sm font-semibold text-white">Subject</span>
+                        <span className="text-sm font-semibold text-theme-text">Subject</span>
                         <input
                             type="text"
                             value={form.subject}
                             onChange={(event) => onFormChange({ ...form, subject: event.target.value })}
                             maxLength={120}
-                            className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition focus:border-howly-primary"
+                            className="w-full rounded-2xl border border-theme-text/10 bg-theme-surface px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
                             placeholder="Briefly summarize the topic."
                         />
                     </label>
 
                     <label className="block space-y-2">
-                        <span className="text-sm font-semibold text-white">Message</span>
+                        <span className="text-sm font-semibold text-theme-text">Message</span>
                         <textarea
                             value={form.message}
                             onChange={(event) => onFormChange({ ...form, message: event.target.value })}
                             rows={6}
                             maxLength={2000}
-                            className="w-full resize-none rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition focus:border-howly-primary"
+                            className="w-full resize-none rounded-2xl border border-theme-text/10 bg-theme-surface px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
                             placeholder="Tell us what happened or what would make Howly better."
                         />
                     </label>
 
-                    {error ? <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p> : null}
+                    {error ? <p className="rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">{error}</p> : null}
                     {success ? <p className="rounded-xl bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{success}</p> : null}
 
                     <Button
                         type="submit"
                         disabled={isSubmitting || form.subject.trim().length < 3 || form.message.trim().length < 10}
-                        className="w-full rounded-xl bg-white text-slate-950 hover:bg-slate-200"
+                        className="w-full rounded-xl bg-white text-slate-950 hover:bg-theme-invert/85"
                     >
                         {isSubmitting ? 'Sending...' : 'Send feedback'}
                     </Button>
@@ -129,10 +129,10 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
 function AboutDialog({ open, onOpenChange }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border border-white/10 bg-slate-950 p-6 text-white sm:max-w-md">
+            <DialogContent className="border border-theme-text/10 bg-theme-bg p-6 text-theme-text sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-white">About Howly</DialogTitle>
-                    <DialogDescription className="text-slate-400">
+                    <DialogTitle className="text-xl font-bold text-theme-text">About Howly</DialogTitle>
+                    <DialogDescription className="text-theme-text-muted">
                         We are four students who want to build a cute, motivating habit tracking website were friends can share their progress.
                     </DialogDescription>
                 </DialogHeader>
@@ -402,7 +402,7 @@ export function ProfilePage() {
 
                 {isPremium && (
                     <div className="mt-2 flex justify-center">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400/20 to-yellow-500/20 px-3 py-1 text-xs font-semibold text-amber-300 ring-1 ring-amber-400/30">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400/20 to-yellow-500/20 px-3 py-1 text-xs font-semibold text-theme-gold ring-1 ring-theme-gold/30">
                             <Crown className="h-3 w-3" aria-hidden="true" />
                             Premium
                         </span>
@@ -457,7 +457,7 @@ export function ProfilePage() {
                     <div className="overflow-hidden rounded-2xl">
                         <SettingsRow
                             icon={Ban}
-                            iconColor="text-red-400"
+                            iconColor="text-theme-danger"
                             title="Blocked Users"
                             subtitle="Manage accounts you have blocked"
                             onClick={() => setIsBlockedUsersDialogOpen(true)}

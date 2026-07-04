@@ -853,12 +853,12 @@ export function ShopPage() {
                 <PageSection title="Shop Items" className="min-w-0">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <Tabs value={selectedCategory} onValueChange={handleCategoryChange}>
-                            <TabsList className="h-auto flex-wrap border border-white/10 bg-white/10 p-1 text-slate-300">
+                            <TabsList className="h-auto flex-wrap border border-theme-text/10 bg-theme-text/10 p-1 text-theme-text-soft">
                                 {ITEM_CATEGORIES.map((category) => (
                                     <TabsTrigger
                                         key={category.value}
                                         value={category.value}
-                                        className="px-3 py-1.5 text-slate-300 data-active:bg-white data-active:text-slate-950"
+                                        className="px-3 py-1.5 !text-theme-text-soft data-active:!bg-theme-invert data-active:!text-theme-invert-text"
                                     >
                                         {category.label}
                                     </TabsTrigger>
@@ -869,7 +869,7 @@ export function ShopPage() {
                         <div className="flex flex-wrap items-center justify-end gap-2">
                             <ActionButton
                                 type="button"
-                                className="h-9 bg-white/10 px-4 text-sm text-white hover:bg-white/20 disabled:text-slate-500"
+                                className="h-9 bg-theme-text/10 px-4 text-sm text-theme-text hover:bg-theme-text/20 disabled:text-theme-text-muted"
                                 disabled={previewItems.length === 0}
                                 onClick={clearPreviewItems}
                             >
@@ -878,9 +878,9 @@ export function ShopPage() {
                         </div>
                     </div>
 
-                    {isLoading ? <p className="text-sm text-slate-300">Loading shop items...</p> : null}
+                    {isLoading ? <p className="text-sm text-theme-text-soft">Loading shop items...</p> : null}
                     {!isLoading && !error && items.length === 0 ? (
-                        <p className="text-sm text-slate-300">No shop items yet</p>
+                        <p className="text-sm text-theme-text-soft">No shop items yet</p>
                     ) : null}
                     <ShopItemGrid
                         isLoading={isLoading}
@@ -945,12 +945,12 @@ export function ShopPage() {
                     <div className="mt-4 flex justify-end">
                         <ActionButton
                             type="button"
-                            className={`gap-2 px-4 text-white ${cartItems.length === 0 ? 'bg-white/10 hover:bg-white/15' : 'bg-violet-500 hover:bg-violet-400'}`}
+                            className={`gap-2 px-4 ${cartItems.length === 0 ? 'bg-theme-text/10 text-theme-text-muted hover:bg-theme-text/15' : 'bg-violet-500 text-white hover:bg-violet-400'}`}
                             onClick={() => setIsCartOpen(true)}
                         >
                             <ShoppingCart className="h-4 w-4" aria-hidden="true" />
                             Cart
-                            <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{cartItemCount}</span>
+                            <span className="rounded-full bg-theme-text/20 px-2 py-0.5 text-xs">{cartItemCount}</span>
                         </ActionButton>
                     </div>
                 </PageSection>

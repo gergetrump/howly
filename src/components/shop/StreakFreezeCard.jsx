@@ -87,7 +87,7 @@ export function StreakFreezeCard({
                     <PopoverTrigger asChild>
                         <button
                             type="button"
-                            className="grid h-6 w-6 place-items-center rounded-full border border-white/10 bg-white/10 text-slate-200 transition hover:bg-white/20 hover:text-white"
+                            className="grid h-6 w-6 place-items-center rounded-full border border-theme-text/10 bg-theme-text/10 text-theme-text transition hover:bg-theme-text/20 hover:text-theme-text"
                             aria-label="What does Streak Shield do?"
                         >
                             <CircleHelp className="h-3.5 w-3.5" aria-hidden="true" />
@@ -97,7 +97,7 @@ export function StreakFreezeCard({
                         align="end"
                         side="bottom"
                         sideOffset={8}
-                        className="z-[120] w-56 rounded-xl border border-violet-200/20 bg-slate-950/95 p-3 text-left text-[11px] font-semibold leading-snug text-slate-100 shadow-xl shadow-slate-950/30"
+                        className="z-[120] w-56 rounded-xl border border-violet-200/20 bg-theme-bg/95 p-3 text-left text-[11px] font-semibold leading-snug text-theme-text shadow-xl shadow-slate-950/30"
                     >
                         Save one habit streak or your overall streak before the repair time runs out. You can hold up to 3 shields.
                     </PopoverContent>
@@ -108,7 +108,7 @@ export function StreakFreezeCard({
             <ActionButton
                 type="button"
                 fullWidth
-                className="h-8 px-3 text-xs disabled:bg-white/10 disabled:text-slate-500"
+                className="h-8 px-3 text-xs disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                 disabled={cartQuantityMax}
                 onClick={() => guardPremium(() => onAddToCart?.(item))}
             >
@@ -117,7 +117,7 @@ export function StreakFreezeCard({
             <ActionButton
                 type="button"
                 fullWidth
-                className="h-8 px-3 text-xs disabled:bg-white/10 disabled:text-slate-500"
+                className="h-8 px-3 text-xs disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                 disabled={isBuying || ownedQuantityMax}
                 onClick={() => guardPremium(() => onBuy?.(item))}
             >

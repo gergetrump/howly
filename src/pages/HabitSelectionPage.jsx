@@ -83,7 +83,7 @@ export function HabitSelectionPage() {
                 <Card
                     className={cn(
                         appCardClassName,
-                        'w-full max-w-lg border-slate-700/50 shadow-xl shadow-black/20',
+                        'w-full max-w-lg border-theme-text/10 shadow-xl shadow-black/20',
                     )}
                 >
                     <CardContent className="p-8">
@@ -91,10 +91,10 @@ export function HabitSelectionPage() {
                             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.25em] text-howly-primary">
                                 Step 2 of 2
                             </p>
-                            <h1 className="text-2xl font-bold tracking-tight text-white">
+                            <h1 className="text-2xl font-bold tracking-tight text-theme-text">
                                 Pick your first habits
                             </h1>
-                            <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                            <p className="mt-2 text-sm leading-relaxed text-theme-text-muted">
                                 Choose up to {FREE_TIER_HABIT_LIMIT} to get started — that is the
                                 free plan limit. You can always add more later.
                             </p>
@@ -119,18 +119,18 @@ export function HabitSelectionPage() {
                                             'flex items-center gap-3 rounded-2xl border p-3 text-left transition-all',
                                             isSelected
                                                 ? 'border-howly-primary bg-howly-primary/10 ring-2 ring-howly-primary/40'
-                                                : 'border-slate-700 bg-slate-900/50 hover:border-slate-500',
-                                            isDisabled && 'cursor-not-allowed opacity-40 hover:border-slate-700',
+                                                : 'border-theme-text/15 bg-theme-surface/50 hover:border-slate-500',
+                                            isDisabled && 'cursor-not-allowed opacity-40 hover:border-theme-text/15',
                                         )}
                                     >
                                         <span className="text-2xl" aria-hidden="true">
                                             {habit.icon}
                                         </span>
                                         <span className="min-w-0">
-                                            <span className="block truncate text-sm font-semibold text-white">
+                                            <span className="block truncate text-sm font-semibold text-theme-text">
                                                 {habit.title}
                                             </span>
-                                            <span className="block text-xs text-slate-400">
+                                            <span className="block text-xs text-theme-text-muted">
                                                 {habit.frequency}
                                             </span>
                                         </span>
@@ -140,7 +140,7 @@ export function HabitSelectionPage() {
                         </div>
 
                         {error && (
-                            <p className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                            <p className="mt-4 rounded-xl border border-red-400/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                                 {error}
                             </p>
                         )}
@@ -150,7 +150,7 @@ export function HabitSelectionPage() {
                                 variant="ghost"
                                 onClick={handleSkip}
                                 disabled={isSubmitting}
-                                className="text-slate-300 hover:text-white"
+                                className="text-theme-text-soft hover:text-theme-text"
                             >
                                 Skip for now
                             </Button>

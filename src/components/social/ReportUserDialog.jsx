@@ -89,8 +89,8 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border-white/10 bg-[#24213d] p-0 text-white shadow-2xl sm:max-w-lg">
-                <DialogHeader className="border-b border-white/10 px-6 pb-4 pt-6">
+            <DialogContent className="border-theme-text/10 bg-theme-surface p-0 text-theme-text shadow-2xl sm:max-w-lg">
+                <DialogHeader className="border-b border-theme-text/10 px-6 pb-4 pt-6">
                     <div className="flex items-start gap-3">
                         <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-red-500/15 text-red-200">
                             <AlertTriangle className="size-5" aria-hidden="true" />
@@ -99,7 +99,7 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
                             <DialogTitle className="text-2xl font-bold">
                                 Report {user ? getDisplayName(user) : 'user'}
                             </DialogTitle>
-                            <DialogDescription className="mt-1 text-sm text-slate-300">
+                            <DialogDescription className="mt-1 text-sm text-theme-text-soft">
                                 @{user ? getUsername(user) : 'user'} will not be notified about your report.
                             </DialogDescription>
                         </div>
@@ -127,7 +127,7 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
                 ) : (
                     <form className="space-y-5 px-6 py-6" onSubmit={handleSubmit}>
                         <div>
-                            <p className="mb-2 text-sm font-semibold text-slate-200">Reason tags</p>
+                            <p className="mb-2 text-sm font-semibold text-theme-text">Reason tags</p>
                             <div className="flex flex-wrap gap-2">
                                 {REPORT_TAGS.map((tag) => {
                                     const isSelected = selectedTags.includes(tag);
@@ -139,7 +139,7 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
                                             className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
                                                 isSelected
                                                     ? 'border-violet-300 bg-violet-500 text-white'
-                                                    : 'border-white/10 bg-white/8 text-slate-200 hover:bg-white/12'
+                                                    : 'border-theme-text/10 bg-theme-text/5 text-theme-text hover:bg-theme-text/10'
                                             }`}
                                             onClick={() => toggleTag(tag)}
                                         >
@@ -148,11 +148,11 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
                                     );
                                 })}
                             </div>
-                            <p className="mt-2 text-xs text-slate-400">Tags are optional.</p>
+                            <p className="mt-2 text-xs text-theme-text-muted">Tags are optional.</p>
                         </div>
 
                         <div>
-                            <label htmlFor="report-message" className="mb-2 block text-sm font-semibold text-slate-200">
+                            <label htmlFor="report-message" className="mb-2 block text-sm font-semibold text-theme-text">
                                 What happened?
                             </label>
                             <textarea
@@ -160,12 +160,12 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
                                 value={message}
                                 rows={5}
                                 maxLength={2000}
-                                className="w-full resize-none rounded-2xl border border-white/15 bg-slate-950/35 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-violet-300 focus:ring-2 focus:ring-violet-400/20"
+                                className="w-full resize-none rounded-2xl border border-theme-text/15 bg-theme-bg/35 px-4 py-3 text-sm text-theme-text outline-none transition placeholder:text-theme-text-muted focus:border-violet-300 focus:ring-2 focus:ring-violet-400/20"
                                 placeholder="Write a short description. This field is required."
                                 disabled={isSubmitting}
                                 onChange={(event) => setMessage(event.target.value)}
                             />
-                            <div className="mt-1 flex justify-between text-xs text-slate-400">
+                            <div className="mt-1 flex justify-between text-xs text-theme-text-muted">
                                 <span>Required</span>
                                 <span>{message.length}/2000</span>
                             </div>
@@ -179,10 +179,10 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
                                 className="hidden"
                                 onChange={(event) => setAttachment(event.target.files?.[0] ?? null)}
                             />
-                            <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/8 px-4 py-3">
+                            <div className="flex items-center justify-between gap-3 rounded-2xl border border-theme-text/10 bg-theme-text/5 px-4 py-3">
                                 <div className="min-w-0">
-                                    <p className="text-sm font-semibold text-slate-200">Attach picture</p>
-                                    <p className="truncate text-xs text-slate-400">
+                                    <p className="text-sm font-semibold text-theme-text">Attach picture</p>
+                                    <p className="truncate text-xs text-theme-text-muted">
                                         {attachment ? attachment.name : 'Optional PNG, JPEG or WEBP'}
                                     </p>
                                 </div>
@@ -192,7 +192,7 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
                                             type="button"
                                             size="icon"
                                             variant="ghost"
-                                            className="rounded-full text-slate-300 hover:bg-white/10 hover:text-white"
+                                            className="rounded-full text-theme-text-soft hover:bg-theme-text/10 hover:text-theme-text"
                                             aria-label="Remove attachment"
                                             onClick={() => setAttachment(null)}
                                         >
@@ -202,7 +202,7 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        className="border-white/15 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                                        className="border-theme-text/15 bg-theme-text/10 text-theme-text hover:bg-theme-text/20 hover:text-theme-text"
                                         disabled={isSubmitting}
                                         onClick={() => fileInputRef.current?.click()}
                                     >
@@ -213,7 +213,7 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
                             </div>
                         </div>
 
-                        {error ? <p className="text-sm text-red-300">{error}</p> : null}
+                        {error ? <p className="text-sm text-theme-danger">{error}</p> : null}
 
                         <Button
                             type="submit"

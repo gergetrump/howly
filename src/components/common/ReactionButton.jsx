@@ -14,7 +14,7 @@ export function ReactionButton({
         <button
             type="button"
             className={cn(
-                'inline-flex items-center gap-2 rounded-lg bg-theme-text/10 px-3 py-2 text-sm font-medium text-theme-text transition hover:bg-theme-text/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-200',
+                'inline-flex items-center gap-2 rounded-lg bg-theme-text/10 px-3 py-2 text-sm font-medium text-theme-text transition hover:bg-theme-text/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-love/40',
                 liked && 'bg-theme-love/15 text-theme-love',
                 disabled && 'opacity-60',
                 className,

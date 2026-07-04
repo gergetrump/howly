@@ -165,7 +165,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                     {editHabit ? 'Edit Habit' : 'Add Habit'}
                 </h2>
                 {formError ? (
-                    <p className="mb-4 rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                    <p className="mb-4 rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                         {formError}
                     </p>
                 ) : null}
@@ -241,7 +241,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                     </div>
 
                     <div className="space-y-2.5">
-                        <Label htmlFor="habit-description" className="text-sm font-medium text-white">
+                        <Label htmlFor="habit-description" className="text-sm font-medium text-theme-text">
                             Description
                         </Label>
                         <textarea
@@ -251,7 +251,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                             rows={3}
                             maxLength={1000}
                             placeholder="What does this habit mean to you?"
-                            className="w-full resize-none rounded-2xl border border-purple-500/20 bg-[#2d2b55]/60 px-3 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-purple-500 focus:ring-3 focus:ring-purple-500/20"
+                            className="w-full resize-none rounded-2xl border border-theme-accent/20 bg-theme-surface-2/60 px-3 py-3 text-sm text-theme-text outline-none placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-3 focus:ring-theme-accent/20"
                         />
                     </div>
 

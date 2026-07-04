@@ -187,7 +187,7 @@ export function ResetPasswordPage() {
                             Remember your password?{' '}
                             <Link
                                 to="/login"
-                                className="font-semibold text-howly-primary transition-colors hover:text-pink-400"
+                                className="font-semibold text-howly-primary transition-colors hover:text-theme-love"
                             >
                                 Back to login
                             </Link>

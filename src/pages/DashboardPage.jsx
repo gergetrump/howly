@@ -36,7 +36,7 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
     const progressText = `${item.participant?.daysCompleted ?? 0}/${item.challenge?.durationDays ?? 0} days`;
 
     return (
-        <Card className={cn(appCardClassName, item.habit.isCompletedToday && 'bg-[#23423b] ring-emerald-300/25')}>
+        <Card className={cn(appCardClassName, item.habit.isCompletedToday && 'bg-theme-success-surface ring-theme-success/25')}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}>
                     <span aria-hidden="true">{item.habit.icon}</span>
@@ -44,19 +44,19 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
 
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate font-semibold text-white">{item.habit.title}</h3>
+                        <h3 className="truncate font-semibold text-theme-text">{item.habit.title}</h3>
                         {item.habit.category ? (
-                            <Badge className="border border-purple-400/30 bg-purple-500/15 text-purple-100 hover:bg-purple-500/15">
+                            <Badge className="border border-theme-accent/30 bg-theme-accent/15 text-theme-accent-soft hover:bg-theme-accent/15">
                                 {item.habit.category}
                             </Badge>
                         ) : null}
                     </div>
-                    <p className="mt-1 truncate text-sm text-slate-300">{item.challenge?.title}</p>
+                    <p className="mt-1 truncate text-sm text-theme-text-soft">{item.challenge?.title}</p>
                     <StreakBadge days={item.participant?.daysCompleted ?? 0} icon={'\uD83D\uDD25'} className="mt-1" />
                 </div>
 
                 <div className="flex shrink-0 items-center gap-3">
-                    <span className="text-sm font-medium text-white">{progressText}</span>
+                    <span className="text-sm font-medium text-theme-text">{progressText}</span>
                     <CompletionCircle
                         completed={item.habit.isCompletedToday}
                         onClick={() => onToggle(item)}
@@ -475,13 +475,13 @@ export function DashboardPage() {
                     <TabsList className="w-full border border-theme-text/10 bg-theme-text/10 text-theme-text">
                         <TabsTrigger
                             value="today"
-                            className="text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
                         >
                             Today ({todaysHabits.length})
                         </TabsTrigger>
                         <TabsTrigger
                             value="all"
-                            className="text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
                         >
                             All Habits ({habits.length})
                         </TabsTrigger>
@@ -516,7 +516,7 @@ export function DashboardPage() {
                         />
                     ))}
                     {challengeHabits.length === 0 && (
-                        <p className="text-sm text-slate-400 text-center py-4">No active challenge habits yet.</p>
+                        <p className="text-sm text-theme-text-muted text-center py-4">No active challenge habits yet.</p>
                     )}
                 </CardGrid>
             </PageSection>
@@ -573,10 +573,10 @@ export function DashboardPage() {
             />
 
             <Dialog open={Boolean(riskConfirmHabit)} onOpenChange={(open) => { if (!open) setRiskConfirmHabit(null); }}>
-                <DialogContent className="rounded-3xl border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl sm:max-w-md">
+                <DialogContent className="rounded-3xl border-0 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
                     <DialogHeader className="space-y-3 pt-4 text-left">
                         <DialogTitle className="text-2xl font-bold tracking-tight">Your streak is at risk</DialogTitle>
-                        <DialogDescription className="text-base leading-relaxed text-slate-300">
+                        <DialogDescription className="text-base leading-relaxed text-theme-text-soft">
                             Completing “{riskConfirmHabit?.title}” now starts a new streak at 1. Your current {riskConfirmHabit?.streakCount}-day streak can still be saved with a shield.
                         </DialogDescription>
                     </DialogHeader>
@@ -597,14 +597,14 @@ export function DashboardPage() {
                             </Button>
                         )}
                         <Button
-                            className="h-14 w-full rounded-full border border-slate-700/50 bg-[#2a2746] text-lg font-semibold text-white hover:bg-[#343155] hover:text-white"
+                            className="h-14 w-full rounded-full border border-theme-text/10 bg-theme-surface-2 text-lg font-semibold text-theme-text hover:bg-theme-surface-2/80 hover:text-theme-text"
                             onClick={() => { const target = riskConfirmHabit; setRiskConfirmHabit(null); handleHabitCompletion(target); }}
                         >
                             Complete & restart
                         </Button>
                         <Button
                             variant="ghost"
-                            className="h-12 w-full rounded-full text-slate-300 hover:bg-white/5 hover:text-white"
+                            className="h-12 w-full rounded-full text-theme-text-soft hover:bg-theme-text/5 hover:text-theme-text"
                             onClick={() => setRiskConfirmHabit(null)}
                         >
                             Cancel

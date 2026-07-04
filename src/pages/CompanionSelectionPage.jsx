@@ -61,7 +61,7 @@ export function CompanionSelectionPage() {
                 <Card
                     className={cn(
                         appCardClassName,
-                        'w-full max-w-4xl border-slate-700/50 shadow-xl shadow-black/20',
+                        'w-full max-w-4xl border-theme-text/10 shadow-xl shadow-black/20',
                     )}
                 >
                     <CardContent className="p-8 md:p-10">
@@ -70,10 +70,10 @@ export function CompanionSelectionPage() {
                             <p className="mb-1 text-center text-xs font-semibold uppercase tracking-[0.25em] text-howly-primary">
                                 Step 1 of 2
                             </p>
-                            <h1 className="text-left text-3xl font-bold tracking-tight text-white">
+                            <h1 className="text-left text-3xl font-bold tracking-tight text-theme-text">
                                 Meet your companion
                             </h1>
-                            <p className="mt-2 text-left text-sm leading-relaxed text-slate-400">
+                            <p className="mt-2 text-left text-sm leading-relaxed text-theme-text-muted">
                                 Pick the buddy who will cheer you on.
                                 <br />
                                 You can rename it anytime.
@@ -99,11 +99,11 @@ export function CompanionSelectionPage() {
                                                 'flex flex-col items-center gap-1 rounded-2xl border p-2 transition-all',
                                                 selectedType === companion.type
                                                     ? 'border-howly-primary bg-howly-primary/10 ring-2 ring-howly-primary/40'
-                                                    : 'border-slate-600 bg-slate-800/60 hover:border-slate-500',
+                                                    : 'border-slate-600 bg-theme-surface-2/60 hover:border-slate-500',
                                             )}
                                         >
                                             <CompanionAvatar type={companion.type} size="sm" />
-                                            <span className="text-xs font-medium text-slate-200">
+                                            <span className="text-xs font-medium text-theme-text">
                                                 {companion.label}
                                             </span>
                                         </button>
@@ -113,7 +113,7 @@ export function CompanionSelectionPage() {
                                 <div className="mt-6 space-y-2 text-left">
                                     <label
                                         htmlFor="companion-name"
-                                        className="text-sm font-medium text-slate-200"
+                                        className="text-sm font-medium text-theme-text"
                                     >
                                         Name your companion
                                     </label>
@@ -125,19 +125,19 @@ export function CompanionSelectionPage() {
                                         onChange={(event) => setName(event.target.value)}
                                         maxLength={30}
                                         placeholder="Howly"
-                                        className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-howly-primary"
+                                        className="w-full rounded-xl border border-theme-text/15 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
                                     />
                                 </div>
 
-                                <div className="mt-6 rounded-xl border border-slate-700 bg-slate-900/70 p-4 text-left">
-                                    <p className="mb-2 text-sm font-semibold text-white">
+                                <div className="mt-6 rounded-xl border border-theme-text/15 bg-theme-surface/70 p-4 text-left">
+                                    <p className="mb-2 text-sm font-semibold text-theme-text">
                                         Your companion will:
                                     </p>
                                     <ul className="space-y-1.5">
                                         {COMPANION_PERKS.map((perk) => (
                                             <li
                                                 key={perk.label}
-                                                className="flex items-center gap-2 text-sm text-slate-300"
+                                                className="flex items-center gap-2 text-sm text-theme-text-soft"
                                             >
                                                 <span aria-hidden="true">{perk.icon}</span>
                                                 {perk.label}
@@ -147,7 +147,7 @@ export function CompanionSelectionPage() {
                                 </div>
 
                                 {error && (
-                                    <p className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                                    <p className="mt-4 rounded-xl border border-red-400/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                                         {error}
                                     </p>
                                 )}

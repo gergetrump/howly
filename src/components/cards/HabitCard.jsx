@@ -43,7 +43,7 @@ export function HabitCard({
     const hasMenuActions = Boolean(onEdit || onDelete || onShareStory);
 
     return (
-        <Card className={cn(appCardClassName, completed && 'bg-[#23423b] ring-emerald-300/25', atRisk && !completed && 'bg-[#42392c] ring-amber-400/30')}>
+        <Card className={cn(appCardClassName, completed && 'bg-theme-success-surface ring-theme-success/25', atRisk && !completed && 'bg-theme-warn-surface ring-theme-gold/30')}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}>
                     <span aria-hidden="true">{emoji}</span>
@@ -55,12 +55,12 @@ export function HabitCard({
                         <div className="flex items-center gap-1.5">
                             {frequency ? <Badge variant="secondary">{frequency}</Badge> : null}
                             {category ? (
-                                <Badge className="border border-purple-400/30 bg-purple-500/15 text-purple-100 hover:bg-purple-500/15">
+                                <Badge className="border border-theme-accent/30 bg-theme-accent/15 text-theme-accent-soft hover:bg-theme-accent/15">
                                     {category}
                                 </Badge>
                             ) : null}
                             {activeBoost ? (
-                                <Badge className="bg-slate-700 hover:bg-slate-800 text-white border-0 font-medium capitalize text-[10px] py-0 h-5 px-1.5 flex gap-1 items-center">
+                                <Badge className="bg-theme-surface-2 hover:bg-theme-surface-2 text-theme-text border-0 font-medium capitalize text-[10px] py-0 h-5 px-1.5 flex gap-1 items-center">
                                     {renderShopItemVisual(activeBoost, 'h-3 w-3')}
                                     {activeBoost.assetKey.replace('-', ' ')} &bull; {activeBoost.remainingCompletions} left
                                 </Badge>
@@ -75,7 +75,7 @@ export function HabitCard({
                         <button
                             type="button"
                             onClick={onUseFreeze}
-                            className="flex items-center gap-1 rounded-full bg-amber-400/15 px-3 py-1.5 text-xs font-semibold text-amber-200 ring-1 ring-amber-400/30 transition-colors hover:bg-amber-400/25"
+                            className="flex items-center gap-1 rounded-full bg-theme-gold/15 px-3 py-1.5 text-xs font-semibold text-theme-gold ring-1 ring-theme-gold/30 transition-colors hover:bg-theme-gold/25"
                             title="Use a streak shield to save this streak"
                         >
                             <StreakShieldIcon className="h-3.5 w-auto" />

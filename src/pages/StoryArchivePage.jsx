@@ -96,12 +96,12 @@ export function StoryArchivePage() {
                 />
 
                 {isLoading ? (
-                    <p className="text-sm text-slate-400">Loading your stories...</p>
+                    <p className="text-sm text-theme-text-muted">Loading your stories...</p>
                 ) : error ? (
-                    <p className="text-sm text-red-300">{error}</p>
+                    <p className="text-sm text-theme-danger">{error}</p>
                 ) : !stories.length ? (
-                    <div className="rounded-2xl bg-slate-800/80 px-5 py-6 text-center">
-                        <p className="text-sm text-slate-400">
+                    <div className="rounded-2xl bg-theme-surface/80 px-5 py-6 text-center">
+                        <p className="text-sm text-theme-text-muted">
                             No stories yet. Complete a habit and share a moment 📸
                         </p>
                     </div>
@@ -109,14 +109,14 @@ export function StoryArchivePage() {
                     <div className="flex flex-col gap-6">
                         {groups.map((group) => (
                             <div key={group.key}>
-                                <h3 className="mb-2 text-sm font-semibold text-slate-300">{group.label}</h3>
+                                <h3 className="mb-2 text-sm font-semibold text-theme-text-soft">{group.label}</h3>
                                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
                                     {group.stories.map((story) => (
                                         <button
                                             key={story.id}
                                             type="button"
                                             onClick={() => setSelectedStory(story)}
-                                            className="group relative aspect-square overflow-hidden rounded-xl bg-slate-800 text-left"
+                                            className="group relative aspect-square overflow-hidden rounded-xl bg-theme-surface-2 text-left"
                                         >
                                             <img
                                                 src={cloudinaryUrl(story.imageUrl, { width: 400 })}
@@ -143,7 +143,7 @@ export function StoryArchivePage() {
                                             ) : null}
 
                                             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                                                <p className="truncate text-xs text-white">
+                                                <p className="truncate text-xs text-theme-text">
                                                     {story.sourceEmoji} {story.sourceTitle}
                                                 </p>
                                             </div>

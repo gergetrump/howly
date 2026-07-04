@@ -19,7 +19,7 @@ export function DailyProgressCard({ completed = 0, total = 0 }) {
             <div className="mt-6">
                 <Progress 
                     value={percentage} 
-                    className="h-1.5 bg-black/20" 
+                    className="h-1.5 bg-theme-text/15" 
                     indicatorClassName="bg-theme-invert" 
                 />
             </div>

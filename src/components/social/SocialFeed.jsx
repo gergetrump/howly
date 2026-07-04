@@ -12,9 +12,9 @@ import {
 
 function EmptyState({ children }) {
     return (
-        <Card className="border-white/10 bg-white/8 text-slate-200 shadow-xl shadow-slate-950/20 backdrop-blur">
+        <Card className="border-theme-text/10 bg-theme-text/5 text-theme-text shadow-xl shadow-slate-950/20 backdrop-blur">
             <CardContent>
-                <p className="text-sm text-slate-300">{children}</p>
+                <p className="text-sm text-theme-text-soft">{children}</p>
             </CardContent>
         </Card>
     );

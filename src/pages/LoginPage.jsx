@@ -195,7 +195,7 @@ export function LoginPage() {
 
                                     <Link
                                         to="/forgot-password"
-                                        className="text-sm font-medium text-howly-primary transition-colors hover:text-pink-400"
+                                        className="text-sm font-medium text-howly-primary transition-colors hover:text-theme-love"
                                     >
                                         Forgot password?
                                     </Link>
@@ -233,7 +233,7 @@ export function LoginPage() {
                             No account yet?{' '}
                             <Link
                                 to="/register"
-                                className="font-semibold text-howly-primary transition-colors hover:text-pink-400"
+                                className="font-semibold text-howly-primary transition-colors hover:text-theme-love"
                             >
                                 Create one
                             </Link>

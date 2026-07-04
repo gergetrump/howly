@@ -187,12 +187,12 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="max-h-[88vh] overflow-y-auto rounded-2xl border-0 bg-[#1e1b3a] p-6 text-white shadow-2xl sm:max-w-2xl sm:p-10">
+            <DialogContent className="max-h-[88vh] overflow-y-auto rounded-2xl border-0 bg-theme-surface p-6 text-theme-text shadow-2xl sm:max-w-2xl sm:p-10">
                 <DialogHeader className="text-center">
-                    <DialogTitle className="text-2xl font-bold tracking-tight text-white">
+                    <DialogTitle className="text-2xl font-bold tracking-tight text-theme-text">
                         {isEditing ? 'Edit Challenge' : 'Create Challenge'}
                     </DialogTitle>
-                    <DialogDescription className="text-slate-300">
+                    <DialogDescription className="text-theme-text-soft">
                         Set up the Challenge and the Habit every participant will receive.
                     </DialogDescription>
                 </DialogHeader>
@@ -200,7 +200,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                 <form className="space-y-6" onSubmit={handleSubmit}>
                     <div className="space-y-4">
                         <div className="space-y-2.5">
-                            <Label htmlFor="challenge-title" className="text-sm font-medium text-white">
+                            <Label htmlFor="challenge-title" className="text-sm font-medium text-theme-text">
                                 Challenge Name
                             </Label>
                             <Input
@@ -210,12 +210,12 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 required
                                 maxLength={120}
                                 placeholder="e.g. 30 Day Reading Challenge"
-                                className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white caret-purple-400 placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/20"
+                                className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text caret-theme-accent placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-theme-accent/20"
                             />
                         </div>
 
                         <div className="space-y-2.5">
-                            <Label htmlFor="challenge-description" className="text-sm font-medium text-white">
+                            <Label htmlFor="challenge-description" className="text-sm font-medium text-theme-text">
                                 Description
                             </Label>
                             <textarea
@@ -225,26 +225,26 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 rows={4}
                                 maxLength={500}
                                 placeholder="What should participants know?"
-                                className="w-full resize-none rounded-2xl border border-purple-500/20 bg-[#2d2b55]/60 px-3 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-purple-500 focus:ring-3 focus:ring-purple-500/20"
+                                className="w-full resize-none rounded-2xl border border-theme-accent/20 bg-theme-surface-2/60 px-3 py-3 text-sm text-theme-text outline-none placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-3 focus:ring-theme-accent/20"
                             />
                         </div>
 
                         <div className="space-y-2.5">
-                            <Label className="text-sm font-medium text-white">Visibility</Label>
+                            <Label className="text-sm font-medium text-theme-text">Visibility</Label>
                             <Select value={form.visibility} onValueChange={(value) => updateField('visibility', value)}>
-                                <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:text-white [&>svg]:opacity-50">
+                                <SelectTrigger className="!h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:ring-theme-accent/20 [&>svg]:text-theme-text [&>svg]:opacity-50">
                                     <SelectValue placeholder="Select Visibility" />
                                 </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={4} className="z-[100] w-[var(--radix-select-trigger-width)] rounded-xl border-purple-500/20 bg-[#1e1b3a]">
+                                <SelectContent position="popper" sideOffset={4} className="z-[100] w-[var(--radix-select-trigger-width)] rounded-xl border-theme-accent/20 bg-theme-surface">
                                     <SelectItem
                                         value="public"
-                                        className="cursor-pointer text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white [&_*]:!text-white"
+                                        className="cursor-pointer text-theme-text focus:!bg-theme-accent/40 focus:!text-theme-text data-[state=checked]:text-theme-text [&_*]:!text-theme-text"
                                     >
                                         Public - Everyone Can Find and Join
                                     </SelectItem>
                                     <SelectItem
                                         value="friends"
-                                        className="cursor-pointer text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white [&_*]:!text-white"
+                                        className="cursor-pointer text-theme-text focus:!bg-theme-accent/40 focus:!text-theme-text data-[state=checked]:text-theme-text [&_*]:!text-theme-text"
                                     >
                                         Private - Friends Only
                                     </SelectItem>
@@ -260,19 +260,19 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                     <PopoverTrigger asChild>
                                         <button
                                             type="button"
-                                            className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-purple-500/20 bg-[#2d2b55]/60 text-2xl transition-colors hover:border-purple-500/40"
+                                            className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-theme-accent/20 bg-theme-surface-2/60 text-2xl transition-colors hover:border-purple-500/40"
                                         >
                                             {form.habitIcon}
-                                            <div className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#1e1b3a] bg-purple-500 text-white">
+                                            <div className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-theme-surface bg-purple-500 text-white">
                                                 <Plus size={12} strokeWidth={4} />
                                             </div>
                                         </button>
                                     </PopoverTrigger>
                                     <PopoverContent
-                                        className="w-64 rounded-xl border-purple-500/20 bg-[#1e1b3a] p-3 shadow-xl"
+                                        className="w-64 rounded-xl border-theme-accent/20 bg-theme-surface p-3 shadow-xl"
                                         align="start"
                                     >
-                                        <p className="mb-2 text-xs font-medium text-purple-300">
+                                        <p className="mb-2 text-xs font-medium text-theme-accent-soft">
                                             Choose an Icon
                                         </p>
                                         <div className="grid grid-cols-6 gap-1.5">
@@ -287,15 +287,15 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                                     className={`flex h-9 w-9 items-center justify-center rounded-lg text-lg transition-all ${
                                                         form.habitIcon === emoji
                                                             ? 'bg-purple-600 ring-2 ring-purple-400'
-                                                            : 'hover:bg-[#2d2b55]'
+                                                            : 'hover:bg-theme-surface-2'
                                                     }`}
                                                 >
                                                     {emoji}
                                                 </button>
                                             ))}
                                         </div>
-                                        <div className="mt-3 flex items-center justify-between border-t border-purple-500/20 pt-3">
-                                            <p className="text-xs font-medium text-purple-300">
+                                        <div className="mt-3 flex items-center justify-between border-t border-theme-accent/20 pt-3">
+                                            <p className="text-xs font-medium text-theme-accent-soft">
                                                 Custom Emoji:
                                             </p>
                                             <Input
@@ -303,7 +303,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                                 onChange={(event) => updateField('habitIcon', event.target.value)}
                                                 placeholder="\u2728"
                                                 maxLength={5}
-                                                className="h-8 w-14 rounded-lg border-purple-500/40 bg-[#2d2b55]/60 px-0 text-center text-lg text-white focus:border-purple-500"
+                                                className="h-8 w-14 rounded-lg border-purple-500/40 bg-theme-surface-2/60 px-0 text-center text-lg text-theme-text focus:border-theme-accent"
                                             />
                                         </div>
                                     </PopoverContent>
@@ -318,14 +318,14 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                     placeholder="e.g. Drink Water, Morning Run, Read..."
                                     required
                                     maxLength={100}
-                                    className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white caret-purple-400 placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/20"
+                                    className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text caret-theme-accent placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-theme-accent/20"
                                 />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2.5">
-                                <Label htmlFor="habit-target" className="text-sm font-medium text-white">
+                                <Label htmlFor="habit-target" className="text-sm font-medium text-theme-text">
                                     Target
                                 </Label>
                                 <Input
@@ -334,22 +334,22 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                     min={1}
                                     value={form.habitTarget}
                                     onChange={(event) => updateField('habitTarget', event.target.value)}
-                                    className="h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:border-purple-500 focus:ring-purple-500/20 [color-scheme:dark] [&::-webkit-inner-spin-button]:opacity-50"
+                                    className="h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20 [color-scheme:dark] [&::-webkit-inner-spin-button]:opacity-50"
                                 />
                             </div>
 
                             <div className="space-y-2.5">
-                                <Label className="text-sm font-medium text-white">Unit</Label>
+                                <Label className="text-sm font-medium text-theme-text">Unit</Label>
                                 <Select value={form.habitUnit} onValueChange={(value) => updateField('habitUnit', value)}>
-                                    <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:text-white [&>svg]:opacity-50">
+                                    <SelectTrigger className="!h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:ring-theme-accent/20 [&>svg]:text-theme-text [&>svg]:opacity-50">
                                         <SelectValue placeholder="Select Unit" />
                                     </SelectTrigger>
-                                    <SelectContent position="popper" sideOffset={4} className="z-[100] w-[var(--radix-select-trigger-width)] rounded-xl border-purple-500/20 bg-[#1e1b3a]">
+                                    <SelectContent position="popper" sideOffset={4} className="z-[100] w-[var(--radix-select-trigger-width)] rounded-xl border-theme-accent/20 bg-theme-surface">
                                         {UNITS.map((unit) => (
                                             <SelectItem
                                                 key={unit}
                                                 value={unit}
-                                                className="cursor-pointer text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white [&_*]:!text-white"
+                                                className="cursor-pointer text-theme-text focus:!bg-theme-accent/40 focus:!text-theme-text data-[state=checked]:text-theme-text [&_*]:!text-theme-text"
                                             >
                                                 {UNIT_LABELS[unit] ?? unit.toUpperCase()}
                                             </SelectItem>
@@ -360,14 +360,14 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
 
                             {form.habitUnit === 'Custom' ? (
                                 <div className="col-span-2 space-y-2.5">
-                                    <Label className="text-sm font-medium text-white">Custom Unit</Label>
+                                    <Label className="text-sm font-medium text-theme-text">Custom Unit</Label>
                                     <Input
                                         value={form.customHabitUnit}
                                         onChange={(event) => updateField('customHabitUnit', event.target.value)}
                                         placeholder="e.g. Push-Ups"
                                         required
                                         maxLength={50}
-                                        className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:border-purple-500 focus:ring-purple-500/20"
+                                        className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20"
                                     />
                                 </div>
                             ) : null}
@@ -375,17 +375,17 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
 
                         <div className="grid grid-cols-1 gap-4">
                             <div className="space-y-2.5">
-                                <Label className="text-sm font-medium text-white">Frequency</Label>
+                                <Label className="text-sm font-medium text-theme-text">Frequency</Label>
                                 <Select value={form.habitFrequency} onValueChange={(value) => updateField('habitFrequency', value)}>
-                                    <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:text-white [&>svg]:opacity-50">
+                                    <SelectTrigger className="!h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:ring-theme-accent/20 [&>svg]:text-theme-text [&>svg]:opacity-50">
                                         <SelectValue placeholder="Select" />
                                     </SelectTrigger>
-                                    <SelectContent position="popper" sideOffset={4} className="z-[100] w-[var(--radix-select-trigger-width)] rounded-xl border-purple-500/20 bg-[#1e1b3a]">
+                                    <SelectContent position="popper" sideOffset={4} className="z-[100] w-[var(--radix-select-trigger-width)] rounded-xl border-theme-accent/20 bg-theme-surface">
                                         {FREQUENCIES.map((frequency) => (
                                             <SelectItem
                                                 key={frequency}
                                                 value={frequency}
-                                                className="cursor-pointer text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white [&_*]:!text-white"
+                                                className="cursor-pointer text-theme-text focus:!bg-theme-accent/40 focus:!text-theme-text data-[state=checked]:text-theme-text [&_*]:!text-theme-text"
                                             >
                                                 {frequency}
                                             </SelectItem>
@@ -398,7 +398,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2.5">
-                            <Label htmlFor="challenge-starts-at" className="text-sm font-medium text-white">
+                            <Label htmlFor="challenge-starts-at" className="text-sm font-medium text-theme-text">
                                 Start Date
                             </Label>
                             <Input
@@ -408,12 +408,12 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 onChange={(event) => updateField('startsAt', event.target.value)}
                                 required
                                 lang="en"
-                                className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:border-purple-500 focus:ring-purple-500/20 [color-scheme:dark]"
+                                className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20 [color-scheme:dark]"
                             />
                         </div>
 
                         <div className="space-y-2.5">
-                            <Label htmlFor="challenge-ends-at" className="text-sm font-medium text-white">
+                            <Label htmlFor="challenge-ends-at" className="text-sm font-medium text-theme-text">
                                 End Date
                             </Label>
                             <Input
@@ -426,24 +426,24 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 required
                                 lang="en"
                                 title="Challenges can run for a maximum of 3 months."
-                                className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:border-purple-500 focus:ring-purple-500/20 [color-scheme:dark]"
+                                className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20 [color-scheme:dark]"
                             />
-                            <p className="text-xs font-medium text-slate-300">
+                            <p className="text-xs font-medium text-theme-text-soft">
                                 Maximum Length is 3 Months.
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between rounded-2xl bg-[#2d2b55]/40 px-4 py-3 text-sm text-slate-200">
+                    <div className="flex items-center justify-between rounded-2xl bg-theme-surface-2/40 px-4 py-3 text-sm text-theme-text">
                         <span>
                             {Math.max(durationDays, 0)} Challenge Days
                         </span>
-                        <span className="font-semibold text-amber-200">
+                        <span className="font-semibold text-theme-gold">
                             Reward: {calculatedReward} Coins
                         </span>
                     </div>
                     {durationDays > MAX_CHALLENGE_DURATION_DAYS ? (
-                        <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                        <p className="rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-red-200">
                             Challenges can run for a maximum of 3 months.
                         </p>
                     ) : null}
@@ -454,7 +454,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                             variant="outline"
                             onClick={() => handleOpenChange(false)}
                             disabled={isSubmitting}
-                            className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 px-6 text-white hover:bg-[#2d2b55]"
+                            className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 px-6 text-theme-text hover:bg-theme-surface-2"
                         >
                             Cancel
                         </Button>

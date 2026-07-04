@@ -90,10 +90,10 @@ const EMAIL_NOTIFICATION_OPTIONS = [
 
 function NotificationToggleRow({ option, checked, disabled, onToggle }) {
     return (
-        <div className={`flex min-h-[4.5rem] items-center justify-between gap-4 p-3 ${option.featured ? 'rounded-2xl border border-white/5' : 'rounded-xl'} bg-white/5`}>
+        <div className={`flex min-h-[4.5rem] items-center justify-between gap-4 p-3 ${option.featured ? 'rounded-2xl border border-theme-text/10' : 'rounded-xl'} bg-theme-text/5`}>
             <div className="min-w-0">
-                <p className="font-semibold text-sm text-white">{option.label}</p>
-                <p className="text-xs text-slate-400">{option.description}</p>
+                <p className="font-semibold text-sm text-theme-text">{option.label}</p>
+                <p className="text-xs text-theme-text-muted">{option.description}</p>
             </div>
             <button
                 type="button"
@@ -102,7 +102,7 @@ function NotificationToggleRow({ option, checked, disabled, onToggle }) {
                 role="switch"
                 aria-checked={checked}
                 className={`flex h-7 w-12 shrink-0 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${
-                    checked ? 'justify-end bg-violet-500' : 'justify-start bg-slate-600'
+                    checked ? 'justify-end bg-violet-500' : 'justify-start bg-theme-surface-2'
                 }`}
             >
                 <span className="size-5 rounded-full bg-white shadow-sm" />
@@ -140,30 +140,30 @@ export function NotificationMuteDialog({ open, onOpenChange }) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border-white/10 bg-[#24213d] text-white shadow-2xl sm:max-w-lg">
+            <DialogContent className="border-theme-text/10 bg-theme-surface text-theme-text shadow-2xl sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                        <BellOff className="size-5 text-violet-400" />
+                        <BellOff className="size-5 text-theme-accent" />
                         Notification Settings
                     </DialogTitle>
-                    <DialogDescription className="text-slate-400 text-sm">
+                    <DialogDescription className="text-theme-text-muted text-sm">
                         Choose which in-app notifications and optional emails you want to receive.
                     </DialogDescription>
                 </DialogHeader>
 
-                {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
+                {error && <p className="text-sm text-theme-danger mt-2">{error}</p>}
 
                 <Tabs defaultValue="inapp" className="mt-4 gap-4">
-                    <TabsList className="h-10 w-full border border-white/10 bg-white/10 p-1 text-white">
+                    <TabsList className="h-10 w-full border border-theme-text/10 bg-theme-text/10 p-1 text-theme-text">
                         <TabsTrigger
                             value="inapp"
-                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
                         >
                             In-app
                         </TabsTrigger>
                         <TabsTrigger
                             value="email"
-                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
                         >
                             Email
                         </TabsTrigger>

@@ -100,6 +100,8 @@ body {
     --color-theme-gold: var(--t-gold);
     --color-theme-invert: var(--t-invert);
     --color-theme-invert-text: var(--t-invert-text);
+    --color-theme-success-surface: var(--t-success-surface);
+    --color-theme-warn-surface: var(--t-warn-surface);
 
     /* Howly Wolf Companion Colors */
     --color-wolf-body: #9eaac0;
@@ -257,6 +259,8 @@ body {
     --t-danger: #f87171;
     --t-love: #f9a8d4;
     --t-gold: #facc15;
+    --t-success-surface: #23423b;
+    --t-warn-surface: #42392c;
     --t-invert: #ffffff;
     --t-invert-text: #020617;
 }
@@ -272,7 +276,7 @@ body {
     --howly-ground: #dff0d4;
     --howly-ground-ridge: #c8e3b8;
     --howly-card: #ffffff;
-    --howly-primary: #ec4899;
+    --howly-primary: #db2777;
     --howly-blossom: #fff0f6;
 
     /* Semantic */
@@ -281,16 +285,18 @@ body {
     --t-surface-2: #fce7f1;
     --t-text: #432a3a;
     --t-text-soft: #6d4a5e;
-    --t-text-muted: #a07b8e;
-    --t-accent: #ec4899;
+    --t-text-muted: #856074;
+    --t-accent: #db2777;
     --t-accent-strong: #be185d;
-    --t-accent-soft: #d1568f;
+    --t-accent-soft: #bc3d79;
     --t-on-accent: #ffffff;
-    --t-success: #16a34a;
+    --t-success: #15803d;
     --t-on-success: #ffffff;
     --t-danger: #dc2626;
     --t-love: #be185d;
-    --t-gold: #d97706;
+    --t-gold: #b45309;
+    --t-success-surface: #b8dfc9;
+    --t-warn-surface: #f4e5da;
     --t-invert: #432a3a;
     --t-invert-text: #ffffff;
 }
@@ -325,6 +331,8 @@ body {
     --t-danger: #f87171;
     --t-love: #f9a8d4;
     --t-gold: #fde047;
+    --t-success-surface: #3c403f;
+    --t-warn-surface: #574036;
     --t-invert: #fdf6ec;
     --t-invert-text: #2a1a30;
 }
@@ -359,6 +367,8 @@ body {
     --t-danger: #f87171;
     --t-love: #f9a8d4;
     --t-gold: #facc15;
+    --t-success-surface: #184250;
+    --t-warn-surface: #364137;
     --t-invert: #f0f7ff;
     --t-invert-text: #0a1628;
 }

@@ -151,7 +151,7 @@ function ChallengeInfoPopover() {
             <PopoverTrigger asChild>
                 <button
                     type="button"
-                    className="grid h-7 w-7 place-items-center rounded-full border border-white/10 bg-white/10 text-slate-200 transition hover:bg-white/20 hover:text-white"
+                    className="grid h-7 w-7 place-items-center rounded-full border border-theme-text/10 bg-theme-text/10 text-theme-text transition hover:bg-theme-text/20 hover:text-theme-text"
                     aria-label="How do challenges work?"
                 >
                     <CircleHelp className="h-3.5 w-3.5" aria-hidden="true" />
@@ -161,24 +161,24 @@ function ChallengeInfoPopover() {
                 align="start"
                 side="bottom"
                 sideOffset={8}
-                className="z-[120] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-violet-200/20 bg-slate-950/95 p-4 text-left text-xs leading-snug text-slate-200 shadow-xl shadow-slate-950/30"
+                className="z-[120] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-violet-200/20 bg-theme-bg/95 p-4 text-left text-xs leading-snug text-theme-text shadow-xl shadow-slate-950/30"
             >
-                <p className="text-sm font-bold text-white">How Challenges Work</p>
+                <p className="text-sm font-bold text-theme-text">How Challenges Work</p>
                 <div className="mt-3 space-y-3">
                     <div>
-                        <p className="font-semibold text-violet-200">Find or Get Invited</p>
+                        <p className="font-semibold text-theme-accent-soft">Find or Get Invited</p>
                         <p>Public Challenges can be found by everyone. Friend Challenges are visible to friends. Direct invitations always work, even for private Challenges.</p>
                     </div>
                     <div>
-                        <p className="font-semibold text-violet-200">Join and Track</p>
+                        <p className="font-semibold text-theme-accent-soft">Join and Track</p>
                         <p>After joining, the Challenge adds its Habit to your dashboard. Completing that Habit counts as progress for the Challenge.</p>
                     </div>
                     <div>
-                        <p className="font-semibold text-violet-200">Progress and Rewards</p>
+                        <p className="font-semibold text-theme-accent-soft">Progress and Rewards</p>
                         <p>Each completed Challenge day increases your progress. When the Challenge is over, you can claim Coins if you completed at least one day.</p>
                     </div>
                     <div>
-                        <p className="font-semibold text-violet-200">Leaving</p>
+                        <p className="font-semibold text-theme-accent-soft">Leaving</p>
                         <p>Leaving removes the Challenge from your active limit, but you will not receive its reward later.</p>
                     </div>
                 </div>
@@ -633,7 +633,7 @@ export function ChallengesPage() {
                             <TabsTrigger
                                 key={tab.value}
                                 value={tab.value}
-                                className="text-theme-text/70 data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                                className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
                             >
                                 {tab.label}
                             </TabsTrigger>
@@ -739,7 +739,7 @@ export function ChallengesPage() {
                                             type="button"
                                             variant="outline"
                                             disabled
-                                            className="border-white/20 bg-white/10 text-white"
+                                            className="border-theme-text/20 bg-theme-text/10 text-theme-text"
                                         >
                                             Joined
                                         </Button>
@@ -759,7 +759,7 @@ export function ChallengesPage() {
                                             variant="outline"
                                             onClick={() => handleLeaveChallenge(challenge.id)}
                                             disabled={busyAction === `leave-${challenge.id}`}
-                                            className="border-red-300/30 bg-red-500/10 text-red-100 hover:bg-red-500/20"
+                                            className="border-theme-danger/30 bg-theme-danger/10 text-theme-danger hover:bg-red-500/20"
                                         >
                                             Leave
                                         </Button>
@@ -779,7 +779,7 @@ export function ChallengesPage() {
                                             variant="outline"
                                             disabled
                                             title="You need to complete at least one challenge day to receive a reward."
-                                            className="border-white/20 bg-white/10 text-slate-300"
+                                            className="border-theme-text/20 bg-theme-text/10 text-theme-text-soft"
                                         >
                                             No reward: 0 days
                                         </Button>
@@ -789,7 +789,7 @@ export function ChallengesPage() {
                                             type="button"
                                             variant="outline"
                                             disabled
-                                            className="border-emerald-300/30 bg-emerald-500/10 text-emerald-100"
+                                            className="border-theme-success/30 bg-emerald-500/10 text-theme-success"
                                         >
                                             Claimed {challenge.viewerParticipantRewardCoins ?? 0} coins
                                         </Button>
