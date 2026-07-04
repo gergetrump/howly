@@ -5,7 +5,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import connectDB from '../src/config/database.js';
 import Habit from '../src/features/habits/habit.model.js';
 import User from '../src/features/users/user.model.js';
-import { isCompletedForPeriod } from '../src/features/habits/habit.service.js';
+import { isCompletedForPeriod, isPreviousPeriod } from '../src/features/habits/habit.service.js';
 import {
   runDailyStreakMaintenance,
   applyFreezeToHabit,
@@ -138,6 +138,26 @@ test('runDailyStreakMaintenance opens a grace deadline for a missed overall stre
   assert.equal(reloaded.streak, 7);
 });
 
+test('runDailyStreakMaintenance auto-uses a shield to save a missed overall streak', async () => {
+  const now = new Date();
+  const user = await buildUser({
+    streak: 7,
+    streakLastDay: daysAgo(2),
+    streakShields: 2,
+  });
+
+  const result = await runDailyStreakMaintenance(now);
+
+  assert.equal(result.overallAutoShielded, 1);
+  assert.equal(result.overallOpened, 0);
+  assert.equal(result.overallBroken, 0);
+
+  const reloaded = await User.findById(user._id);
+  assert.equal(reloaded.streak, 7);
+  assert.equal(reloaded.streakShields, 1);
+  assert.equal(reloaded.streakRepairDeadline, null);
+});
+
 test('runDailyStreakMaintenance breaks the overall streak after the grace deadline', async () => {
   const now = new Date();
   const user = await buildUser({
@@ -168,7 +188,7 @@ test('runDailyStreakMaintenance leaves an overall streak completed yesterday unt
   assert.equal(reloaded.streak, 7);
 });
 
-test('applyFreezeToHabit spends a shield, bridges the period and keeps the streak', async () => {
+test('applyFreezeToHabit bridges the missed period but leaves today open to check off', async () => {
   const user = await buildUser({ streakShields: 2 });
   const habit = await buildHabit(user._id, { streakCount: 5, lastCompletedAt: daysAgo(3) });
 
@@ -179,7 +199,8 @@ test('applyFreezeToHabit spends a shield, bridges the period and keeps the strea
   const reloadedHabit = await Habit.findById(habit._id);
   assert.equal(reloadedHabit.streakCount, 5);
   assert.equal(reloadedHabit.streakRepairDeadline, null);
-  assert.equal(isCompletedForPeriod(reloadedHabit), true);
+  assert.equal(isCompletedForPeriod(reloadedHabit), false);
+  assert.equal(isPreviousPeriod(reloadedHabit, reloadedHabit.lastCompletedAt), true);
 
   const reloadedUser = await User.findById(user._id);
   assert.equal(reloadedUser.streakShields, 1);
@@ -222,6 +243,27 @@ test('applyFreezeToOverall spends a shield and rescues the overall streak', asyn
   const followUp = await runDailyStreakMaintenance(now);
   assert.equal(followUp.overallBroken, 0);
   assert.equal(followUp.overallOpened, 0);
+});
+
+test('one shield rescues the overall streak and all at-risk habits together', async () => {
+  const now = new Date();
+  const user = await buildUser({ streak: 7, streakLastDay: daysAgo(2), streakShields: 2 });
+  const habitA = await buildHabit(user._id, { streakCount: 5, lastCompletedAt: daysAgo(3) });
+  const habitB = await buildHabit(user._id, { streakCount: 4, lastCompletedAt: daysAgo(3) });
+
+  const result = await applyFreezeToOverall(user._id, now);
+
+  assert.equal(result.streakShields, 1);
+
+  const reloadedA = await Habit.findById(habitA._id);
+  const reloadedB = await Habit.findById(habitB._id);
+
+  assert.equal(reloadedA.streakCount, 5);
+  assert.equal(reloadedB.streakCount, 4);
+  assert.equal(isCompletedForPeriod(reloadedA), false);
+  assert.equal(isCompletedForPeriod(reloadedB), false);
+  assert.equal(isPreviousPeriod(reloadedA, reloadedA.lastCompletedAt), true);
+  assert.equal(isPreviousPeriod(reloadedB, reloadedB.lastCompletedAt), true);
 });
 
 test('applyFreezeToOverall throws NO_SHIELDS when the user has none', async () => {

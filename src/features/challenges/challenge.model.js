@@ -8,6 +8,7 @@ export const CHALLENGE_FREQUENCIES = ["daily", "weekly", "monthly"];
 export const CHALLENGE_STATUS = ["notStarted", "active", "completed", "failed"];
 
 export const CHALLENGE_VISIBILITIES = ["public", "friends"];
+export const MAX_CHALLENGE_DURATION_DAYS = 92;
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -112,7 +113,7 @@ const challengeSchema = new Schema(
       type: Number,
       required: true,
       min: 1,
-      max: 365,
+      max: MAX_CHALLENGE_DURATION_DAYS,
     },
     startsAt: {
       type: Date,

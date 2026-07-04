@@ -99,6 +99,26 @@ export async function getStoryLikes(req, res) {
   return res.status(200).json(likers);
 }
 
+// GET /api/stories/:storyId/mention-candidates — users who can see this story
+export async function getStoryMentionCandidates(req, res) {
+  const { error } = validateStoryId(req.params.storyId);
+
+  if (error) {
+    return badRequest(res, error);
+  }
+
+  const { candidates, errorCode } = await storyService.getStoryMentionCandidates({
+    userId: req.user.id,
+    storyId: req.params.storyId,
+  });
+
+  if (errorCode === 'STORY_NOT_FOUND') {
+    return notFound(res);
+  }
+
+  return res.status(200).json(candidates);
+}
+
 // DELETE /api/stories/:storyId — delete own story
 export async function deleteStory(req, res) {
   const { error } = validateStoryId(req.params.storyId);

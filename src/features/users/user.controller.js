@@ -4,11 +4,13 @@ import { PLANS, getPlanForUser, getPlanKeyForUser } from '../../config/plans.js'
 import {
     validateSearchUsersInput,
     validateUpdateUserInput,
+    validateNotificationPreferencesInput,
     validateUserId,
 } from './user.validation.js';
 
 const badRequest = (res, message) => res.status(400).json({ message });
 const notFound = (res) => res.status(404).json({ message: 'User not found' });
+const USER_LOOKUP_FAILED_MESSAGE = 'Hmm, that didn\'t work. Check if the username is correct.';
 
 function toPublicPlan(plan) {
     return {
@@ -87,7 +89,7 @@ export async function getUserByUsername(req, res) {
     });
 
     if (errorCode === 'USER_NOT_FOUND') {
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(404).json({ message: USER_LOOKUP_FAILED_MESSAGE, code: errorCode });
     }
 
     if (errorCode === 'BLOCKED') {
@@ -136,6 +138,28 @@ export async function completeOnboarding(req, res) {
     }
 
     const user = await userService.completeOnboarding(req.user.id);
+
+    if (!user) {
+        return notFound(res);
+    }
+
+    return res.status(200).json(userService.toPublicUser(user));
+}
+
+export async function updateCurrentUserNotificationPreferences(req, res) {
+    const { error: idError } = validateUserId(req.user?.id);
+
+    if (idError) {
+        return badRequest(res, idError);
+    }
+
+    const { error, value } = validateNotificationPreferencesInput(req.body);
+
+    if (error) {
+        return badRequest(res, error);
+    }
+
+    const user = await userService.updateNotificationPreferences(req.user.id, value);
 
     if (!user) {
         return notFound(res);

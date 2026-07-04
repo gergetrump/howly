@@ -14,6 +14,7 @@ import {
   STORY_FEED_VISIBLE_HOURS,
 } from '../src/features/stories/story.model.js';
 import { Friendship } from '../src/features/social/social.model.js';
+import { Notification } from '../src/features/notifications/notification.model.js';
 import Habit from '../src/features/habits/habit.model.js';
 import User from '../src/features/users/user.model.js';
 
@@ -90,6 +91,7 @@ afterEach(async () => {
     StoryLike.deleteMany({}),
     StoryComment.deleteMany({}),
     Friendship.deleteMany({}),
+    Notification.deleteMany({}),
     Habit.deleteMany({}),
     User.deleteMany({}),
   ]);
@@ -170,12 +172,12 @@ test('GET /api/stories/me returns only stories still visible in the feed', async
   assert.equal(response.body[0].sourceTitle, habit.title);
 });
 
-test('GET /api/stories/me/archive also includes feed-expired stories', async () => {
+test('GET /api/stories/me/archive returns only feed-expired stories', async () => {
   const user = await buildUser();
   const habit = await buildHabit(user);
 
   await buildStory(user, habit);
-  await buildStory(user, habit, {
+  const expiredStory = await buildStory(user, habit, {
     feedExpiresAt: new Date(Date.now() - HOUR_IN_MS),
   });
 
@@ -184,7 +186,8 @@ test('GET /api/stories/me/archive also includes feed-expired stories', async () 
     .set('Authorization', authHeader(user))
     .expect(200);
 
-  assert.equal(response.body.length, 2);
+  assert.equal(response.body.length, 1);
+  assert.equal(response.body[0].id, expiredStory._id.toString());
 });
 
 // --- Mixed feed (GET /api/milestones/feed) ---
@@ -252,6 +255,10 @@ test('a friend can like and unlike a story (toggle)', async () => {
   assert.equal(likeResponse.body.liked, true);
   assert.equal(likeResponse.body.story.likeCount, 1);
   assert.equal(likeResponse.body.story.likedByCurrentUser, true);
+  assert.equal(
+    await Notification.countDocuments({ recipient: owner._id, actor: friend._id, type: 'story_liked' }),
+    1,
+  );
 
   const unlikeResponse = await request(app)
     .post(`/api/stories/${story._id}/like`)
@@ -260,6 +267,10 @@ test('a friend can like and unlike a story (toggle)', async () => {
 
   assert.equal(unlikeResponse.body.liked, false);
   assert.equal(unlikeResponse.body.story.likeCount, 0);
+  assert.equal(
+    await Notification.countDocuments({ recipient: owner._id, actor: friend._id, type: 'story_liked' }),
+    0,
+  );
 });
 
 test('users can like and unlike their own story', async () => {
@@ -321,6 +332,172 @@ test('story comment count stays independent from like count', async () => {
   const feedStory = feedResponse.body.find((post) => post.type === 'story');
   assert.equal(feedStory.likeCount, 0);
   assert.equal(feedStory.commentCount, 1);
+});
+
+test('stored story captions and comments are returned as JSON text, not HTML', async () => {
+  const owner = await buildUser({ username: 'stored_xss_owner' });
+  const friend = await buildUser({ username: 'stored_xss_friend' });
+  await makeFriends(owner, friend);
+
+  const habit = await buildHabit(owner);
+  const payload = '<script>alert("stored-xss")</script><p>Hello</p>';
+  const story = await buildStory(owner, habit, { caption: payload });
+
+  const commentResponse = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(friend))
+    .send({ content: payload })
+    .expect(201);
+
+  assert.match(commentResponse.headers['content-type'], /application\/json/);
+  assert.equal(commentResponse.body.content, payload);
+
+  const feedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(friend))
+    .expect(200);
+
+  const storedStory = feedResponse.body.find((entry) => entry.type === 'story' && entry.id === story._id.toString());
+
+  assert.match(feedResponse.headers['content-type'], /application\/json/);
+  assert.equal(storedStory.caption, payload);
+
+  const commentsResponse = await request(app)
+    .get(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(friend))
+    .expect(200);
+
+  assert.match(commentsResponse.headers['content-type'], /application\/json/);
+  assert.equal(commentsResponse.body[0].content, payload);
+});
+
+test('tagging the story owner creates a tagged notification instead of a normal comment notification', async () => {
+  const owner = await buildUser({ username: 'alice', firstName: 'Alice' });
+  const commenter = await buildUser({ username: 'bob', firstName: 'Bob' });
+  await makeFriends(owner, commenter);
+
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  const commentResponse = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(commenter))
+    .send({ content: 'Great post @alice' })
+    .expect(201);
+
+  const ownerNotifications = await Notification.find({ recipient: owner._id }).lean();
+
+  assert.equal(ownerNotifications.length, 1);
+  assert.equal(ownerNotifications[0].type, 'story_tagged');
+  assert.equal(ownerNotifications[0].metadata.commentId.toString(), commentResponse.body.id);
+  assert.equal(ownerNotifications[0].metadata.taggedOnOwnPost, true);
+  assert.equal(await Notification.countDocuments({ recipient: owner._id, type: 'story_commented' }), 0);
+});
+
+test('tagging a friend on another friends story creates a tagged notification with the story owner name', async () => {
+  const storyOwner = await buildUser({ username: 'charlie', firstName: 'Charlie' });
+  const commenter = await buildUser({ username: 'bob', firstName: 'Bob' });
+  const taggedFriend = await buildUser({ username: 'alice', firstName: 'Alice' });
+  await makeFriends(storyOwner, commenter);
+  await makeFriends(storyOwner, taggedFriend);
+
+  const habit = await buildHabit(storyOwner);
+  const story = await buildStory(storyOwner, habit);
+
+  const commentResponse = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(commenter))
+    .send({ content: 'You should see this @alice' })
+    .expect(201);
+
+  const taggedNotification = await Notification.findOne({
+    recipient: taggedFriend._id,
+    type: 'story_tagged',
+  }).lean();
+
+  assert.ok(taggedNotification);
+  assert.equal(taggedNotification.actor.toString(), commenter._id.toString());
+  assert.equal(taggedNotification.entityId.toString(), story._id.toString());
+  assert.equal(taggedNotification.metadata.commentId.toString(), commentResponse.body.id);
+  assert.equal(taggedNotification.metadata.storyOwnerName, 'Charlie');
+});
+
+test('tagging a user who cannot see the story does not create a notification', async () => {
+  const storyOwner = await buildUser({ username: 'charlie', firstName: 'Charlie' });
+  const commenter = await buildUser({ username: 'bob', firstName: 'Bob' });
+  const taggedStranger = await buildUser({ username: 'alice', firstName: 'Alice' });
+  await makeFriends(storyOwner, commenter);
+
+  const habit = await buildHabit(storyOwner);
+  const story = await buildStory(storyOwner, habit);
+
+  await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(commenter))
+    .send({ content: 'This is private to friends @alice' })
+    .expect(201);
+
+  assert.equal(await Notification.countDocuments({ recipient: taggedStranger._id }), 0);
+});
+
+test('story mention candidates come from users who can see the story, not interactions', async () => {
+  const storyOwner = await buildUser({ username: 'charlie', firstName: 'Charlie' });
+  const commenter = await buildUser({ username: 'bob', firstName: 'Bob' });
+  const visibleFriend = await buildUser({ username: 'alice', firstName: 'Alice' });
+  const stranger = await buildUser({ username: 'zoe', firstName: 'Zoe' });
+  await makeFriends(storyOwner, commenter);
+  await makeFriends(storyOwner, visibleFriend);
+
+  const habit = await buildHabit(storyOwner);
+  const story = await buildStory(storyOwner, habit);
+
+  await StoryLike.create({ story: story._id, user: stranger._id });
+  await StoryComment.create({ story: story._id, user: stranger._id, content: 'I should not appear' });
+
+  const response = await request(app)
+    .get(`/api/stories/${story._id}/mention-candidates`)
+    .set('Authorization', authHeader(commenter))
+    .expect(200);
+
+  const usernames = response.body.map((user) => user.username).sort();
+
+  assert.deepEqual(usernames, ['alice', 'charlie']);
+});
+
+test('story mention candidates exclude blocked relationships', async () => {
+  const storyOwner = await buildUser({ username: 'charlie', firstName: 'Charlie' });
+  const commenter = await buildUser({ username: 'bob', firstName: 'Bob' });
+  const blockedFriend = await buildUser({ username: 'alice', firstName: 'Alice' });
+  await makeFriends(storyOwner, commenter);
+  await makeFriends(storyOwner, blockedFriend);
+  await User.updateOne(
+    { _id: commenter._id },
+    { $addToSet: { blockedUsers: blockedFriend._id } },
+  );
+
+  const habit = await buildHabit(storyOwner);
+  const story = await buildStory(storyOwner, habit);
+
+  const response = await request(app)
+    .get(`/api/stories/${story._id}/mention-candidates`)
+    .set('Authorization', authHeader(commenter))
+    .expect(200);
+
+  const usernames = response.body.map((user) => user.username).sort();
+
+  assert.deepEqual(usernames, ['charlie']);
+});
+
+test('story mention candidates are unavailable to users who cannot see the story', async () => {
+  const storyOwner = await buildUser({ username: 'charlie', firstName: 'Charlie' });
+  const stranger = await buildUser({ username: 'zoe', firstName: 'Zoe' });
+  const habit = await buildHabit(storyOwner);
+  const story = await buildStory(storyOwner, habit);
+
+  await request(app)
+    .get(`/api/stories/${story._id}/mention-candidates`)
+    .set('Authorization', authHeader(stranger))
+    .expect(404);
 });
 
 test('non-friends cannot like a story (404)', async () => {
@@ -426,6 +603,7 @@ test('the owner can delete their story along with its likes', async () => {
     .post(`/api/stories/${story._id}/like`)
     .set('Authorization', authHeader(friend))
     .expect(200);
+  assert.equal(await Notification.countDocuments({ entityType: 'story', entityId: story._id }), 1);
 
   await request(app)
     .delete(`/api/stories/${story._id}`)
@@ -434,6 +612,7 @@ test('the owner can delete their story along with its likes', async () => {
 
   assert.equal(await Story.countDocuments({}), 0);
   assert.equal(await StoryLike.countDocuments({}), 0);
+  assert.equal(await Notification.countDocuments({ entityType: 'story', entityId: story._id }), 0);
 });
 
 test('users cannot delete stories of other users (404)', async () => {
@@ -529,6 +708,15 @@ test('a friend can comment on a story and delete their comment', async () => {
     .expect(201);
 
   const commentId = commentResponse.body.id;
+  assert.equal(
+    await Notification.countDocuments({
+      recipient: owner._id,
+      actor: friend._id,
+      type: 'story_commented',
+      entityId: story._id,
+    }),
+    1,
+  );
 
   const stranger = await buildUser();
 
@@ -550,6 +738,15 @@ test('a friend can comment on a story and delete their comment', async () => {
     .expect(200);
 
   assert.equal(getResponse.body.length, 0);
+  assert.equal(
+    await Notification.countDocuments({
+      recipient: owner._id,
+      actor: friend._id,
+      type: 'story_commented',
+      entityId: story._id,
+    }),
+    0,
+  );
 });
 
 test('strangers cannot comment on a story (404)', async () => {
@@ -590,6 +787,7 @@ test('a user can reply to a comment, and deleting the parent comment deletes rep
     .expect(201);
 
   assert.equal(replyRes.body.parentComment, parentId);
+  assert.equal(await Notification.countDocuments({ entityType: 'story', entityId: story._id }), 1);
 
   // Check comment count on story document
   const updatedStory = await Story.findById(story._id);
@@ -622,6 +820,7 @@ test('a user can reply to a comment, and deleting the parent comment deletes rep
   // Check if story commentCount is decremented by 2 (back to 0)
   const finalStory = await Story.findById(story._id);
   assert.equal(finalStory.commentCount, 0);
+  assert.equal(await Notification.countDocuments({ entityType: 'story', entityId: story._id }), 0);
 });
 
 test('requests without auth token are rejected', async () => {

@@ -16,17 +16,33 @@ const badRequest = (res, message) => res.status(400).json({ message });
 const unauthorized = (res, message) => res.status(401).json({ message });
 const forbidden = (res, message) => res.status(403).json({ message });
 
+function escapeHtml(value = '') {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function renderEmailVerificationPage({ success, title, heading, message, ctaText, ctaHref }) {
     const accent = success ? '#22c55e' : '#f59e0b';
     const glow = success ? 'rgba(34, 197, 94, 0.22)' : 'rgba(245, 158, 11, 0.22)';
     const icon = success ? '✓' : '!';
+    const safeTitle = escapeHtml(title);
+    const safeHeading = escapeHtml(heading);
+    const safeMessage = escapeHtml(message);
+    const safeCtaText = escapeHtml(ctaText);
+    // This page is server-rendered HTML, so encode every interpolated value.
+    // React escaping does not help here because the response bypasses React.
+    const safeCtaHref = escapeHtml(ctaHref);
 
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${title}</title>
+    <title>${safeTitle}</title>
 </head>
 <body style="margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at top, rgba(139,92,246,0.18), transparent 35%), linear-gradient(180deg, #0f172a 0%, #111827 100%); font-family:Arial, Helvetica, sans-serif; color:#e2e8f0;">
     <main style="width:min(92vw, 640px); padding:24px;">
@@ -40,14 +56,14 @@ function renderEmailVerificationPage({ success, title, heading, message, ctaText
                     Howly account verification
                 </p>
                 <h1 style="margin:0; color:#ffffff; font-size:34px; line-height:1.15; letter-spacing:-0.04em;">
-                    ${heading}
+                    ${safeHeading}
                 </h1>
                 <p style="margin:18px auto 0; max-width:520px; font-size:17px; line-height:1.7; color:#cbd5e1;">
-                    ${message}
+                    ${safeMessage}
                 </p>
                 <div style="margin-top:30px;">
-                    <a href="${ctaHref}" style="display:inline-block; padding:14px 24px; border-radius:999px; background:linear-gradient(135deg, #8b5cf6, #ec4899); color:#ffffff; text-decoration:none; font-size:15px; font-weight:700; box-shadow:0 14px 30px rgba(236,72,153,0.25);">
-                        ${ctaText}
+                    <a href="${safeCtaHref}" style="display:inline-block; padding:14px 24px; border-radius:999px; background:linear-gradient(135deg, #8b5cf6, #ec4899); color:#ffffff; text-decoration:none; font-size:15px; font-weight:700; box-shadow:0 14px 30px rgba(236,72,153,0.25);">
+                        ${safeCtaText}
                     </a>
                 </div>
             </div>

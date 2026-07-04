@@ -8,12 +8,12 @@ export const PLANS = Object.freeze({
         key: PLAN_KEYS.FREE,
         label: 'Free',
         limits: Object.freeze({
-            maxHabits: 9999,
-            maxActiveChallenges: 9999,
-            maxActiveCreatedChallenges: 9999,
+            maxHabits: 4,
+            maxActiveChallenges: 2,
+            maxActiveCreatedChallenges: 0,
         }),
         permissions: Object.freeze({
-            canCreateChallenges: true,
+            canCreateChallenges: false,
             canBuyPremiumItems: false,
         }),
         monthlyBenefits: Object.freeze({
@@ -25,9 +25,9 @@ export const PLANS = Object.freeze({
         key: PLAN_KEYS.PREMIUM,
         label: 'Premium',
         limits: Object.freeze({
-            maxHabits: 9999,
-            maxActiveChallenges: 9999,
-            maxActiveCreatedChallenges: 9999,
+            maxHabits: 20,
+            maxActiveChallenges: 8,
+            maxActiveCreatedChallenges: 3,
         }),
         permissions: Object.freeze({
             canCreateChallenges: true,

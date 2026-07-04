@@ -5,11 +5,13 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import createApp from '../src/app.js';
 import connectDB from '../src/config/database.js';
+import { getPlanForUser } from '../src/config/plans.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
 import Challenge from '../src/features/challenges/challenge.model.js';
 import ChallengeInvitation from '../src/features/challenges/challengeInvitation.model.js';
 import ChallengeParticipant from '../src/features/challenges/challengeParticipant.model.js';
 import Habit from '../src/features/habits/habit.model.js';
+import { Notification } from '../src/features/notifications/notification.model.js';
 import { Friendship } from '../src/features/social/social.model.js';
 import User from '../src/features/users/user.model.js';
 
@@ -95,6 +97,7 @@ afterEach(async () => {
     await ChallengeParticipant.deleteMany({});
     await Challenge.deleteMany({});
     await Habit.deleteMany({});
+    await Notification.deleteMany({});
     await Friendship.deleteMany({});
     await User.deleteMany({});
 });
@@ -384,10 +387,14 @@ test('free users can only join two active challenges at a time', async () => {
         .expect(400);
 });
 
-test('premium users can join five active challenges but not six', async () => {
-    const owners = await Promise.all(Array.from({ length: 6 }, () => buildUser({ isPremium: true })));
+test('premium users can join active challenges up to their plan limit', async () => {
     const participant = await buildUser({ isPremium: true });
     const participantToken = signAccessToken(participant);
+    const maxActiveChallenges = getPlanForUser(participant).limits.maxActiveChallenges;
+    const owners = await Promise.all(Array.from(
+        { length: maxActiveChallenges + 1 },
+        () => buildUser({ isPremium: true })
+    ));
     const challenges = [];
 
     for (const [index, owner] of owners.entries()) {
@@ -399,11 +406,11 @@ test('premium users can join five active challenges but not six', async () => {
     }
 
     const habits = await Promise.all(Array.from(
-        { length: 6 },
+        { length: maxActiveChallenges + 1 },
         (_, index) => buildHabit(participant._id, { title: `Habit ${index + 1}` })
     ));
 
-    for (let index = 0; index < 5; index += 1) {
+    for (let index = 0; index < maxActiveChallenges; index += 1) {
         await request(app)
             .post(`/api/challenges/${challenges[index].id}/join`)
             .set('Authorization', `Bearer ${participantToken}`)
@@ -412,9 +419,9 @@ test('premium users can join five active challenges but not six', async () => {
     }
 
     await request(app)
-        .post(`/api/challenges/${challenges[5].id}/join`)
+        .post(`/api/challenges/${challenges[maxActiveChallenges].id}/join`)
         .set('Authorization', `Bearer ${participantToken}`)
-        .send({ habitId: habits[5]._id.toString() })
+        .send({ habitId: habits[maxActiveChallenges]._id.toString() })
         .expect(400);
 });
 
@@ -684,6 +691,61 @@ test('friend-only challenges are visible and joinable only for friends', async (
     assert.equal(friendChallengeHabit.ownerId.toString(), friend._id.toString());
 });
 
+test('public challenges are hidden when either user has blocked the other', async () => {
+    const viewer = await buildUser();
+    const ownerWhoBlockedViewer = await buildUser({ isPremium: true, blockedUsers: [viewer._id] });
+    const ownerBlockedByViewer = await buildUser({ isPremium: true });
+    const viewerToken = signAccessToken(viewer);
+    const ownerWhoBlockedViewerToken = signAccessToken(ownerWhoBlockedViewer);
+    const ownerBlockedByViewerToken = signAccessToken(ownerBlockedByViewer);
+    const ownerWhoBlockedHabit = await buildHabit(ownerWhoBlockedViewer._id);
+    const ownerBlockedByViewerHabit = await buildHabit(ownerBlockedByViewer._id);
+    const viewerHabit = await buildHabit(viewer._id);
+
+    await User.updateOne(
+        { _id: viewer._id },
+        { $addToSet: { blockedUsers: ownerBlockedByViewer._id } },
+    );
+
+    const challengeFromUserWhoBlockedViewer = await createChallenge(ownerWhoBlockedViewerToken, {
+        habit: ownerWhoBlockedHabit,
+        ownerId: ownerWhoBlockedViewer._id,
+        title: 'Hidden Public One',
+        visibility: 'public',
+    });
+    const challengeFromUserBlockedByViewer = await createChallenge(ownerBlockedByViewerToken, {
+        habit: ownerBlockedByViewerHabit,
+        ownerId: ownerBlockedByViewer._id,
+        title: 'Hidden Public Two',
+        visibility: 'public',
+    });
+
+    const publicListResponse = await request(app)
+        .get('/api/challenges?scope=public')
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .expect(200);
+
+    assert.equal(
+        publicListResponse.body.some((challenge) => challenge.id === challengeFromUserWhoBlockedViewer.id),
+        false,
+    );
+    assert.equal(
+        publicListResponse.body.some((challenge) => challenge.id === challengeFromUserBlockedByViewer.id),
+        false,
+    );
+
+    await request(app)
+        .get(`/api/challenges/${challengeFromUserWhoBlockedViewer.id}`)
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .expect(403);
+
+    await request(app)
+        .post(`/api/challenges/${challengeFromUserBlockedByViewer.id}/join`)
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .send({ habitId: viewerHabit._id.toString() })
+        .expect(400);
+});
+
 test('challenge owners can invite friends and invitees can accept to join', async () => {
     const owner = await buildUser({ isPremium: true });
     const friend = await buildUser();
@@ -735,6 +797,226 @@ test('challenge owners can invite friends and invitees can accept to join', asyn
     });
     assert.equal(participant.status, 'active');
     assert.equal(participant.habit.toString(), acceptedChallengeHabit._id.toString());
+});
+
+test('challenge invitations create unread bell notifications for invitees', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const friend = await buildUser();
+    const ownerToken = signAccessToken(owner);
+    const friendToken = signAccessToken(friend);
+    const ownerHabit = await buildHabit(owner._id);
+
+    await buildFriendship(owner._id, friend._id);
+
+    const challenge = await createChallenge(ownerToken, {
+        habit: ownerHabit,
+        ownerId: owner._id,
+    });
+
+    const inviteResponse = await request(app)
+        .post(`/api/challenges/${challenge.id}/invitations`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ inviteeId: friend._id.toString() })
+        .expect(201);
+
+    const notification = await Notification.findOne({
+        recipient: friend._id,
+        actor: owner._id,
+        type: 'challenge_invitation_received',
+        entityType: 'challengeInvitation',
+        entityId: inviteResponse.body.invitation.id,
+    }).lean();
+
+    assert.ok(notification);
+    assert.equal(notification.readAt, null);
+    assert.equal(notification.metadata.challengeId, challenge.id);
+    assert.equal(notification.metadata.challengeTitle, challenge.title);
+});
+
+test('blocking cancels pending challenge invitations and deletes their notifications', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const friend = await buildUser();
+    const ownerToken = signAccessToken(owner);
+    const friendToken = signAccessToken(friend);
+    const ownerHabit = await buildHabit(owner._id);
+
+    await buildFriendship(owner._id, friend._id);
+
+    const challenge = await createChallenge(ownerToken, {
+        habit: ownerHabit,
+        ownerId: owner._id,
+    });
+
+    await request(app)
+        .post(`/api/challenges/${challenge.id}/invitations`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ inviteeId: friend._id.toString() })
+        .expect(201);
+
+    assert.equal(await ChallengeInvitation.countDocuments({ status: 'pending' }), 1);
+    assert.equal(await Notification.countDocuments({ type: 'challenge_invitation_received' }), 1);
+
+    const unreadBeforeBlock = await request(app)
+        .get('/api/notifications/unread-count')
+        .set('Authorization', `Bearer ${friendToken}`)
+        .expect(200);
+
+    assert.equal(unreadBeforeBlock.body.unreadCount, 1);
+
+    await request(app)
+        .post(`/api/social/block/${friend._id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .expect(200);
+
+    assert.equal(await Friendship.countDocuments(), 0);
+    assert.equal(await ChallengeInvitation.countDocuments({ status: 'pending' }), 0);
+    assert.equal(await Notification.countDocuments({ type: 'challenge_invitation_received' }), 0);
+
+    const unreadAfterBlock = await request(app)
+        .get('/api/notifications/unread-count')
+        .set('Authorization', `Bearer ${friendToken}`)
+        .expect(200);
+
+    assert.equal(unreadAfterBlock.body.unreadCount, 0);
+});
+
+test('blocking keeps existing shared challenge participation active', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const friend = await buildUser();
+    const ownerToken = signAccessToken(owner);
+    const friendToken = signAccessToken(friend);
+    const ownerHabit = await buildHabit(owner._id);
+
+    await buildFriendship(owner._id, friend._id);
+
+    const challenge = await createChallenge(ownerToken, {
+        habit: ownerHabit,
+        ownerId: owner._id,
+    });
+
+    const inviteResponse = await request(app)
+        .post(`/api/challenges/${challenge.id}/invitations`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ inviteeId: friend._id.toString() })
+        .expect(201);
+
+    await request(app)
+        .post(`/api/challenges/invitations/${inviteResponse.body.invitation.id}/accept`)
+        .set('Authorization', `Bearer ${friendToken}`)
+        .expect(200);
+
+    await request(app)
+        .post(`/api/social/block/${friend._id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .expect(200);
+
+    assert.equal(await Friendship.countDocuments(), 0);
+    assert.equal(await ChallengeInvitation.countDocuments({ status: 'accepted' }), 1);
+    assert.equal(await ChallengeParticipant.countDocuments({ challenge: challenge.id, status: 'active' }), 2);
+
+    const activeListResponse = await request(app)
+        .get('/api/challenges?scope=active')
+        .set('Authorization', `Bearer ${friendToken}`)
+        .expect(200);
+
+    assert.equal(
+        activeListResponse.body.some((listedChallenge) => listedChallenge.id === challenge.id),
+        true,
+    );
+
+    const progressResponse = await request(app)
+        .post(`/api/challenges/${challenge.id}/progress`)
+        .set('Authorization', `Bearer ${friendToken}`)
+        .send({ days: 1 })
+        .expect(200);
+
+    assert.equal(progressResponse.body.participant.user, friend._id.toString());
+    assert.equal(progressResponse.body.participant.daysCompleted, 1);
+});
+
+test('blocked co-invitees can still join and progress in the same challenge', async () => {
+    const creator = await buildUser({ isPremium: true });
+    const firstInvitee = await buildUser({ blockedUsers: [] });
+    const secondInvitee = await buildUser({ blockedUsers: [firstInvitee._id] });
+    const creatorToken = signAccessToken(creator);
+    const firstInviteeToken = signAccessToken(firstInvitee);
+    const secondInviteeToken = signAccessToken(secondInvitee);
+    const creatorHabit = await buildHabit(creator._id);
+
+    await Promise.all([
+        buildFriendship(creator._id, firstInvitee._id),
+        buildFriendship(creator._id, secondInvitee._id),
+    ]);
+
+    const challenge = await createChallenge(creatorToken, {
+        habit: creatorHabit,
+        ownerId: creator._id,
+        visibility: 'friends',
+    });
+
+    const firstInviteResponse = await request(app)
+        .post(`/api/challenges/${challenge.id}/invitations`)
+        .set('Authorization', `Bearer ${creatorToken}`)
+        .send({ inviteeId: firstInvitee._id.toString() })
+        .expect(201);
+
+    const secondInviteResponse = await request(app)
+        .post(`/api/challenges/${challenge.id}/invitations`)
+        .set('Authorization', `Bearer ${creatorToken}`)
+        .send({ inviteeId: secondInvitee._id.toString() })
+        .expect(201);
+
+    await request(app)
+        .post(`/api/challenges/invitations/${firstInviteResponse.body.invitation.id}/accept`)
+        .set('Authorization', `Bearer ${firstInviteeToken}`)
+        .expect(200);
+
+    await request(app)
+        .post(`/api/challenges/invitations/${secondInviteResponse.body.invitation.id}/accept`)
+        .set('Authorization', `Bearer ${secondInviteeToken}`)
+        .expect(200);
+
+    assert.equal(await ChallengeParticipant.countDocuments({ challenge: challenge.id, status: 'active' }), 3);
+
+    await request(app)
+        .post(`/api/challenges/${challenge.id}/progress`)
+        .set('Authorization', `Bearer ${firstInviteeToken}`)
+        .send({ days: 1 })
+        .expect(200);
+
+    await request(app)
+        .post(`/api/challenges/${challenge.id}/progress`)
+        .set('Authorization', `Bearer ${secondInviteeToken}`)
+        .send({ days: 1 })
+        .expect(200);
+});
+
+test('unfriending keeps pending challenge invitations and notifications', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const friend = await buildUser();
+    const ownerToken = signAccessToken(owner);
+    const ownerHabit = await buildHabit(owner._id);
+    const friendship = await buildFriendship(owner._id, friend._id);
+
+    const challenge = await createChallenge(ownerToken, {
+        habit: ownerHabit,
+        ownerId: owner._id,
+    });
+
+    await request(app)
+        .post(`/api/challenges/${challenge.id}/invitations`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ inviteeId: friend._id.toString() })
+        .expect(201);
+
+    await request(app)
+        .delete(`/api/social/friends/${friendship._id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .expect(204);
+
+    assert.equal(await Friendship.countDocuments(), 0);
+    assert.equal(await ChallengeInvitation.countDocuments({ status: 'pending' }), 1);
+    assert.equal(await Notification.countDocuments({ type: 'challenge_invitation_received' }), 1);
 });
 
 test('challenge invitations require creator ownership and friendship', async () => {

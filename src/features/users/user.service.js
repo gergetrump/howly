@@ -3,6 +3,33 @@ import config from '../../../config.js';
 
 const SERVER_BASE_URL = config.serverBaseUrl ?? 'http://localhost:3000';
 
+const DEFAULT_NOTIFICATION_PREFERENCES = {
+    emailEnabled: false,
+    challengeInvitations: false,
+    friendRequests: false,
+    streakReminders: false,
+    muteAll: false,
+    muteTag: false,
+    muteFriendRequest: false,
+    muteComment: false,
+    muteLike: false,
+    muteReaction: false,
+    muteChallengeInvitation: false,
+};
+
+function normalizeNotificationPreferences(preferences = {}) {
+    return {
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        ...Object.fromEntries(
+            Object.entries(preferences ?? {}).filter(([, value]) => typeof value === 'boolean')
+        ),
+    };
+}
+
+function escapeRegex(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // Fetch a user document by id.
 export async function getUserById(userId) {
     return User.findById(userId);
@@ -28,7 +55,7 @@ export async function listDevUsers() {
 }
 
 export async function searchUsersByUsername({ query, currentUserId, limit = 10 }) {
-    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedQuery = escapeRegex(query);
     
     // Find current user's blocked users
     const currentUser = await User.findById(currentUserId).lean();
@@ -50,7 +77,8 @@ export async function searchUsersByUsername({ query, currentUserId, limit = 10 }
 }
 
 export async function getUserByUsername({ username, currentUserId }) {
-    const targetUser = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') }, isDeleted: false });
+    const escapedUsername = escapeRegex(username);
+    const targetUser = await User.findOne({ username: { $regex: new RegExp(`^${escapedUsername}$`, 'i') }, isDeleted: false });
     if (!targetUser) {
         return { errorCode: 'USER_NOT_FOUND' };
     }
@@ -123,6 +151,8 @@ export function toPublicUser(user) {
         streak: user.streak,
         streakShields: user.streakShields ?? 0,
         streakRepairDeadline: user.streakRepairDeadline ?? null,
+        streakShieldAutoUsedAt: user.streakShieldAutoUsedAt ?? null,
+        notificationPreferences: normalizeNotificationPreferences(user.notificationPreferences),
         ghostMode: user.ghostMode ?? false,
         premiumStatus: user.premiumStatus,
         premiumUntil: user.premiumUntil,
@@ -167,6 +197,23 @@ export async function resetUserProfilePicture(userId) {
         { profilePictureUrl: null },
         { returnDocument: 'after' }
     );
+}
+
+export async function updateNotificationPreferences(userId, preferences) {
+    const currentUser = await User.findById(userId).select('notificationPreferences');
+
+    if (!currentUser) {
+        return null;
+    }
+
+    currentUser.notificationPreferences = {
+        ...normalizeNotificationPreferences(currentUser.notificationPreferences),
+        ...preferences,
+    };
+
+    await currentUser.save();
+
+    return User.findById(userId);
 }
 
 // Mark the authenticated user's onboarding flow as completed.

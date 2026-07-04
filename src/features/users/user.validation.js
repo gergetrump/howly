@@ -5,6 +5,19 @@ const isNonEmptyString = (value) => typeof value === 'string' && value.trim().le
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
+const NOTIFICATION_PREFERENCE_KEYS = [
+    'emailEnabled',
+    'challengeInvitations',
+    'friendRequests',
+    'streakReminders',
+    'muteAll',
+    'muteTag',
+    'muteFriendRequest',
+    'muteComment',
+    'muteLike',
+    'muteReaction',
+    'muteChallengeInvitation',
+];
 
 // Validate user id params coming from the request
 export function validateUserId(id) {
@@ -88,8 +101,47 @@ export function validateUpdateUserInput(body = {}) {
         updates.ghostMode = Boolean(body.ghostMode);
     }
 
+    if (body.notificationPreferences !== undefined) {
+        if (typeof body.notificationPreferences !== 'object' || body.notificationPreferences === null || Array.isArray(body.notificationPreferences)) {
+            errors.push('notificationPreferences must be an object');
+        } else {
+            NOTIFICATION_PREFERENCE_KEYS.forEach((key) => {
+                if (body.notificationPreferences[key] !== undefined) {
+                    updates[`notificationPreferences.${key}`] = Boolean(body.notificationPreferences[key]);
+                }
+            });
+        }
+    }
+
     if (Object.keys(updates).length === 0 && errors.length === 0) {
         errors.push('no valid fields provided');
+    }
+
+    if (errors.length) {
+        return { error: errors.join(', ') };
+    }
+
+    return { value: updates };
+}
+
+export function validateNotificationPreferencesInput(body = {}) {
+    const updates = {};
+    const errors = [];
+
+    for (const field of NOTIFICATION_PREFERENCE_KEYS) {
+        if (body[field] === undefined) {
+            continue;
+        }
+
+        if (typeof body[field] !== 'boolean') {
+            errors.push(`${field} must be a boolean`);
+        } else {
+            updates[field] = body[field];
+        }
+    }
+
+    if (Object.keys(updates).length === 0 && errors.length === 0) {
+        errors.push('no valid notification preferences provided');
     }
 
     if (errors.length) {

@@ -72,9 +72,9 @@ test('GET /api/users/me/plan returns free plan details', async () => {
         .expect(200);
 
     assert.equal(response.body.currentPlanKey, 'free');
-    assert.equal(response.body.currentPlan.limits.maxHabits, 9999);
-    assert.equal(response.body.currentPlan.permissions.canCreateChallenges, true);
-    assert.equal(response.body.plans.premium.limits.maxHabits, 9999);
+    assert.equal(response.body.currentPlan.limits.maxHabits, 4);
+    assert.equal(response.body.currentPlan.permissions.canCreateChallenges, false);
+    assert.equal(response.body.plans.premium.limits.maxHabits, 20);
 });
 
 test('GET /api/users/me/plan returns premium plan details for premium users', async () => {
@@ -87,7 +87,7 @@ test('GET /api/users/me/plan returns premium plan details for premium users', as
         .expect(200);
 
     assert.equal(response.body.currentPlanKey, 'premium');
-    assert.equal(response.body.currentPlan.limits.maxActiveChallenges, 9999);
+    assert.equal(response.body.currentPlan.limits.maxActiveChallenges, 8);
     assert.equal(response.body.currentPlan.monthlyBenefits.coins, 300);
 });
 
@@ -114,4 +114,43 @@ test('PATCH /api/users/me updates profile fields', async () => {
     assert.equal(updatedUser.firstName, 'Updated First Name');
     assert.equal(updatedUser.lastName, 'Updated Last Name');
     assert.equal(updatedUser.email, 'updated@example.com');
+});
+
+test('PATCH /api/users/me merges partial notification preference updates', async () => {
+    const user = await buildUser({
+        notificationPreferences: {
+            muteAll: false,
+            muteTag: true,
+            muteFriendRequest: true,
+            muteComment: false,
+            muteLike: false,
+            muteReaction: true,
+        },
+    });
+    const token = signAccessToken(user);
+
+    const response = await request(app)
+        .patch('/api/users/me')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+            notificationPreferences: {
+                muteLike: true,
+            },
+        })
+        .expect(200);
+
+    assert.deepEqual(response.body.notificationPreferences, {
+        muteAll: false,
+        muteTag: true,
+        muteFriendRequest: true,
+        muteComment: false,
+        muteLike: true,
+        muteReaction: true,
+    });
+
+    const updatedUser = await User.findById(user._id).lean();
+    assert.equal(updatedUser.notificationPreferences.muteTag, true);
+    assert.equal(updatedUser.notificationPreferences.muteFriendRequest, true);
+    assert.equal(updatedUser.notificationPreferences.muteLike, true);
+    assert.equal(updatedUser.notificationPreferences.muteReaction, true);
 });

@@ -87,6 +87,20 @@ test('browser verification requests receive an HTML confirmation page', async ()
     assert.match(response.text, /Continue to sign in/);
 });
 
+test('browser verification page does not reflect query values as executable HTML', async () => {
+    const response = await request(app)
+        .get('/api/auth/verify-email')
+        .query({
+            token: '<script>alert("xss")</script>',
+            view: 'web',
+        })
+        .expect(400);
+
+    assert.match(response.headers['content-type'], /text\/html/);
+    assert.doesNotMatch(response.text, /<script>alert\("xss"\)<\/script>/);
+    assert.match(response.text, /Invalid or expired verification token/);
+});
+
 test('expired verification tokens can be replaced with a new verification email', async () => {
     const { user, verificationToken } = await registerLocalUser({
         username: 'expired-user',

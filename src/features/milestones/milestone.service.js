@@ -7,6 +7,7 @@ import Companion from '../companion/companion.model.js';
 import UserItem from '../inventory/inventory.model.js';
 import { hasPremiumAccess } from '../../config/plans.js';
 import config from '../../../config.js';
+import { createNotification, deleteNotificationsByFilter } from '../notifications/notification.service.js';
 import {
   MilestoneLike,
   MilestonePost,
@@ -98,6 +99,46 @@ async function createMilestoneReaction({ milestonePostId, userId, emoji }) {
       emoji,
     });
   }
+}
+
+async function syncMilestoneReactionNotification({
+  milestonePostId,
+  actorId,
+  recipientId,
+  emojis,
+}) {
+  const currentEmojis = emojis ?? (
+    await MilestoneLike.find({
+      milestonePost: milestonePostId,
+      user: actorId,
+    })
+      .sort({ createdAt: 1 })
+      .lean()
+  ).map((reaction) => reaction.emoji);
+
+  if (!currentEmojis.length) {
+    await deleteNotificationsByFilter({
+      recipient: recipientId,
+      actor: actorId,
+      type: 'milestone_reacted',
+      entityType: 'milestone',
+      entityId: milestonePostId,
+    });
+    return;
+  }
+
+  await createNotification({
+    recipientId,
+    actorId,
+    type: 'milestone_reacted',
+    entityType: 'milestone',
+    entityId: milestonePostId,
+    metadata: {
+      emoji: currentEmojis[currentEmojis.length - 1],
+      emojis: currentEmojis,
+    },
+    deduplicate: true,
+  });
 }
 
 function toCompanionResponse(companion, equippedItemConfigs = []) {
@@ -361,6 +402,19 @@ export async function getFriendFeed({ userId }) {
     visibleUserIds.add(friendId.toString());
   });
 
+  const ghostUsers = await User.find({
+    _id: { $in: [...visibleUserIds] },
+    ghostMode: true,
+  })
+    .select('_id')
+    .lean();
+
+  ghostUsers.forEach((ghostUser) => {
+    if (!sameId(ghostUser._id, userId)) {
+      visibleUserIds.delete(ghostUser._id.toString());
+    }
+  });
+
   const now = new Date();
   const posts = await MilestonePost.find({
     user: { $in: [...visibleUserIds] },
@@ -448,12 +502,20 @@ export async function toggleMilestoneLike({ userId, milestonePostId, emoji = 'ðŸ
     })
       .sort({ createdAt: 1 })
       .lean();
+    const remainingReactionEmojis = remainingUserReactions.map((reaction) => reaction.emoji);
+
+    await syncMilestoneReactionNotification({
+      milestonePostId: post._id,
+      actorId: userId,
+      recipientId: post.user,
+      emojis: remainingReactionEmojis,
+    });
 
     return {
       liked: remainingUserReactions.length > 0,
       milestonePost: await enrichMilestonePost(
         post,
-        remainingUserReactions.map((reaction) => reaction.emoji),
+        remainingReactionEmojis,
         userId
       ),
     };
@@ -487,18 +549,27 @@ export async function toggleMilestoneLike({ userId, milestonePostId, emoji = 'ðŸ
 
   post.likeCount = await MilestoneLike.countDocuments({ milestonePost: milestonePostId });
   await post.save();
+
   const updatedUserReactions = await MilestoneLike.find({
     milestonePost: milestonePostId,
     user: userId,
   })
     .sort({ createdAt: 1 })
     .lean();
+  const updatedReactionEmojis = updatedUserReactions.map((reaction) => reaction.emoji);
+
+  await syncMilestoneReactionNotification({
+    milestonePostId: post._id,
+    actorId: userId,
+    recipientId: post.user,
+    emojis: updatedReactionEmojis,
+  });
 
   return {
     liked: true,
     milestonePost: await enrichMilestonePost(
       post,
-      updatedUserReactions.map((reaction) => reaction.emoji),
+      updatedReactionEmojis,
       userId
     ),
   };

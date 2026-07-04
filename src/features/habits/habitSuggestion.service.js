@@ -8,13 +8,12 @@ function buildPrompt(input) {
     return [
         'You are a habit coach inside a habit-tracking app.',
         'The user describes what they want to achieve — this can be a single word or a full sentence.',
-        'First extract a short goal label, then suggest exactly 3 small, concrete, actionable habits for it.',
+        'Suggest exactly 3 small, concrete, actionable habits for it.',
         '',
         'Respond with ONLY a JSON object in this exact shape, nothing else:',
-        '{ "goal": string, "habits": [ { "title": string, "icon": string, "frequency": string } ] }',
+        '{ "habits": [ { "title": string, "icon": string, "frequency": string } ] }',
         '',
         'Rules:',
-        '- goal: a short, clean label of at most 4 words (e.g. "Sleep better", "Read more", "Get fit").',
         '- title: short and actionable, max 60 characters.',
         '- icon: a single emoji that fits the habit.',
         `- frequency: exactly one of ${[...ALLOWED_FREQUENCIES].join(', ')}.`,
@@ -70,11 +69,6 @@ function normalizeSuggestions(parsed) {
     return suggestions;
 }
 
-function normalizeGoal(parsed, fallbackInput) {
-    const extracted = typeof parsed?.goal === 'string' ? parsed.goal.trim() : '';
-    return (extracted || fallbackInput.trim()).slice(0, 60);
-}
-
 export async function suggestHabitsFromGoal(input) {
     let raw;
 
@@ -87,7 +81,7 @@ export async function suggestHabitsFromGoal(input) {
 
     const parsed = parseModelJson(raw);
     return {
-        goal: normalizeGoal(parsed, input),
+        goal: input.trim().slice(0, 60),
         suggestions: normalizeSuggestions(parsed),
     };
 }

@@ -10,8 +10,13 @@ import Habit from '../src/features/habits/habit.model.js';
 import User from '../src/features/users/user.model.js';
 import Item from '../src/features/items/item.model.js';
 import UserItem from '../src/features/inventory/inventory.model.js';
+import BoostPurchaseLimit from '../src/features/inventory/boostPurchaseLimit.model.js';
 import HabitBoost from '../src/features/boosts/habitBoost.model.js';
 import config from '../config.js';
+import { getPlanForUser } from '../src/config/plans.js';
+import { getBoostPurchaseMonthKey } from '../src/features/inventory/inventory.service.js';
+import { applyFreezeToHabit } from '../src/features/streakFreeze/streakFreeze.service.js';
+
 let mongo;
 let app;
 
@@ -46,6 +51,7 @@ afterEach(async () => {
     User.deleteMany({}),
     Item.deleteMany({}),
     UserItem.deleteMany({}),
+    BoostPurchaseLimit.deleteMany({}),
     HabitBoost.deleteMany({}),
   ]);
 });
@@ -168,6 +174,63 @@ test('habit check-in and uncheck-in updates streaks correctly', async () => {
     .expect(400);
 });
 
+test('completing all due habits clears the overall streak repair deadline', async () => {
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+  const inOneDay = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const user = await buildUser({
+    streak: 7,
+    streakLastDay: twoDaysAgo,
+    streakRepairDeadline: inOneDay,
+  });
+  const token = authHeader(user);
+
+  const createResponse = await request(app)
+    .post('/api/habits')
+    .set('Authorization', token)
+    .send({
+      title: 'Read',
+      type: 'boolean',
+      frequency: 'Daily',
+      category: 'Movement',
+    })
+    .expect(201);
+
+  await request(app)
+    .post(`/api/habits/${createResponse.body.data.id}/check-ins`)
+    .set('Authorization', token)
+    .expect(200);
+
+  const reloaded = await User.findById(user._id).select('streakRepairDeadline streakLastDay');
+  assert.equal(reloaded.streakRepairDeadline, null);
+  assert.ok(reloaded.streakLastDay);
+});
+
+test('a rescued at-risk habit can still be checked off today and advances the streak', async () => {
+  const user = await buildUser({ streakShields: 1 });
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+  const habit = await Habit.create({
+    title: 'Read',
+    type: 'boolean',
+    frequency: 'Daily',
+    ownerId: user._id,
+    streakCount: 5,
+    lastCompletedAt: twoDaysAgo,
+  });
+
+  await applyFreezeToHabit(user._id, habit._id, new Date());
+
+  const rescued = await Habit.findById(habit._id);
+  assert.equal(rescued.streakCount, 5);
+
+  const checkIn = await request(app)
+    .post(`/api/habits/${habit._id}/check-ins`)
+    .set('Authorization', authHeader(user))
+    .expect(200);
+
+  assert.equal(checkIn.body.data.isCompletedToday, true);
+  assert.equal(checkIn.body.data.streakCount, 6);
+});
+
 test('habit boost can be bought, used from inventory, and grants bonus coins for the next completions', async () => {
   const user = await buildUser({ coins: 500 });
   const token = authHeader(user);
@@ -286,6 +349,136 @@ test('habit boost ownership is capped at 20 per boost type', async () => {
 
   assert.equal(rejectedResponse.body.code, 'BOOST_QUANTITY_LIMIT_REACHED');
   assert.equal(userAfterRejectedBuy.coins, 1000);
+
+  const monthlyCounter = await BoostPurchaseLimit.findOne({
+    user: user._id,
+    assetKey: boostItem.assetKey,
+    monthKey: getBoostPurchaseMonthKey(),
+  }).lean();
+
+  assert.equal(monthlyCounter.quantity, 20);
+});
+
+test('habit boost purchases are capped at 20 per boost type each month even after inventory is used', async () => {
+  const user = await buildUser({ coins: 3000 });
+  const token = authHeader(user);
+  const boostItem = await Item.create({
+    name: 'Small Boost',
+    type: 'powerUp',
+    price: 100,
+    assetKey: 'small-boost',
+  });
+
+  for (let index = 0; index < 20; index += 1) {
+    await request(app)
+      .post('/api/inventory/buy')
+      .set('Authorization', token)
+      .send({
+        itemId: boostItem._id.toString(),
+      })
+      .expect(201);
+
+    await UserItem.deleteMany({ user: user._id, item: boostItem._id });
+  }
+
+  assert.equal(await UserItem.countDocuments({ user: user._id, item: boostItem._id }), 0);
+
+  const userBeforeRejectedBuy = await User.findById(user._id).lean();
+  const monthlyCounterBeforeRejectedBuy = await BoostPurchaseLimit.findOne({
+    user: user._id,
+    assetKey: boostItem.assetKey,
+    monthKey: getBoostPurchaseMonthKey(),
+  }).lean();
+
+  assert.equal(userBeforeRejectedBuy.coins, 1000);
+  assert.equal(monthlyCounterBeforeRejectedBuy.quantity, 20);
+
+  const rejectedResponse = await request(app)
+    .post('/api/inventory/buy')
+    .set('Authorization', token)
+    .send({
+      itemId: boostItem._id.toString(),
+    })
+    .expect(400);
+
+  const userAfterRejectedBuy = await User.findById(user._id).lean();
+
+  assert.equal(rejectedResponse.body.code, 'BOOST_MONTHLY_LIMIT_REACHED');
+  assert.equal(userAfterRejectedBuy.coins, 1000);
+  assert.equal(await UserItem.countDocuments({ user: user._id, item: boostItem._id }), 0);
+});
+
+test('habit boost monthly purchase limits are scoped to the current month', async () => {
+  const user = await buildUser({ coins: 500 });
+  const token = authHeader(user);
+  const boostItem = await Item.create({
+    name: 'Small Boost',
+    type: 'powerUp',
+    price: 100,
+    assetKey: 'small-boost',
+  });
+  const previousMonth = new Date();
+  previousMonth.setUTCMonth(previousMonth.getUTCMonth() - 1);
+
+  await BoostPurchaseLimit.create({
+    user: user._id,
+    assetKey: boostItem.assetKey,
+    monthKey: getBoostPurchaseMonthKey(previousMonth),
+    quantity: 20,
+  });
+
+  const response = await request(app)
+    .post('/api/inventory/buy')
+    .set('Authorization', token)
+    .send({
+      itemId: boostItem._id.toString(),
+    })
+    .expect(201);
+
+  const currentMonthCounter = await BoostPurchaseLimit.findOne({
+    user: user._id,
+    assetKey: boostItem.assetKey,
+    monthKey: getBoostPurchaseMonthKey(),
+  }).lean();
+
+  assert.equal(response.body.quantity, 1);
+  assert.equal(currentMonthCounter.quantity, 1);
+});
+
+test('boost purchase limits endpoint returns current month usage', async () => {
+  const user = await buildUser({ coins: 500 });
+  const token = authHeader(user);
+  const boostItem = await Item.create({
+    name: 'Small Boost',
+    type: 'powerUp',
+    price: 100,
+    assetKey: 'small-boost',
+  });
+
+  await request(app)
+    .post('/api/inventory/buy')
+    .set('Authorization', token)
+    .send({
+      itemId: boostItem._id.toString(),
+    })
+    .expect(201);
+
+  await request(app)
+    .post('/api/inventory/buy')
+    .set('Authorization', token)
+    .send({
+      itemId: boostItem._id.toString(),
+    })
+    .expect(201);
+
+  const response = await request(app)
+    .get('/api/inventory/boost-purchase-limits')
+    .set('Authorization', token)
+    .expect(200);
+
+  assert.equal(response.body.monthKey, getBoostPurchaseMonthKey());
+  assert.equal(response.body.maxQuantity, 20);
+  assert.equal(response.body.purchases['small-boost'], 2);
 });
 
 test('habit custom frequency stores customDays properly', async () => {

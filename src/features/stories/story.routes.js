@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { uploadStoryImage } from '../../middleware/upload.middleware.js';
+import { rejectUnsafeRequestKeys } from '../../security/security.middleware.js';
 import {
   createStory,
   getMyActiveStories,
   getMyArchive,
   toggleStoryLike,
   getStoryLikes,
+  getStoryMentionCandidates,
   deleteStory,
   addStoryComment,
   getStoryComments,
@@ -17,11 +19,12 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.post('/', uploadStoryImage.single('image'), createStory);
+router.post('/', uploadStoryImage.single('image'), rejectUnsafeRequestKeys, createStory);
 router.get('/me', getMyActiveStories);
 router.get('/me/archive', getMyArchive);
 router.post('/:storyId/like', toggleStoryLike);
 router.get('/:storyId/likes', getStoryLikes);
+router.get('/:storyId/mention-candidates', getStoryMentionCandidates);
 router.delete('/:storyId', deleteStory);
 
 router.post('/:storyId/comments', addStoryComment);

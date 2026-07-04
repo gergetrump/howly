@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { 
+import {
     getCurrentUser, 
     getCurrentUserPlan,
     updateCurrentUser, 
+    updateCurrentUserNotificationPreferences,
     deleteCurrentUser, 
     completeOnboarding,
     uploadCurrentUserProfilePicture,
@@ -12,6 +13,7 @@ import {
 } from './user.controller.js';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { uploadProfilePicture } from '../../middleware/upload.middleware.js';
+import { rejectUnsafeRequestKeys } from '../../security/security.middleware.js';
 
 const router = Router();
 
@@ -22,12 +24,14 @@ router.get('/profile/:username', getUserByUsername);
 router.get('/me/plan', getCurrentUserPlan);
 router.get('/me', getCurrentUser);
 router.patch('/me', updateCurrentUser);
+router.patch('/me/notification-preferences', updateCurrentUserNotificationPreferences);
 router.post('/me/complete-onboarding', completeOnboarding);
 router.delete('/me', deleteCurrentUser);
 
 router.patch(
     '/me/profile-picture',
     uploadProfilePicture.single('profilePicture'),
+    rejectUnsafeRequestKeys,
     uploadCurrentUserProfilePicture
 );
 

@@ -5,6 +5,8 @@ import {
   validateSendFriendRequestInput,
 } from './social.validation.js';
 
+const USER_LOOKUP_FAILED_MESSAGE = 'Hmm, that didn\'t work. Check if the username is correct.';
+
 const badRequest = (res, message, code) => {
   const body = { message };
 
@@ -37,7 +39,7 @@ export async function sendFriendRequest(req, res) {
   });
 
   if (errorCode === 'USER_BLOCKED') {
-    return notFound(res, 'User not found');
+    return notFound(res, USER_LOOKUP_FAILED_MESSAGE, errorCode);
   }
 
   if (errorCode) {
@@ -136,7 +138,7 @@ export async function blockUser(req, res) {
   });
 
   if (errorCode === 'USER_NOT_FOUND') {
-    return notFound(res, 'User not found');
+    return notFound(res, USER_LOOKUP_FAILED_MESSAGE, errorCode);
   }
 
   if (errorCode) {

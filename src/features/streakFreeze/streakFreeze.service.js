@@ -1,6 +1,8 @@
 import Habit from '../habits/habit.model.js';
 import User from '../users/user.model.js';
-import { isCompletedForPeriod, isPreviousPeriod } from '../habits/habit.service.js';
+import { sendStreakReminderEmail } from '../mail/mail.service.js';
+import config from '../../../config.js';
+import { isCompletedForPeriod, isPreviousPeriod, previousPeriodMarker } from '../habits/habit.service.js';
 import {
     hasPremiumAccess,
     MAX_STREAK_SHIELDS,
@@ -15,6 +17,7 @@ export const STREAK_FREEZE_ERROR_CODES = {
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const STREAK_REMINDER_WINDOW_MS = 2 * 60 * 60 * 1000;
 
 function startOfDay(date) {
     const value = new Date(date);
@@ -33,6 +36,32 @@ function graceDeadline(now) {
     return deadline;
 }
 
+function endOfYesterday(now) {
+    const value = startOfDay(now);
+    value.setDate(value.getDate() - 1);
+    value.setHours(23, 59, 59, 999);
+    return value;
+}
+
+function canSendNotificationEmail(user, preferenceKey) {
+    const preferences = user?.notificationPreferences ?? {};
+
+    return preferences.emailEnabled === true && preferences[preferenceKey] === true;
+}
+
+function hasReminderAlreadyBeenSent(user) {
+    const sentFor = user.streakReminderEmailLastSentFor;
+    const deadline = user.streakRepairDeadline;
+
+    return sentFor && deadline && sentFor.getTime() === deadline.getTime();
+}
+
+function formatReminderDeadline(deadline) {
+    return new Intl.DateTimeFormat('en', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(deadline);
+}
 function streakFreezeError(code) {
     const error = new Error(code);
     error.code = code;
@@ -47,6 +76,20 @@ function isHabitStreakAtRisk(habit) {
 function isOverallStreakMissed(user, now) {
     if ((user.streak ?? 0) <= 0) return false;
     return !user.streakLastDay || daysBetween(now, user.streakLastDay) >= 2;
+}
+
+async function bridgeAtRiskHabits(userId, now) {
+    const habits = await Habit.find({ ownerId: userId, streakCount: { $gt: 0 } });
+    let bridged = 0;
+    for (const habit of habits) {
+        if (isHabitStreakAtRisk(habit)) {
+            habit.lastCompletedAt = previousPeriodMarker(habit, now);
+            habit.streakRepairDeadline = null;
+            await habit.save();
+            bridged += 1;
+        }
+    }
+    return bridged;
 }
 
 export async function grantMonthlyShields(now = new Date()) {
@@ -103,16 +146,28 @@ export async function runDailyStreakMaintenance(now = new Date()) {
     }
 
     const users = await User.find({ streak: { $gt: 0 } })
-        .select('streak streakLastDay streakRepairDeadline');
+        .select('streak streakLastDay streakRepairDeadline streakShields streakShieldAutoUsedAt');
 
     let overallOpened = 0;
     let overallBroken = 0;
+    let overallAutoShielded = 0;
     for (const user of users) {
         if (!isOverallStreakMissed(user, now)) {
             if (user.streakRepairDeadline) {
                 user.streakRepairDeadline = null;
                 await user.save();
             }
+            continue;
+        }
+
+        if ((user.streakShields ?? 0) > 0) {
+            user.streakShields -= 1;
+            user.streakLastDay = endOfYesterday(now);
+            user.streakRepairDeadline = null;
+            user.streakShieldAutoUsedAt = now;
+            await user.save();
+            await bridgeAtRiskHabits(user._id, now);
+            overallAutoShielded += 1;
             continue;
         }
 
@@ -128,12 +183,48 @@ export async function runDailyStreakMaintenance(now = new Date()) {
         }
     }
 
-    return { habitsOpened, habitsBroken, overallOpened, overallBroken };
+    return { habitsOpened, habitsBroken, overallOpened, overallBroken, overallAutoShielded };
 }
 
+export async function sendStreakRepairReminders(now = new Date()) {
+    const reminderWindowEnd = new Date(now.getTime() + STREAK_REMINDER_WINDOW_MS);
+    const users = await User.find({
+        isDeleted: false,
+        streak: { $gt: 0 },
+        streakRepairDeadline: { $gt: now, $lte: reminderWindowEnd },
+    }).select('email streak streakRepairDeadline notificationPreferences streakReminderEmailLastSentFor');
+
+    let sent = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    for (const user of users) {
+        if (!canSendNotificationEmail(user, 'streakReminders') || hasReminderAlreadyBeenSent(user)) {
+            skipped += 1;
+            continue;
+        }
+
+        try {
+            await sendStreakReminderEmail(user.email, {
+                streak: user.streak ?? 0,
+                deadline: formatReminderDeadline(user.streakRepairDeadline),
+                appUrl: config.frontendBaseUrl,
+            });
+
+            user.streakReminderEmailLastSentFor = user.streakRepairDeadline;
+            await user.save();
+            sent += 1;
+        } catch (error) {
+            failed += 1;
+            console.error('Failed to send streak reminder email:', error);
+        }
+    }
+
+    return { sent, skipped, failed };
+}
 export async function applyFreezeToHabit(userId, habitId, now = new Date()) {
     const [user, habit] = await Promise.all([
-        User.findById(userId).select('streakShields'),
+        User.findById(userId).select('streak streakLastDay streakShields streakRepairDeadline'),
         Habit.findOne({ _id: habitId, ownerId: userId }),
     ]);
 
@@ -143,13 +234,16 @@ export async function applyFreezeToHabit(userId, habitId, now = new Date()) {
     if ((user.streakShields ?? 0) <= 0) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NO_SHIELDS);
 
     user.streakShields -= 1;
+    if (isOverallStreakMissed(user, now)) {
+        user.streakLastDay = endOfYesterday(now);
+        user.streakRepairDeadline = null;
+    }
     await user.save();
 
-    habit.lastCompletedAt = now;
-    habit.streakRepairDeadline = null;
-    await habit.save();
+    await bridgeAtRiskHabits(user._id, now);
+    const reloadedHabit = await Habit.findById(habit._id);
 
-    return { streakShields: user.streakShields, habit };
+    return { streakShields: user.streakShields, habit: reloadedHabit };
 }
 
 export async function applyFreezeToOverall(userId, now = new Date()) {
@@ -160,14 +254,13 @@ export async function applyFreezeToOverall(userId, now = new Date()) {
     if (!isOverallStreakMissed(user, now)) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NOT_AT_RISK);
     if ((user.streakShields ?? 0) <= 0) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NO_SHIELDS);
 
-    const yesterday = startOfDay(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(23, 59, 59, 999);
-
     user.streakShields -= 1;
-    user.streakLastDay = yesterday;
+    user.streakLastDay = endOfYesterday(now);
     user.streakRepairDeadline = null;
     await user.save();
 
+    await bridgeAtRiskHabits(user._id, now);
+
     return { streakShields: user.streakShields, streak: user.streak };
 }
+
