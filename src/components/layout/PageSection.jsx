@@ -19,6 +19,7 @@ export function PageSection({
     description,
     actionLabel,
     onAction,
+    titleAction,
     width = 'default',
     align = 'left',
     children,
@@ -39,6 +40,7 @@ export function PageSection({
                     description={description}
                     actionLabel={actionLabel}
                     onAction={onAction}
+                    titleAction={titleAction}
                 />
             ) : null}
             {children}
