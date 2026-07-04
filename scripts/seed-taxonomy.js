@@ -11,7 +11,7 @@ import {
 import { generateEmbedding } from '../src/ai/ai.service.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SEED_PATH = path.resolve(__dirname, '../../agents-knowledge-base/habit-taxonomy.seed.json');
+const SEED_PATH = path.resolve(__dirname, '../data/habit-taxonomy.seed.json');
 
 function buildCategoryLabelMap(categories = []) {
     return Object.fromEntries(
