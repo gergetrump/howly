@@ -302,9 +302,9 @@ export async function getFriendFeedStoriesForMixedFeed({ userId, visibleUserIds 
   });
 }
 
-// All own stories (up to 90 days — TTL removes older ones automatically)
+// Own stories that have already left the 7-day feed window (still within the 90-day TTL)
 export async function getMyArchive({ userId }) {
-  const stories = await Story.find({ user: userId })
+  const stories = await Story.find({ user: userId, feedExpiresAt: { $lte: new Date() } })
     .populate('user')
     .sort({ createdAt: -1 });
 
@@ -374,15 +374,18 @@ export async function toggleStoryLike({ userId, storyId }) {
   };
 }
 
-// Who liked a story — available to the owner and friends who can see the story
+// Who liked a story — the owner can always see it (incl. their archive); friends
+// only while the story is still inside the feed window.
 export async function getStoryLikes({ userId, storyId }) {
   const story = await Story.findById(storyId).lean();
 
-  if (
-    !story
-    || story.feedExpiresAt <= new Date()
-    || (!sameId(story.user, userId) && !(await areFriends(userId, story.user)))
-  ) {
+  if (!story) {
+    return { errorCode: 'STORY_NOT_FOUND' };
+  }
+
+  const isOwner = sameId(story.user, userId);
+
+  if (!isOwner && (story.feedExpiresAt <= new Date() || !(await areFriends(userId, story.user)))) {
     return { errorCode: 'STORY_NOT_FOUND' };
   }
 
@@ -569,11 +572,13 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
 export async function getStoryComments({ userId, storyId }) {
   const story = await Story.findById(storyId).lean();
 
-  if (
-    !story
-    || story.feedExpiresAt <= new Date()
-    || (!sameId(story.user, userId) && !(await areFriends(userId, story.user)))
-  ) {
+  if (!story) {
+    return { errorCode: 'STORY_NOT_FOUND' };
+  }
+
+  const isOwner = sameId(story.user, userId);
+
+  if (!isOwner && (story.feedExpiresAt <= new Date() || !(await areFriends(userId, story.user)))) {
     return { errorCode: 'STORY_NOT_FOUND' };
   }
 

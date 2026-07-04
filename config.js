@@ -29,6 +29,14 @@ const config = {
             apiKey: 'REDACTED',
             // Any free model from https://openrouter.ai/models?max_price=0
             model: 'openai/gpt-oss-120b:free',
+            // Tried in order when the primary is rate-limited or unavailable.
+            // Different providers, so an upstream throttle rarely hits all at once.
+            fallbackModels: [
+                'openai/gpt-oss-20b:free',
+                'meta-llama/llama-3.3-70b-instruct:free',
+                'qwen/qwen3-next-80b-a3b-instruct:free',
+                'google/gemma-4-31b-it:free',
+            ],
             embeddingModel: 'openai/text-embedding-3-small',
         },
     },

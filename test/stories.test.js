@@ -172,12 +172,12 @@ test('GET /api/stories/me returns only stories still visible in the feed', async
   assert.equal(response.body[0].sourceTitle, habit.title);
 });
 
-test('GET /api/stories/me/archive also includes feed-expired stories', async () => {
+test('GET /api/stories/me/archive returns only feed-expired stories', async () => {
   const user = await buildUser();
   const habit = await buildHabit(user);
 
   await buildStory(user, habit);
-  await buildStory(user, habit, {
+  const expiredStory = await buildStory(user, habit, {
     feedExpiresAt: new Date(Date.now() - HOUR_IN_MS),
   });
 
@@ -186,7 +186,8 @@ test('GET /api/stories/me/archive also includes feed-expired stories', async () 
     .set('Authorization', authHeader(user))
     .expect(200);
 
-  assert.equal(response.body.length, 2);
+  assert.equal(response.body.length, 1);
+  assert.equal(response.body[0].id, expiredStory._id.toString());
 });
 
 // --- Mixed feed (GET /api/milestones/feed) ---

@@ -139,8 +139,34 @@ export function isPreviousPeriod(habit, date) {
                date.getMonth() === prevDate.getMonth() &&
                date.getDate() === prevDate.getDate();
     }
-    
+
     return isYesterday(date);
+}
+
+export function previousPeriodMarker(habit, now = new Date()) {
+    const frequency = habit.frequency;
+
+    if (frequency === 'Weekly') {
+        const marker = new Date(now);
+        marker.setDate(marker.getDate() - (now.getDay() || 7));
+        marker.setHours(12, 0, 0, 0);
+        return marker;
+    }
+
+    if (frequency === 'Monthly') {
+        return new Date(now.getFullYear(), now.getMonth() - 1, 15, 12, 0, 0, 0);
+    }
+
+    if (frequency === 'Custom' && habit.customDays && habit.customDays.length > 0) {
+        const marker = getPreviousScheduledDate(habit.customDays);
+        marker.setHours(12, 0, 0, 0);
+        return marker;
+    }
+
+    const marker = new Date(now);
+    marker.setDate(marker.getDate() - 1);
+    marker.setHours(12, 0, 0, 0);
+    return marker;
 }
 
 /**
@@ -159,7 +185,6 @@ function toHabitDto(habit) {
         customDays: habit.customDays || [],
         category: habit.category ?? null,
         taxonomy: toTaxonomyDto(habit.taxonomy),
-        goal: habit.goal ?? null,
         source: habit.source ?? 'manual',
         challengeId: habit.challengeId ? habit.challengeId.toString() : null,
         streakCount: habit.streakCount,
@@ -296,7 +321,6 @@ export async function createHabitsFromTemplates(userId, templates) {
         icon: t.icon ?? '🎯',
         frequency: t.frequency,
         customDays: t.customDays || [],
-        goal: t.goal ?? null,
         ownerId: userId,
         source: 'onboarding',
         templateKey: t.templateKey ?? null,
@@ -475,7 +499,7 @@ export async function uncompleteHabit(habitId, userId) {
 
 
 async function creditOverallStreak(userId) {
-    const user = await User.findById(userId).select('streak streakLastDay');
+    const user = await User.findById(userId).select('streak streakLastDay streakRepairDeadline');
     if (!user) return null;
 
     // Already credited today → nothing to do.
@@ -500,6 +524,7 @@ async function creditOverallStreak(userId) {
         user.streak = 1;
     }
     user.streakLastDay = new Date();
+    user.streakRepairDeadline = null;
     await user.save();
 
     return { streak: user.streak, creditedToday: true };
