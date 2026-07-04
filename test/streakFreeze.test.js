@@ -245,6 +245,27 @@ test('applyFreezeToOverall spends a shield and rescues the overall streak', asyn
   assert.equal(followUp.overallOpened, 0);
 });
 
+test('one shield rescues the overall streak and all at-risk habits together', async () => {
+  const now = new Date();
+  const user = await buildUser({ streak: 7, streakLastDay: daysAgo(2), streakShields: 2 });
+  const habitA = await buildHabit(user._id, { streakCount: 5, lastCompletedAt: daysAgo(3) });
+  const habitB = await buildHabit(user._id, { streakCount: 4, lastCompletedAt: daysAgo(3) });
+
+  const result = await applyFreezeToOverall(user._id, now);
+
+  assert.equal(result.streakShields, 1);
+
+  const reloadedA = await Habit.findById(habitA._id);
+  const reloadedB = await Habit.findById(habitB._id);
+
+  assert.equal(reloadedA.streakCount, 5);
+  assert.equal(reloadedB.streakCount, 4);
+  assert.equal(isCompletedForPeriod(reloadedA), false);
+  assert.equal(isCompletedForPeriod(reloadedB), false);
+  assert.equal(isPreviousPeriod(reloadedA, reloadedA.lastCompletedAt), true);
+  assert.equal(isPreviousPeriod(reloadedB, reloadedB.lastCompletedAt), true);
+});
+
 test('applyFreezeToOverall throws NO_SHIELDS when the user has none', async () => {
   const user = await buildUser({ streak: 7, streakLastDay: daysAgo(2), streakShields: 0 });
 
