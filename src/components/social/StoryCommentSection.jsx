@@ -42,6 +42,7 @@ export function StoryCommentSection({
     blockers = [],
     onCommentAdded,
     onCommentDeleted,
+    readOnly = false,
     targetCommentId = null,
     targetCommentToken = null,
     onTargetCommentHandled,
@@ -359,7 +360,7 @@ export function StoryCommentSection({
                     <p className="text-slate-300 break-words mt-0.5">{formatCommentText(comment.content)}</p>
                     
                     <div className="flex items-center gap-3 mt-1">
-                        {!isReply && (
+                        {!readOnly && !isReply && (
                             <button
                                 type="button"
                                 onClick={() => setReplyingTo(comment)}
@@ -368,7 +369,7 @@ export function StoryCommentSection({
                                 Reply
                             </button>
                         )}
-                        {(comment.user?.id === currentUserId || isStoryOwner) && (
+                        {!readOnly && (comment.user?.id === currentUserId || isStoryOwner) && (
                             <button
                                 type="button"
                                 onClick={() => setCommentIdToDelete(comment.id)}
@@ -387,13 +388,13 @@ export function StoryCommentSection({
 
     return (
         <div className="w-full">
-            <div className="rounded-xl bg-black/20 p-4">
+            <div className={readOnly ? '' : 'rounded-xl bg-black/20 p-4'}>
                 {/* Comment List */}
                 <div ref={containerRef} className="space-y-4 max-h-80 overflow-y-auto pr-2">
                     {isLoading ? (
                         <p className="text-sm text-slate-400">Loading comments...</p>
                     ) : parentComments.length === 0 ? (
-                        <p className="text-sm text-slate-400">No comments yet. Be the first to comment!</p>
+                        <p className="text-sm text-slate-500">{readOnly ? 'No comments yet' : 'No comments yet. Be the first to comment!'}</p>
                     ) : (
                         parentComments.map((parent) => {
                             const replies = getRepliesFor(parent.id);
@@ -430,6 +431,7 @@ export function StoryCommentSection({
                 {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
 
                 {/* Input Area */}
+                {!readOnly && (
                 <div className="pt-3">
                     {replyingTo && (
                         <div className="flex items-center justify-between bg-blue-500/10 px-3 py-1.5 rounded-lg text-xs text-blue-300 mb-2">
@@ -485,6 +487,7 @@ export function StoryCommentSection({
                         </button>
                     </form>
                 </div>
+                )}
             </div>
 
             {commentIdToDelete && (() => {

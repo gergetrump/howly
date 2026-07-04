@@ -47,6 +47,7 @@ export function StoryDetailDialog({
                         currentUserId={currentUserId}
                         onDelete={handleDelete}
                         fullImage
+                        readOnlyComments
                     />
                 ) : null}
             </DialogContent>

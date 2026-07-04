@@ -6,7 +6,7 @@ import { useAuth } from '@/context/authContext';
 import { StreakShieldIcon } from '@/components/brand/StreakShieldIcon.jsx';
 import { applyOverallStreakFreeze } from '@/services/streakFreezeApi';
 
-export function StreakRepairBanner() {
+export function StreakRepairBanner({ onRescued }) {
     const navigate = useNavigate();
     const { user, setUser } = useAuth();
     const [now] = useState(() => Date.now());
@@ -44,6 +44,7 @@ export function StreakRepairBanner() {
                     streakRepairDeadline: null,
                 }
                 : current));
+            onRescued?.();
         } catch {
             setIsSaving(false);
         }
