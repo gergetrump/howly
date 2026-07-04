@@ -26,6 +26,18 @@ const habitCheckInSchema = new Schema(
             type: String,
             required: true,
         },
+        categoryKey: {
+            type: String,
+            default: null,
+        },
+        categoryLabel: {
+            type: String,
+            default: null,
+        },
+        canonicalHabitKey: {
+            type: String,
+            default: null,
+        },
     },
     {
         timestamps: true,

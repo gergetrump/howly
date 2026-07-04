@@ -39,7 +39,28 @@ function buildCheckInBasePipeline(start, end) {
                 as: 'habitDoc',
             },
         },
-        { $unwind: '$habitDoc' },
+        {
+            $addFields: {
+                resolvedCategoryKey: {
+                    $ifNull: [
+                        '$categoryKey',
+                        { $arrayElemAt: ['$habitDoc.taxonomy.categoryKey', 0] },
+                    ],
+                },
+                resolvedCategoryLabel: {
+                    $ifNull: [
+                        '$categoryLabel',
+                        { $arrayElemAt: ['$habitDoc.category', 0] },
+                    ],
+                },
+                resolvedCanonicalHabitKey: {
+                    $ifNull: [
+                        '$canonicalHabitKey',
+                        { $arrayElemAt: ['$habitDoc.taxonomy.canonicalHabitKey', 0] },
+                    ],
+                },
+            },
+        },
     ];
 }
 
@@ -152,14 +173,14 @@ async function computeRangeAnalytics(start, end) {
             ...basePipeline,
             {
                 $match: {
-                    'habitDoc.taxonomy.categoryKey': { $nin: [null, ''] },
+                    resolvedCategoryKey: { $nin: [null, ''] },
                 },
             },
             {
                 $group: {
                     _id: {
-                        categoryKey: '$habitDoc.taxonomy.categoryKey',
-                        categoryLabel: '$habitDoc.category',
+                        categoryKey: '$resolvedCategoryKey',
+                        categoryLabel: '$resolvedCategoryLabel',
                     },
                     checkIns: { $sum: 1 },
                 },
@@ -170,16 +191,16 @@ async function computeRangeAnalytics(start, end) {
             ...basePipeline,
             {
                 $match: {
-                    'habitDoc.taxonomy.canonicalHabitKey': { $nin: [null, ''] },
+                    resolvedCanonicalHabitKey: { $nin: [null, ''] },
                 },
             },
             {
                 $group: {
-                    _id: '$habitDoc.taxonomy.canonicalHabitKey',
+                    _id: '$resolvedCanonicalHabitKey',
                     checkIns: { $sum: 1 },
                     uniqueUsers: { $addToSet: '$user' },
-                    categoryKey: { $first: '$habitDoc.taxonomy.categoryKey' },
-                    categoryLabel: { $first: '$habitDoc.category' },
+                    categoryKey: { $first: '$resolvedCategoryKey' },
+                    categoryLabel: { $first: '$resolvedCategoryLabel' },
                 },
             },
             { $sort: { checkIns: -1 } },

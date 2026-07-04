@@ -188,6 +188,14 @@ function isWithinRange(day, startsAt, endsAt) {
     return day.date >= startOfDay(startsAt) && day.date <= endOfDay(endsAt);
 }
 
+function buildCheckInTaxonomySnapshot(habit) {
+    return {
+        categoryKey: habit.taxonomy?.categoryKey ?? null,
+        categoryLabel: habit.category ?? null,
+        canonicalHabitKey: habit.taxonomy?.canonicalHabitKey ?? null,
+    };
+}
+
 export async function recordHabitCheckIn({ userId, habit, completedAt = new Date() }) {
     await HabitCheckIn.findOneAndUpdate(
         {
@@ -201,6 +209,7 @@ export async function recordHabitCheckIn({ userId, habit, completedAt = new Date
                 habit: habit._id,
                 periodKey: getPeriodKeyForHabit(habit, completedAt),
                 completedAt,
+                ...buildCheckInTaxonomySnapshot(habit),
             },
         },
         { upsert: true, new: true },

@@ -619,14 +619,18 @@
 "label": "Strength Train",
 "categoryKey": "movement",
 "subcategoryKey": "strength",
-"description": "Doing resistance training with weights, machines, bands, or bodyweight.",
+"description": "Doing resistance training with weights, machines, bands, or bodyweight, including habits titled morning workout.",
 "aliases": [
 "lift weights",
 "gym workout",
 "weight training",
 "resistance training",
 "strength workout",
-"hit the gym"
+"hit the gym",
+"morning workout",
+"morning exercise",
+"workout",
+"exercise session"
 ],
 "status": "active"
 },
@@ -1769,14 +1773,18 @@
 "label": "Read",
 "categoryKey": "learning",
 "subcategoryKey": "reading",
-"description": "Reading books, articles, papers, or other written material for learning or enjoyment.",
+"description": "Reading books, articles, papers, or other written material for learning or enjoyment, including timed sessions like read 30 minutes.",
 "aliases": [
 "read book",
 "read pages",
 "daily reading",
 "read article",
 "read paper",
-"read chapter"
+"read chapter",
+"read 30 minutes",
+"read for 30 minutes",
+"30 minute read",
+"reading session"
 ],
 "status": "active"
 },
@@ -1830,13 +1838,18 @@
 "label": "Practice Vocabulary",
 "categoryKey": "learning",
 "subcategoryKey": "language-learning",
-"description": "Reviewing words, phrases, or flashcards in a target language.",
+"description": "Practicing or studying a target language, including general practice language sessions and vocabulary review.",
 "aliases": [
 "vocab practice",
 "learn words",
 "anki vocabulary",
 "flashcards",
-"language words"
+"language words",
+"practice language",
+"language practice",
+"learn language",
+"study language",
+"language learning"
 ],
 "status": "active"
 },

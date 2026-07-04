@@ -8,6 +8,7 @@ import connectDB from '../src/config/database.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
 import Habit from '../src/features/habits/habit.model.js';
 import HabitCheckIn from '../src/features/analytics/habitCheckIn.model.js';
+import { recordHabitCheckIn } from '../src/features/analytics/analytics.service.js';
 import User from '../src/features/users/user.model.js';
 import config from '../config.js';
 
@@ -210,6 +211,49 @@ test('GET /api/community/analytics excludes deleted users', async () => {
 
     assert.equal(response.body.data.summary.checkIns, 1);
     assert.equal(response.body.data.summary.activeUsers, 1);
+});
+
+test('GET /api/community/analytics keeps check-ins after habit delete', async () => {
+    const user = await buildUser({ username: 'delete_habit_user', email: 'delete@example.com' });
+    const token = authHeader(user);
+    const completedAt = new Date();
+
+    const runHabit = await Habit.create({
+        title: 'Morning run',
+        type: 'boolean',
+        frequency: 'Daily',
+        ownerId: user._id,
+        category: 'Movement',
+        taxonomy: {
+            categoryKey: 'movement',
+            subcategoryKey: 'cardio',
+            canonicalHabitKey: 'run',
+            score: 0.9,
+            assignedAt: completedAt,
+        },
+    });
+
+    await recordHabitCheckIn({ userId: user._id, habit: runHabit, completedAt });
+
+    const beforeDelete = await request(app)
+        .get('/api/community/analytics?period=week')
+        .set('Authorization', token)
+        .expect(200);
+
+    assert.equal(beforeDelete.body.data.summary.checkIns, 1);
+    assert.equal(beforeDelete.body.data.trendingHabits[0].canonicalHabitKey, 'run');
+
+    await Habit.findOneAndDelete({ _id: runHabit._id });
+
+    const afterDelete = await request(app)
+        .get('/api/community/analytics?period=week')
+        .set('Authorization', token)
+        .expect(200);
+
+    assert.equal(afterDelete.body.data.summary.checkIns, 1);
+    assert.equal(afterDelete.body.data.summary.activeUsers, 1);
+    assert.equal(afterDelete.body.data.trendingHabits[0].canonicalHabitKey, 'run');
+    assert.equal(afterDelete.body.data.byCategory[0].categoryKey, 'movement');
 });
 
 test('GET /api/community/analytics returns period-over-period trends', async () => {
