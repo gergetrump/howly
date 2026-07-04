@@ -183,7 +183,11 @@ export async function updateCurrentUserPreferences(req, res) {
         return badRequest(res, error);
     }
 
-    const { user } = await userService.updateUserPreferences(req.user.id, value);
+    const { user, errorCode } = await userService.updateUserPreferences(req.user.id, value);
+
+    if (errorCode === 'THEME_LOCKED') {
+        return res.status(403).json({ message: 'Buy this theme in the shop first', code: 'THEME_LOCKED' });
+    }
 
     if (!user) {
         return notFound(res);

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const { Schema } = mongoose;
 
-export const ITEM_TYPES = ['accessory', 'powerUp', 'clothing', 'shoes'];
+export const ITEM_TYPES = ['accessory', 'powerUp', 'clothing', 'shoes', 'theme'];
 
 const itemSchema = new Schema(
     {
