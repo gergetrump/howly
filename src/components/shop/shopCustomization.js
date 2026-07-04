@@ -246,6 +246,19 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
         ],
     },
 
+    'dango-skewer': {
+        defaults: {
+            topColor: '#F6BBC7',
+            middleColor: '#FFFDF5',
+            bottomColor: '#BFE0B2',
+        },
+        colorSlots: [
+            { key: 'topColor', label: 'Top' },
+            { key: 'middleColor', label: 'Middle' },
+            { key: 'bottomColor', label: 'Bottom' },
+        ],
+    },
+
     'sensu-fan': {
         defaults: {
             color: '#F6BBC7',

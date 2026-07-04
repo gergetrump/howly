@@ -11,6 +11,7 @@ import CuteHat, { CuteHatLayer } from './CuteHat';
 import Dress, { DressLayer } from './Dress';
 import DrinkTogo, { DrinkTogoLayer } from './DrinkTogo';
 import { GlassesLayer, GlassesPreview } from './Glasses';
+import DangoSkewer, { DangoSkewerLayer } from './DangoSkewer';
 import Hairpin, { HairpinLayer } from './Hairpin';
 import SensuFan, { SensuFanLayer } from './SensuFan';
 import Hat, { HatLayer } from './Hat';
@@ -176,6 +177,18 @@ const itemRegistry = {
         layer: BlossomCrownLayer,
         transform: 'translate(166 10) scale(1.12 1)',
         previewClassName: 'max-h-[58%] max-w-[86%]',
+    },
+    'dango-skewer': {
+        type: 'accessory',
+        equipSlot: 'hand',
+        visual: DangoSkewer,
+        layer: DangoSkewerLayer,
+        transform: 'translate(1360 1070) rotate(20) scale(2.2) translate(-35 -195)',
+        sideTransforms: {
+            right: 'translate(1360 1070) rotate(20) scale(2.2) translate(-35 -195)',
+            left: 'translate(162 1070) scale(-1 1) rotate(20) scale(2.2) translate(-35 -195)',
+        },
+        previewClassName: 'max-h-[84%] max-w-[48%]',
     },
     'sensu-fan': {
         type: 'accessory',
