@@ -402,6 +402,19 @@ export async function getFriendFeed({ userId }) {
     visibleUserIds.add(friendId.toString());
   });
 
+  const ghostUsers = await User.find({
+    _id: { $in: [...visibleUserIds] },
+    ghostMode: true,
+  })
+    .select('_id')
+    .lean();
+
+  ghostUsers.forEach((ghostUser) => {
+    if (!sameId(ghostUser._id, userId)) {
+      visibleUserIds.delete(ghostUser._id.toString());
+    }
+  });
+
   const now = new Date();
   const posts = await MilestonePost.find({
     user: { $in: [...visibleUserIds] },
