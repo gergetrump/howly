@@ -16,6 +16,8 @@ export const THEMES = [
         emoji: '🌸',
         description: 'Spring morning, fresh and calm',
         preview: { bg: '#ffe3ee', card: '#ffffff', accent: '#ec4899', extra: '#16a34a' },
+        premium: true,
+        assetKey: 'theme-sakura-light',
     },
     {
         id: 'sunset-warm',
@@ -37,6 +39,8 @@ export const THEMES = [
         emoji: '🏰',
         description: 'Candlelit castle after dark',
         preview: { bg: '#161d2e', card: '#202940', accent: '#e3b34a', extra: '#a83232' },
+        premium: true,
+        assetKey: 'theme-hogwarts-night',
     },
 ];
 
