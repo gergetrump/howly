@@ -50,7 +50,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [icon, setIcon] = useState('🎯');
-    const [target, setTarget] = useState(1);
+    const [target, setTarget] = useState('1');
     const [unit, setUnit] = useState('');
     const [customUnit, setCustomUnit] = useState('');
     const [frequency, setFrequency] = useState('');
@@ -65,7 +65,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
         if (open && editHabit) {
             setName(editHabit.title || '');
             setDescription(editHabit.description || '');
-            setTarget(editHabit.target || 1);
+            setTarget(String(editHabit.target || 1));
             setGoal(editHabit.goal ?? null);
             setIcon(editHabit.icon || '🎯');
             setFrequency(editHabit.frequency || '');
@@ -84,7 +84,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
         } else if (open && prefill) {
             setName(prefill.title || '');
             setDescription(prefill.description || '');
-            setTarget(1);
+            setTarget('1');
             setGoal(prefill.goal ?? null);
             setUnit('');
             setCustomUnit('');
@@ -96,7 +96,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             setName('');
             setDescription('');
             setGoal(null);
-            setTarget(1);
+            setTarget('1');
             setUnit('');
             setCustomUnit('');
             setFrequency('');
@@ -118,7 +118,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             title: name,
             description: description.trim(),
             type: 'numeric',
-            target: Number(target),
+            target: Number(target) || 1,
             unit: finalUnit,
             frequency,
             customDays,
@@ -270,7 +270,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                                 type="number"
                                 min={1}
                                 value={target}
-                                onChange={(e) => setTarget(Number(e.target.value))}
+                                onChange={(e) => setTarget(e.target.value)}
                                 className="h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:border-purple-500 focus:ring-purple-500/20 [color-scheme:dark] [&::-webkit-inner-spin-button]:opacity-50"
                             />
                         </div>
