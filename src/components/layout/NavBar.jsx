@@ -693,7 +693,7 @@ export function NavBar({
                                     cn(
                                         'relative flex size-[3.25rem] items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white',
                                         isActive && 'bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-300/20',
-                                        isPremium && !isActive && 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950',
+                                        isPremium && 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950',
                                     )
                                 }
                                 aria-label="Profile"
