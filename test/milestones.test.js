@@ -687,6 +687,72 @@ test('social feed only shows visible milestones from self and friends', async ()
   assert.ok(feedResponse.body.every((post) => post.visibleUntil));
 });
 
+// Tests that a ghost-mode friend's milestones are hidden while own and normal-friend posts remain
+test('social feed hides milestones from ghost-mode friends', async () => {
+  const currentUser = await buildUser({ username: 'ghost_feed_viewer', email: 'ghost-feed-viewer@example.com' });
+  const ghostFriend = await buildUser({ username: 'ghost_feed_friend', email: 'ghost-feed-friend@example.com', ghostMode: true });
+  const normalFriend = await buildUser({ username: 'normal_feed_friend', email: 'normal-feed-friend@example.com' });
+  const ghostHabit = await buildHabit(ghostFriend, { title: 'Ghost habit', streakCount: 10 });
+  const normalHabit = await buildHabit(normalFriend, { title: 'Normal habit', streakCount: 10 });
+  const ownHabit = await buildHabit(currentUser, { title: 'Own habit', streakCount: 10 });
+
+  await Friendship.create([
+    { userA: currentUser._id, userB: ghostFriend._id },
+    { userA: currentUser._id, userB: normalFriend._id },
+  ]);
+
+  const ghostPost = await MilestonePost.create({
+    user: ghostFriend._id,
+    habit: ghostHabit._id,
+    habitTitle: ghostHabit.title,
+    streakDays: 10,
+  });
+  const normalPost = await MilestonePost.create({
+    user: normalFriend._id,
+    habit: normalHabit._id,
+    habitTitle: normalHabit.title,
+    streakDays: 10,
+  });
+  const ownPost = await MilestonePost.create({
+    user: currentUser._id,
+    habit: ownHabit._id,
+    habitTitle: ownHabit.title,
+    streakDays: 10,
+  });
+
+  const feedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(currentUser))
+    .expect(200);
+
+  const feedPostIds = feedResponse.body.map((post) => post.id);
+
+  assert.equal(feedResponse.body.length, 2);
+  assert.ok(feedPostIds.includes(normalPost._id.toString()));
+  assert.ok(feedPostIds.includes(ownPost._id.toString()));
+  assert.ok(!feedPostIds.includes(ghostPost._id.toString()));
+});
+
+// Tests that a ghost-mode user still sees their own milestones in their feed
+test('a ghost-mode user still sees their own milestones', async () => {
+  const ghostUser = await buildUser({ username: 'self_ghost_viewer', email: 'self-ghost-viewer@example.com', ghostMode: true });
+  const ownHabit = await buildHabit(ghostUser, { title: 'Own habit', streakCount: 10 });
+  const ownPost = await MilestonePost.create({
+    user: ghostUser._id,
+    habit: ownHabit._id,
+    habitTitle: ownHabit.title,
+    streakDays: 10,
+  });
+
+  const feedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(ghostUser))
+    .expect(200);
+
+  assert.equal(feedResponse.body.length, 1);
+  assert.equal(feedResponse.body[0].id, ownPost._id.toString());
+});
+
 // Tests that outfit keys are returned even when the user has no companion document yet
 test('social feed includes equipped outfit with default companion data', async () => {
   const currentUser = await buildUser({ username: 'default_companion_viewer', email: 'default-viewer@example.com' });
