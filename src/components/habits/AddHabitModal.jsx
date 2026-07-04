@@ -55,7 +55,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
     const [customUnit, setCustomUnit] = useState('');
     const [frequency, setFrequency] = useState('');
     const [customDays, setCustomDays] = useState([]);
-    const [goal, setGoal] = useState(null);
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
     const [formError, setFormError] = useState('');
     const [limitPrompt, setLimitPrompt] = useState(null);
@@ -66,7 +65,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             setName(editHabit.title || '');
             setDescription(editHabit.description || '');
             setTarget(String(editHabit.target || 1));
-            setGoal(editHabit.goal ?? null);
             setIcon(editHabit.icon || '🎯');
             setFrequency(editHabit.frequency || '');
             setCustomDays(editHabit.customDays || []);
@@ -85,7 +83,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             setName(prefill.title || '');
             setDescription(prefill.description || '');
             setTarget('1');
-            setGoal(prefill.goal ?? null);
             setUnit('');
             setCustomUnit('');
             setFrequency(prefill.frequency || '');
@@ -95,7 +92,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
         } else if (open && !editHabit) {
             setName('');
             setDescription('');
-            setGoal(null);
             setTarget('1');
             setUnit('');
             setCustomUnit('');
@@ -123,7 +119,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             frequency,
             customDays,
             icon,
-            goal: goal ?? null,
         };
 
         try {
