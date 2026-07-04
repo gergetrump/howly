@@ -5,7 +5,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import connectDB from '../src/config/database.js';
 import Habit from '../src/features/habits/habit.model.js';
 import User from '../src/features/users/user.model.js';
-import { isCompletedForPeriod } from '../src/features/habits/habit.service.js';
+import { isCompletedForPeriod, isPreviousPeriod } from '../src/features/habits/habit.service.js';
 import {
   runDailyStreakMaintenance,
   applyFreezeToHabit,
@@ -188,7 +188,7 @@ test('runDailyStreakMaintenance leaves an overall streak completed yesterday unt
   assert.equal(reloaded.streak, 7);
 });
 
-test('applyFreezeToHabit spends a shield, bridges the period and keeps the streak', async () => {
+test('applyFreezeToHabit bridges the missed period but leaves today open to check off', async () => {
   const user = await buildUser({ streakShields: 2 });
   const habit = await buildHabit(user._id, { streakCount: 5, lastCompletedAt: daysAgo(3) });
 
@@ -199,7 +199,8 @@ test('applyFreezeToHabit spends a shield, bridges the period and keeps the strea
   const reloadedHabit = await Habit.findById(habit._id);
   assert.equal(reloadedHabit.streakCount, 5);
   assert.equal(reloadedHabit.streakRepairDeadline, null);
-  assert.equal(isCompletedForPeriod(reloadedHabit), true);
+  assert.equal(isCompletedForPeriod(reloadedHabit), false);
+  assert.equal(isPreviousPeriod(reloadedHabit, reloadedHabit.lastCompletedAt), true);
 
   const reloadedUser = await User.findById(user._id);
   assert.equal(reloadedUser.streakShields, 1);

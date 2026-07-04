@@ -2,7 +2,7 @@ import Habit from '../habits/habit.model.js';
 import User from '../users/user.model.js';
 import { sendStreakReminderEmail } from '../mail/mail.service.js';
 import config from '../../../config.js';
-import { isCompletedForPeriod, isPreviousPeriod } from '../habits/habit.service.js';
+import { isCompletedForPeriod, isPreviousPeriod, previousPeriodMarker } from '../habits/habit.service.js';
 import {
     hasPremiumAccess,
     MAX_STREAK_SHIELDS,
@@ -221,7 +221,7 @@ export async function applyFreezeToHabit(userId, habitId, now = new Date()) {
     user.streakShields -= 1;
     await user.save();
 
-    habit.lastCompletedAt = now;
+    habit.lastCompletedAt = previousPeriodMarker(habit, now);
     habit.streakRepairDeadline = null;
     await habit.save();
 

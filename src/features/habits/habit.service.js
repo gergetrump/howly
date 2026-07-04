@@ -139,8 +139,34 @@ export function isPreviousPeriod(habit, date) {
                date.getMonth() === prevDate.getMonth() &&
                date.getDate() === prevDate.getDate();
     }
-    
+
     return isYesterday(date);
+}
+
+export function previousPeriodMarker(habit, now = new Date()) {
+    const frequency = habit.frequency;
+
+    if (frequency === 'Weekly') {
+        const marker = new Date(now);
+        marker.setDate(marker.getDate() - (now.getDay() || 7));
+        marker.setHours(12, 0, 0, 0);
+        return marker;
+    }
+
+    if (frequency === 'Monthly') {
+        return new Date(now.getFullYear(), now.getMonth() - 1, 15, 12, 0, 0, 0);
+    }
+
+    if (frequency === 'Custom' && habit.customDays && habit.customDays.length > 0) {
+        const marker = getPreviousScheduledDate(habit.customDays);
+        marker.setHours(12, 0, 0, 0);
+        return marker;
+    }
+
+    const marker = new Date(now);
+    marker.setDate(marker.getDate() - 1);
+    marker.setHours(12, 0, 0, 0);
+    return marker;
 }
 
 /**

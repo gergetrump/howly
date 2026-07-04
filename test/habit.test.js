@@ -15,6 +15,7 @@ import HabitBoost from '../src/features/boosts/habitBoost.model.js';
 import config from '../config.js';
 import { getPlanForUser } from '../src/config/plans.js';
 import { getBoostPurchaseMonthKey } from '../src/features/inventory/inventory.service.js';
+import { applyFreezeToHabit } from '../src/features/streakFreeze/streakFreeze.service.js';
 
 let mongo;
 let app;
@@ -202,6 +203,32 @@ test('completing all due habits clears the overall streak repair deadline', asyn
   const reloaded = await User.findById(user._id).select('streakRepairDeadline streakLastDay');
   assert.equal(reloaded.streakRepairDeadline, null);
   assert.ok(reloaded.streakLastDay);
+});
+
+test('a rescued at-risk habit can still be checked off today and advances the streak', async () => {
+  const user = await buildUser({ streakShields: 1 });
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+  const habit = await Habit.create({
+    title: 'Read',
+    type: 'boolean',
+    frequency: 'Daily',
+    ownerId: user._id,
+    streakCount: 5,
+    lastCompletedAt: twoDaysAgo,
+  });
+
+  await applyFreezeToHabit(user._id, habit._id, new Date());
+
+  const rescued = await Habit.findById(habit._id);
+  assert.equal(rescued.streakCount, 5);
+
+  const checkIn = await request(app)
+    .post(`/api/habits/${habit._id}/check-ins`)
+    .set('Authorization', authHeader(user))
+    .expect(200);
+
+  assert.equal(checkIn.body.data.isCompletedToday, true);
+  assert.equal(checkIn.body.data.streakCount, 6);
 });
 
 test('habit boost can be bought, used from inventory, and grants bonus coins for the next completions', async () => {
