@@ -1,5 +1,10 @@
 import mongoose from 'mongoose';
-import { CHALLENGE_FREQUENCIES, CHALLENGE_STATUS, CHALLENGE_VISIBILITIES } from './challenge.model.js';
+import {
+    CHALLENGE_FREQUENCIES,
+    CHALLENGE_STATUS,
+    CHALLENGE_VISIBILITIES,
+    MAX_CHALLENGE_DURATION_DAYS,
+} from './challenge.model.js';
 
 const CHALLENGE_FREQUENCY_SET = new Set(CHALLENGE_FREQUENCIES);
 const CHALLENGE_STATUS_SET = new Set(CHALLENGE_STATUS);
@@ -184,7 +189,7 @@ export function validateCreateChallengeInput(body = {}) {
         value.frequency = frequency;
     }
 
-    toPositiveInteger(body.durationDays, 'durationDays', 1, 365, errors, value);
+    toPositiveInteger(body.durationDays, 'durationDays', 1, MAX_CHALLENGE_DURATION_DAYS, errors, value);
     toDate(body.startsAt, 'startsAt', errors, value);
 
     if (body.status !== undefined) {
@@ -263,7 +268,7 @@ export function validateUpdateChallengeInput(body = {}) {
     }
 
     if (body.durationDays !== undefined) {
-        toPositiveInteger(body.durationDays, 'durationDays', 1, 365, errors, updates);
+        toPositiveInteger(body.durationDays, 'durationDays', 1, MAX_CHALLENGE_DURATION_DAYS, errors, updates);
     }
 
     toDate(body.startsAt, 'startsAt', errors, updates);

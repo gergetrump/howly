@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import createApp from '../src/app.js';
 import connectDB from '../src/config/database.js';
+import { getPlanForUser } from '../src/config/plans.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
 import Challenge from '../src/features/challenges/challenge.model.js';
 import ChallengeInvitation from '../src/features/challenges/challengeInvitation.model.js';
@@ -386,10 +387,14 @@ test('free users can only join two active challenges at a time', async () => {
         .expect(400);
 });
 
-test('premium users can join five active challenges but not six', async () => {
-    const owners = await Promise.all(Array.from({ length: 6 }, () => buildUser({ isPremium: true })));
+test('premium users can join active challenges up to their plan limit', async () => {
     const participant = await buildUser({ isPremium: true });
     const participantToken = signAccessToken(participant);
+    const maxActiveChallenges = getPlanForUser(participant).limits.maxActiveChallenges;
+    const owners = await Promise.all(Array.from(
+        { length: maxActiveChallenges + 1 },
+        () => buildUser({ isPremium: true })
+    ));
     const challenges = [];
 
     for (const [index, owner] of owners.entries()) {
@@ -401,11 +406,11 @@ test('premium users can join five active challenges but not six', async () => {
     }
 
     const habits = await Promise.all(Array.from(
-        { length: 6 },
+        { length: maxActiveChallenges + 1 },
         (_, index) => buildHabit(participant._id, { title: `Habit ${index + 1}` })
     ));
 
-    for (let index = 0; index < 5; index += 1) {
+    for (let index = 0; index < maxActiveChallenges; index += 1) {
         await request(app)
             .post(`/api/challenges/${challenges[index].id}/join`)
             .set('Authorization', `Bearer ${participantToken}`)
@@ -414,9 +419,9 @@ test('premium users can join five active challenges but not six', async () => {
     }
 
     await request(app)
-        .post(`/api/challenges/${challenges[5].id}/join`)
+        .post(`/api/challenges/${challenges[maxActiveChallenges].id}/join`)
         .set('Authorization', `Bearer ${participantToken}`)
-        .send({ habitId: habits[5]._id.toString() })
+        .send({ habitId: habits[maxActiveChallenges]._id.toString() })
         .expect(400);
 });
 
