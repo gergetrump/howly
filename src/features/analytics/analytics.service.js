@@ -23,12 +23,20 @@ function addDays(date, days) {
     return nextDate;
 }
 
+function daysBetweenInclusive(start, end) {
+    return Math.round((startOfDay(end).getTime() - startOfDay(start).getTime()) / DAY_IN_MS) + 1;
+}
+
 function toDateKey(date) {
     return [
         date.getFullYear(),
         String(date.getMonth() + 1).padStart(2, '0'),
         String(date.getDate()).padStart(2, '0'),
     ].join('-');
+}
+
+function toMonthKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
 function getIsoWeekYear(date) {
@@ -60,15 +68,32 @@ function getPeriodKeyForHabit(habit, date = new Date()) {
 
 function buildPeriod(periodKey) {
     const today = startOfDay(new Date());
-    const days = periodKey === 'month' ? 30 : 7;
-    const start = addDays(today, -(days - 1));
+    const normalizedPeriodKey = ['week', 'month', 'year'].includes(periodKey) ? periodKey : 'week';
+    const start = normalizedPeriodKey === 'year'
+        ? new Date(today.getFullYear(), 0, 1)
+        : addDays(today, -((normalizedPeriodKey === 'month' ? 30 : 7) - 1));
     const end = endOfDay(today);
+    const days = normalizedPeriodKey === 'year'
+        ? daysBetweenInclusive(start, end)
+        : normalizedPeriodKey === 'month' ? 30 : 7;
+    const months = Array.from({ length: 12 }, (_, index) => {
+        const date = new Date(today.getFullYear(), index, 1);
+
+        return {
+            key: toMonthKey(date),
+            label: date.toLocaleDateString('en-US', { month: 'short' }),
+            expected: 0,
+            completed: 0,
+            completionRate: null,
+        };
+    });
 
     return {
-        key: periodKey === 'month' ? 'month' : 'week',
+        key: normalizedPeriodKey,
         days,
         start,
         end,
+        months,
         labels: Array.from({ length: days }, (_, index) => {
             const date = addDays(start, index);
             return {
@@ -152,6 +177,21 @@ function averageTimeOfDay(dates) {
     };
 }
 
+function buildEarlierThanComparison(currentAverageCompletionTime, peerAverageCompletionTimes) {
+    if (!currentAverageCompletionTime?.label || !peerAverageCompletionTimes.length) {
+        return null;
+    }
+
+    const earlierThanCount = peerAverageCompletionTimes
+        .filter((peerAverageCompletionTime) => currentAverageCompletionTime.minutes < peerAverageCompletionTime.minutes)
+        .length;
+
+    return {
+        earlierThanPercent: Math.round((earlierThanCount / peerAverageCompletionTimes.length) * 100),
+        comparedUsers: peerAverageCompletionTimes.length,
+    };
+}
+
 function completionRate(completed, expected) {
     if (!expected) {
         return null;
@@ -196,15 +236,92 @@ export async function recordHabitCheckIn({ userId, habit, completedAt = new Date
             periodKey: getPeriodKeyForHabit(habit, completedAt),
         },
         {
+            $set: {
+                completedAt,
+            },
             $setOnInsert: {
                 user: userId,
                 habit: habit._id,
                 periodKey: getPeriodKeyForHabit(habit, completedAt),
-                completedAt,
             },
         },
         { upsert: true, new: true },
     );
+}
+
+function mergeCheckInsByLatestPeriodEvent(checkIns) {
+    const checkInsByEventKey = new Map();
+
+    for (const checkIn of checkIns) {
+        const eventKey = `${checkIn.habit.toString()}:${checkIn.periodKey}`;
+        const existingCheckIn = checkInsByEventKey.get(eventKey);
+
+        if (!existingCheckIn || checkIn.completedAt > existingCheckIn.completedAt) {
+            checkInsByEventKey.set(eventKey, checkIn);
+        }
+    }
+
+    return [...checkInsByEventKey.values()]
+        .sort((left, right) => left.completedAt.getTime() - right.completedAt.getTime());
+}
+
+async function getPeerAverageCompletionTimeComparison({
+    userId,
+    selectedPeriod,
+    source,
+    currentAverageCompletionTime,
+}) {
+    const habitSourceFilter = source === 'challenge'
+        ? { source: 'challenge' }
+        : { source: { $ne: 'challenge' } };
+    const peerHabits = await Habit.find({
+        ownerId: { $ne: userId },
+        createdAt: { $lte: selectedPeriod.end },
+        ...habitSourceFilter,
+    })
+        .select('_id ownerId frequency lastCompletedAt')
+        .lean();
+    const peerHabitIds = peerHabits.map((habit) => habit._id);
+    const peerCheckIns = peerHabitIds.length
+        ? await HabitCheckIn.find({
+            habit: { $in: peerHabitIds },
+            completedAt: { $gte: selectedPeriod.start, $lte: selectedPeriod.end },
+        })
+            .select('user habit periodKey completedAt')
+            .lean()
+        : [];
+    const syntheticPeerCheckIns = peerHabits
+        .filter((habit) => habit.lastCompletedAt
+            && habit.lastCompletedAt >= selectedPeriod.start
+            && habit.lastCompletedAt <= selectedPeriod.end)
+        .map((habit) => ({
+            user: habit.ownerId,
+            habit: habit._id,
+            periodKey: getPeriodKeyForHabit(habit, habit.lastCompletedAt),
+            completedAt: habit.lastCompletedAt,
+            synthetic: true,
+        }));
+    const mergedPeerCheckIns = mergeCheckInsByLatestPeriodEvent([
+        ...peerCheckIns,
+        ...syntheticPeerCheckIns,
+    ]);
+    const peerCompletionDatesByUser = new Map();
+
+    for (const checkIn of mergedPeerCheckIns) {
+        const checkInUserId = checkIn.user.toString();
+
+        if (!peerCompletionDatesByUser.has(checkInUserId)) {
+            peerCompletionDatesByUser.set(checkInUserId, []);
+        }
+
+        peerCompletionDatesByUser.get(checkInUserId).push(checkIn.completedAt);
+    }
+
+    const peerAverageCompletionTimes = [...peerCompletionDatesByUser.values()]
+        .map((dates) => averageTimeOfDay(dates))
+        .filter(Boolean);
+
+    return buildEarlierThanComparison(currentAverageCompletionTime, peerAverageCompletionTimes);
 }
 
 export async function removeHabitCheckInForCurrentPeriod({ userId, habit }) {
@@ -231,9 +348,6 @@ export async function getHabitAnalytics(userId, { period = 'week' } = {}) {
         }).sort({ completedAt: 1 }).lean()
         : [];
 
-    const existingEventKeys = new Set(
-        checkIns.map((checkIn) => `${checkIn.habit.toString()}:${checkIn.periodKey}`),
-    );
     const syntheticCheckIns = habits
         .filter((habit) => habit.lastCompletedAt
             && habit.lastCompletedAt >= selectedPeriod.start
@@ -244,11 +358,9 @@ export async function getHabitAnalytics(userId, { period = 'week' } = {}) {
             periodKey: getPeriodKeyForHabit(habit, habit.lastCompletedAt),
             completedAt: habit.lastCompletedAt,
             synthetic: true,
-        }))
-        .filter((checkIn) => !existingEventKeys.has(`${checkIn.habit.toString()}:${checkIn.periodKey}`));
+        }));
 
-    checkIns = [...checkIns, ...syntheticCheckIns]
-        .sort((left, right) => left.completedAt.getTime() - right.completedAt.getTime());
+    checkIns = mergeCheckInsByLatestPeriodEvent([...checkIns, ...syntheticCheckIns]);
 
     const checkInsByHabit = new Map();
     for (const checkIn of checkIns) {
@@ -266,10 +378,29 @@ export async function getHabitAnalytics(userId, { period = 'week' } = {}) {
         completed: 0,
         completionRate: null,
     }));
+    const monthlyTotals = selectedPeriod.months.map((month) => ({ ...month }));
+    const monthlyTotalIndexByKey = new Map(
+        monthlyTotals.map((month, index) => [month.key, index]),
+    );
 
     const habitAnalytics = habits.map((habit) => {
         const habitId = habit._id.toString();
-        const habitCheckIns = checkInsByHabit.get(habitId) ?? [];
+        const storedHabitCheckIns = checkInsByHabit.get(habitId) ?? [];
+        const latestHabitCheckIn = habit.lastCompletedAt
+            && habit.lastCompletedAt >= selectedPeriod.start
+            && habit.lastCompletedAt <= selectedPeriod.end
+            ? [{
+                user: userId,
+                habit: habit._id,
+                periodKey: getPeriodKeyForHabit(habit, habit.lastCompletedAt),
+                completedAt: habit.lastCompletedAt,
+                synthetic: true,
+            }]
+            : [];
+        const habitCheckIns = mergeCheckInsByLatestPeriodEvent([
+            ...storedHabitCheckIns,
+            ...latestHabitCheckIn,
+        ]);
         const completedDateSet = new Set(habitCheckIns.map((checkIn) => toDateKey(checkIn.completedAt)));
         const daily = selectedPeriod.labels.map((day, index) => {
             const expected = isHabitExpectedOnDay(habit, day);
@@ -277,10 +408,20 @@ export async function getHabitAnalytics(userId, { period = 'week' } = {}) {
 
             if (expected) {
                 dailyTotals[index].expected += 1;
+                const monthlyIndex = monthlyTotalIndexByKey.get(toMonthKey(day.date));
+
+                if (monthlyIndex !== undefined) {
+                    monthlyTotals[monthlyIndex].expected += 1;
+                }
             }
 
             if (completedCount > 0) {
                 dailyTotals[index].completed += completedCount;
+                const monthlyIndex = monthlyTotalIndexByKey.get(toMonthKey(day.date));
+
+                if (monthlyIndex !== undefined) {
+                    monthlyTotals[monthlyIndex].completed += completedCount;
+                }
             }
 
             return {
@@ -308,10 +449,20 @@ export async function getHabitAnalytics(userId, { period = 'week' } = {}) {
     for (const day of dailyTotals) {
         day.completionRate = completionRate(day.completed, day.expected);
     }
+    for (const month of monthlyTotals) {
+        month.completionRate = completionRate(month.completed, month.expected);
+    }
 
     const totalExpected = habitAnalytics.reduce((sum, item) => sum + item.expected, 0);
     const totalCompleted = habitAnalytics.reduce((sum, item) => sum + item.completed, 0);
     const allCheckInDates = checkIns.map((checkIn) => checkIn.completedAt);
+    const averageCompletionTime = averageTimeOfDay(allCheckInDates);
+    const averageCompletionTimeComparison = await getPeerAverageCompletionTimeComparison({
+        userId,
+        selectedPeriod,
+        source: 'habit',
+        currentAverageCompletionTime: averageCompletionTime,
+    });
 
     return {
         period: {
@@ -324,9 +475,11 @@ export async function getHabitAnalytics(userId, { period = 'week' } = {}) {
             expected: totalExpected,
             completed: totalCompleted,
             completionRate: completionRate(totalCompleted, totalExpected),
-            averageCompletionTime: averageTimeOfDay(allCheckInDates),
+            averageCompletionTime,
+            averageCompletionTimeComparison,
         },
         dailyTotals,
+        monthlyTotals,
         habits: habitAnalytics.sort((left, right) => {
             const leftRate = left.completionRate ?? -1;
             const rightRate = right.completionRate ?? -1;
@@ -359,9 +512,6 @@ export async function getChallengeAnalytics(userId, { period = 'week' } = {}) {
             completedAt: { $gte: selectedPeriod.start, $lte: selectedPeriod.end },
         }).sort({ completedAt: 1 }).lean()
         : [];
-    const existingChallengeEventKeys = new Set(
-        checkIns.map((checkIn) => `${checkIn.habit.toString()}:${checkIn.periodKey}`),
-    );
     const syntheticChallengeCheckIns = activeParticipants
         .filter((participant) => participant.lastCompletedAt
             && participant.lastCompletedAt >= selectedPeriod.start
@@ -372,11 +522,9 @@ export async function getChallengeAnalytics(userId, { period = 'week' } = {}) {
             periodKey: getPeriodKeyForHabit(participant.habit, participant.lastCompletedAt),
             completedAt: participant.lastCompletedAt,
             synthetic: true,
-        }))
-        .filter((checkIn) => !existingChallengeEventKeys.has(`${checkIn.habit.toString()}:${checkIn.periodKey}`));
+        }));
 
-    checkIns = [...checkIns, ...syntheticChallengeCheckIns]
-        .sort((left, right) => left.completedAt.getTime() - right.completedAt.getTime());
+    checkIns = mergeCheckInsByLatestPeriodEvent([...checkIns, ...syntheticChallengeCheckIns]);
     const checkInsByHabit = new Map();
 
     for (const checkIn of checkIns) {
@@ -394,10 +542,18 @@ export async function getChallengeAnalytics(userId, { period = 'week' } = {}) {
         completed: 0,
         completionRate: null,
     }));
+    const monthlyTotals = selectedPeriod.months.map((month) => ({ ...month }));
+    const monthlyTotalIndexByKey = new Map(
+        monthlyTotals.map((month, index) => [month.key, index]),
+    );
 
     const challengeAnalytics = activeParticipants.map((participant) => {
         const habitId = participant.habit._id.toString();
         const participantCheckIns = checkInsByHabit.get(habitId) ?? [];
+        const monthly = selectedPeriod.months.map((month) => ({ ...month }));
+        const monthlyIndexByKey = new Map(
+            monthly.map((month, index) => [month.key, index]),
+        );
         const daily = selectedPeriod.labels.map((day, index) => {
             const expected = isWithinRange(
                 day,
@@ -412,10 +568,32 @@ export async function getChallengeAnalytics(userId, { period = 'week' } = {}) {
 
             if (expected) {
                 dailyTotals[index].expected += 1;
+                const monthKey = toMonthKey(day.date);
+                const monthlyIndex = monthlyIndexByKey.get(monthKey);
+                const monthlyTotalIndex = monthlyTotalIndexByKey.get(monthKey);
+
+                if (monthlyIndex !== undefined) {
+                    monthly[monthlyIndex].expected += 1;
+                }
+
+                if (monthlyTotalIndex !== undefined) {
+                    monthlyTotals[monthlyTotalIndex].expected += 1;
+                }
             }
 
             if (completedCount > 0) {
                 dailyTotals[index].completed += completedCount;
+                const monthKey = toMonthKey(day.date);
+                const monthlyIndex = monthlyIndexByKey.get(monthKey);
+                const monthlyTotalIndex = monthlyTotalIndexByKey.get(monthKey);
+
+                if (monthlyIndex !== undefined) {
+                    monthly[monthlyIndex].completed += completedCount;
+                }
+
+                if (monthlyTotalIndex !== undefined) {
+                    monthlyTotals[monthlyTotalIndex].completed += completedCount;
+                }
             }
 
             return {
@@ -429,6 +607,10 @@ export async function getChallengeAnalytics(userId, { period = 'week' } = {}) {
         const expectedCount = daily.filter((day) => day.expected).length;
         const completedCount = daily.filter((day) => day.completed).length;
         const progressRate = completionRate(participant.daysCompleted, participant.challenge.durationDays);
+
+        for (const month of monthly) {
+            month.completionRate = completionRate(month.completed, month.expected);
+        }
 
         return {
             challenge: serializeChallenge(participant.challenge),
@@ -447,17 +629,28 @@ export async function getChallengeAnalytics(userId, { period = 'week' } = {}) {
             progressRate,
             averageCompletionTime: averageTimeOfDay(participantCheckIns.map((checkIn) => checkIn.completedAt)),
             daily,
+            monthly,
         };
     });
 
     for (const day of dailyTotals) {
         day.completionRate = completionRate(day.completed, day.expected);
     }
+    for (const month of monthlyTotals) {
+        month.completionRate = completionRate(month.completed, month.expected);
+    }
 
     const totalExpected = challengeAnalytics.reduce((sum, item) => sum + item.expected, 0);
     const totalCompleted = challengeAnalytics.reduce((sum, item) => sum + item.completed, 0);
     const totalProgressDays = challengeAnalytics.reduce((sum, item) => sum + item.participant.daysCompleted, 0);
     const totalChallengeDays = challengeAnalytics.reduce((sum, item) => sum + item.challenge.durationDays, 0);
+    const averageCompletionTime = averageTimeOfDay(checkIns.map((checkIn) => checkIn.completedAt));
+    const averageCompletionTimeComparison = await getPeerAverageCompletionTimeComparison({
+        userId,
+        selectedPeriod,
+        source: 'challenge',
+        currentAverageCompletionTime: averageCompletionTime,
+    });
 
     return {
         period: {
@@ -474,9 +667,11 @@ export async function getChallengeAnalytics(userId, { period = 'week' } = {}) {
             completed: totalCompleted,
             completionRate: completionRate(totalCompleted, totalExpected),
             progressRate: completionRate(totalProgressDays, totalChallengeDays),
-            averageCompletionTime: averageTimeOfDay(checkIns.map((checkIn) => checkIn.completedAt)),
+            averageCompletionTime,
+            averageCompletionTimeComparison,
         },
         dailyTotals,
+        monthlyTotals,
         challenges: challengeAnalytics.sort((left, right) => {
             const leftRate = left.completionRate ?? -1;
             const rightRate = right.completionRate ?? -1;
