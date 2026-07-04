@@ -151,6 +151,7 @@ export function toPublicUser(user) {
         streak: user.streak,
         streakShields: user.streakShields ?? 0,
         streakRepairDeadline: user.streakRepairDeadline ?? null,
+        streakShieldAutoUsedAt: user.streakShieldAutoUsedAt ?? null,
         notificationPreferences: normalizeNotificationPreferences(user.notificationPreferences),
         ghostMode: user.ghostMode ?? false,
         premiumStatus: user.premiumStatus,

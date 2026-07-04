@@ -138,6 +138,26 @@ test('runDailyStreakMaintenance opens a grace deadline for a missed overall stre
   assert.equal(reloaded.streak, 7);
 });
 
+test('runDailyStreakMaintenance auto-uses a shield to save a missed overall streak', async () => {
+  const now = new Date();
+  const user = await buildUser({
+    streak: 7,
+    streakLastDay: daysAgo(2),
+    streakShields: 2,
+  });
+
+  const result = await runDailyStreakMaintenance(now);
+
+  assert.equal(result.overallAutoShielded, 1);
+  assert.equal(result.overallOpened, 0);
+  assert.equal(result.overallBroken, 0);
+
+  const reloaded = await User.findById(user._id);
+  assert.equal(reloaded.streak, 7);
+  assert.equal(reloaded.streakShields, 1);
+  assert.equal(reloaded.streakRepairDeadline, null);
+});
+
 test('runDailyStreakMaintenance breaks the overall streak after the grace deadline', async () => {
   const now = new Date();
   const user = await buildUser({

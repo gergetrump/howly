@@ -36,6 +36,13 @@ function graceDeadline(now) {
     return deadline;
 }
 
+function endOfYesterday(now) {
+    const value = startOfDay(now);
+    value.setDate(value.getDate() - 1);
+    value.setHours(23, 59, 59, 999);
+    return value;
+}
+
 function canSendNotificationEmail(user, preferenceKey) {
     const preferences = user?.notificationPreferences ?? {};
 
@@ -125,16 +132,27 @@ export async function runDailyStreakMaintenance(now = new Date()) {
     }
 
     const users = await User.find({ streak: { $gt: 0 } })
-        .select('streak streakLastDay streakRepairDeadline');
+        .select('streak streakLastDay streakRepairDeadline streakShields streakShieldAutoUsedAt');
 
     let overallOpened = 0;
     let overallBroken = 0;
+    let overallAutoShielded = 0;
     for (const user of users) {
         if (!isOverallStreakMissed(user, now)) {
             if (user.streakRepairDeadline) {
                 user.streakRepairDeadline = null;
                 await user.save();
             }
+            continue;
+        }
+
+        if ((user.streakShields ?? 0) > 0) {
+            user.streakShields -= 1;
+            user.streakLastDay = endOfYesterday(now);
+            user.streakRepairDeadline = null;
+            user.streakShieldAutoUsedAt = now;
+            await user.save();
+            overallAutoShielded += 1;
             continue;
         }
 
@@ -150,7 +168,7 @@ export async function runDailyStreakMaintenance(now = new Date()) {
         }
     }
 
-    return { habitsOpened, habitsBroken, overallOpened, overallBroken };
+    return { habitsOpened, habitsBroken, overallOpened, overallBroken, overallAutoShielded };
 }
 
 export async function sendStreakRepairReminders(now = new Date()) {
@@ -218,12 +236,8 @@ export async function applyFreezeToOverall(userId, now = new Date()) {
     if (!isOverallStreakMissed(user, now)) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NOT_AT_RISK);
     if ((user.streakShields ?? 0) <= 0) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NO_SHIELDS);
 
-    const yesterday = startOfDay(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(23, 59, 59, 999);
-
     user.streakShields -= 1;
-    user.streakLastDay = yesterday;
+    user.streakLastDay = endOfYesterday(now);
     user.streakRepairDeadline = null;
     await user.save();
 

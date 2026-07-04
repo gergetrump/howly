@@ -118,6 +118,10 @@ const userSchema = new Schema(
       type: Date,
       default: null,
     },
+    streakShieldAutoUsedAt: {
+      type: Date,
+      default: null,
+    },
     notificationPreferences: {
       emailEnabled: { type: Boolean, default: false },
       challengeInvitations: { type: Boolean, default: false },
