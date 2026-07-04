@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, BarChart3, CheckCircle2, Globe, Loader2, Sparkles, Users } from 'lucide-react';
+import { BarChart3, CheckCircle2, Globe, Loader2, Sparkles, Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
@@ -8,9 +8,16 @@ import { useAuth } from '@/context/authContext';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
 
-const PERIOD_LABELS = {
-    week: 'Week',
-    month: 'Month',
+const PERIOD_HEADINGS = {
+    today: 'Today on Howly',
+    week: 'This week on Howly',
+    month: 'This month on Howly',
+};
+
+const PERIOD_SCOPE_LABELS = {
+    today: 'today',
+    week: 'week',
+    month: 'month',
 };
 
 const periodTabTriggerClassName = 'px-3 py-1 text-xs text-white/70 data-active:!bg-white/20 data-active:!text-white sm:text-sm';
@@ -31,6 +38,9 @@ function PeriodToggle({ period, onPeriodChange }) {
     return (
         <Tabs value={period} onValueChange={onPeriodChange}>
             <TabsList className="h-9 w-auto shrink-0 border border-white/10 bg-white/5 p-1 text-white">
+                <TabsTrigger value="today" className={periodTabTriggerClassName}>
+                    Today
+                </TabsTrigger>
                 <TabsTrigger value="week" className={periodTabTriggerClassName}>
                     Week
                 </TabsTrigger>
@@ -165,8 +175,11 @@ export function CommunityPage() {
         };
     }, [period]);
 
-    const today = communityAnalytics?.today;
     const summary = communityAnalytics?.summary;
+    const periodScope = PERIOD_SCOPE_LABELS[period] ?? 'week';
+    const activeUsersLabel = period === 'today' ? 'Active today' : 'Active Howly users';
+    const checkInsLabel = period === 'today' ? 'Check-ins today' : 'Habits completed';
+    const topCategoryLabel = period === 'today' ? 'Leading area' : 'Top focus area';
 
     return (
         <Page theme="forest" contentClassName="max-w-[1400px]">
@@ -183,40 +196,10 @@ export function CommunityPage() {
                     </div>
                 ) : null}
 
-                <PageSection width="full" title="Today on Howly" description="Right now across the community">
-                    {isLoading ? (
-                        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
-                            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                            Loading community pulse
-                        </div>
-                    ) : (
-                        <div className="grid gap-4 md:grid-cols-3">
-                            <SummaryCard
-                                icon={CheckCircle2}
-                                label="Check-ins today"
-                                value={formatCount(today?.checkIns)}
-                                helper="Total habits completed on Howly today"
-                            />
-                            <SummaryCard
-                                icon={Users}
-                                label="Active today"
-                                value={formatCount(today?.activeUsers)}
-                                helper="Howly users who checked in today"
-                            />
-                            <SummaryCard
-                                icon={Sparkles}
-                                label="Leading area"
-                                value={formatCategory(today?.topCategory)}
-                                helper="Top habit category today"
-                            />
-                        </div>
-                    )}
-                </PageSection>
-
                 <PageSection width="full">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <h2 className="text-lg font-semibold text-white">
-                            This {PERIOD_LABELS[period].toLowerCase()} on Howly
+                            {PERIOD_HEADINGS[period] ?? PERIOD_HEADINGS.week}
                         </h2>
                         <PeriodToggle period={period} onPeriodChange={setPeriod} />
                     </div>
@@ -229,22 +212,22 @@ export function CommunityPage() {
                     ) : (
                         <div className="grid gap-4 md:grid-cols-3">
                             <SummaryCard
-                                icon={Users}
-                                label="Active Howly users"
-                                value={formatCount(summary?.activeUsers)}
-                                helper={`Users with check-ins this ${period}`}
+                                icon={CheckCircle2}
+                                label={checkInsLabel}
+                                value={formatCount(summary?.checkIns)}
+                                helper={`Check-ins this ${periodScope}`}
                             />
                             <SummaryCard
-                                icon={Activity}
-                                label="Habits completed"
-                                value={formatCount(summary?.checkIns)}
-                                helper={`Check-ins this ${period}`}
+                                icon={Users}
+                                label={activeUsersLabel}
+                                value={formatCount(summary?.activeUsers)}
+                                helper={`Users with check-ins this ${periodScope}`}
                             />
                             <SummaryCard
                                 icon={Globe}
-                                label="Top focus area"
+                                label={topCategoryLabel}
                                 value={formatCategory(summary?.topCategory)}
-                                helper={`Leading category this ${period}`}
+                                helper={`Leading category this ${periodScope}`}
                             />
                         </div>
                     )}
@@ -257,8 +240,7 @@ export function CommunityPage() {
                             What Howly is working on
                         </CardTitle>
                         <CardDescription className="text-slate-300">
-                            How check-ins split across life areas this{' '}
-                            {period === 'month' ? 'month' : 'week'}
+                            How check-ins split across life areas this {periodScope}.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -280,8 +262,7 @@ export function CommunityPage() {
                             Trending on Howly
                         </CardTitle>
                         <CardDescription className="text-slate-300">
-                            The standard habit types completed most often this{' '}
-                            {period === 'month' ? 'month' : 'week'}
+                            The standard habit types completed most often this {periodScope}.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
