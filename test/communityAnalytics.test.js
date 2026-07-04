@@ -124,15 +124,27 @@ test('GET /api/community/analytics returns anonymous community aggregates', asyn
     assert.equal(response.body.data.trendingHabits.length, 2);
     assert.equal(response.body.data.trendingHabits[0].canonicalHabitKey, 'run');
     assert.equal(response.body.data.trendingHabits[0].checkIns, 2);
+    assert.equal(response.body.data.comparisonPeriod.key, 'previous_7_days');
+    assert.equal(response.body.data.summary.trends.checkIns.direction, 'up');
+    assert.equal(response.body.data.summary.trends.checkIns.display, 'new');
+    assert.equal(response.body.data.byCategory[0].trend.direction, 'up');
 
     const todayResponse = await request(app)
+        .get('/api/community/analytics?period=24h')
+        .set('Authorization', token)
+        .expect(200);
+
+    assert.equal(todayResponse.body.data.period.key, '24h');
+    assert.equal(todayResponse.body.data.comparisonPeriod.key, 'previous_24h');
+    assert.equal(todayResponse.body.data.summary.checkIns, 3);
+    assert.equal(todayResponse.body.data.summary.activeUsers, 2);
+
+    const legacyTodayResponse = await request(app)
         .get('/api/community/analytics?period=today')
         .set('Authorization', token)
         .expect(200);
 
-    assert.equal(todayResponse.body.data.period.key, 'today');
-    assert.equal(todayResponse.body.data.summary.checkIns, 3);
-    assert.equal(todayResponse.body.data.summary.activeUsers, 2);
+    assert.equal(legacyTodayResponse.body.data.period.key, '24h');
 });
 
 test('GET /api/community/analytics excludes deleted users', async () => {
@@ -198,4 +210,63 @@ test('GET /api/community/analytics excludes deleted users', async () => {
 
     assert.equal(response.body.data.summary.checkIns, 1);
     assert.equal(response.body.data.summary.activeUsers, 1);
+});
+
+test('GET /api/community/analytics returns period-over-period trends', async () => {
+    const user = await buildUser({ username: 'trend_user', email: 'trend@example.com' });
+    const token = authHeader(user);
+    const completedAt = new Date();
+    const previousWindowDate = new Date(completedAt);
+    previousWindowDate.setDate(previousWindowDate.getDate() - 8);
+
+    const runHabit = await Habit.create({
+        title: 'Morning run',
+        type: 'boolean',
+        frequency: 'Daily',
+        ownerId: user._id,
+        category: 'Movement',
+        taxonomy: {
+            categoryKey: 'movement',
+            subcategoryKey: 'cardio',
+            canonicalHabitKey: 'run',
+            score: 0.9,
+            assignedAt: completedAt,
+        },
+    });
+
+    await HabitCheckIn.create([
+        {
+            user: user._id,
+            habit: runHabit._id,
+            completedAt: previousWindowDate,
+            periodKey: previousWindowDate.toISOString().slice(0, 10),
+        },
+        {
+            user: user._id,
+            habit: runHabit._id,
+            completedAt,
+            periodKey: completedAt.toISOString().slice(0, 10),
+        },
+        {
+            user: user._id,
+            habit: runHabit._id,
+            completedAt: new Date(completedAt.getTime() - 60_000),
+            periodKey: completedAt.toISOString().slice(0, 10),
+        },
+    ]);
+
+    const response = await request(app)
+        .get('/api/community/analytics?period=week')
+        .set('Authorization', token)
+        .expect(200);
+
+    assert.equal(response.body.data.summary.checkIns, 2);
+    assert.equal(response.body.data.summary.trends.checkIns.display, 'percent');
+    assert.equal(response.body.data.summary.trends.checkIns.changePercent, 100);
+    assert.equal(response.body.data.summary.trends.checkIns.direction, 'up');
+    assert.equal(response.body.data.byCategory[0].categoryKey, 'movement');
+    assert.equal(response.body.data.byCategory[0].trend.display, 'percent');
+    assert.equal(response.body.data.byCategory[0].trend.changePercent, 100);
+    assert.equal(response.body.data.trendingHabits[0].trend.display, 'percent');
+    assert.equal(response.body.data.trendingHabits[0].trend.changePercent, 100);
 });

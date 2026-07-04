@@ -2,6 +2,14 @@ import HabitCheckIn from '../analytics/habitCheckIn.model.js';
 import CanonicalHabit from '../taxonomy/canonicalHabit.model.js';
 import { buildPeriod, endOfDay, startOfDay } from '../analytics/analytics.service.js';
 
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+function addDays(date, days) {
+    const nextDate = new Date(date);
+    nextDate.setDate(nextDate.getDate() + days);
+    return nextDate;
+}
+
 function buildCheckInBasePipeline(start, end) {
     return [
         {
@@ -54,6 +62,63 @@ function buildCategoryRows(categoryResults, totalClassifiedCheckIns) {
         share: totalClassifiedCheckIns
             ? Math.round((row.checkIns / totalClassifiedCheckIns) * 100)
             : 0,
+    }));
+}
+
+function buildTrendMetric(current, previous) {
+    const safeCurrent = current ?? 0;
+    const safePrevious = previous ?? 0;
+
+    if (safeCurrent === 0 && safePrevious === 0) {
+        return null;
+    }
+
+    if (safePrevious === 0) {
+        if (safeCurrent === 0) {
+            return null;
+        }
+
+        return {
+            changePercent: null,
+            direction: 'up',
+            display: 'new',
+        };
+    }
+
+    const changePercent = Math.round(((safeCurrent - safePrevious) / safePrevious) * 100);
+
+    return {
+        changePercent,
+        direction: changePercent > 0 ? 'up' : changePercent < 0 ? 'down' : 'flat',
+        display: 'percent',
+    };
+}
+
+function indexByKey(items, keyName) {
+    return new Map(items.map((item) => [item[keyName], item]));
+}
+
+function attachCategoryTrends(currentCategories, previousCategories) {
+    const previousByKey = indexByKey(previousCategories, 'categoryKey');
+
+    return currentCategories.map((category) => ({
+        ...category,
+        trend: buildTrendMetric(
+            category.checkIns,
+            previousByKey.get(category.categoryKey)?.checkIns ?? 0,
+        ),
+    }));
+}
+
+function attachTrendingTrends(currentHabits, previousHabits) {
+    const previousByKey = indexByKey(previousHabits, 'canonicalHabitKey');
+
+    return currentHabits.map((habit) => ({
+        ...habit,
+        trend: buildTrendMetric(
+            habit.checkIns,
+            previousByKey.get(habit.canonicalHabitKey)?.checkIns ?? 0,
+        ),
     }));
 }
 
@@ -145,39 +210,98 @@ async function computeRangeAnalytics(start, end) {
     };
 }
 
+function normalizePeriodKey(periodKey) {
+    if (periodKey === 'today' || periodKey === '24h') {
+        return '24h';
+    }
+
+    if (periodKey === 'month') {
+        return 'month';
+    }
+
+    return 'week';
+}
+
 function buildCommunityPeriod(periodKey) {
-    if (periodKey === 'today') {
-        const start = startOfDay(new Date());
-        const end = endOfDay(new Date());
+    const normalized = normalizePeriodKey(periodKey);
+
+    if (normalized === '24h') {
+        const end = new Date();
+        const start = new Date(end.getTime() - DAY_IN_MS);
 
         return {
-            key: 'today',
+            key: '24h',
             days: 1,
             start,
             end,
+            label: 'last 24 hours',
         };
     }
 
-    return buildPeriod(periodKey === 'month' ? 'month' : 'week');
+    return buildPeriod(normalized === 'month' ? 'month' : 'week');
+}
+
+function buildPreviousCommunityPeriod(periodKey) {
+    const normalized = normalizePeriodKey(periodKey);
+
+    if (normalized === '24h') {
+        const end = new Date(Date.now() - DAY_IN_MS);
+        const start = new Date(end.getTime() - DAY_IN_MS);
+
+        return {
+            key: 'previous_24h',
+            days: 1,
+            start,
+            end,
+            label: 'previous 24 hours',
+        };
+    }
+
+    const current = buildCommunityPeriod(periodKey);
+    const previousEnd = endOfDay(addDays(current.start, -1));
+    const previousStart = startOfDay(addDays(current.start, -current.days));
+
+    return {
+        key: normalized === 'month' ? 'previous_30_days' : 'previous_7_days',
+        days: current.days,
+        start: previousStart,
+        end: previousEnd,
+        label: normalized === 'month' ? 'previous 30 days' : 'previous 7 days',
+    };
+}
+
+function serializePeriod(period) {
+    return {
+        key: period.key,
+        days: period.days,
+        start: period.start.toISOString(),
+        end: period.end.toISOString(),
+        label: period.label ?? null,
+    };
 }
 
 export async function getCommunityAnalytics({ period = 'week' } = {}) {
     const selectedPeriod = buildCommunityPeriod(period);
-    const stats = await computeRangeAnalytics(selectedPeriod.start, selectedPeriod.end);
+    const comparisonPeriod = buildPreviousCommunityPeriod(period);
+
+    const [stats, previousStats] = await Promise.all([
+        computeRangeAnalytics(selectedPeriod.start, selectedPeriod.end),
+        computeRangeAnalytics(comparisonPeriod.start, comparisonPeriod.end),
+    ]);
 
     return {
-        period: {
-            key: selectedPeriod.key,
-            days: selectedPeriod.days,
-            start: selectedPeriod.start.toISOString(),
-            end: selectedPeriod.end.toISOString(),
-        },
+        period: serializePeriod(selectedPeriod),
+        comparisonPeriod: serializePeriod(comparisonPeriod),
         summary: {
             activeUsers: stats.activeUsers,
             checkIns: stats.checkIns,
             topCategory: stats.topCategory,
+            trends: {
+                checkIns: buildTrendMetric(stats.checkIns, previousStats.checkIns),
+                activeUsers: buildTrendMetric(stats.activeUsers, previousStats.activeUsers),
+            },
         },
-        byCategory: stats.byCategory,
-        trendingHabits: stats.trendingHabits,
+        byCategory: attachCategoryTrends(stats.byCategory, previousStats.byCategory),
+        trendingHabits: attachTrendingTrends(stats.trendingHabits, previousStats.trendingHabits),
     };
 }
