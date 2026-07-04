@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BarChart3, Globe, Loader2, Sparkles, TrendingUp, Users } from 'lucide-react';
+import { BarChart3, Globe, Loader2, Sparkles, Trophy } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
@@ -30,6 +30,52 @@ const periodTabTriggerClassName = 'px-3 py-1 text-xs text-white/70 data-active:!
 
 function formatCategory(value) {
     return value?.categoryLabel ?? 'No data';
+}
+
+function formatStandingValue(standing) {
+    if (!standing) {
+        return '—';
+    }
+
+    if (standing.display === 'percent' && standing.aheadPercent !== null) {
+        return `Ahead of ${standing.aheadPercent}%`;
+    }
+
+    if (standing.display === 'no_habits') {
+        return 'Add habits to compare';
+    }
+
+    if (standing.display === 'not_eligible') {
+        return 'No habits due yet';
+    }
+
+    return '—';
+}
+
+function standingHelperText(standing, periodInRange) {
+    if (standing?.display === 'percent') {
+        const rate = standing.userCompletionRate;
+        const rateLabel = Number.isFinite(rate) ? `${rate}% completion rate` : 'Personal habit completion rate';
+        return `${rateLabel} · ${periodInRange}`;
+    }
+
+    if (standing?.display === 'no_habits') {
+        return `Personal habits only · ${periodInRange}`;
+    }
+
+    if (standing?.display === 'not_eligible') {
+        return `Nothing was due in this window · ${periodInRange}`;
+    }
+
+    return `Personal habit completion rate · ${periodInRange}`;
+}
+
+function standingValueClassName(standing) {
+    if (standing?.display === 'percent') {
+        return 'text-emerald-300';
+    }
+
+    return 'text-white';
 }
 
 function formatTrendValue(trend) {
@@ -230,8 +276,7 @@ export function CommunityPage() {
     const summary = communityAnalytics?.summary;
     const periodInRange = PERIOD_IN_RANGE_LABELS[period] ?? PERIOD_IN_RANGE_LABELS.week;
     const comparisonLabel = PERIOD_COMPARISON_LABELS[period] ?? PERIOD_COMPARISON_LABELS.week;
-    const activityTrend = summary?.trends?.checkIns;
-    const participationTrend = summary?.trends?.activeUsers;
+    const standing = summary?.standing;
 
     return (
         <Page theme="forest" contentClassName="max-w-[1400px]">
@@ -262,20 +307,13 @@ export function CommunityPage() {
                             Loading community analytics
                         </div>
                     ) : (
-                        <div className="grid gap-4 md:grid-cols-3">
+                        <div className="grid gap-4 md:grid-cols-2">
                             <SummaryCard
-                                icon={TrendingUp}
-                                label="Activity"
-                                value={formatTrendValue(activityTrend)}
-                                valueClassName={trendValueClassName(activityTrend)}
-                                helper={`Check-ins ${comparisonLabel}`}
-                            />
-                            <SummaryCard
-                                icon={Users}
-                                label="Participation"
-                                value={formatTrendValue(participationTrend)}
-                                valueClassName={trendValueClassName(participationTrend)}
-                                helper={`Active users ${comparisonLabel}`}
+                                icon={Trophy}
+                                label="Your consistency"
+                                value={formatStandingValue(standing)}
+                                valueClassName={standingValueClassName(standing)}
+                                helper={standingHelperText(standing, periodInRange)}
                             />
                             <SummaryCard
                                 icon={Globe}
@@ -294,7 +332,7 @@ export function CommunityPage() {
                             What Howly is working on
                         </CardTitle>
                         <CardDescription className="text-slate-300">
-                            Share of check-ins across life areas {periodInRange}. Category trends {comparisonLabel}.
+                            Share of habit completions across life areas {periodInRange}.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -338,7 +376,7 @@ export function CommunityPage() {
                 </Card>
 
                 <p className="text-center text-xs text-slate-400">
-                    Anonymous patterns only — shares and trends, never individual habit names or usernames.
+                    Anonymous patterns only — shares and trends, never individual habit names or usernames. Your consistency rank is a private benchmark against the community.
                 </p>
             </div>
         </Page>
