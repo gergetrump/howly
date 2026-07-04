@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { BarChart3, Dumbbell, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
+import { BarChart3, Dumbbell, Globe, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
 import { StreakShieldBadge } from '@/components/brand/StreakShieldBadge.jsx';
@@ -12,6 +12,7 @@ import { useAuth } from '@/context/authContext';
 const defaultItems = [
     { label: 'Home', to: '/dashboard', icon: Home },
     { label: 'Social', to: '/social', icon: UsersRound },
+    { label: 'Community', to: '/community', icon: Globe },
     { label: 'Shop', to: '/shop', icon: ShoppingBag },
     { label: 'Inventory', to: '/inventory', icon: PackageOpen },
     { label: 'Challenges', to: '/challenges', icon: Trophy },

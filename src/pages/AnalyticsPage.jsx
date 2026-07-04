@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BarChart3, CheckCircle2, Clock3, Loader2, Target, TrendingUp, Trophy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { getChallengeAnalytics, getHabitAnalytics } from '@/services/analyticsService';
 import { useAuth } from '@/context/authContext';
@@ -399,7 +399,6 @@ function ChallengePerformance({ summary, challenges }) {
 }
 export function AnalyticsPage() {
     const { user } = useAuth();
-    const [scope, setScope] = useState('you');
     const [period, setPeriod] = useState('week');
     const [habitAnalytics, setHabitAnalytics] = useState(null);
     const [challengeAnalytics, setChallengeAnalytics] = useState(null);
@@ -451,124 +450,95 @@ export function AnalyticsPage() {
         challengeAnalytics?.challenges?.find((item) => item.completionRate !== null) ?? null
     ), [challengeAnalytics]);
 
-    const scopeSubtitle = scope === 'community'
-        ? 'See how Howly is doing together.'
-        : 'Understand when your habits stick and where they slip.';
-
     return (
         <Page theme="forest" contentClassName="max-w-[1400px]">
             <Heading
                 title="Analytics"
-                subtitle={scopeSubtitle}
+                subtitle="Understand when your habits stick and where they slip."
                 streakDays={user?.streak ?? 0}
             />
 
-            <Tabs value={scope} onValueChange={setScope} className="gap-6">
-                <TabsList className="w-full border border-white/10 bg-white/10 text-white">
-                    <TabsTrigger
-                        value="you"
-                        className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
-                    >
-                        You
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="community"
-                        className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
-                    >
-                        Community
-                    </TabsTrigger>
-                </TabsList>
+            <div className="space-y-8">
+                <PageSection width="full">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <h2 className="text-lg font-semibold text-white">
+                            {PERIOD_LABELS[period]} overview
+                        </h2>
+                        <PeriodToggle period={period} onPeriodChange={setPeriod} />
+                    </div>
 
-                <TabsContent value="you" className="space-y-8">
-                    <PageSection width="full">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <h2 className="text-lg font-semibold text-white">
-                                {PERIOD_LABELS[period]} overview
-                            </h2>
-                            <PeriodToggle period={period} onPeriodChange={setPeriod} />
+                    {isLoading ? (
+                        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+                            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                            Loading analytics
                         </div>
+                    ) : null}
 
-                        {isLoading ? (
-                            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
-                                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                                Loading analytics
-                            </div>
-                        ) : null}
+                    {error ? (
+                        <div className="rounded-xl border border-red-300/30 bg-red-500/10 p-4 text-sm text-red-100">
+                            {error}
+                        </div>
+                    ) : null}
 
-                        {error ? (
-                            <div className="rounded-xl border border-red-300/30 bg-red-500/10 p-4 text-sm text-red-100">
-                                {error}
-                            </div>
-                        ) : null}
-
-                        {!isLoading && habitAnalytics ? (
-                            <>
-                                <div className="grid gap-4 md:grid-cols-3">
-                                    <SummaryCard
-                                        icon={CheckCircle2}
-                                        label="Follow-through"
-                                        value={percent(habitAnalytics.summary.completionRate)}
-                                        helper={`${habitAnalytics.summary.completed}/${habitAnalytics.summary.expected} scheduled habits`}
-                                    />
-                                    <SummaryCard
-                                        icon={Clock3}
-                                        label="Average time"
-                                        value={habitAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
-                                        helper="Across all completed habits"
-                                    />
-                                    <SummaryCard
-                                        icon={TrendingUp}
-                                        label="Strongest habit"
-                                        value={bestHabit?.habit?.title ?? 'No data'}
-                                        helper={bestHabit ? `${percent(bestHabit.completionRate)} completed` : 'Complete habits to compare'}
-                                    />
-                                </div>
-                                <TimelineChart dailyTotals={habitAnalytics.dailyTotals ?? []} />
-                                <HabitPerformance summary={habitAnalytics.summary} habits={habitAnalytics.habits ?? []} />
-                            </>
-                        ) : null}
-                    </PageSection>
-
-                    <PageSection width="full" title="Challenge analytics">
-                        {!isLoading && challengeAnalytics ? (
-                            <>
-                                <div className="grid gap-4 md:grid-cols-3">
-                                    <SummaryCard
-                                        icon={Trophy}
-                                        label="Active challenges"
-                                        value={challengeAnalytics.summary.activeChallengeCount}
-                                        helper={`${challengeAnalytics.challenges?.length ?? 0} total challenge participations`}
-                                    />
-                                    <SummaryCard
-                                        icon={Target}
-                                        label="Challenge follow-through"
-                                        value={percent(challengeAnalytics.summary.completionRate)}
-                                        helper={`${challengeAnalytics.summary.completed}/${challengeAnalytics.summary.expected} expected challenge days`}
-                                    />
-                                    <SummaryCard
-                                        icon={Clock3}
-                                        label="Average time"
-                                        value={challengeAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
-                                        helper={bestChallenge ? `Best: ${bestChallenge.challenge.title}` : 'Complete challenges to compare'}
-                                    />
-                                </div>
-                                <ChallengePerformance
-                                    summary={challengeAnalytics.summary}
-                                    challenges={challengeAnalytics.challenges ?? []}
+                    {!isLoading && habitAnalytics ? (
+                        <>
+                            <div className="grid gap-4 md:grid-cols-3">
+                                <SummaryCard
+                                    icon={CheckCircle2}
+                                    label="Follow-through"
+                                    value={percent(habitAnalytics.summary.completionRate)}
+                                    helper={`${habitAnalytics.summary.completed}/${habitAnalytics.summary.expected} scheduled habits`}
                                 />
-                            </>
-                        ) : null}
-                    </PageSection>
-                </TabsContent>
+                                <SummaryCard
+                                    icon={Clock3}
+                                    label="Average time"
+                                    value={habitAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
+                                    helper="Across all completed habits"
+                                />
+                                <SummaryCard
+                                    icon={TrendingUp}
+                                    label="Strongest habit"
+                                    value={bestHabit?.habit?.title ?? 'No data'}
+                                    helper={bestHabit ? `${percent(bestHabit.completionRate)} completed` : 'Complete habits to compare'}
+                                />
+                            </div>
+                            <TimelineChart dailyTotals={habitAnalytics.dailyTotals ?? []} />
+                            <HabitPerformance summary={habitAnalytics.summary} habits={habitAnalytics.habits ?? []} />
+                        </>
+                    ) : null}
+                </PageSection>
 
-                <TabsContent value="community">
-                    <PageSection width="full" title="Community insights">
-                        <p className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-                            Community analytics are coming soon.
-                        </p>
-                    </PageSection>
-                </TabsContent>
-            </Tabs>
+                <PageSection width="full" title="Challenge analytics">
+                    {!isLoading && challengeAnalytics ? (
+                        <>
+                            <div className="grid gap-4 md:grid-cols-3">
+                                <SummaryCard
+                                    icon={Trophy}
+                                    label="Active challenges"
+                                    value={challengeAnalytics.summary.activeChallengeCount}
+                                    helper={`${challengeAnalytics.challenges?.length ?? 0} total challenge participations`}
+                                />
+                                <SummaryCard
+                                    icon={Target}
+                                    label="Challenge follow-through"
+                                    value={percent(challengeAnalytics.summary.completionRate)}
+                                    helper={`${challengeAnalytics.summary.completed}/${challengeAnalytics.summary.expected} expected challenge days`}
+                                />
+                                <SummaryCard
+                                    icon={Clock3}
+                                    label="Average time"
+                                    value={challengeAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
+                                    helper={bestChallenge ? `Best: ${bestChallenge.challenge.title}` : 'Complete challenges to compare'}
+                                />
+                            </div>
+                            <ChallengePerformance
+                                summary={challengeAnalytics.summary}
+                                challenges={challengeAnalytics.challenges ?? []}
+                            />
+                        </>
+                    ) : null}
+                </PageSection>
+            </div>
         </Page>
     );
 }
