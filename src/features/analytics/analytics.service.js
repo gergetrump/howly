@@ -484,3 +484,5 @@ export async function getChallengeAnalytics(userId, { period = 'week' } = {}) {
         }),
     };
 }
+
+export { buildPeriod, startOfDay, endOfDay };
