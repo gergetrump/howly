@@ -47,7 +47,7 @@ function SummaryCard({ icon: Icon, label, value, helper }) {
         <Card className={appCardClassName}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-12 items-center justify-center rounded-xl', appCardInsetClassName)}>
-                    <Icon className="size-6 text-emerald-300" aria-hidden="true" />
+                    <Icon className="size-6 text-purple-300" aria-hidden="true" />
                 </div>
                 <div>
                     <p className="text-sm text-slate-300">{label}</p>
@@ -82,7 +82,7 @@ function CategoryBreakdown({ categories }) {
                     </div>
                     <div className="h-3 overflow-hidden rounded-full bg-white/10">
                         <div
-                            className="h-full rounded-full bg-emerald-300 transition-all"
+                            className="h-full rounded-full bg-gradient-to-r from-purple-600 to-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.25)] transition-all"
                             style={{ width: `${Math.max((item.checkIns / maxCheckIns) * 100, item.checkIns ? 4 : 0)}%` }}
                         />
                     </div>
@@ -253,7 +253,7 @@ export function CommunityPage() {
                 <Card className={appCardClassName}>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-white">
-                            <BarChart3 className="size-5 text-emerald-300" aria-hidden="true" />
+                            <BarChart3 className="size-5 text-purple-300" aria-hidden="true" />
                             What Howly is working on
                         </CardTitle>
                         <CardDescription className="text-slate-300">
@@ -276,7 +276,7 @@ export function CommunityPage() {
                 <Card className={appCardClassName}>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-white">
-                            <Sparkles className="size-5 text-emerald-300" aria-hidden="true" />
+                            <Sparkles className="size-5 text-purple-300" aria-hidden="true" />
                             Trending on Howly
                         </CardTitle>
                         <CardDescription className="text-slate-300">
