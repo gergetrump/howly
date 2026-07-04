@@ -24,7 +24,7 @@ export default function HogwartsCape({ className, color = '#1A1A1A', ...props })
                     <path d="M1056.69 58.3711C1108.65 34.905 1167.5 72.9018 1167.5 129.912V459C1167.5 502.354 1132.35 537.5 1089 537.5H279C235.646 537.5 200.5 502.354 200.5 459V131.47C200.5 74.0735 260.085 36.0825 312.122 60.2998L642.845 214.214C664.354 224.224 689.157 224.365 710.778 214.6L1056.69 58.3711Z" stroke="white" strokeWidth="3"/>
                 </g>
                 <g id="Group 92">
-                    <g id="Rectangle 45" filter="url(#filter1_f_233_59)">
+                    <g id="Rectangle 45">
                         <path d="M549 513H792V588C697.11 598.595 643.893 598.366 549 588V513Z" fill="#5D1818"/>
                         <path d="M791.5 513.5V587.552C697.074 598.076 643.931 597.849 549.5 587.551V513.5H791.5Z" stroke="white"/>
                     </g>
@@ -50,11 +50,6 @@ export default function HogwartsCape({ className, color = '#1A1A1A', ...props })
                     <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
                     <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_233_59"/>
                     <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_233_59" result="shape"/>
-                </filter>
-                <filter id="filter1_f_233_59" x="545" y="509" width="251" height="90.8604" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                    <feFlood floodOpacity="0" result="BackgroundImageFix"/>
-                    <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
-                    <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_233_59"/>
                 </filter>
                 <filter id="filter2_g_233_59" x="0" y="0" width="1351.57" height="627.557" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
                     <feFlood floodOpacity="0" result="BackgroundImageFix"/>

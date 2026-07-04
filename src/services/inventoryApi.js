@@ -4,6 +4,10 @@ export function getMyInventory() {
     return apiRequest('/inventory/me');
 }
 
+export function getBoostPurchaseLimits() {
+    return apiRequest('/inventory/boost-purchase-limits');
+}
+
 export function buyItem(itemId, customization = {}) {
     return apiRequest('/inventory/buy', {
         method: 'POST',

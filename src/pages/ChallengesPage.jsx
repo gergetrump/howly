@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Loader2, Pencil, UserPlus } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { CircleHelp, Loader2, Pencil, Trophy, UserPlus } from 'lucide-react';
 import { ActionButton, CardGrid, PlanLimitDialog } from '@/components/common';
 import { ChallengeCard } from '@/components/cards/ChallengeCard.jsx';
 import { ChallengeFormDialog } from '@/components/cards/ChallengeFormDialog.jsx';
@@ -8,15 +8,19 @@ import { ChallengeInviteDialog } from '@/components/cards/ChallengeInviteDialog.
 import { ChallengeInvitationList } from '@/components/cards/ChallengeInvitationList.jsx';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
+import { NotificationBanner } from '@/components/ui/notification-banner.jsx';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/authContext';
 import {
     acceptChallengeInvitation,
+    claimChallengeReward,
     createChallenge,
     createChallengeInvitation,
     getChallengeInvitations,
     getChallenges,
     joinChallenge,
+    leaveChallenge,
     rejectChallengeInvitation,
     updateChallenge,
 } from '@/services/challengeService';
@@ -24,9 +28,9 @@ import { getFriends } from '@/services/socialApi';
 import { getCurrentUserPlan } from '@/services/userService';
 
 const CHALLENGE_TABS = [
-    { value: 'active', label: 'Active challenges' },
-    { value: 'friends', label: 'Friend challenges' },
-    { value: 'public', label: 'Public challenges' },
+    { value: 'active', label: 'Active Challenges' },
+    { value: 'friends', label: 'Friend Challenges' },
+    { value: 'public', label: 'Public Challenges' },
 ];
 
 function getUserId(user) {
@@ -41,12 +45,37 @@ function canEditChallenge(challenge) {
     return challenge?.startsAt && new Date(challenge.startsAt).getTime() > Date.now();
 }
 
+function isRewardAvailable(challenge) {
+    return challenge?.status === 'completed' || new Date(challenge?.endsAt ?? 0).getTime() <= Date.now();
+}
+
 function isActiveChallenge(challenge) {
     return challenge
         && challenge.status !== 'completed'
         && challenge.status !== 'failed'
         && challenge.endsAt
         && new Date(challenge.endsAt).getTime() > Date.now();
+}
+
+function getInvitationChallengeId(invitation) {
+    return typeof invitation?.challenge === 'object'
+        ? invitation.challenge?.id
+        : invitation?.challenge;
+}
+
+function isChallengeNotificationAvailable(notificationJump, { challenges = [], invitations = { incoming: [], outgoing: [] } } = {}) {
+    const challengeId = notificationJump?.challengeId ?? notificationJump?.metadata?.challengeId;
+    const invitationId = notificationJump?.invitationId;
+    const allInvitations = [
+        ...(invitations.incoming ?? []),
+        ...(invitations.outgoing ?? []),
+    ];
+
+    return Boolean(
+        (challengeId && challenges.some((challenge) => challenge?.id === challengeId))
+        || (invitationId && allInvitations.some((invitation) => invitation.id === invitationId))
+        || (challengeId && allInvitations.some((invitation) => getInvitationChallengeId(invitation) === challengeId))
+    );
 }
 
 function isUpgradeError(code) {
@@ -112,12 +141,61 @@ function ChallengeAlert({ error, notice, onUpgrade }) {
     return null;
 }
 
+function ChallengeInfoPopover() {
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                <button
+                    type="button"
+                    className="grid h-7 w-7 place-items-center rounded-full border border-white/10 bg-white/10 text-slate-200 transition hover:bg-white/20 hover:text-white"
+                    aria-label="How do challenges work?"
+                >
+                    <CircleHelp className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+            </PopoverTrigger>
+            <PopoverContent
+                align="start"
+                side="bottom"
+                sideOffset={8}
+                className="z-[120] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-violet-200/20 bg-slate-950/95 p-4 text-left text-xs leading-snug text-slate-200 shadow-xl shadow-slate-950/30"
+            >
+                <p className="text-sm font-bold text-white">How Challenges Work</p>
+                <div className="mt-3 space-y-3">
+                    <div>
+                        <p className="font-semibold text-violet-200">Find or Get Invited</p>
+                        <p>Public Challenges can be found by everyone. Friend Challenges are visible to friends. Direct invitations always work, even for private Challenges.</p>
+                    </div>
+                    <div>
+                        <p className="font-semibold text-violet-200">Join and Track</p>
+                        <p>After joining, the Challenge adds its Habit to your dashboard. Completing that Habit counts as progress for the Challenge.</p>
+                    </div>
+                    <div>
+                        <p className="font-semibold text-violet-200">Progress and Rewards</p>
+                        <p>Each completed Challenge day increases your progress. When the Challenge is over, you can claim Coins if you completed at least one day.</p>
+                    </div>
+                    <div>
+                        <p className="font-semibold text-violet-200">Leaving</p>
+                        <p>Leaving removes the Challenge from your active limit, but you will not receive its reward later.</p>
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
 export function ChallengesPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('active');
     const [challenges, setChallenges] = useState([]);
     const [invitations, setInvitations] = useState({ incoming: [], outgoing: [] });
+    const [pendingNotificationJump, setPendingNotificationJump] = useState(() => (
+        location.state?.notificationJump?.type === 'challenge_invitation_received'
+            ? location.state.notificationJump
+            : null
+    ));
+    const [banner, setBanner] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingChallenge, setEditingChallenge] = useState(null);
@@ -139,9 +217,13 @@ export function ChallengesPage() {
 
     const visibleChallenges = useMemo(() => challenges.filter(Boolean), [challenges]);
 
-    const loadChallengeData = useCallback(async (scope) => {
-        setIsLoading(true);
-        setError(null);
+    const loadChallengeData = useCallback(async (scope, { showLoading = true, showError = true } = {}) => {
+        if (showLoading) {
+            setIsLoading(true);
+        }
+        if (showError) {
+            setError(null);
+        }
 
         try {
             const [challengeData, invitationData] = await Promise.all([
@@ -149,12 +231,22 @@ export function ChallengesPage() {
                 getChallengeInvitations(),
             ]);
 
-            setChallenges(Array.isArray(challengeData) ? challengeData : []);
-            setInvitations(invitationData ?? { incoming: [], outgoing: [] });
+            const nextChallenges = Array.isArray(challengeData) ? challengeData : [];
+            const nextInvitations = invitationData ?? { incoming: [], outgoing: [] };
+
+            setChallenges(nextChallenges);
+            setInvitations(nextInvitations);
+
+            return { challenges: nextChallenges, invitations: nextInvitations };
         } catch (loadError) {
-            setError({ message: loadError.message || 'Failed to load challenges.', code: loadError.code });
+            if (showError) {
+                setError({ message: loadError.message || 'Failed to load challenges.', code: loadError.code });
+            }
+            return null;
         } finally {
-            setIsLoading(false);
+            if (showLoading) {
+                setIsLoading(false);
+            }
         }
     }, []);
 
@@ -164,6 +256,71 @@ export function ChallengesPage() {
         }, 0);
 
         return () => window.clearTimeout(timerId);
+    }, [activeTab, loadChallengeData]);
+
+    useEffect(() => {
+        const nextJump = location.state?.notificationJump;
+
+        if (nextJump?.type !== 'challenge_invitation_received') {
+            return undefined;
+        }
+
+        const timerId = window.setTimeout(() => {
+            setPendingNotificationJump(nextJump);
+            setActiveTab('active');
+            navigate('/challenges', { replace: true, state: null });
+        }, 0);
+
+        return () => window.clearTimeout(timerId);
+    }, [location.state, navigate]);
+
+    useEffect(() => {
+        if (!pendingNotificationJump) {
+            return undefined;
+        }
+
+        let isCancelled = false;
+
+        async function validateNotificationJump() {
+            setActiveTab('active');
+
+            const latestData = await loadChallengeData('active', {
+                showLoading: false,
+                showError: false,
+            });
+
+            if (isCancelled) {
+                return;
+            }
+
+            if (latestData && !isChallengeNotificationAvailable(pendingNotificationJump, latestData)) {
+                setBanner({
+                    variant: 'unavailable',
+                    eyebrow: 'Notification link unavailable',
+                    title: 'Challenge not found',
+                });
+            }
+
+            setPendingNotificationJump(null);
+        }
+
+        validateNotificationJump();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [loadChallengeData, pendingNotificationJump]);
+
+    useEffect(() => {
+        function refreshChallengeData() {
+            loadChallengeData(activeTab, { showLoading: false, showError: false });
+        }
+
+        window.addEventListener('howly:notifications-updated', refreshChallengeData);
+
+        return () => {
+            window.removeEventListener('howly:notifications-updated', refreshChallengeData);
+        };
     }, [activeTab, loadChallengeData]);
 
     function showActionError(actionError, fallbackMessage) {
@@ -326,6 +483,38 @@ export function ChallengesPage() {
         }
     }
 
+    async function handleLeaveChallenge(challengeId) {
+        setBusyAction(`leave-${challengeId}`);
+        setError(null);
+        setNotice('');
+
+        try {
+            await leaveChallenge(challengeId);
+            setNotice('Challenge left.');
+            await loadChallengeData(activeTab);
+        } catch (actionError) {
+            showActionError(actionError, 'Failed to leave challenge.');
+        } finally {
+            setBusyAction('');
+        }
+    }
+
+    async function handleClaimReward(challengeId) {
+        setBusyAction(`reward-${challengeId}`);
+        setError(null);
+        setNotice('');
+
+        try {
+            const result = await claimChallengeReward(challengeId);
+            setNotice(`Reward claimed: ${result.rewardCoins ?? 0} coins.`);
+            await loadChallengeData(activeTab);
+        } catch (actionError) {
+            showActionError(actionError, actionError.message || 'Failed to claim reward.');
+        } finally {
+            setBusyAction('');
+        }
+    }
+
     async function handleAcceptInvitation(invitationId) {
         setBusyAction(`accept-${invitationId}`);
         setError(null);
@@ -401,12 +590,27 @@ export function ChallengesPage() {
         <Page theme="forest">
             <Heading title="Challenges" subtitle="Join friendly habit challenges." streakDays={user?.streakCount ?? user?.streak ?? 0} />
 
+            {banner && (
+                <div className="fixed right-6 top-24 z-[9999] w-[min(92vw,24rem)]">
+                    <NotificationBanner
+                        variant={banner.variant}
+                        eyebrow={banner.eyebrow}
+                        title={banner.title}
+                        icon={<Trophy className="size-5" aria-hidden="true" />}
+                        onClose={() => setBanner(null)}
+                        autoCloseMs={6000}
+                        className="px-4 py-3"
+                    />
+                </div>
+            )}
+
             <PageSection
                 width="full"
                 align="center"
                 title={currentTabLabel}
-                actionLabel="Create challenge"
+                actionLabel="Create Challenge"
                 onAction={openCreateDialog}
+                titleAction={<ChallengeInfoPopover />}
             >
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                     <TabsList className="w-full border border-white/10 bg-white/10 text-white">
@@ -448,6 +652,10 @@ export function ChallengesPage() {
                             const isJoinable = challenge.status !== 'completed' && challenge.status !== 'failed';
                             const shouldShowJoin = !isOwnChallenge && !hasJoined && activeTab !== 'active';
                             const shouldShowJoined = !isOwnChallenge && hasJoined && activeTab !== 'active';
+                            const shouldShowLeave = hasJoined && isJoinable;
+                            const rewardAvailable = hasJoined && isRewardAvailable(challenge);
+                            const rewardClaimed = Boolean(challenge.viewerParticipantRewardClaimed);
+                            const completedDays = challenge.viewerParticipantDaysCompleted ?? 0;
                             const editLocked = !canEditChallenge(challenge);
 
                             return (
@@ -529,6 +737,47 @@ export function ChallengesPage() {
                                         >
                                             Join
                                         </ActionButton>
+                                    ) : null}
+                                    {shouldShowLeave ? (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => handleLeaveChallenge(challenge.id)}
+                                            disabled={busyAction === `leave-${challenge.id}`}
+                                            className="border-red-300/30 bg-red-500/10 text-red-100 hover:bg-red-500/20"
+                                        >
+                                            Leave
+                                        </Button>
+                                    ) : null}
+                                    {rewardAvailable && !rewardClaimed && completedDays >= 1 ? (
+                                        <ActionButton
+                                            type="button"
+                                            onClick={() => handleClaimReward(challenge.id)}
+                                            disabled={busyAction === `reward-${challenge.id}`}
+                                        >
+                                            Claim {challenge.viewerParticipantPendingRewardCoins ?? 0} coins
+                                        </ActionButton>
+                                    ) : null}
+                                    {rewardAvailable && !rewardClaimed && completedDays < 1 ? (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            disabled
+                                            title="You need to complete at least one challenge day to receive a reward."
+                                            className="border-white/20 bg-white/10 text-slate-300"
+                                        >
+                                            No reward: 0 days
+                                        </Button>
+                                    ) : null}
+                                    {rewardAvailable && rewardClaimed ? (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            disabled
+                                            className="border-emerald-300/30 bg-emerald-500/10 text-emerald-100"
+                                        >
+                                            Claimed {challenge.viewerParticipantRewardCoins ?? 0} coins
+                                        </Button>
                                     ) : null}
                                 </ChallengeCard>
                             );

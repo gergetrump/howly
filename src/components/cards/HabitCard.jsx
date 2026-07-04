@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, Edit2, Trash2, Camera, Sparkles } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Camera } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -29,7 +29,6 @@ export function HabitCard({
     title,
     frequency,
     category = null,
-    goal = null,
     streakDays = 0,
     completed = false,
     atRisk = false,
@@ -54,12 +53,6 @@ export function HabitCard({
                     <div className="flex flex-wrap items-center gap-2">
                         <h3 className="truncate font-semibold">{title}</h3>
                         <div className="flex items-center gap-1.5">
-                            {goal ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-howly-primary/15 px-2.5 py-0.5 text-xs font-semibold text-howly-primary ring-1 ring-howly-primary/40">
-                                    <Sparkles size={12} aria-hidden="true" />
-                                    {goal}
-                                </span>
-                            ) : null}
                             {frequency ? <Badge variant="secondary">{frequency}</Badge> : null}
                             {category ? (
                                 <Badge className="border border-purple-400/30 bg-purple-500/15 text-purple-100 hover:bg-purple-500/15">

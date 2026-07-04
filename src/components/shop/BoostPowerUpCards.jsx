@@ -13,21 +13,21 @@ const BOOSTS = [
         fallbackName: 'Small Boost',
         Visual: SmallBoost,
         rewardLabel: '+50 x3',
-        description: 'Gives +50 coins for the next 3 completions of one habit. Use it from inventory.',
+        description: 'Gives +50 coins for the next 3 completions of one habit. You can hold up to 20 and buy up to 20 per month.',
     },
     {
         assetKey: 'medium-boost',
         fallbackName: 'Medium Boost',
         Visual: MediumBoost,
         rewardLabel: '+75 x4',
-        description: 'Gives +75 coins for the next 4 completions of one habit. Use it from inventory.',
+        description: 'Gives +75 coins for the next 4 completions of one habit. You can hold up to 20 and buy up to 20 per month.',
     },
     {
         assetKey: 'big-boost',
         fallbackName: 'Big Boost',
         Visual: BigBoost,
         rewardLabel: '+100 x5',
-        description: 'Gives +100 coins for the next 5 completions of one habit. Use it from inventory.',
+        description: 'Gives +100 coins for the next 5 completions of one habit. You can hold up to 20 and buy up to 20 per month.',
     },
 ];
 
@@ -37,6 +37,8 @@ export function BoostPowerUpCards({
     getCartQuantity,
     isCartQuantityMax,
     isOwnedQuantityMax,
+    isMonthlyQuantityMax,
+    getLimitLabel,
     isBuying,
     isFreeUser,
     onPremiumRequired,
@@ -93,6 +95,8 @@ export function BoostPowerUpCards({
         const cartQuantity = getCartQuantity?.(item) ?? 0;
         const cartQuantityMax = isCartQuantityMax?.(item) ?? false;
         const ownedQuantityMax = isOwnedQuantityMax?.(item) ?? false;
+        const monthlyQuantityMax = isMonthlyQuantityMax?.(item) ?? false;
+        const limitLabel = getLimitLabel?.(item) ?? 'Limit reached';
 
         return (
             <ItemCard
@@ -143,16 +147,16 @@ export function BoostPowerUpCards({
                     disabled={cartQuantityMax}
                     onClick={() => guardPremium(item, () => onAddToCart?.(item))}
                 >
-                    {cartQuantity > 0 ? `${cartQuantity}x in cart` : cartQuantityMax ? 'Max 20' : 'Add to cart'}
+                    {cartQuantity > 0 ? `${cartQuantity}x in cart` : cartQuantityMax ? limitLabel : 'Add to cart'}
                 </ActionButton>
                 <ActionButton
                     type="button"
                     fullWidth
                     className="h-8 px-3 text-xs disabled:bg-white/10 disabled:text-slate-500"
-                    disabled={isBuying || ownedQuantityMax}
+                    disabled={isBuying || ownedQuantityMax || monthlyQuantityMax}
                     onClick={() => guardPremium(item, () => onBuy?.(item))}
                 >
-                    {isBuying ? 'Buying...' : 'Buy'}
+                    {isBuying ? 'Buying...' : ownedQuantityMax ? 'Inventory full' : monthlyQuantityMax ? 'Monthly limit' : 'Buy'}
                 </ActionButton>
             </ItemCard>
         );

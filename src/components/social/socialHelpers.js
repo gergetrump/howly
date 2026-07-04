@@ -23,21 +23,29 @@ export function getNormalizedUsername(userOrUsername) {
 }
 
 export function isBlockedByRelationship(user, blockedUsers = [], blockers = []) {
+    return isUserBlockedByMe(user, blockedUsers) || hasUserBlockedMe(user, blockers);
+}
+
+export function isUserBlockedByMe(user, blockedUsers = []) {
     const userId = getUserId(user);
     const username = getNormalizedUsername(user);
 
-    const blockedByMe = blockedUsers.some((blockedUser) => {
+    return blockedUsers.some((blockedUser) => {
         const blockedId = getUserId(blockedUser);
         return (userId && blockedId === userId)
             || (username && getNormalizedUsername(blockedUser) === username);
     });
-    const hasBlockedMe = blockers.some((blocker) => {
+}
+
+export function hasUserBlockedMe(user, blockers = []) {
+    const userId = getUserId(user);
+    const username = getNormalizedUsername(user);
+
+    return blockers.some((blocker) => {
         const blockerId = getUserId(blocker);
         return (userId && blockerId === userId)
             || (username && getNormalizedUsername(blocker) === username);
     });
-
-    return blockedByMe || hasBlockedMe;
 }
 
 export function buildMilestoneTitle(post) {
@@ -92,7 +100,8 @@ export function getSocialErrorMessage(error, user) {
         case 'FRIEND_REQUEST_TO_SELF':
             return 'You cannot send a friend request to yourself';
         case 'FRIEND_REQUEST_RECIPIENT_NOT_FOUND':
-            return 'Hmm, that didn\'t work. Check if the username is correct';
+        case 'USER_BLOCKED':
+            return 'Hmm, that didn\'t work. Check if the username is correct.';
         case 'USERS_ALREADY_FRIENDS':
             return `You and ${getDisplayName(user)} are already friends`;
         case 'PENDING_FRIEND_REQUEST_EXISTS':

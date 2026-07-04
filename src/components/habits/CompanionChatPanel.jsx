@@ -66,7 +66,6 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                 icon: habit.icon,
                 frequency: habit.frequency,
                 category: habit.category,
-                goal,
             }]);
             (response?.data ?? []).forEach((created) => onHabitAdded?.(created));
             setHabits((previous) => previous.filter((entry) => entry.key !== habit.key));
@@ -130,7 +129,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                             <button
                                 type="button"
                                 onClick={() => onEditSuggestion?.(
-                                    { ...habit, goal },
+                                    { ...habit },
                                     () => setHabits((previous) => previous.filter((entry) => entry.key !== habit.key)),
                                 )}
                                 aria-label="Edit habit"
