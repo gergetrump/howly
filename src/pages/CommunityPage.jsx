@@ -20,12 +20,6 @@ const PERIOD_IN_RANGE_LABELS = {
     month: 'in the last 30 days',
 };
 
-const PERIOD_COMPARISON_LABELS = {
-    '24h': 'vs previous 24 hours',
-    week: 'vs previous 7 days',
-    month: 'vs previous 30 days',
-};
-
 const periodTabTriggerClassName = 'px-3 py-1 text-xs text-white/70 data-active:!bg-white/20 data-active:!text-white sm:text-sm';
 
 function formatCategory(value) {
@@ -236,7 +230,7 @@ function TrendingHabits({ habits, showTrends }) {
 
 export function CommunityPage() {
     const { user } = useAuth();
-    const [period, setPeriod] = useState('week');
+    const [period, setPeriod] = useState('24h');
     const [communityAnalytics, setCommunityAnalytics] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -275,7 +269,6 @@ export function CommunityPage() {
 
     const summary = communityAnalytics?.summary;
     const periodInRange = PERIOD_IN_RANGE_LABELS[period] ?? PERIOD_IN_RANGE_LABELS.week;
-    const comparisonLabel = PERIOD_COMPARISON_LABELS[period] ?? PERIOD_COMPARISON_LABELS.week;
     const standing = summary?.standing;
 
     return (
@@ -357,7 +350,7 @@ export function CommunityPage() {
                             Trending on Howly
                         </CardTitle>
                         <CardDescription className="text-slate-300">
-                            The standard habit types rising or falling {periodInRange}. Habit trends {comparisonLabel}.
+                            The standard habit types rising or falling {periodInRange}.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
