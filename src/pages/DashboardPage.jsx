@@ -411,6 +411,7 @@ export function DashboardPage() {
                 refreshUserStreak();
                 window.dispatchEvent(new Event('howly:habit-completed'));
             }
+            window.dispatchEvent(new Event('howly:habit-progress-updated'));
 
             // Offer to share a story moment after checking off a habit (if none posted yet)
             if (!wasCompleted && !sharedHabitIds.has(habit.id)) {
@@ -458,6 +459,7 @@ export function DashboardPage() {
                 refreshUserStreak();
                 window.dispatchEvent(new Event('howly:habit-completed'));
             }
+            window.dispatchEvent(new Event('howly:habit-progress-updated'));
         } catch (error) {
             console.error('Failed to complete challenge habit:', error);
         }
