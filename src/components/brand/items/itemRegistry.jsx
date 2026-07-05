@@ -19,6 +19,16 @@ import HatWithPompom, { HatWithPompomLayer } from './HatWithPompom';
 import HogwartsCape, { HogwartsCapeLayer } from './HogwartsCape';
 import HogwartsScarf, { HogwartsScarfLayer } from './HogwartsScarf';
 import Hoodie, { HoodieLayer } from './Hoodie';
+import {
+    GryffindorSweater,
+    GryffindorSweaterLayer,
+    SlytherinSweater,
+    SlytherinSweaterLayer,
+    RavenclawSweater,
+    RavenclawSweaterLayer,
+    HufflepuffSweater,
+    HufflepuffSweaterLayer,
+} from './HouseSweater';
 import Jersie, { JersieLayer } from './Jersie';
 import MagicWand, { MagicWandLayer } from './MagicWand';
 import Necklace, { NecklaceLayer } from './Necklace';
@@ -259,6 +269,38 @@ const itemRegistry = {
         type: 'clothing',
         visual: Jersie,
         layer: JersieLayer,
+        transform: 'translate(45 835)',
+        previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'gryffindor-sweater': {
+        type: 'clothing',
+        displayName: 'Gryffindor Sweater',
+        visual: GryffindorSweater,
+        layer: GryffindorSweaterLayer,
+        transform: 'translate(45 835)',
+        previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'slytherin-sweater': {
+        type: 'clothing',
+        displayName: 'Slytherin Sweater',
+        visual: SlytherinSweater,
+        layer: SlytherinSweaterLayer,
+        transform: 'translate(45 835)',
+        previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'ravenclaw-sweater': {
+        type: 'clothing',
+        displayName: 'Ravenclaw Sweater',
+        visual: RavenclawSweater,
+        layer: RavenclawSweaterLayer,
+        transform: 'translate(45 835)',
+        previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'hufflepuff-sweater': {
+        type: 'clothing',
+        displayName: 'Hufflepuff Sweater',
+        visual: HufflepuffSweater,
+        layer: HufflepuffSweaterLayer,
         transform: 'translate(45 835)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },
