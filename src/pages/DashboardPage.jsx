@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { Check, Loader2, Sparkles } from 'lucide-react';
 import { CardGrid, CompletionCircle, PlanLimitDialog } from '@/components/common';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
@@ -68,6 +68,98 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
     );
 }
 
+function HabitLimitCleanupDialog({
+    open,
+    habits,
+    maxHabits,
+    selectedHabitIds,
+    isSaving,
+    error,
+    onToggleHabit,
+    onConfirm,
+}) {
+    const selectedCount = selectedHabitIds.size;
+    const habitsToRemove = Math.max(habits.length - selectedCount, 0);
+    const canConfirm = selectedCount === maxHabits && !isSaving;
+
+    return (
+        <Dialog open={open} onOpenChange={() => {}}>
+            <DialogContent
+                showCloseButton={false}
+                className="max-h-[88vh] overflow-hidden rounded-3xl border-0 bg-[#1e1b3a] p-0 text-white shadow-2xl sm:max-w-2xl"
+            >
+                <div className="space-y-5 p-6 sm:p-8">
+                    <DialogHeader className="space-y-3 text-left">
+                        <DialogTitle className="text-2xl font-bold tracking-tight">
+                            Choose Your Free Plan Habits
+                        </DialogTitle>
+                        <DialogDescription className="text-base leading-relaxed text-slate-300">
+                            Your Premium subscription has ended. The Free plan includes {maxHabits} habits, so please choose which {maxHabits} you want to keep. The remaining habits will be deleted from your account.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="rounded-2xl border border-amber-300/25 bg-amber-400/10 px-4 py-3 text-sm font-semibold text-amber-100">
+                        Selected {selectedCount}/{maxHabits}. {habitsToRemove} habit{habitsToRemove === 1 ? '' : 's'} will be removed.
+                    </div>
+
+                    <div className="max-h-[42vh] space-y-2 overflow-y-auto pr-1">
+                        {habits.map((habit) => {
+                            const isSelected = selectedHabitIds.has(habit.id);
+                            const isDisabled = !isSelected && selectedCount >= maxHabits;
+
+                            return (
+                                <button
+                                    key={habit.id}
+                                    type="button"
+                                    onClick={() => onToggleHabit(habit.id)}
+                                    disabled={isSaving || isDisabled}
+                                    className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition ${
+                                        isSelected
+                                            ? 'border-emerald-300/40 bg-emerald-400/15 text-white'
+                                            : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45'
+                                    }`}
+                                >
+                                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-xl">
+                                        {habit.icon}
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block truncate font-semibold">{habit.title}</span>
+                                        <span className="mt-0.5 block text-xs text-slate-400">{habit.frequency}</span>
+                                    </span>
+                                    <span className={`grid size-6 shrink-0 place-items-center rounded-full border ${
+                                        isSelected
+                                            ? 'border-emerald-300 bg-emerald-400 text-emerald-950'
+                                            : 'border-white/20 bg-white/5'
+                                    }`}
+                                    >
+                                        {isSelected ? <Check className="size-4" aria-hidden="true" /> : null}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {error ? (
+                        <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                            {error}
+                        </p>
+                    ) : null}
+
+                    <Button
+                        type="button"
+                        onClick={onConfirm}
+                        disabled={!canConfirm}
+                        className="h-12 w-full rounded-2xl bg-purple-600 text-base font-semibold text-white shadow-lg shadow-purple-600/25 hover:bg-purple-700 disabled:bg-white/10 disabled:text-slate-500"
+                    >
+                        {isSaving ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
+                        Keep Selected Habits
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export function DashboardPage() {
     const navigate = useNavigate();
     const { user, companion, setUser } = useAuth();
@@ -86,15 +178,20 @@ export function DashboardPage() {
     const [equippedItemConfigs, setEquippedItemConfigs] = useState([]);
     const [limitPrompt, setLimitPrompt] = useState(null);
     const [planInfo, setPlanInfo] = useState(null);
+    const [selectedCleanupHabitIds, setSelectedCleanupHabitIds] = useState(new Set());
+    const [isCleaningUpHabits, setIsCleaningUpHabits] = useState(false);
+    const [habitCleanupError, setHabitCleanupError] = useState('');
     // Habit ids that already have an active story in the 7-day feed window
     const [sharedHabitIds, setSharedHabitIds] = useState(new Set());
     const planLimits = planInfo?.currentPlan?.limits;
     const isPremiumUser = planInfo?.currentPlanKey === 'premium' || user?.role === 'admin' || user?.isPremium === true;
+    const freeHabitLimit = planLimits?.maxHabits;
+    const needsHabitLimitCleanup = Boolean(planInfo && !isPremiumUser && freeHabitLimit && habits.length > freeHabitLimit);
 
     useEffect(() => {
         async function fetchHabits() {
             try {
-                const response = await getMyHabits();
+                const response = await getMyHabits({ limit: 100 });
                 setHabits(response.data || []);
             } catch (error) {
                 console.error('Failed to load habits:', error);
@@ -130,8 +227,31 @@ export function DashboardPage() {
             .then(setPlanInfo)
             .catch((error) => {
                 console.error('Failed to load user plan:', error);
-            });
+        });
     }, []);
+
+    useEffect(() => {
+        const timerId = window.setTimeout(() => {
+            if (!needsHabitLimitCleanup) {
+                setSelectedCleanupHabitIds(new Set());
+                setHabitCleanupError('');
+                return;
+            }
+
+            setSelectedCleanupHabitIds((currentIds) => {
+                const validHabitIds = new Set(habits.map((habit) => habit.id));
+                const currentValidIds = [...currentIds].filter((habitId) => validHabitIds.has(habitId));
+
+                if (currentValidIds.length > 0 && currentValidIds.length <= freeHabitLimit) {
+                    return new Set(currentValidIds);
+                }
+
+                return new Set(habits.slice(0, freeHabitLimit).map((habit) => habit.id));
+            });
+        }, 0);
+
+        return () => window.clearTimeout(timerId);
+    }, [freeHabitLimit, habits, needsHabitLimitCleanup]);
 
     useEffect(() => {
         let isCurrent = true;
@@ -203,11 +323,53 @@ export function DashboardPage() {
 
     async function refreshHabitsAndUser() {
         try {
-            const [habitsResponse, freshUser] = await Promise.all([getMyHabits(), getCurrentUser()]);
+            const [habitsResponse, freshUser] = await Promise.all([getMyHabits({ limit: 100 }), getCurrentUser()]);
             setHabits(habitsResponse.data || []);
             setUser(freshUser.user ?? freshUser);
         } catch (error) {
             console.error('Failed to refresh after streak rescue:', error);
+        }
+    }
+
+    function toggleCleanupHabit(habitId) {
+        setHabitCleanupError('');
+        setSelectedCleanupHabitIds((currentIds) => {
+            const nextIds = new Set(currentIds);
+
+            if (nextIds.has(habitId)) {
+                nextIds.delete(habitId);
+                return nextIds;
+            }
+
+            if (nextIds.size >= freeHabitLimit) {
+                return nextIds;
+            }
+
+            nextIds.add(habitId);
+            return nextIds;
+        });
+    }
+
+    async function confirmHabitLimitCleanup() {
+        if (selectedCleanupHabitIds.size !== freeHabitLimit) {
+            setHabitCleanupError(`Please select exactly ${freeHabitLimit} habits to keep.`);
+            return;
+        }
+
+        const habitsToDelete = habits.filter((habit) => !selectedCleanupHabitIds.has(habit.id));
+
+        setIsCleaningUpHabits(true);
+        setHabitCleanupError('');
+
+        try {
+            await Promise.all(habitsToDelete.map((habit) => deleteHabit(habit.id)));
+            setHabits((currentHabits) => currentHabits.filter((habit) => selectedCleanupHabitIds.has(habit.id)));
+            toast.success('Your Free plan habits were updated.');
+        } catch (error) {
+            console.error('Failed to clean up habits after premium ended:', error);
+            setHabitCleanupError('Could not update your habits. Please try again.');
+        } finally {
+            setIsCleaningUpHabits(false);
         }
     }
 
@@ -569,6 +731,17 @@ export function DashboardPage() {
                 }}
                 title={limitPrompt?.title}
                 message={limitPrompt?.message}
+            />
+
+            <HabitLimitCleanupDialog
+                open={needsHabitLimitCleanup}
+                habits={habits}
+                maxHabits={freeHabitLimit ?? 0}
+                selectedHabitIds={selectedCleanupHabitIds}
+                isSaving={isCleaningUpHabits}
+                error={habitCleanupError}
+                onToggleHabit={toggleCleanupHabit}
+                onConfirm={confirmHabitLimitCleanup}
             />
 
             <Dialog open={Boolean(riskConfirmHabit)} onOpenChange={(open) => { if (!open) setRiskConfirmHabit(null); }}>
