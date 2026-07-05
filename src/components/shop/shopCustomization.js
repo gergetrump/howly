@@ -247,6 +247,26 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
     },
 
     balloon: wholeColorCustomization('#EF5A6F'),
+    'matcha-bowl': {
+        defaults: {
+            bowlColor: '#E3D6C0',
+            matchaColor: '#7CAD3E',
+        },
+        colorSlots: [
+            { key: 'bowlColor', label: 'Bowl' },
+            { key: 'matchaColor', label: 'Matcha' },
+        ],
+    },
+    'sakura-branch': {
+        defaults: {
+            blossomColor: '#F6BBC7',
+            branchColor: '#7A5A3E',
+        },
+        colorSlots: [
+            { key: 'blossomColor', label: 'Blossoms' },
+            { key: 'branchColor', label: 'Branch' },
+        ],
+    },
     eyepatch: {
         defaults: {
             color: '#26262B',

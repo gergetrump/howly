@@ -39,9 +39,11 @@ export {
 export { default as Hoodie, HoodieLayer } from './Hoodie';
 export { default as Jersie, JersieLayer } from './Jersie';
 export { default as MagicWand, MagicWandLayer } from './MagicWand';
+export { default as MatchaBowl, MatchaBowlLayer } from './MatchaBowl';
 export { default as Necklace, NecklaceLayer } from './Necklace';
 export { default as Nerdglasses, NerdglassesLayer } from './Nerdglasses';
 export { default as Phone, PhoneLayer } from './Phone';
+export { default as SakuraBranch, SakuraBranchLayer } from './SakuraBranch';
 export { default as SakuraNeckclace, SakuraNeckclaceLayer } from './SakuraNeckclace';
 export { default as SakuraOutfit, SakuraOutfitLayer } from './SakuraOutfit';
 export { default as SakuraPouch, SakuraPouchLayer } from './SakuraPouch';

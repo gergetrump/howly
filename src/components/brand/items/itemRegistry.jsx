@@ -34,6 +34,8 @@ import {
 } from './HouseSweater';
 import Jersie, { JersieLayer } from './Jersie';
 import MagicWand, { MagicWandLayer } from './MagicWand';
+import MatchaBowl, { MatchaBowlLayer } from './MatchaBowl';
+import SakuraBranch, { SakuraBranchLayer } from './SakuraBranch';
 import Necklace, { NecklaceLayer } from './Necklace';
 import Nerdglasses, { NerdglassesLayer } from './Nerdglasses';
 import Phone, { PhoneLayer } from './Phone';
@@ -365,6 +367,32 @@ const itemRegistry = {
         layer: HufflepuffSweaterLayer,
         transform: 'translate(45 835)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'matcha-bowl': {
+        type: 'accessory',
+        equipSlot: 'hand',
+        displayName: 'Matcha Bowl',
+        visual: MatchaBowl,
+        layer: MatchaBowlLayer,
+        transform: 'translate(1288 1055) scale(2.0) translate(-120 -184)',
+        sideTransforms: {
+            right: 'translate(1288 1055) scale(2.0) translate(-120 -184)',
+            left: 'translate(104 1055) scale(-2.0 2.0) translate(-120 -184)',
+        },
+        previewClassName: 'max-h-[70%] max-w-[80%]',
+    },
+    'sakura-branch': {
+        type: 'accessory',
+        equipSlot: 'hand',
+        displayName: 'Sakura Branch',
+        visual: SakuraBranch,
+        layer: SakuraBranchLayer,
+        transform: 'translate(1288 1055) scale(1.9) translate(-100 -294)',
+        sideTransforms: {
+            right: 'translate(1288 1055) scale(1.9) translate(-100 -294)',
+            left: 'translate(104 1055) scale(-1.9 1.9) translate(-100 -294)',
+        },
+        previewClassName: 'max-h-[86%] max-w-[60%]',
     },
     'magic-wand': {
         type: 'accessory',
