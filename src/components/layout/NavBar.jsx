@@ -516,6 +516,7 @@ export function NavBar({
     }
 
     return (
+        <>
         <nav
             className={cn(
                 'fixed inset-x-0 top-0 z-40 border-b border-theme-text/10 bg-theme-bg/95 px-4 py-4 text-theme-text backdrop-blur',
@@ -523,7 +524,7 @@ export function NavBar({
             )}
             aria-label="Primary navigation"
         >
-            <div className="flex w-full items-center justify-between gap-6 px-4 md:px-8">
+            <div className="flex w-full items-center justify-between gap-4 md:gap-6 md:px-8">
                 <div className="flex min-w-0 items-center gap-3 sm:gap-6">
                     <Link to="/dashboard" className="flex shrink-0 items-center gap-2">
                         <img
@@ -531,12 +532,12 @@ export function NavBar({
                             alt=""
                             className={cn('object-contain', brandSizeClasses.image)}
                         />
-                        <span className={cn('font-bold tracking-normal text-theme-text', brandSizeClasses.text)}>
+                        <span className={cn('hidden font-bold tracking-normal text-theme-text sm:inline', brandSizeClasses.text)}>
                             Howly
                         </span>
                     </Link>
 
-                    <div className="flex items-center gap-1 lg:gap-3">
+                    <div className="hidden items-center gap-1 lg:flex lg:gap-3">
                         {navigationItems.map((item) => {
                             const Icon = item.icon ?? Dumbbell;
 
@@ -713,5 +714,33 @@ export function NavBar({
                 </div>
             </div>
         </nav>
+
+        <nav
+            className="fixed inset-x-0 bottom-0 z-40 border-t border-theme-text/10 bg-theme-bg pb-[env(safe-area-inset-bottom)] text-theme-text lg:hidden"
+            aria-label="Primary navigation"
+        >
+            <div className="flex items-stretch justify-around gap-0.5 px-1 pt-1">
+                {navigationItems.map((item) => {
+                    const Icon = item.icon ?? Dumbbell;
+
+                    return (
+                        <NavLink
+                            key={item.to}
+                            to={item.to}
+                            className={({ isActive }) =>
+                                cn(
+                                    'flex flex-1 flex-col items-center gap-1 rounded-lg py-1.5 text-[10px] font-medium text-theme-text-muted transition',
+                                    isActive ? 'text-theme-accent-soft' : 'hover:bg-theme-text/10 hover:text-theme-text',
+                                )
+                            }
+                        >
+                            <Icon className="size-5" aria-hidden="true" />
+                            <span className="max-w-full truncate">{item.label}</span>
+                        </NavLink>
+                    );
+                })}
+            </div>
+        </nav>
+        </>
     );
 }
