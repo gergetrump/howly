@@ -1,4 +1,6 @@
 import Bag, { BagLayer } from './Bag';
+import Balloon, { BalloonLayer } from './Balloon';
+import Book, { BookLayer } from './Book';
 import BlossomCrown, { BlossomCrownLayer } from './BlossomCrown';
 import { BallerinaLayer, BallerinaPair } from './Ballerina';
 import BambusFlute, { BambusFluteLayer } from './BambusFlute';
@@ -10,6 +12,7 @@ import { CuteBallerinasLayer, CuteBallerinasPair } from './CuteBallerinas';
 import CuteHat, { CuteHatLayer } from './CuteHat';
 import Dress, { DressLayer } from './Dress';
 import DrinkTogo, { DrinkTogoLayer } from './DrinkTogo';
+import Eyepatch, { EyepatchLayer } from './Eyepatch';
 import { GlassesLayer, GlassesPreview } from './Glasses';
 import DangoSkewer, { DangoSkewerLayer } from './DangoSkewer';
 import Hairpin, { HairpinLayer } from './Hairpin';
@@ -71,6 +74,32 @@ const itemRegistry = {
         type: 'powerUp',
         visual: BigBoost,
         previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'balloon': {
+        type: 'accessory',
+        equipSlot: 'hand',
+        displayName: 'Balloon',
+        visual: Balloon,
+        layer: BalloonLayer,
+        transform: 'translate(1288 1055) scale(1.7) translate(-80 -600)',
+        sideTransforms: {
+            right: 'translate(1288 1055) scale(1.7) translate(-80 -600)',
+            left: 'translate(104 1055) scale(-1.7 1.7) translate(-80 -600)',
+        },
+        previewClassName: 'max-h-[88%] max-w-[48%]',
+    },
+    'book': {
+        type: 'accessory',
+        equipSlot: 'hand',
+        displayName: 'Book',
+        visual: Book,
+        layer: BookLayer,
+        transform: 'translate(1288 1055) rotate(16) scale(1.7) translate(-82 -197)',
+        sideTransforms: {
+            right: 'translate(1288 1055) rotate(16) scale(1.7) translate(-82 -197)',
+            left: 'translate(104 1055) scale(-1 1) rotate(16) scale(1.7) translate(-82 -197)',
+        },
+        previewClassName: 'max-h-[82%] max-w-[60%]',
     },
     'streak-freeze': {
         type: 'powerUp',
@@ -173,6 +202,19 @@ const itemRegistry = {
             left: 'translate(150 850) scale(-1 1)',
         },
         previewClassName: 'max-h-[82%] max-w-[56%]',
+    },
+    'eyepatch': {
+        type: 'accessory',
+        equipSlot: 'face',
+        displayName: 'Eyepatch',
+        visual: Eyepatch,
+        layer: EyepatchLayer,
+        transform: 'translate(1032 639) scale(2.2) translate(-100 -130)',
+        sideTransforms: {
+            right: 'translate(1032 639) scale(2.2) translate(-100 -130)',
+            left: 'translate(377 639) scale(-2.2 2.2) translate(-100 -130)',
+        },
+        previewClassName: 'max-h-[70%] max-w-[74%]',
     },
     'glasses': {
         type: 'accessory',

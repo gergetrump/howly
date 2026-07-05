@@ -1,4 +1,6 @@
 export { default as Bag, BagLayer } from './Bag';
+export { default as Balloon, BalloonLayer } from './Balloon';
+export { default as Book, BookLayer } from './Book';
 export { default as BlossomCrown, BlossomCrownLayer } from './BlossomCrown';
 export { default as Ballerina, BallerinaLayer, BallerinaPair } from './Ballerina';
 export { default as BambusFlute, BambusFluteLayer } from './BambusFlute';
@@ -12,6 +14,7 @@ export { default as CuteHat, CuteHatLayer } from './CuteHat';
 export { default as Dress, DressLayer } from './Dress';
 export { default as Diamond } from './Diamond';
 export { default as DrinkTogo, DrinkTogoLayer } from './DrinkTogo';
+export { default as Eyepatch, EyepatchLayer } from './Eyepatch';
 export { default as Eclipse } from './Eclipse';
 export { default as Flower } from './Flower';
 export { default as Glasses, GlassesLayer, GlassesPreview } from './Glasses';

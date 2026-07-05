@@ -246,6 +246,27 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
         ],
     },
 
+    balloon: wholeColorCustomization('#EF5A6F'),
+    eyepatch: {
+        defaults: {
+            color: '#26262B',
+            side: 'right',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+        ],
+    },
+    book: {
+        defaults: {
+            coverColor: '#7D3A4A',
+            bookmarkColor: '#E0B13A',
+        },
+        colorSlots: [
+            { key: 'coverColor', label: 'Cover' },
+            { key: 'bookmarkColor', label: 'Bookmark' },
+        ],
+    },
+
     'shell-crown': {
         defaults: {
             shellColor: '#F6CDBA',

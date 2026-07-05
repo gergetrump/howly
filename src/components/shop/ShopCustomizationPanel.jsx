@@ -138,7 +138,14 @@ export function ShopCustomizationPanel({
         return (
             <aside className="min-w-0 overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-text/5 p-5 text-theme-text-soft shadow-xl shadow-slate-950/20 lg:sticky lg:top-24">
                 <h2 className="text-lg font-semibold text-theme-text">Customize</h2>
-                <p className="mt-2 text-sm">Select an item to customize!</p>
+                {item ? (
+                    <>
+                        <p className="mt-1 truncate text-sm font-medium text-theme-text">{getItemDisplayName(item)}</p>
+                        <p className="mt-2 text-sm">This item comes in a fixed design — no customization options.</p>
+                    </>
+                ) : (
+                    <p className="mt-2 text-sm">Select an item to customize!</p>
+                )}
             </aside>
         );
     }

@@ -317,9 +317,7 @@ export function ShopPage() {
         [items, selectedCategory],
     );
     const selectedCustomItem = useMemo(() => {
-        const selectedItem = items.find((item) => item._id === selectedCustomItemId);
-
-        return selectedItem && getCustomizationConfig(selectedItem.assetKey) ? selectedItem : null;
+        return items.find((item) => item._id === selectedCustomItemId) ?? null;
     }, [items, selectedCustomItemId]);
     const selectedCustomizationConfig = getCustomizationConfig(selectedCustomItem?.assetKey);
     const selectedItemCustomization = selectedCustomItem ? getItemCustomization(selectedCustomItem) : {};
@@ -562,9 +560,7 @@ export function ShopPage() {
         }
 
         setError('');
-        if (getCustomizationConfig(item.assetKey)) {
-            setSelectedCustomItemId(item._id);
-        }
+        setSelectedCustomItemId(item._id);
         const isAlreadyPreviewed = isItemPreviewed(item._id);
 
         if (isAlreadyPreviewed) {
