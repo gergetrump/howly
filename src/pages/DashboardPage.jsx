@@ -7,6 +7,7 @@ import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
 import { CompanionStage } from '@/components/brand';
+import { StreakCelebrationModal } from '@/components/brand/StreakCelebrationModal';
 import { AddHabitModal } from '@/components/habits/AddHabitModal.jsx';
 import { CompanionChatPanel } from '@/components/habits/CompanionChatPanel.jsx';
 import { StreakRepairBanner } from '@/components/habits/StreakRepairBanner.jsx';
@@ -314,8 +315,17 @@ export function DashboardPage() {
     // refreshUser) to avoid the full-screen loading state in ProtectedRoute.
     async function refreshUserStreak() {
         try {
+            const previousStreak = user?.streak ?? 0;
             const freshUser = await getCurrentUser();
-            setUser(freshUser.user ?? freshUser);
+            const nextUser = freshUser.user ?? freshUser;
+            setUser(nextUser);
+
+            const nextStreak = nextUser?.streak ?? 0;
+            if (nextStreak > previousStreak) {
+                window.dispatchEvent(new CustomEvent('howly:overall-streak-up', {
+                    detail: { from: previousStreak, to: nextStreak },
+                }));
+            }
         } catch (error) {
             console.error('Failed to refresh overall streak:', error);
         }
@@ -406,9 +416,9 @@ export function DashboardPage() {
                 setUser(current => (current ? { ...current, coins: updatedHabit.boostReverted.coins } : current));
             }
 
-            // A check-in can complete the day → refresh the overall streak (🔥).
+            // A check-in can complete the day and an un-check can revoke it → refresh the overall streak (🔥).
+            refreshUserStreak();
             if (!wasCompleted) {
-                refreshUserStreak();
                 window.dispatchEvent(new Event('howly:habit-completed'));
             }
             window.dispatchEvent(new Event('howly:habit-progress-updated'));
@@ -565,6 +575,7 @@ export function DashboardPage() {
 
     return (
         <Page theme="forest">
+            <StreakCelebrationModal />
             <Heading
                 title={`Hi, ${user?.firstName || 'User'}!`}
                 subtitle="Let's make today count."

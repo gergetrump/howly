@@ -453,11 +453,43 @@ body {
 .howly-hop .howly-arm-r { animation: howly-arm-r 0.65s ease-in-out; }
 .howly-hop .howly-arm-l { animation: howly-arm-l 0.65s ease-in-out; }
 
+@keyframes howly-celebrate-in {
+    0% { opacity: 0; transform: translateY(14px) scale(0.9); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes howly-celebrate-glow {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+@keyframes howly-confetti {
+    0% { opacity: 0; transform: translate(-50%, 0) rotate(0deg); }
+    12% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 240px)) rotate(var(--spin, 360deg)); }
+}
+
+.howly-celebrate-in { animation: howly-celebrate-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.howly-celebrate-glow { animation: howly-celebrate-glow 1.5s ease-in-out infinite; }
+.howly-roll { transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1); }
+.howly-confetti-piece { animation: howly-confetti var(--dur, 2s) cubic-bezier(0.2, 0.6, 0.3, 1) var(--delay, 0s) forwards; }
+
 @media (prefers-reduced-motion: reduce) {
     .howly-blink,
     .howly-hop,
     .howly-hop .howly-arm-l,
-    .howly-hop .howly-arm-r {
+    .howly-hop .howly-arm-r,
+    .howly-celebrate-in,
+    .howly-celebrate-glow {
         animation: none;
+    }
+
+    .howly-confetti-piece {
+        animation: none;
+        opacity: 0;
+    }
+
+    .howly-roll {
+        transition: none;
     }
 }
