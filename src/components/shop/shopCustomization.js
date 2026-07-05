@@ -246,6 +246,32 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
         ],
     },
 
+    'shell-crown': {
+        defaults: {
+            shellColor: '#F6CDBA',
+            starfishColor: '#E8895A',
+            pearlColor: '#FBF4EC',
+            bandColor: '#7FB8AE',
+        },
+        colorSlots: [
+            { key: 'shellColor', label: 'Shells' },
+            { key: 'starfishColor', label: 'Starfish' },
+            { key: 'pearlColor', label: 'Pearls' },
+            { key: 'bandColor', label: 'Band' },
+        ],
+    },
+
+    'straw-hat': {
+        defaults: {
+            strawColor: '#E8C88A',
+            ribbonColor: '#E6947A',
+        },
+        colorSlots: [
+            { key: 'strawColor', label: 'Straw' },
+            { key: 'ribbonColor', label: 'Ribbon' },
+        ],
+    },
+
     'dango-skewer': {
         defaults: {
             topColor: '#F6BBC7',

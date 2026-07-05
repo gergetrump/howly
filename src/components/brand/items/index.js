@@ -43,6 +43,8 @@ export { default as SakuraNeckclace, SakuraNeckclaceLayer } from './SakuraNeckcl
 export { default as SakuraOutfit, SakuraOutfitLayer } from './SakuraOutfit';
 export { default as SakuraPouch, SakuraPouchLayer } from './SakuraPouch';
 export { default as Scar, ScarLayer } from './Scar';
+export { default as ShellCrown, ShellCrownLayer } from './ShellCrown';
+export { default as StrawHat, StrawHatLayer } from './StrawHat';
 export { default as Sneaker, SneakerLayer, SneakerPair } from './Sneaker';
 export { default as Suit, SuitLayer } from './Suit';
 export { default as Summertop, SummertopLayer } from './Summertop';

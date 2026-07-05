@@ -38,6 +38,8 @@ import SakuraNeckclace, { SakuraNeckclaceLayer } from './SakuraNeckclace';
 import SakuraOutfit, { SakuraOutfitLayer } from './SakuraOutfit';
 import SakuraPouch, { SakuraPouchLayer } from './SakuraPouch';
 import Scar, { ScarLayer } from './Scar';
+import ShellCrown, { ShellCrownLayer } from './ShellCrown';
+import StrawHat, { StrawHatLayer } from './StrawHat';
 import { SneakerLayer, SneakerPair } from './Sneaker';
 import Suit, { SuitLayer } from './Suit';
 import Summertop, { SummertopLayer } from './Summertop';
@@ -188,6 +190,15 @@ const itemRegistry = {
         transform: 'translate(166 10) scale(1.12 1)',
         previewClassName: 'max-h-[58%] max-w-[86%]',
     },
+    'shell-crown': {
+        type: 'accessory',
+        equipSlot: 'head',
+        displayName: 'Shell Crown',
+        visual: ShellCrown,
+        layer: ShellCrownLayer,
+        transform: 'translate(166 10) scale(1.12 1)',
+        previewClassName: 'max-h-[58%] max-w-[86%]',
+    },
     'dango-skewer': {
         type: 'accessory',
         equipSlot: 'hand',
@@ -231,6 +242,15 @@ const itemRegistry = {
         layer: HatLayer,
         transform: 'translate(20 -115) scale(0.95 0.95)',
         previewClassName: 'max-h-[72%] max-w-[82%]',
+    },
+    'straw-hat': {
+        type: 'accessory',
+        equipSlot: 'head',
+        displayName: 'Straw Hat',
+        visual: StrawHat,
+        layer: StrawHatLayer,
+        transform: 'translate(20 -115) scale(0.95 0.95)',
+        previewClassName: 'max-h-[68%] max-w-[86%]',
     },
     'hat-with-pompom': {
         type: 'accessory',
