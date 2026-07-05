@@ -5,6 +5,7 @@ import {
     validateSearchUsersInput,
     validateUpdateUserInput,
     validateNotificationPreferencesInput,
+    validateUpdatePreferencesInput,
     validateUserId,
 } from './user.validation.js';
 
@@ -160,6 +161,33 @@ export async function updateCurrentUserNotificationPreferences(req, res) {
     }
 
     const user = await userService.updateNotificationPreferences(req.user.id, value);
+
+    if (!user) {
+        return notFound(res);
+    }
+
+    return res.status(200).json(userService.toPublicUser(user));
+}
+
+// Update the authenticated user's preferences (e.g. theme).
+export async function updateCurrentUserPreferences(req, res) {
+    const { error: idError } = validateUserId(req.user?.id);
+
+    if (idError) {
+        return badRequest(res, idError);
+    }
+
+    const { error, value } = validateUpdatePreferencesInput(req.body);
+
+    if (error) {
+        return badRequest(res, error);
+    }
+
+    const { user, errorCode } = await userService.updateUserPreferences(req.user.id, value);
+
+    if (errorCode === 'THEME_LOCKED') {
+        return res.status(403).json({ message: 'Buy this theme in the shop first', code: 'THEME_LOCKED' });
+    }
 
     if (!user) {
         return notFound(res);

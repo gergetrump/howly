@@ -150,3 +150,29 @@ export function validateNotificationPreferencesInput(body = {}) {
 
     return { value: updates };
 }
+
+export const ALLOWED_THEMES = ['forest-dark', 'sakura-light', 'sunset-warm', 'ocean-dark', 'hogwarts-night'];
+
+// Validate user preference updates (currently only theme)
+export function validateUpdatePreferencesInput(body = {}) {
+    const updates = {};
+    const errors = [];
+
+    if (body.theme !== undefined) {
+        if (!ALLOWED_THEMES.includes(body.theme)) {
+            errors.push(`theme must be one of: ${ALLOWED_THEMES.join(', ')}`);
+        } else {
+            updates['preferences.theme'] = body.theme;
+        }
+    }
+
+    if (Object.keys(updates).length === 0 && errors.length === 0) {
+        errors.push('no valid fields provided');
+    }
+
+    if (errors.length) {
+        return { error: errors.join(', ') };
+    }
+
+    return { value: updates };
+}

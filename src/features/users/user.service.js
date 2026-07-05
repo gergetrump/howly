@@ -1,7 +1,27 @@
 import User from './user.model.js';
+import Item from '../items/item.model.js';
+import UserItem from '../inventory/inventory.model.js';
 import config from '../../../config.js';
 
 const SERVER_BASE_URL = config.serverBaseUrl ?? 'http://localhost:3000';
+
+// Themes that must be purchased in the shop before they can be selected.
+export const PREMIUM_THEME_ASSET_KEYS = {
+    'sakura-light': 'theme-sakura-light',
+    'hogwarts-night': 'theme-hogwarts-night',
+    'ocean-dark': 'theme-ocean-dark',
+    'sunset-warm': 'theme-sunset-warm',
+};
+
+export async function userOwnsThemeForPreference(userId, themeId) {
+    const assetKey = PREMIUM_THEME_ASSET_KEYS[themeId];
+    if (!assetKey) return true;
+
+    const item = await Item.findOne({ assetKey }).select('_id').lean();
+    if (!item) return true;
+
+    return Boolean(await UserItem.exists({ user: userId, item: item._id }));
+}
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
     emailEnabled: false,
@@ -125,6 +145,21 @@ export async function updateUserById(userId, updates) {
     return { user };
 }
 
+// Update user preferences (e.g. theme) using dot-notation updates
+export async function updateUserPreferences(userId, updates) {
+    const themeId = updates['preferences.theme'];
+    if (themeId && !(await userOwnsThemeForPreference(userId, themeId))) {
+        return { errorCode: 'THEME_LOCKED' };
+    }
+
+    const user = await User.findByIdAndUpdate(userId, { $set: updates }, {
+        returnDocument: 'after',
+        runValidators: true,
+    });
+
+    return { user };
+}
+
 // Strip sensitive fields before sending user data to clients
 export function toPublicUser(user) {
     if (!user) {
@@ -156,6 +191,9 @@ export function toPublicUser(user) {
         ghostMode: user.ghostMode ?? false,
         premiumStatus: user.premiumStatus,
         premiumUntil: user.premiumUntil,
+        preferences: {
+            theme: user.preferences?.theme ?? 'forest-dark',
+        },
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
     };
