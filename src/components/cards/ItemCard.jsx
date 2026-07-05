@@ -98,10 +98,10 @@ export function ItemCard({
                         ) : null}
                     </div>
                     {showPrice || children ? (
-                        <div className="flex items-center justify-between gap-3">
-                            {showPrice ? <MoonCoin amount={price} compact /> : <span />}
+                        <div className="space-y-2">
+                            {showPrice ? <MoonCoin amount={price} compact /> : null}
                             {children ? (
-                                <div className="ml-auto grid w-full max-w-40 grid-cols-2 gap-2" onClick={stopCardClick}>
+                                <div className="grid w-full grid-cols-2 gap-2" onClick={stopCardClick}>
                                     {children}
                                 </div>
                             ) : null}

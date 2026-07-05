@@ -108,7 +108,7 @@ export function StreakFreezeCard({
             <ActionButton
                 type="button"
                 fullWidth
-                className="h-8 px-3 text-xs disabled:bg-theme-text/10 disabled:text-theme-text-muted"
+                className="col-span-2 h-8 px-3 text-xs disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                 disabled={cartQuantityMax}
                 onClick={() => guardPremium(() => onAddToCart?.(item))}
             >
@@ -117,7 +117,7 @@ export function StreakFreezeCard({
             <ActionButton
                 type="button"
                 fullWidth
-                className="h-8 px-3 text-xs disabled:bg-theme-text/10 disabled:text-theme-text-muted"
+                className="col-span-2 h-8 px-3 text-xs disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                 disabled={isBuying || ownedQuantityMax}
                 onClick={() => guardPremium(() => onBuy?.(item))}
             >
