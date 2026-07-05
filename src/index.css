@@ -210,6 +210,21 @@ body {
     animation-iteration-count: infinite;
 }
 
+.howly-flower-fall {
+    top: -40px;
+    animation-name: howly-petal-fall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .howly-petal,
+    .howly-flower-fall {
+        animation: none;
+        display: none;
+    }
+}
+
 @keyframes howly-petal-fall {
     0% {
         transform: translate3d(0, -5vh, 0) rotate(0deg);

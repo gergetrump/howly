@@ -3,6 +3,7 @@ import { useTheme } from '@/context/themeContext';
 import { Starfield } from './background/Starfield.jsx';
 import { Moon } from './background/Moon.jsx';
 import { Tree } from './background/Tree.jsx';
+import { SakuraTree } from './background/SakuraTree.jsx';
 import { Ground } from './background/Ground.jsx';
 import { FallingPetals } from './background/FallingPetals.jsx';
 import { Castle } from './background/Castle.jsx';
@@ -19,6 +20,8 @@ export function Background({ className, children }) {
     const backColor = 'var(--color-howly-forest-back)';
     const frontColor = 'var(--color-howly-forest-front)';
     const trunkColor = 'var(--color-howly-trunk)';
+
+    const ThemeTree = isSakura ? SakuraTree : Tree;
 
     return (
         <div
@@ -59,27 +62,27 @@ export function Background({ className, children }) {
             {/* ---- Back layer trees (darker, smaller, behind) ---- */}
             {!isHogwarts ? (
                 <div className="pointer-events-none absolute bottom-4 left-0 right-0 z-0" style={{ height: '38vh' }}>
-                    <Tree color={backColor} trunkColor={trunkColor} width={90}  height={160} x={2}   y={30} />
-                    <Tree color={backColor} trunkColor={trunkColor} width={140} height={240} x={14}  y={55} />
-                    <Tree color={backColor} trunkColor={trunkColor} width={100} height={180} x={26}  y={20} />
-                    <Tree color={backColor} trunkColor={trunkColor} width={150} height={260} x={40}  y={45} />
-                    <Tree color={backColor} trunkColor={trunkColor} width={90}  height={150} x={54}  y={15} />
-                    <Tree color={backColor} trunkColor={trunkColor} width={130} height={230} x={66}  y={40} />
-                    <Tree color={backColor} trunkColor={trunkColor} width={100} height={170} x={78}  y={25} />
-                    <Tree color={backColor} trunkColor={trunkColor} width={145} height={250} x={92}  y={50} />
+                    <ThemeTree color={backColor} trunkColor={trunkColor} width={90}  height={160} x={2}   y={30} />
+                    <ThemeTree color={backColor} trunkColor={trunkColor} width={140} height={240} x={14}  y={55} />
+                    <ThemeTree color={backColor} trunkColor={trunkColor} width={100} height={180} x={26}  y={20} />
+                    <ThemeTree color={backColor} trunkColor={trunkColor} width={150} height={260} x={40}  y={45} />
+                    <ThemeTree color={backColor} trunkColor={trunkColor} width={90}  height={150} x={54}  y={15} />
+                    <ThemeTree color={backColor} trunkColor={trunkColor} width={130} height={230} x={66}  y={40} />
+                    <ThemeTree color={backColor} trunkColor={trunkColor} width={100} height={170} x={78}  y={25} />
+                    <ThemeTree color={backColor} trunkColor={trunkColor} width={145} height={250} x={92}  y={50} />
                 </div>
             ) : null}
 
             {/* ---- Front layer trees (larger, in front — with blossoms in Sakura) ---- */}
             {!isHogwarts ? (
                 <div className="pointer-events-none absolute bottom-4 left-0 right-0 z-10" style={{ height: '42vh' }}>
-                    <Tree color={frontColor} trunkColor={trunkColor} width={180} height={320} x={-3}  y={20} blossoms={isSakura} />
-                    <Tree color={frontColor} trunkColor={trunkColor} width={130} height={220} x={10}  y={40} blossoms={isSakura} />
-                    <Tree color={frontColor} trunkColor={trunkColor} width={200} height={360} x={28}  y={10} blossoms={isSakura} />
-                    <Tree color={frontColor} trunkColor={trunkColor} width={140} height={240} x={46}  y={35} blossoms={isSakura} />
-                    <Tree color={frontColor} trunkColor={trunkColor} width={190} height={340} x={62}  y={5}  blossoms={isSakura} />
-                    <Tree color={frontColor} trunkColor={trunkColor} width={130} height={230} x={78}  y={30} blossoms={isSakura} />
-                    <Tree color={frontColor} trunkColor={trunkColor} width={185} height={330} x={94}  y={15} blossoms={isSakura} />
+                    <ThemeTree color={frontColor} trunkColor={trunkColor} width={180} height={320} x={-3}  y={20} blossoms={isSakura} />
+                    <ThemeTree color={frontColor} trunkColor={trunkColor} width={130} height={220} x={10}  y={40} blossoms={isSakura} />
+                    <ThemeTree color={frontColor} trunkColor={trunkColor} width={200} height={360} x={28}  y={10} blossoms={isSakura} />
+                    <ThemeTree color={frontColor} trunkColor={trunkColor} width={140} height={240} x={46}  y={35} blossoms={isSakura} />
+                    <ThemeTree color={frontColor} trunkColor={trunkColor} width={190} height={340} x={62}  y={5}  blossoms={isSakura} />
+                    <ThemeTree color={frontColor} trunkColor={trunkColor} width={130} height={230} x={78}  y={30} blossoms={isSakura} />
+                    <ThemeTree color={frontColor} trunkColor={trunkColor} width={185} height={330} x={94}  y={15} blossoms={isSakura} />
                 </div>
             ) : null}
 
