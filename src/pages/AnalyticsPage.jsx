@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 const PERIOD_LABELS = {
     week: 'Week',
     month: 'Month',
+    year: 'Year',
 };
 
 function percent(value) {
@@ -45,21 +46,19 @@ function getCompletionTone(rate) {
     return 'bg-red-400';
 }
 
-const periodTabTriggerClassName = 'px-3 py-1 text-xs text-white/70 data-active:!bg-white/20 data-active:!text-white sm:text-sm';
+function averageTimePeerHelper(summary, fallback) {
+    const comparison = summary?.averageCompletionTimeComparison;
 
-function PeriodToggle({ period, onPeriodChange }) {
-    return (
-        <Tabs value={period} onValueChange={onPeriodChange}>
-            <TabsList className="h-9 w-auto shrink-0 border border-white/10 bg-white/5 p-1 text-white">
-                <TabsTrigger value="week" className={periodTabTriggerClassName}>
-                    Week
-                </TabsTrigger>
-                <TabsTrigger value="month" className={periodTabTriggerClassName}>
-                    Month
-                </TabsTrigger>
-            </TabsList>
-        </Tabs>
-    );
+    if (
+        summary?.averageCompletionTime?.label
+        && comparison
+        && Number.isFinite(comparison.earlierThanPercent)
+        && comparison.comparedUsers > 0
+    ) {
+        return `Earlier than ${comparison.earlierThanPercent}% of other users`;
+    }
+
+    return fallback;
 }
 
 function SummaryCard({ icon: Icon, label, value, helper }) {
@@ -132,6 +131,54 @@ function TimelineChart({ dailyTotals }) {
     );
 }
 
+function MonthlyCompletionChart({ monthlyTotals }) {
+    const visibleMonths = monthlyTotals ?? [];
+
+    return (
+        <Card className={appCardClassName}>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                    <TrendingUp className="size-5 text-emerald-300" aria-hidden="true" />
+                    Monthly completion overview
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="flex h-56 items-end gap-2 sm:gap-3">
+                    {visibleMonths.map((month) => {
+                        const hasData = month.expected > 0;
+                        const height = hasData ? Math.max(clampPercent(month.completionRate), 4) : 4;
+
+                        return (
+                            <div key={month.key} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+                                <div className="relative flex h-40 w-full items-end justify-center rounded-t-lg bg-slate-950/30">
+                                    <div className="absolute bottom-0 h-full w-3/5 rounded-t-lg border border-slate-300/25 bg-slate-400/20" />
+                                    <div
+                                        className={cn(
+                                            'absolute bottom-0 w-3/5 rounded-t-lg shadow-[0_0_14px_rgba(110,231,183,0.28)]',
+                                            hasData ? getCompletionTone(month.completionRate) : 'bg-slate-600/50',
+                                        )}
+                                        style={{ height: `${height}%` }}
+                                        title={hasData
+                                            ? `${month.label}: ${percent(month.completionRate)} (${month.completed}/${month.expected})`
+                                            : `${month.label}: No data`}
+                                    />
+                                </div>
+                                <span className="h-4 text-[11px] font-medium text-slate-400" title={month.label}>
+                                    {month.label.slice(0, 1)}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+                <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-white/5 px-4 py-3 text-xs text-slate-300">
+                    <span>Each bar shows the average habit completion for that month.</span>
+                    <span className="shrink-0 text-slate-400">No data = no scheduled habits</span>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 function MiniCompletionTrend({ daily }) {
     const visibleDays = daily ?? [];
 
@@ -167,6 +214,57 @@ function MiniCompletionTrend({ daily }) {
             <div className="flex justify-between text-[11px] text-slate-400">
                 <span>{visibleDays[0]?.label}</span>
                 <span>{visibleDays[visibleDays.length - 1]?.label}</span>
+            </div>
+        </div>
+    );
+}
+
+function MiniMonthlyCompletionTrend({ monthly }) {
+    const visibleMonths = monthly ?? [];
+
+    if (!visibleMonths.length) {
+        return null;
+    }
+
+    return (
+        <div className="space-y-2">
+            <div className="flex h-20 items-end gap-1.5">
+                {visibleMonths.map((month) => {
+                    const hasData = month.expected > 0;
+                    const completedHeight = hasData ? Math.max(clampPercent(month.completionRate), 4) : 4;
+
+                    return (
+                        <div key={month.key} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                            <div className="relative flex h-14 w-full items-end justify-center rounded-t-md bg-slate-950/30">
+                                <div className="absolute bottom-0 h-full w-3/5 rounded-t-md border border-slate-300/25 bg-slate-400/20" />
+                                <div
+                                    className={cn(
+                                        'absolute bottom-0 w-3/5 rounded-t-md shadow-[0_0_10px_rgba(110,231,183,0.22)]',
+                                        hasData ? getCompletionTone(month.completionRate) : 'bg-slate-600/45',
+                                    )}
+                                    style={{ height: `${completedHeight}%` }}
+                                    title={hasData
+                                        ? `${month.label}: ${percent(month.completionRate)} (${month.completed}/${month.expected})`
+                                        : `${month.label}: No data`}
+                                />
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+            <div className="flex justify-between text-[11px] text-slate-400">
+                <span>J</span>
+                <span>F</span>
+                <span>M</span>
+                <span>A</span>
+                <span>M</span>
+                <span>J</span>
+                <span>J</span>
+                <span>A</span>
+                <span>S</span>
+                <span>O</span>
+                <span>N</span>
+                <span>D</span>
             </div>
         </div>
     );
@@ -290,7 +388,7 @@ function HabitPerformance({ summary, habits }) {
     );
 }
 
-function ChallengePerformance({ summary, challenges }) {
+function ChallengePerformance({ summary, challenges, period }) {
     const visibleChallenges = challenges.filter((item) => (
         item.expected > 0
         || item.completed > 0
@@ -382,7 +480,11 @@ function ChallengePerformance({ summary, challenges }) {
                                     </div>
 
                                     <div className="mt-auto">
-                                        <MiniCompletionTrend daily={item.daily ?? []} />
+                                        {period === 'year' ? (
+                                            <MiniMonthlyCompletionTrend monthly={item.monthly ?? []} />
+                                        ) : (
+                                            <MiniCompletionTrend daily={item.daily ?? []} />
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -404,6 +506,29 @@ export function AnalyticsPage() {
     const [challengeAnalytics, setChallengeAnalytics] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    useEffect(() => {
+        function refreshAnalytics() {
+            setRefreshKey((currentKey) => currentKey + 1);
+        }
+
+        function refreshWhenVisible() {
+            if (!document.hidden) {
+                refreshAnalytics();
+            }
+        }
+
+        window.addEventListener('howly:habit-progress-updated', refreshAnalytics);
+        window.addEventListener('focus', refreshAnalytics);
+        document.addEventListener('visibilitychange', refreshWhenVisible);
+
+        return () => {
+            window.removeEventListener('howly:habit-progress-updated', refreshAnalytics);
+            window.removeEventListener('focus', refreshAnalytics);
+            document.removeEventListener('visibilitychange', refreshWhenVisible);
+        };
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
@@ -440,7 +565,7 @@ export function AnalyticsPage() {
         return () => {
             isMounted = false;
         };
-    }, [period]);
+    }, [period, refreshKey]);
 
     const bestHabit = useMemo(() => (
         habitAnalytics?.habits?.find((item) => item.completionRate !== null) ?? null
@@ -458,87 +583,109 @@ export function AnalyticsPage() {
                 streakDays={user?.streak ?? 0}
             />
 
-            <div className="space-y-8">
-                <PageSection width="full">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <h2 className="text-lg font-semibold text-white">
-                            {PERIOD_LABELS[period]} overview
-                        </h2>
-                        <PeriodToggle period={period} onPeriodChange={setPeriod} />
+            <PageSection width="full" title={`${PERIOD_LABELS[period]} overview`}>
+                <Tabs value={period} onValueChange={setPeriod}>
+                    <TabsList className="w-full border border-white/10 bg-white/10 text-white">
+                        <TabsTrigger
+                            value="week"
+                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                        >
+                            Week
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="month"
+                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                        >
+                            Month
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="year"
+                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                        >
+                            Year
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
+
+                {isLoading ? (
+                    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+                        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                        Loading analytics
                     </div>
+                ) : null}
 
-                    {isLoading ? (
-                        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
-                            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                            Loading analytics
-                        </div>
-                    ) : null}
+                {error ? (
+                    <div className="rounded-xl border border-red-300/30 bg-red-500/10 p-4 text-sm text-red-100">
+                        {error}
+                    </div>
+                ) : null}
 
-                    {error ? (
-                        <div className="rounded-xl border border-red-300/30 bg-red-500/10 p-4 text-sm text-red-100">
-                            {error}
-                        </div>
-                    ) : null}
-
-                    {!isLoading && habitAnalytics ? (
-                        <>
-                            <div className="grid gap-4 md:grid-cols-3">
-                                <SummaryCard
-                                    icon={CheckCircle2}
-                                    label="Follow-through"
-                                    value={percent(habitAnalytics.summary.completionRate)}
-                                    helper={`${habitAnalytics.summary.completed}/${habitAnalytics.summary.expected} scheduled habits`}
-                                />
-                                <SummaryCard
-                                    icon={Clock3}
-                                    label="Average time"
-                                    value={habitAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
-                                    helper="Across all completed habits"
-                                />
-                                <SummaryCard
-                                    icon={TrendingUp}
-                                    label="Strongest habit"
-                                    value={bestHabit?.habit?.title ?? 'No data'}
-                                    helper={bestHabit ? `${percent(bestHabit.completionRate)} completed` : 'Complete habits to compare'}
-                                />
-                            </div>
-                            <TimelineChart dailyTotals={habitAnalytics.dailyTotals ?? []} />
-                            <HabitPerformance summary={habitAnalytics.summary} habits={habitAnalytics.habits ?? []} />
-                        </>
-                    ) : null}
-                </PageSection>
-
-                <PageSection width="full" title="Challenge analytics">
-                    {!isLoading && challengeAnalytics ? (
-                        <>
-                            <div className="grid gap-4 md:grid-cols-3">
-                                <SummaryCard
-                                    icon={Trophy}
-                                    label="Active challenges"
-                                    value={challengeAnalytics.summary.activeChallengeCount}
-                                    helper={`${challengeAnalytics.challenges?.length ?? 0} total challenge participations`}
-                                />
-                                <SummaryCard
-                                    icon={Target}
-                                    label="Challenge follow-through"
-                                    value={percent(challengeAnalytics.summary.completionRate)}
-                                    helper={`${challengeAnalytics.summary.completed}/${challengeAnalytics.summary.expected} expected challenge days`}
-                                />
-                                <SummaryCard
-                                    icon={Clock3}
-                                    label="Average time"
-                                    value={challengeAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
-                                    helper={bestChallenge ? `Best: ${bestChallenge.challenge.title}` : 'Complete challenges to compare'}
-                                />
-                            </div>
-                            <ChallengePerformance
-                                summary={challengeAnalytics.summary}
-                                challenges={challengeAnalytics.challenges ?? []}
+                {!isLoading && habitAnalytics ? (
+                    <>
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <SummaryCard
+                                icon={CheckCircle2}
+                                label="Follow-through"
+                                value={percent(habitAnalytics.summary.completionRate)}
+                                helper={`${habitAnalytics.summary.completed}/${habitAnalytics.summary.expected} scheduled habits`}
                             />
-                        </>
-                    ) : null}
-                </PageSection>
-            </div>
+                            <SummaryCard
+                                icon={Clock3}
+                                label="Average time"
+                                value={habitAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
+                                helper={averageTimePeerHelper(habitAnalytics.summary, 'Across all completed habits')}
+                            />
+                            <SummaryCard
+                                icon={TrendingUp}
+                                label="Strongest habit"
+                                value={bestHabit?.habit?.title ?? 'No data'}
+                                helper={bestHabit ? `${percent(bestHabit.completionRate)} completed` : 'Complete habits to compare'}
+                            />
+                        </div>
+                        {period === 'year' ? (
+                            <MonthlyCompletionChart monthlyTotals={habitAnalytics.monthlyTotals ?? []} />
+                        ) : (
+                            <TimelineChart dailyTotals={habitAnalytics.dailyTotals ?? []} />
+                        )}
+                        <HabitPerformance summary={habitAnalytics.summary} habits={habitAnalytics.habits ?? []} />
+                    </>
+                ) : null}
+            </PageSection>
+
+            <PageSection width="full" title="Challenge analytics">
+                {!isLoading && challengeAnalytics ? (
+                    <>
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <SummaryCard
+                                icon={Trophy}
+                                label="Active challenges"
+                                value={challengeAnalytics.summary.activeChallengeCount}
+                                helper={`${challengeAnalytics.challenges?.length ?? 0} total challenge participations`}
+                            />
+                            <SummaryCard
+                                icon={Target}
+                                label="Challenge follow-through"
+                                value={percent(challengeAnalytics.summary.completionRate)}
+                                helper={`${challengeAnalytics.summary.completed}/${challengeAnalytics.summary.expected} expected challenge days`}
+                            />
+                            <SummaryCard
+                                icon={Clock3}
+                                label="Average time"
+                                value={challengeAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
+                                helper={averageTimePeerHelper(
+                                    challengeAnalytics.summary,
+                                    bestChallenge ? `Best: ${bestChallenge.challenge.title}` : 'Complete challenges to compare',
+                                )}
+                            />
+                        </div>
+                        <ChallengePerformance
+                            summary={challengeAnalytics.summary}
+                            challenges={challengeAnalytics.challenges ?? []}
+                            period={period}
+                        />
+                    </>
+                ) : null}
+            </PageSection>
         </Page>
     );
 }

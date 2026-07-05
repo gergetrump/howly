@@ -41,6 +41,10 @@ function getChallengeReward(challenge) {
     return challenge?.coinReward ?? challenge?.reward ?? 0;
 }
 
+function hasPremiumMembership(user) {
+    return user?.role === 'admin' || user?.isPremium === true;
+}
+
 function canEditChallenge(challenge) {
     return challenge?.startsAt && new Date(challenge.startsAt).getTime() > Date.now();
 }
@@ -212,7 +216,8 @@ export function ChallengesPage() {
 
     const userId = getUserId(user);
     const incomingInvitations = invitations.incoming ?? [];
-    const isFreeUser = false;
+    const canCreateChallenges = hasPremiumMembership(user);
+    const isFreeUser = !canCreateChallenges;
     const currentTabLabel = CHALLENGE_TABS.find((tab) => tab.value === activeTab)?.label ?? 'Challenges';
 
     const visibleChallenges = useMemo(() => challenges.filter(Boolean), [challenges]);
@@ -359,6 +364,16 @@ export function ChallengesPage() {
     }
 
     async function openCreateDialog() {
+        if (isFreeUser) {
+            navigate('/premium', {
+                state: {
+                    message: getChallengePremiumPrompt('PREMIUM_REQUIRED'),
+                    returnTo: '/challenges',
+                },
+            });
+            return;
+        }
+
         setError(null);
         setNotice('');
         setBusyAction('create-precheck');
