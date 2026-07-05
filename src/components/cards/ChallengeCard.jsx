@@ -34,6 +34,7 @@ export function ChallengeCard({
     description,
     habitTitle,
     category = null,
+    recommendationReason = null,
     status,
     visibility,
     participants = 0,
@@ -65,6 +66,11 @@ export function ChallengeCard({
                     </div>
                 ) : null}
                 <div className="flex flex-wrap items-center gap-2">
+                    {recommendationReason ? (
+                        <Badge className="border border-violet-400/30 bg-violet-500/15 text-violet-100 hover:bg-violet-500/15">
+                            {recommendationReason}
+                        </Badge>
+                    ) : null}
                     {category ? (
                         <Badge className="border border-purple-400/30 bg-purple-500/15 text-purple-100 hover:bg-purple-500/15">
                             {category}
