@@ -7,6 +7,8 @@ import { CompanionAvatar } from '@/components/brand';
 import { ChangeCompanionDialog } from '@/components/habits/ChangeCompanionDialog';
 import { PremiumRequiredDialog } from '@/components/shop';
 import { getItemDisplayName, getItemEquipSlot, hasItemSideOptions, renderShopItemVisual } from '@/components/brand/items/itemRegistry';
+import { ThemeItemVisual } from '@/components/common/ThemeItemVisual.jsx';
+import { useTheme } from '@/context/themeContext';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -32,6 +34,17 @@ import { cn } from '@/lib/utils';
 const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
 const SIDEABLE_HEAD_ITEM_KEYS = new Set(['cute-hat', 'hairpin']);
 
+// The free default theme is always available to switch back to, even though
+// it is not a purchased inventory item.
+const DEFAULT_THEME_ITEM = {
+    userItemId: 'default-theme-forest-dark',
+    type: 'theme',
+    assetKey: 'theme-forest-dark',
+    name: 'Forest Dark',
+    price: 0,
+    premiumOnly: false,
+};
+
 function isSideableHeadItem(assetKey) {
     return SIDEABLE_HEAD_ITEM_KEYS.has(assetKey);
 }
@@ -52,6 +65,8 @@ export function InventoryPage() {
     const [error, setError] = useState('');
     const [companionMessage, setCompanionMessage] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
+    const { theme: activeTheme, setTheme } = useTheme();
+    const [pendingThemeId, setPendingThemeId] = useState(null);
     const [isChangeCompanionOpen, setIsChangeCompanionOpen] = useState(false);
     const [isCompanionPremiumPromptOpen, setIsCompanionPremiumPromptOpen] = useState(false);
     const isPremiumUser = user?.isPremium === true || user?.role === 'admin';
@@ -167,9 +182,17 @@ export function InventoryPage() {
     const savedItemSides = useMemo(() => getInventorySides(inventory), [getInventorySides, inventory]);
 
     const filteredItems = useMemo(
-        () => activeCategory === 'all'
-            ? ownedItems
-            : ownedItems.filter((item) => itemMatchesCategory(item, activeCategory)),
+        () => {
+            const base = activeCategory === 'all'
+                ? ownedItems
+                : ownedItems.filter((item) => itemMatchesCategory(item, activeCategory));
+
+            if (activeCategory === 'all' || activeCategory === 'theme') {
+                return [DEFAULT_THEME_ITEM, ...base];
+            }
+
+            return base;
+        },
         [activeCategory, ownedItems],
     );
     const boostDialogItem = useMemo(
@@ -290,6 +313,15 @@ export function InventoryPage() {
             setError('Saving this outfit did not work');
         } finally {
             setIsSavingOutfit(false);
+        }
+    }
+
+    const isThemesTab = activeCategory === 'theme';
+    const selectedThemeId = pendingThemeId ?? activeTheme;
+
+    function handleSaveTheme() {
+        if (pendingThemeId && pendingThemeId !== activeTheme) {
+            setTheme(pendingThemeId);
         }
     }
 
@@ -514,10 +546,12 @@ export function InventoryPage() {
                         <ActionButton
                             type="button"
                             className="bg-violet-500 px-5 text-white hover:bg-violet-400 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
-                            disabled={!hasUnsavedOutfitChanges || isSavingOutfit}
-                            onClick={handleSaveOutfit}
+                            disabled={isThemesTab
+                                ? (!pendingThemeId || pendingThemeId === activeTheme)
+                                : (!hasUnsavedOutfitChanges || isSavingOutfit)}
+                            onClick={isThemesTab ? handleSaveTheme : handleSaveOutfit}
                         >
-                            {isSavingOutfit ? 'Saving...' : 'Save Outfit'}
+                            {isThemesTab ? 'Save theme' : (isSavingOutfit ? 'Saving...' : 'Save Outfit')}
                         </ActionButton>
                     </div>
                 </div>
@@ -533,11 +567,7 @@ export function InventoryPage() {
                         </div>
                     ) : null}
 
-                    {!isLoading && !error && ownedItems.length === 0 ? (
-                        renderShopEmptyState()
-                    ) : null}
-
-                    {!isLoading && !error && ownedItems.length > 0 && filteredItems.length === 0 ? (
+                    {!isLoading && !error && filteredItems.length === 0 ? (
                         renderShopEmptyState()
                     ) : null}
 
@@ -549,7 +579,9 @@ export function InventoryPage() {
                                     name={getItemDisplayName(item)}
                                     price={item.price}
                                     premiumOnly={item.premiumOnly}
-                                    equipped={item.equipped}
+                                    equipped={item.type === 'theme'
+                                        ? item.assetKey?.replace(/^theme-/, '') === selectedThemeId
+                                        : item.equipped}
                                     showPrice={false}
                                     dense
                                     interactive={item.type !== 'powerUp'}
@@ -559,12 +591,16 @@ export function InventoryPage() {
                                             x{item.quantity}
                                         </span>
                                     ) : null}
-                                    visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', item.customization)}
-                                    onClick={() => handleToggleEquipped(item)}
+                                    visual={item.type === 'theme'
+                                        ? <ThemeItemVisual item={item} />
+                                        : renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', item.customization)}
+                                    onClick={item.type === 'theme'
+                                        ? () => setPendingThemeId(item.assetKey?.replace(/^theme-/, ''))
+                                        : () => handleToggleEquipped(item)}
                                 >
                                     {item.type === 'powerUp' ? (
                                         renderBoostControls(item)
-                                    ) : (
+                                    ) : item.type === 'theme' ? null : (
                                         <div className="col-span-2 flex min-h-8 justify-end">
                                             {renderSideControls(item)}
                                         </div>

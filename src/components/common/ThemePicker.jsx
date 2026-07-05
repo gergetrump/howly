@@ -96,7 +96,7 @@ export function ThemePicker() {
                                     {option.name}
                                 </p>
                                 <p className="mt-0.5 text-xs text-theme-text-muted">
-                                    {locked ? 'Premium — unlock in the shop' : option.description}
+                                    {locked ? 'Unlock in the shop' : option.description}
                                 </p>
                             </div>
 

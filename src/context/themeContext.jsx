@@ -25,6 +25,8 @@ export const THEMES = [
         emoji: '🌅',
         description: 'Golden hour, cozy evening',
         preview: { bg: '#2a1a30', card: '#3a2433', accent: '#fb923c', extra: '#4ade80' },
+        premium: true,
+        assetKey: 'theme-sunset-warm',
     },
     {
         id: 'ocean-dark',
@@ -32,6 +34,8 @@ export const THEMES = [
         emoji: '🌊',
         description: 'Calm midnight waters, focused',
         preview: { bg: '#0a1628', card: '#14283d', accent: '#38bdf8', extra: '#2dd4bf' },
+        premium: true,
+        assetKey: 'theme-ocean-dark',
     },
     {
         id: 'hogwarts-night',
