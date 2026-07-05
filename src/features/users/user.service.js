@@ -9,6 +9,8 @@ const SERVER_BASE_URL = config.serverBaseUrl ?? 'http://localhost:3000';
 export const PREMIUM_THEME_ASSET_KEYS = {
     'sakura-light': 'theme-sakura-light',
     'hogwarts-night': 'theme-hogwarts-night',
+    'ocean-dark': 'theme-ocean-dark',
+    'sunset-warm': 'theme-sunset-warm',
 };
 
 export async function userOwnsThemeForPreference(userId, themeId) {
