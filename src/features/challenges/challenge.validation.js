@@ -11,6 +11,8 @@ const CHALLENGE_STATUS_SET = new Set(CHALLENGE_STATUS);
 const CHALLENGE_VISIBILITY_SET = new Set(CHALLENGE_VISIBILITIES);
 const CHALLENGE_SCOPES = ['active', 'friends', 'public'];
 const CHALLENGE_SCOPE_SET = new Set(CHALLENGE_SCOPES);
+const CHALLENGE_SORTS = ['recommended', 'createdAt', 'endsAt'];
+const CHALLENGE_SORT_SET = new Set(CHALLENGE_SORTS);
 
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
 const HABIT_TEMPLATE_FREQUENCIES = ['Daily', 'Weekly', 'Monthly'];
@@ -341,6 +343,14 @@ export function validateListChallengesInput(query = {}) {
             errors.push(`scope must be one of: ${CHALLENGE_SCOPES.join(', ')}`);
         } else {
             value.scope = query.scope;
+        }
+    }
+
+    if (query.sort !== undefined) {
+        if (!CHALLENGE_SORT_SET.has(query.sort)) {
+            errors.push(`sort must be one of: ${CHALLENGE_SORTS.join(', ')}`);
+        } else {
+            value.sort = query.sort;
         }
     }
 
