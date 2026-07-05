@@ -487,6 +487,7 @@ export async function uncompleteHabit(habitId, userId) {
     habit.lastCompletedAt = habit.streakCount > 0 ? yesterday : null;
 
     await habit.save();
+    await revokeOverallStreakIfIncomplete(userId);
     const boostReverted = await revertHabitBoostReward({ userId, habit, uncompletedAt });
 
     const dto = toHabitDto(habit);
@@ -528,4 +529,29 @@ async function creditOverallStreak(userId) {
     await user.save();
 
     return { streak: user.streak, creditedToday: true };
+}
+
+async function revokeOverallStreakIfIncomplete(userId) {
+    const user = await User.findById(userId).select('streak streakLastDay');
+    if (!user) return null;
+
+    if (!user.streakLastDay || !isToday(user.streakLastDay)) {
+        return { streak: user.streak, revoked: false };
+    }
+
+    const habits = await Habit.find({ ownerId: userId, source: { $ne: 'challenge' } })
+        .select('frequency lastCompletedAt customDays');
+    const dueToday = habits.filter(isDueToday);
+
+    if (dueToday.length > 0 && dueToday.every((habit) => isCompletedForPeriod(habit))) {
+        return { streak: user.streak, revoked: false };
+    }
+
+    user.streak = Math.max(0, user.streak - 1);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    user.streakLastDay = yesterday;
+    await user.save();
+
+    return { streak: user.streak, revoked: true };
 }
