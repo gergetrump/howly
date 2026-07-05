@@ -209,12 +209,12 @@ const itemRegistry = {
         displayName: 'Eyepatch',
         visual: Eyepatch,
         layer: EyepatchLayer,
-        transform: 'translate(1032 639) scale(2.2) translate(-100 -130)',
+        transform: 'translate(1032 639) scale(2.2) translate(-200 -210)',
         sideTransforms: {
-            right: 'translate(1032 639) scale(2.2) translate(-100 -130)',
-            left: 'translate(377 639) scale(-2.2 2.2) translate(-100 -130)',
+            right: 'translate(1032 639) scale(2.2) translate(-200 -210)',
+            left: 'translate(377 639) scale(-2.2 2.2) translate(-200 -210)',
         },
-        previewClassName: 'max-h-[70%] max-w-[74%]',
+        previewClassName: 'max-h-[74%] max-w-[74%]',
     },
     'glasses': {
         type: 'accessory',
