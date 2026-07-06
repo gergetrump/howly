@@ -225,6 +225,7 @@ export function ProfilePage() {
             console.error('Logout failed:', error);
         } finally {
             localStorage.removeItem('howly_token');
+            setUser(null);
             navigate('/login');
         }
     }
