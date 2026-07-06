@@ -586,6 +586,55 @@ test('milestone reactions aggregate correctly across multiple users', async () =
   assert.equal(await MilestoneLike.countDocuments({ milestonePost: milestonePost._id, user: freeFriend._id }), 1);
 });
 
+test('milestone reactions support limit and offset pagination', async () => {
+  const author = await buildUser({ username: 'reaction_page_author', email: 'reaction-page-author@example.com' });
+  const habit = await buildHabit(author, { title: 'Paged reactions' });
+  const milestonePost = await MilestonePost.create({
+    user: author._id,
+    habit: habit._id,
+    habitTitle: habit.title,
+    streakDays: 10,
+    visibleUntil: new Date(Date.now() + MILESTONE_VISIBLE_HOURS * 60 * 60 * 1000),
+    likeCount: 12,
+  });
+  const reactors = await Promise.all(
+    Array.from({ length: 12 }, (_, index) =>
+      buildUser({
+        username: `reaction_page_user_${index}`,
+        email: `reaction-page-user-${index}@example.com`,
+      })
+    )
+  );
+
+  await MilestoneLike.insertMany(
+    reactors.map((reactor, index) => ({
+      milestonePost: milestonePost._id,
+      user: reactor._id,
+      emoji: index % 2 === 0 ? '💜' : '🔥',
+      createdAt: new Date(Date.now() + index),
+      updatedAt: new Date(Date.now() + index),
+    }))
+  );
+
+  const firstPage = await request(app)
+    .get(`/api/milestones/${milestonePost._id}/reactions?limit=10&offset=0`)
+    .set('Authorization', authHeader(author))
+    .expect(200);
+
+  assert.equal(firstPage.body.items.length, 10);
+  assert.equal(firstPage.body.hasMore, true);
+  assert.equal(firstPage.body.nextOffset, 10);
+
+  const secondPage = await request(app)
+    .get(`/api/milestones/${milestonePost._id}/reactions?limit=10&offset=10`)
+    .set('Authorization', authHeader(author))
+    .expect(200);
+
+  assert.equal(secondPage.body.items.length, 2);
+  assert.equal(secondPage.body.hasMore, false);
+  assert.equal(secondPage.body.nextOffset, 12);
+});
+
 // Tests that milestone posts are created only for 10-day streak intervals
 test('milestone creation only creates posts at 10-day streak intervals', async () => {
   const author = await buildUser({ username: 'milestone_author', email: 'milestone-author@example.com' });

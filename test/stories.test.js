@@ -629,6 +629,48 @@ test('friends can see who liked a visible story', async () => {
   assert.equal(response.body[0].username, 'story_liker');
 });
 
+test('story likes support limit and offset pagination', async () => {
+  const owner = await buildUser({ username: 'paged_like_owner' });
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+  const likers = await Promise.all(
+    Array.from({ length: 12 }, (_, index) =>
+      buildUser({
+        username: `paged_liker_${index}`,
+        email: `paged_liker_${index}@example.com`,
+      })
+    )
+  );
+
+  await Promise.all(likers.map((liker) => makeFriends(owner, liker)));
+  await StoryLike.insertMany(
+    likers.map((liker, index) => ({
+      story: story._id,
+      user: liker._id,
+      createdAt: new Date(Date.now() + index),
+      updatedAt: new Date(Date.now() + index),
+    }))
+  );
+
+  const firstPage = await request(app)
+    .get(`/api/stories/${story._id}/likes?limit=10&offset=0`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(firstPage.body.items.length, 10);
+  assert.equal(firstPage.body.hasMore, true);
+  assert.equal(firstPage.body.nextOffset, 10);
+
+  const secondPage = await request(app)
+    .get(`/api/stories/${story._id}/likes?limit=10&offset=10`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(secondPage.body.items.length, 2);
+  assert.equal(secondPage.body.hasMore, false);
+  assert.equal(secondPage.body.nextOffset, 12);
+});
+
 test('strangers cannot see who liked a story', async () => {
   const owner = await buildUser();
   const stranger = await buildUser();
@@ -704,6 +746,48 @@ test('a user can comment on their own story and see the comment list', async () 
 
   assert.equal(getResponse.body.length, 1);
   assert.equal(getResponse.body[0].content, 'Nice story!');
+});
+
+test('story comments paginate top-level threads with their replies', async () => {
+  const owner = await buildUser({ username: 'paged_comment_owner' });
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+  const parents = await StoryComment.insertMany(
+    Array.from({ length: 12 }, (_, index) => ({
+      story: story._id,
+      user: owner._id,
+      content: `Parent ${index}`,
+      parentComment: null,
+      createdAt: new Date(Date.now() + index),
+      updatedAt: new Date(Date.now() + index),
+    }))
+  );
+
+  await StoryComment.create({
+    story: story._id,
+    user: owner._id,
+    content: 'Reply to first parent',
+    parentComment: parents[0]._id,
+  });
+
+  const firstPage = await request(app)
+    .get(`/api/stories/${story._id}/comments?limit=10&offset=0`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(firstPage.body.hasMore, true);
+  assert.equal(firstPage.body.nextOffset, 10);
+  assert.equal(firstPage.body.items.filter((comment) => !comment.parentComment).length, 10);
+  assert.equal(firstPage.body.items.some((comment) => comment.parentComment === parents[0]._id.toString()), true);
+
+  const secondPage = await request(app)
+    .get(`/api/stories/${story._id}/comments?limit=10&offset=10`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(secondPage.body.hasMore, false);
+  assert.equal(secondPage.body.nextOffset, 12);
+  assert.equal(secondPage.body.items.length, 2);
 });
 
 test('parallel comments keep story commentCount accurate', async () => {

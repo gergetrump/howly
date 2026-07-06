@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { Notification, NOTIFICATION_TYPES } from './notification.model.js';
 import { toPublicUser } from '../users/user.service.js';
+import { toOffsetPage } from '../../utils/pagination.js';
 
 // ---------------------------------------------------------------------------
 // SSE client registry
@@ -230,13 +231,16 @@ export async function getUnreadCount({ userId, types }) {
   return { unreadCount };
 }
 
-export async function listNotifications({ userId, limit = 30 }) {
+export async function listNotifications({ userId, limit = 30, pagination = null }) {
+  const queryLimit = pagination ? pagination.fetchLimit : limit;
   const notifications = await Notification.find({ recipient: userId })
     .populate('actor')
     .sort({ createdAt: -1 })
-    .limit(limit);
+    .limit(queryLimit);
 
-  return notifications.map(toNotificationResponse);
+  const items = notifications.map(toNotificationResponse);
+
+  return pagination ? toOffsetPage(items, pagination) : items;
 }
 
 export async function markAsRead({ userId, types }) {

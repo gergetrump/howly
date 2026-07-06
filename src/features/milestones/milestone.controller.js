@@ -1,6 +1,7 @@
 import * as milestoneService from './milestone.service.js';
 import { getFriendFeedStories } from '../stories/story.service.js';
 import { validateFeedPagination, validateMilestonePostId } from './milestone.validation.js';
+import { validateOffsetPagination } from '../../utils/pagination.js';
 
 const badRequest = (res, message, code) => {
   const body = { message };
@@ -64,4 +65,33 @@ export async function toggleMilestoneLike(req, res) {
   }
 
   return res.status(200).json({ liked, milestonePost });
+}
+
+export async function getMilestoneReactions(req, res) {
+  const { error } = validateMilestonePostId(req.params.milestonePostId);
+
+  if (error) {
+    return badRequest(res, error);
+  }
+
+  const { error: paginationError, value: pagination } = validateOffsetPagination(req.query, {
+    defaultLimit: 20,
+    maxLimit: 50,
+  });
+
+  if (paginationError) {
+    return badRequest(res, paginationError);
+  }
+
+  const { reactions, errorCode } = await milestoneService.getMilestoneReactions({
+    userId: req.user.id,
+    milestonePostId: req.params.milestonePostId,
+    pagination,
+  });
+
+  if (errorCode) {
+    return res.status(404).json({ message: 'Milestone post not found', code: errorCode });
+  }
+
+  return res.status(200).json(reactions);
 }

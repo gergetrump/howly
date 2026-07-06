@@ -141,6 +141,43 @@ test('notifications can be marked as read', async () => {
   assert.equal(count.body.unreadCount, 0);
 });
 
+test('notifications support limit and offset pagination', async () => {
+  const actor = await buildUser({ username: 'page_actor' });
+  const recipient = await buildUser({ username: 'page_recipient' });
+  const entityId = new mongoose.Types.ObjectId();
+
+  await Promise.all(
+    Array.from({ length: 12 }, (_, index) =>
+      createNotification({
+        recipientId: recipient._id,
+        actorId: actor._id,
+        type: 'story_commented',
+        entityType: 'story',
+        entityId,
+        metadata: { index },
+      })
+    )
+  );
+
+  const firstPage = await request(app)
+    .get('/api/notifications?limit=10&offset=0')
+    .set('Authorization', authHeader(recipient))
+    .expect(200);
+
+  assert.equal(firstPage.body.items.length, 10);
+  assert.equal(firstPage.body.hasMore, true);
+  assert.equal(firstPage.body.nextOffset, 10);
+
+  const secondPage = await request(app)
+    .get('/api/notifications?limit=10&offset=10')
+    .set('Authorization', authHeader(recipient))
+    .expect(200);
+
+  assert.equal(secondPage.body.items.length, 2);
+  assert.equal(secondPage.body.hasMore, false);
+  assert.equal(secondPage.body.nextOffset, 12);
+});
+
 test('deduplicated notifications do not become unread again when reused', async () => {
   const actor = await buildUser({ username: 'dedupe_actor' });
   const recipient = await buildUser({ username: 'dedupe_recipient' });

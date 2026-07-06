@@ -1,5 +1,8 @@
 import * as notificationService from './notification.service.js';
 import { registerSSEClient, unregisterSSEClient } from './notification.service.js';
+import { validateOffsetPagination } from '../../utils/pagination.js';
+
+const badRequest = (res, message) => res.status(400).json({ message });
 
 // SSE endpoint — `EventSource` cannot send custom headers so the JWT travels
 // as a query parameter validated by `requireAuthFromQuery` in notification.routes.js.
@@ -29,8 +32,18 @@ export async function getUnreadCount(req, res) {
 }
 
 export async function listNotifications(req, res) {
+  const { error, value: pagination } = validateOffsetPagination(req.query, {
+    defaultLimit: 10,
+    maxLimit: 50,
+  });
+
+  if (error) {
+    return badRequest(res, error);
+  }
+
   const notifications = await notificationService.listNotifications({
     userId: req.user.id,
+    pagination,
   });
 
   return res.status(200).json(notifications);
