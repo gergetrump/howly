@@ -61,17 +61,17 @@ function ChangeCompanionForm({ currentType, currentName, onSaved, onCancel }) {
                             'flex flex-col items-center gap-1 rounded-2xl border p-2 transition-all',
                             selectedType === companion.type
                                 ? 'border-howly-primary bg-howly-primary/10 ring-2 ring-howly-primary/40'
-                                : 'border-slate-600 bg-slate-800/60 hover:border-slate-500',
+                                : 'border-slate-600 bg-theme-surface-2/60 hover:border-slate-500',
                         )}
                     >
                         <CompanionAvatar type={companion.type} size="sm" />
-                        <span className="text-xs font-medium text-slate-200">{companion.label}</span>
+                        <span className="text-xs font-medium text-theme-text">{companion.label}</span>
                     </button>
                 ))}
             </div>
 
             <div className="mt-5 space-y-2 text-left">
-                <label htmlFor="change-companion-name" className="text-sm font-medium text-slate-200">
+                <label htmlFor="change-companion-name" className="text-sm font-medium text-theme-text">
                     Name your companion
                 </label>
                 <input
@@ -81,12 +81,12 @@ function ChangeCompanionForm({ currentType, currentName, onSaved, onCancel }) {
                     onChange={(event) => setName(event.target.value)}
                     maxLength={30}
                     placeholder="Howly"
-                    className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-500 focus:border-howly-primary"
+                    className="w-full rounded-xl border border-theme-text/15 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text outline-none transition-colors placeholder:text-theme-text-muted focus:border-howly-primary"
                 />
             </div>
 
             {error ? (
-                <p className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                <p className="mt-4 rounded-xl border border-red-400/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                     {error}
                 </p>
             ) : null}
@@ -103,7 +103,7 @@ function ChangeCompanionForm({ currentType, currentName, onSaved, onCancel }) {
                     variant="ghost"
                     onClick={onCancel}
                     disabled={isSaving}
-                    className="h-11 w-full rounded-full text-slate-300 hover:bg-white/5 hover:text-white"
+                    className="h-11 w-full rounded-full text-theme-text-soft hover:bg-theme-text/5 hover:text-theme-text"
                 >
                     Cancel
                 </Button>
@@ -115,10 +115,10 @@ function ChangeCompanionForm({ currentType, currentName, onSaved, onCancel }) {
 export function ChangeCompanionDialog({ open, onOpenChange, currentType, currentName, onSaved }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="rounded-3xl border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl sm:max-w-lg">
+            <DialogContent className="rounded-3xl border-0 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-lg">
                 <DialogHeader className="space-y-2 pt-2 text-left">
                     <DialogTitle className="text-2xl font-bold tracking-tight">Change your companion</DialogTitle>
-                    <DialogDescription className="text-base text-slate-300">
+                    <DialogDescription className="text-base text-theme-text-soft">
                         Pick a new buddy and name it — your equipped items stay.
                     </DialogDescription>
                 </DialogHeader>

@@ -160,12 +160,12 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
     return (
         <>
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-xl rounded-2xl bg-[#1e1b3a] p-10 border-0 text-white shadow-2xl">
-                <h2 className="mb-8 text-center text-2xl font-bold tracking-tight text-white">
+            <DialogContent className="sm:max-w-xl rounded-2xl bg-theme-surface p-10 border-0 text-theme-text shadow-2xl">
+                <h2 className="mb-8 text-center text-2xl font-bold tracking-tight text-theme-text">
                     {editHabit ? 'Edit Habit' : 'Add Habit'}
                 </h2>
                 {formError ? (
-                    <p className="mb-4 rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                    <p className="mb-4 rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                         {formError}
                     </p>
                 ) : null}
@@ -177,19 +177,19 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                                 <PopoverTrigger asChild>
                                     <button
                                         type="button"
-                                        className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-purple-500/20 bg-[#2d2b55]/60 text-2xl transition-colors hover:border-purple-500/40"
+                                        className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-theme-accent/20 bg-theme-surface-2/60 text-2xl transition-colors hover:border-theme-accent/40"
                                     >
                                         {icon}
-                                        <div className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-purple-500 border-2 border-[#1e1b3a] text-white">
+                                        <div className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-theme-accent border-2 border-theme-bg text-theme-on-accent">
                                             <Plus size={12} strokeWidth={4} />
                                         </div>
                                     </button>
                                 </PopoverTrigger>
                                 <PopoverContent
-                                    className="w-64 rounded-xl border-purple-500/20 bg-[#1e1b3a] p-3 shadow-xl"
+                                    className="w-64 rounded-xl border-theme-accent/20 bg-theme-surface p-3 shadow-xl"
                                     align="start"
                                 >
-                                    <p className="mb-2 text-xs font-medium text-purple-300">
+                                    <p className="mb-2 text-xs font-medium text-theme-accent-soft">
                                         Choose an icon
                                     </p>
                                     <div className="grid grid-cols-6 gap-1.5">
@@ -203,16 +203,16 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                                                 }}
                                                 className={`flex h-9 w-9 items-center justify-center rounded-lg text-lg transition-all ${
                                                     icon === emoji
-                                                        ? 'bg-purple-600 ring-2 ring-purple-400'
-                                                        : 'hover:bg-[#2d2b55]'
+                                                        ? 'bg-theme-accent ring-2 ring-theme-accent'
+                                                        : 'hover:bg-theme-surface-2'
                                                 }`}
                                             >
                                                 {emoji}
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="mt-3 flex items-center justify-between border-t border-purple-500/20 pt-3">
-                                        <p className="text-xs font-medium text-purple-300">
+                                    <div className="mt-3 flex items-center justify-between border-t border-theme-accent/20 pt-3">
+                                        <p className="text-xs font-medium text-theme-accent-soft">
                                             Custom Emoji:
                                         </p>
                                         <Input
@@ -220,7 +220,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                                             onChange={(e) => setIcon(e.target.value)}
                                             placeholder="✨"
                                             maxLength={5}
-                                            className="h-8 w-14 text-center text-lg px-0 rounded-lg border-purple-500/40 bg-[#2d2b55]/60 focus:border-purple-500 text-white"
+                                            className="h-8 w-14 text-center text-lg px-0 rounded-lg border-theme-accent/40 bg-theme-surface-2/60 focus:border-theme-accent text-theme-text"
                                         />
                                     </div>
                                 </PopoverContent>
@@ -235,13 +235,13 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                                 placeholder="e.g. Drink Water, Morning Run, Read..."
                                 required
                                 maxLength={100}
-                                className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white caret-purple-400 placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/20"
+                                className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text caret-theme-accent placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-theme-accent/20"
                             />
                         </div>
                     </div>
 
                     <div className="space-y-2.5">
-                        <Label htmlFor="habit-description" className="text-sm font-medium text-white">
+                        <Label htmlFor="habit-description" className="text-sm font-medium text-theme-text">
                             Description
                         </Label>
                         <textarea
@@ -251,13 +251,13 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                             rows={3}
                             maxLength={1000}
                             placeholder="What does this habit mean to you?"
-                            className="w-full resize-none rounded-2xl border border-purple-500/20 bg-[#2d2b55]/60 px-3 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-purple-500 focus:ring-3 focus:ring-purple-500/20"
+                            className="w-full resize-none rounded-2xl border border-theme-accent/20 bg-theme-surface-2/60 px-3 py-3 text-sm text-theme-text outline-none placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-3 focus:ring-theme-accent/20"
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2.5">
-                            <Label htmlFor="habit-target" className="text-sm font-medium text-white">
+                            <Label htmlFor="habit-target" className="text-sm font-medium text-theme-text">
                                 Target
                             </Label>
                             <Input
@@ -266,22 +266,22 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                                 min={1}
                                 value={target}
                                 onChange={(e) => setTarget(e.target.value)}
-                                className="h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:border-purple-500 focus:ring-purple-500/20 [color-scheme:dark] [&::-webkit-inner-spin-button]:opacity-50"
+                                className="h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20 [&::-webkit-inner-spin-button]:opacity-50"
                             />
                         </div>
 
                         <div className="space-y-2.5">
-                            <Label className="text-sm font-medium text-white">Unit</Label>
+                            <Label className="text-sm font-medium text-theme-text">Unit</Label>
                             <Select value={unit} onValueChange={setUnit}>
-                                <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:opacity-50 [&>svg]:text-white">
+                                <SelectTrigger className="!h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:ring-theme-accent/20 [&>svg]:opacity-50 [&>svg]:text-theme-text">
                                     <SelectValue placeholder="Select unit" />
                                 </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={4} className="rounded-xl border-purple-500/20 bg-[#1e1b3a] w-[var(--radix-select-trigger-width)] z-[100]">
+                                <SelectContent position="popper" sideOffset={4} className="rounded-xl border-theme-accent/20 bg-theme-surface w-[var(--radix-select-trigger-width)] z-[100]">
                                     {UNITS.map((u) => (
                                         <SelectItem
                                             key={u}
                                             value={u}
-                                            className="text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white cursor-pointer [&_*]:!text-white"
+                                            className="text-theme-text focus:!bg-theme-accent/40 focus:!text-theme-text data-[state=checked]:text-theme-text cursor-pointer [&_*]:!text-theme-text"
                                         >
                                             {u}
                                         </SelectItem>
@@ -292,30 +292,30 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
 
                         {unit === 'Custom' && (
                             <div className="col-span-2 space-y-2.5">
-                                <Label className="text-sm font-medium text-white">Custom Unit</Label>
+                                <Label className="text-sm font-medium text-theme-text">Custom Unit</Label>
                                 <Input
                                     value={customUnit}
                                     onChange={(e) => setCustomUnit(e.target.value)}
                                     placeholder="e.g. push-ups"
                                     required={unit === 'Custom'}
-                                    className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:border-purple-500 focus:ring-purple-500/20"
+                                    className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20"
                                 />
                             </div>
                         )}
                     </div>
 
                     <div className="space-y-2.5">
-                        <Label className="text-sm font-medium text-white">Frequency</Label>
+                        <Label className="text-sm font-medium text-theme-text">Frequency</Label>
                         <Select value={frequency} onValueChange={setFrequency}>
-                            <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:opacity-50 [&>svg]:text-white">
+                            <SelectTrigger className="!h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:ring-theme-accent/20 [&>svg]:opacity-50 [&>svg]:text-theme-text">
                                 <SelectValue placeholder="Select" />
                             </SelectTrigger>
-                            <SelectContent position="popper" sideOffset={4} className="rounded-xl border-purple-500/20 bg-[#1e1b3a] w-[var(--radix-select-trigger-width)] z-[100]">
+                            <SelectContent position="popper" sideOffset={4} className="rounded-xl border-theme-accent/20 bg-theme-surface w-[var(--radix-select-trigger-width)] z-[100]">
                                 {FREQUENCIES.map((f) => (
                                     <SelectItem
                                         key={f}
                                         value={f}
-                                        className="capitalize text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white cursor-pointer [&_*]:!text-white"
+                                        className="capitalize text-theme-text focus:!bg-theme-accent/40 focus:!text-theme-text data-[state=checked]:text-theme-text cursor-pointer [&_*]:!text-theme-text"
                                     >
                                         {f}
                                     </SelectItem>
@@ -326,7 +326,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
 
                     {frequency === 'Custom' && (
                         <div className="space-y-2.5">
-                            <Label className="text-sm font-medium text-white">Specific Days</Label>
+                            <Label className="text-sm font-medium text-theme-text">Specific Days</Label>
                             <div className="flex gap-2">
                                 {DAYS_OF_WEEK.map(day => (
                                     <button
@@ -341,8 +341,8 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                                         }}
                                         className={`flex-1 h-10 rounded-xl text-sm font-medium transition-all ${
                                             customDays.includes(day.value)
-                                                ? 'bg-purple-500 text-white shadow-md shadow-purple-500/30'
-                                                : 'bg-[#2d2b55]/60 text-slate-300 hover:bg-[#2d2b55]'
+                                                ? 'bg-theme-accent text-theme-on-accent shadow-md shadow-theme-accent/30'
+                                                : 'bg-theme-surface-2/60 text-theme-text-soft hover:bg-theme-surface-2'
                                         }`}
                                     >
                                         {day.label}
@@ -354,7 +354,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
 
                     <Button
                         type="submit"
-                        className="mt-2 h-12 w-full rounded-2xl bg-gradient-to-r from-purple-600 to-purple-500 text-base font-semibold text-white shadow-lg shadow-purple-600/25 transition-all hover:from-purple-700 hover:to-purple-600 hover:shadow-purple-600/40"
+                        className="mt-2 h-12 w-full rounded-2xl bg-gradient-to-r from-theme-accent to-theme-accent-strong text-base font-semibold text-theme-text shadow-lg shadow-theme-accent/25 transition-all hover:from-theme-accent-strong hover:to-theme-accent-strong hover:shadow-theme-accent/40"
                     >
                         <Plus size={18} className="mr-2" />
                         {editHabit ? 'Update habit' : 'Add habit'}

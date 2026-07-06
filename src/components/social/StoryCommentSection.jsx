@@ -309,7 +309,7 @@ export function StoryCommentSection({
                         key={index}
                         type="button"
                         onClick={() => handleUsernameClick(username)}
-                        className="text-violet-400 font-semibold hover:text-violet-300 transition hover:underline focus:outline-none"
+                        className="text-theme-accent font-semibold hover:text-theme-accent transition hover:underline focus:outline-none"
                     >
                         {part}
                     </button>
@@ -328,10 +328,10 @@ export function StoryCommentSection({
             <div
                 data-comment-id={comment.id}
                 className={`flex items-start gap-3 text-sm rounded-lg transition-colors duration-700 ${
-                    isReply ? 'pl-8 mt-2 border-l border-slate-800' : ''
+                    isReply ? 'pl-8 mt-2 border-l border-theme-text/10' : ''
                 } ${
                     isHighlighted
-                        ? 'ring-2 ring-violet-400/60 bg-violet-400/10'
+                        ? 'ring-2 ring-violet-400/60 bg-theme-accent/10'
                         : ''
                 }`}
             >
@@ -339,32 +339,32 @@ export function StoryCommentSection({
                     type="button"
                     onClick={() => commentUser && onOpenProfile?.(commentUser)}
                     disabled={!commentUser || !onOpenProfile}
-                    className="shrink-0 rounded-full transition hover:opacity-85 focus:outline-none focus:ring-2 focus:ring-violet-400/70 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:cursor-default disabled:hover:opacity-100"
+                    className="shrink-0 rounded-full transition hover:opacity-85 focus:outline-none focus:ring-2 focus:ring-violet-400/70 focus:ring-offset-2 focus:ring-offset-theme-bg disabled:cursor-default disabled:hover:opacity-100"
                     aria-label={`Open ${commentUserName}'s profile preview`}
                 >
                     <img
                         src={commentUser?.profilePictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'}
                         alt=""
-                        className={`${isReply ? 'size-6' : 'size-8'} rounded-full bg-slate-800 object-cover`}
+                        className={`${isReply ? 'size-6' : 'size-8'} rounded-full bg-theme-surface-2 object-cover`}
                     />
                 </button>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-2">
-                        <span className="font-semibold text-slate-200">
+                        <span className="font-semibold text-theme-text">
                             {commentUser?.firstName || commentUser?.username || 'someone'}
                         </span>
-                        <span className="text-xs text-slate-500 shrink-0">
+                        <span className="text-xs text-theme-text-muted shrink-0">
                             {formatRelativeTime(comment.createdAt)}
                         </span>
                     </div>
-                    <p className="text-slate-300 break-words mt-0.5">{formatCommentText(comment.content)}</p>
+                    <p className="text-theme-text-soft break-words mt-0.5">{formatCommentText(comment.content)}</p>
                     
                     <div className="flex items-center gap-3 mt-1">
                         {!readOnly && !isReply && (
                             <button
                                 type="button"
                                 onClick={() => setReplyingTo(comment)}
-                                className="text-xs font-semibold text-slate-500 hover:text-blue-400 transition"
+                                className="text-xs font-semibold text-theme-text-muted hover:text-theme-accent transition"
                             >
                                 Reply
                             </button>
@@ -373,7 +373,7 @@ export function StoryCommentSection({
                             <button
                                 type="button"
                                 onClick={() => setCommentIdToDelete(comment.id)}
-                                className="text-xs font-semibold text-slate-500 hover:text-red-400 transition flex items-center gap-0.5"
+                                className="text-xs font-semibold text-theme-text-muted hover:text-theme-danger transition flex items-center gap-0.5"
                                 aria-label="Delete comment"
                             >
                                 <Trash2 className="size-3" />
@@ -388,13 +388,13 @@ export function StoryCommentSection({
 
     return (
         <div className="w-full">
-            <div className={readOnly ? '' : 'rounded-xl bg-black/20 p-4'}>
+            <div className={readOnly ? '' : 'rounded-xl bg-theme-text/5 p-4'}>
                 {/* Comment List */}
                 <div ref={containerRef} className="space-y-4 max-h-80 overflow-y-auto pr-2">
                     {isLoading ? (
-                        <p className="text-sm text-slate-400">Loading comments...</p>
+                        <p className="text-sm text-theme-text-muted">Loading comments...</p>
                     ) : parentComments.length === 0 ? (
-                        <p className="text-sm text-slate-500">{readOnly ? 'No comments yet' : 'No comments yet. Be the first to comment!'}</p>
+                        <p className="text-sm text-theme-text-muted">{readOnly ? 'No comments yet' : 'No comments yet. Be the first to comment!'}</p>
                     ) : (
                         parentComments.map((parent) => {
                             const replies = getRepliesFor(parent.id);
@@ -408,7 +408,7 @@ export function StoryCommentSection({
                                         <button
                                             type="button"
                                             onClick={() => toggleReplies(parent.id)}
-                                            className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition pl-11 mt-1 block"
+                                            className="text-xs font-semibold text-theme-accent hover:text-theme-accent transition pl-11 mt-1 block"
                                         >
                                             {isExpanded ? 'Hide replies' : `View replies (${replies.length})`}
                                         </button>
@@ -428,18 +428,18 @@ export function StoryCommentSection({
                 </div>
 
                 {/* Error Message */}
-                {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
+                {error && <p className="text-sm text-theme-danger mt-2">{error}</p>}
 
                 {/* Input Area */}
                 {!readOnly && (
                 <div className="pt-3">
                     {replyingTo && (
-                        <div className="flex items-center justify-between bg-blue-500/10 px-3 py-1.5 rounded-lg text-xs text-blue-300 mb-2">
+                        <div className="flex items-center justify-between bg-theme-accent/10 px-3 py-1.5 rounded-lg text-xs text-theme-accent-soft mb-2">
                             <span>Replying to @{replyingTo.user?.username || replyingTo.user?.firstName || 'someone'}</span>
                             <button
                                 type="button"
                                 onClick={() => setReplyingTo(null)}
-                                className="hover:text-blue-200"
+                                className="hover:text-theme-accent"
                             >
                                 ✕
                             </button>
@@ -447,22 +447,22 @@ export function StoryCommentSection({
                     )}
                     <form onSubmit={handleSubmit} className="relative flex items-center">
                         {showSuggestions && suggestions.length > 0 && (
-                            <div className="absolute bottom-full left-0 mb-2 w-full max-w-[16rem] rounded-lg border border-slate-700/50 bg-slate-900/95 backdrop-blur-md shadow-2xl max-h-36 overflow-y-auto z-30">
+                            <div className="absolute bottom-full left-0 mb-2 w-full max-w-[16rem] rounded-lg border border-theme-text/10 bg-theme-surface/95 backdrop-blur-md shadow-2xl max-h-36 overflow-y-auto z-30">
                                 {suggestions.map((u) => (
                                     <button
                                         key={u.id || u._id}
                                         type="button"
                                         onClick={() => handleSelectSuggestion(u)}
-                                        className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-slate-800/80 text-slate-200 transition"
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-theme-surface-2/80 text-theme-text transition"
                                     >
                                         <img
                                             src={u.profilePictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'}
                                             alt={u.username}
-                                            className="size-6 rounded-full object-cover bg-slate-800"
+                                            className="size-6 rounded-full object-cover bg-theme-surface-2"
                                         />
                                         <div className="flex flex-col min-w-0">
-                                            <span className="font-semibold truncate text-slate-200">{u.firstName || u.username}</span>
-                                            <span className="text-[10px] text-slate-500 truncate">@{u.username}</span>
+                                            <span className="font-semibold truncate text-theme-text">{u.firstName || u.username}</span>
+                                            <span className="text-[10px] text-theme-text-muted truncate">@{u.username}</span>
                                         </div>
                                     </button>
                                 ))}
@@ -474,14 +474,14 @@ export function StoryCommentSection({
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
                             placeholder={replyingTo ? "Write a reply... (use @ to tag)" : "Add a comment... (use @ to tag)"}
-                            className="w-full rounded-full bg-slate-800/50 border border-slate-700/50 px-4 py-2 pr-12 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-blue-500/50 focus:bg-slate-800"
+                            className="w-full rounded-full bg-theme-surface-2/50 border border-theme-text/10 px-4 py-2 pr-12 text-sm text-theme-text placeholder:text-theme-text-muted outline-none focus:border-theme-accent/50 focus:bg-theme-surface-2"
                             disabled={isSubmitting}
                             maxLength={500}
                         />
                         <button
                             type="submit"
                             disabled={!newComment.trim() || isSubmitting}
-                            className="absolute right-2 p-1.5 text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:hover:text-blue-400"
+                            className="absolute right-2 p-1.5 text-theme-accent hover:text-theme-accent disabled:opacity-50 disabled:hover:text-theme-accent"
                         >
                             <Send className="size-4" />
                         </button>
@@ -498,13 +498,13 @@ export function StoryCommentSection({
 
                 return (
                     <ConfirmationDialog open={commentIdToDelete !== null} onOpenChange={(open) => !open && setCommentIdToDelete(null)}>
-                        <ConfirmationDialogContent className="bg-[#1e1b3a] border-0 text-white rounded-3xl p-8 sm:max-w-md flex flex-col items-center text-center shadow-2xl z-[100]">
-                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10 mb-2 border border-red-500/20">
-                                <Trash2 className="h-8 w-8 text-red-400" />
+                        <ConfirmationDialogContent className="bg-theme-surface border-0 text-theme-text rounded-3xl p-8 sm:max-w-md flex flex-col items-center text-center shadow-2xl z-[100]">
+                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-theme-danger/10 mb-2 border border-theme-danger/20">
+                                <Trash2 className="h-8 w-8 text-theme-danger" />
                             </div>
                             <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-4 text-center">
                                 <ConfirmationDialogTitle className="text-2xl font-bold tracking-tight text-center">Delete comment?</ConfirmationDialogTitle>
-                                <ConfirmationDialogDescription className="text-base text-slate-300 text-center">
+                                <ConfirmationDialogDescription className="text-base text-theme-text-soft text-center">
                                     {commentToDeleteHasReplies
                                         ? "Are you sure you want to delete this comment? All replies will also be deleted. This can't be undone."
                                         : "Are you sure you want to delete this comment? This can't be undone."
@@ -515,7 +515,7 @@ export function StoryCommentSection({
                                 <AlertDialogPrimitive.Cancel asChild>
                                     <Button 
                                         variant="outline"
-                                        className="w-full h-14 rounded-full bg-[#2a2746] border border-slate-700/50 text-white hover:bg-[#343155] hover:text-white mt-0 text-lg font-semibold"
+                                        className="w-full h-14 rounded-full bg-theme-surface-2 border border-theme-text/10 text-theme-text hover:bg-theme-surface-2/80 hover:text-theme-text mt-0 text-lg font-semibold"
                                     >
                                         Keep it
                                     </Button>

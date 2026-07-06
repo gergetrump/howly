@@ -140,7 +140,7 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="sm:max-w-md rounded-2xl border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl">
+                <DialogContent className="sm:max-w-md rounded-2xl border-0 bg-theme-surface p-8 text-theme-text shadow-2xl">
                     {/* Companion + speech bubble */}
                     <div className="flex flex-col items-center text-center">
                         <CompanionAvatar
@@ -149,15 +149,15 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                             size="lg"
                             showName={false}
                         />
-                        <div className="relative mt-1 max-w-xs rounded-2xl bg-[#2d2b55]/70 px-4 py-3 text-sm text-purple-100">
-                            <span className="absolute -top-1 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 bg-[#2d2b55]/70" />
+                        <div className="relative mt-1 max-w-xs rounded-2xl bg-theme-surface-2/70 px-4 py-3 text-sm text-theme-accent-soft">
+                            <span className="absolute -top-1 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 bg-theme-surface-2/70" />
                             <span className="relative">{bubble}</span>
                             {phase === 'thinking' && <ThinkingDots />}
                         </div>
                     </div>
 
                     {error && phase !== 'thinking' ? (
-                        <p className="rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-2 text-center text-sm text-red-100">
+                        <p className="rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-4 py-2 text-center text-sm text-theme-danger">
                             {error}
                         </p>
                     ) : null}
@@ -171,7 +171,7 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                                 placeholder="e.g. sleep better, read more, get fit…"
                                 maxLength={200}
                                 autoFocus
-                                className="h-12 rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/20"
+                                className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-theme-accent/20"
                             />
                             <Button
                                 type="submit"
@@ -189,7 +189,7 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                         <div className="space-y-3">
                             {remaining === 0 ? (
                                 <div className="space-y-2 text-center">
-                                    <p className="text-sm text-purple-200">{lines.limit}</p>
+                                    <p className="text-sm text-theme-accent-soft">{lines.limit}</p>
                                     {!isPremium && (
                                         <Button
                                             type="button"
@@ -201,7 +201,7 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                                     )}
                                 </div>
                             ) : (
-                                <p className="text-center text-xs font-medium text-purple-300">
+                                <p className="text-center text-xs font-medium text-theme-accent-soft">
                                     Pick up to {remaining} · {selected.length} selected
                                 </p>
                             )}
@@ -221,17 +221,17 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                                             className={cn(
                                                 'flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-all animate-in fade-in-0 slide-in-from-bottom-3',
                                                 isSelected
-                                                    ? 'border-purple-400 bg-purple-500/15 ring-2 ring-purple-400/40'
-                                                    : 'border-purple-500/20 bg-[#2d2b55]/50 hover:border-purple-500/50',
-                                                isDisabled && 'cursor-not-allowed opacity-40 hover:border-purple-500/20',
+                                                    ? 'border-purple-400 bg-theme-accent/15 ring-2 ring-purple-400/40'
+                                                    : 'border-theme-accent/20 bg-theme-surface-2/50 hover:border-purple-500/50',
+                                                isDisabled && 'cursor-not-allowed opacity-40 hover:border-theme-accent/20',
                                             )}
                                         >
                                             <span className="text-2xl" aria-hidden="true">{suggestion.icon}</span>
                                             <span className="min-w-0 flex-1">
-                                                <span className="block truncate text-sm font-semibold text-white">
+                                                <span className="block truncate text-sm font-semibold text-theme-text">
                                                     {suggestion.title}
                                                 </span>
-                                                <span className="block text-xs text-purple-300">
+                                                <span className="block text-xs text-theme-accent-soft">
                                                     {suggestion.frequency}
                                                 </span>
                                             </span>
@@ -245,7 +245,7 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                                     type="button"
                                     variant="ghost"
                                     onClick={() => setPhase('input')}
-                                    className="text-purple-200 hover:text-white"
+                                    className="text-theme-accent-soft hover:text-theme-text"
                                 >
                                     Try another goal
                                 </Button>

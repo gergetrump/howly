@@ -517,14 +517,15 @@ export function NavBar({
     }
 
     return (
+        <>
         <nav
             className={cn(
-                'fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-slate-950/95 px-4 py-4 text-white backdrop-blur',
+                'fixed inset-x-0 top-0 z-40 border-b border-theme-text/10 bg-theme-bg/95 px-4 py-4 text-theme-text backdrop-blur',
                 className,
             )}
             aria-label="Primary navigation"
         >
-            <div className="flex w-full items-center justify-between gap-6 px-4 md:px-8">
+            <div className="flex w-full items-center justify-between gap-4 md:gap-6 md:px-8">
                 <div className="flex min-w-0 items-center gap-3 sm:gap-6">
                     <Link to="/dashboard" className="flex shrink-0 items-center gap-2">
                         <img
@@ -532,12 +533,12 @@ export function NavBar({
                             alt=""
                             className={cn('object-contain', brandSizeClasses.image)}
                         />
-                        <span className={cn('font-bold tracking-normal text-white', brandSizeClasses.text)}>
+                        <span className={cn('hidden font-bold tracking-normal text-theme-text sm:inline', brandSizeClasses.text)}>
                             Howly
                         </span>
                     </Link>
 
-                    <div className="flex items-center gap-1 lg:gap-3">
+                    <div className="hidden items-center gap-1 lg:flex lg:gap-3">
                         {navigationItems.map((item) => {
                             const Icon = item.icon ?? Dumbbell;
 
@@ -547,8 +548,8 @@ export function NavBar({
                                     to={item.to}
                                     className={({ isActive }) =>
                                         cn(
-                                    'flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm font-medium text-slate-400 transition hover:bg-white/10 hover:text-white lg:px-4 lg:text-base',
-                                            isActive && 'bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-300/20',
+                                    'flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm font-medium text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text lg:px-4 lg:text-base',
+                                            isActive && 'bg-theme-accent/15 text-theme-accent-soft ring-1 ring-theme-accent/25',
                                         )
                                     }
                                 >
@@ -564,13 +565,13 @@ export function NavBar({
 
                 <div className="flex shrink-0 items-center gap-2 lg:gap-3">
                     <MoonCoin amount={coinAmount} compact className={navStatBadgeClassName} />
-                    <StreakBadge days={streakAmount} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'rounded-full border border-orange-400/20 bg-orange-400/10 text-orange-300 [&>span:first-child]:text-lg')} />
-                    <StreakShieldBadge count={streakShields} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'rounded-full border border-violet-400/25 bg-violet-400/10 text-violet-200 [&>svg]:h-6')} />
+                    <StreakBadge days={streakAmount} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'rounded-full border border-theme-gold/20 bg-theme-gold/10 text-theme-gold [&>span:first-child]:text-lg')} />
+                    <StreakShieldBadge count={streakShields} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'rounded-full border border-theme-accent/25 bg-theme-accent/10 text-theme-accent-soft [&>svg]:h-6')} />
                     {user ? (
                         <div ref={notificationMenuRef} className="relative">
                             <button
                                 type="button"
-                                className="relative flex size-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                                className="relative flex size-11 items-center justify-center rounded-full border border-theme-text/10 bg-theme-text/5 text-theme-text-soft transition hover:bg-theme-text/10 hover:text-theme-text"
                                 aria-label={
                                     displayedUnreadNotificationCount > 0
                                         ? `${displayedUnreadNotificationCount} unread notifications`
@@ -588,17 +589,17 @@ export function NavBar({
                             </button>
 
                             {isNotificationMenuOpen ? (
-                                <div className="absolute right-0 top-14 z-50 w-80 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/95 text-left shadow-2xl shadow-black/40 backdrop-blur">
-                                    <div className="border-b border-white/10 px-4 py-3">
+                                <div className="absolute right-0 top-14 z-50 w-80 overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-bg/95 text-left shadow-2xl shadow-black/40 backdrop-blur">
+                                    <div className="border-b border-theme-text/10 px-4 py-3">
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
-                                                <p className="text-sm font-bold text-white">Notifications</p>
-                                                <p className="text-xs text-slate-400">Recent social updates</p>
+                                                <p className="text-sm font-bold text-theme-text">Notifications</p>
+                                                <p className="text-xs text-theme-text-muted">Recent social updates</p>
                                             </div>
                                             {notifications.length ? (
                                                 <button
                                                     type="button"
-                                                    className="rounded-full px-2 py-1 text-xs font-semibold text-violet-100 transition hover:bg-violet-400/15"
+                                                    className="rounded-full px-2 py-1 text-xs font-semibold text-theme-accent-soft transition hover:bg-violet-400/15"
                                                     onClick={handleClearNotifications}
                                                 >
                                                     Clear all
@@ -609,7 +610,7 @@ export function NavBar({
 
                                     <div ref={notificationListRef} className="max-h-80 overflow-y-auto p-2">
                                         {isLoadingNotifications ? (
-                                            <p className="px-3 py-6 text-center text-sm text-slate-400">Loading...</p>
+                                            <p className="px-3 py-6 text-center text-sm text-theme-text-muted">Loading...</p>
                                         ) : notifications.length ? (
                                             notifications.map((notification) => {
                                                 const isRemoving = removingNotificationIds.includes(notification.id);
@@ -626,8 +627,8 @@ export function NavBar({
                                                     className={cn(
                                                         'group notification-row flex gap-3 rounded-xl px-3 py-3 transition duration-200',
                                                         isVisuallyUnread
-                                                            ? 'bg-violet-500/10 text-violet-100 hover:bg-violet-500/20'
-                                                            : 'bg-slate-700/30 text-slate-300 hover:bg-slate-700/45',
+                                                            ? 'bg-violet-500/10 text-theme-accent-soft hover:bg-violet-500/20'
+                                                            : 'bg-theme-surface-2/30 text-theme-text-soft hover:bg-theme-surface-2/45',
                                                         isRemoving && 'translate-x-8 opacity-0',
                                                     )}
                                                     onClick={() => handleNotificationClick(notification.id)}
@@ -635,11 +636,11 @@ export function NavBar({
                                                     <span
                                                         className={cn(
                                                             'mt-1 flex size-8 shrink-0 items-center justify-center rounded-full text-sm',
-                                                            isVisuallyUnread ? 'bg-violet-400/20' : 'bg-slate-600/50',
+                                                            isVisuallyUnread ? 'bg-violet-400/20' : 'bg-theme-surface-2/50',
                                                         )}
                                                     >
                                                         <Bell
-                                                            className={cn('size-4', isVisuallyUnread ? 'text-violet-100' : 'text-slate-300')}
+                                                            className={cn('size-4', isVisuallyUnread ? 'text-theme-accent-soft' : 'text-theme-text-soft')}
                                                             aria-hidden="true"
                                                         />
                                                     </span>
@@ -648,17 +649,17 @@ export function NavBar({
                                                             {isVisuallyUnread ? (
                                                                 <span className="mt-1.5 size-2 shrink-0 rounded-full bg-red-500" aria-hidden="true" />
                                                             ) : null}
-                                                            <span className={cn('block text-sm font-semibold leading-snug', isVisuallyUnread ? 'text-white' : 'text-slate-300')}>
+                                                            <span className={cn('block text-sm font-semibold leading-snug', isVisuallyUnread ? 'text-theme-text' : 'text-theme-text-soft')}>
                                                                 {getNotificationMessage(notification)}
                                                             </span>
                                                         </span>
-                                                        <span className={cn('mt-1 block text-xs', isVisuallyUnread ? 'text-violet-200/70' : 'text-slate-500')}>
+                                                        <span className={cn('mt-1 block text-xs', isVisuallyUnread ? 'text-theme-accent-soft/70' : 'text-theme-text-muted')}>
                                                             {formatNotificationTime(notification.createdAt)}
                                                         </span>
                                                     </span>
                                                     <button
                                                         type="button"
-                                                        className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full text-slate-500 opacity-0 transition hover:bg-white/10 hover:text-white group-hover:opacity-100 focus:opacity-100"
+                                                        className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full text-theme-text-muted opacity-0 transition hover:bg-theme-text/10 hover:text-theme-text group-hover:opacity-100 focus:opacity-100"
                                                         aria-label="Delete notification"
                                                         onClick={(event) => handleDeleteNotification(event, notification.id)}
                                                     >
@@ -668,14 +669,14 @@ export function NavBar({
                                                 );
                                             })
                                         ) : (
-                                            <p className="px-3 py-6 text-center text-sm text-slate-400">No notifications yet</p>
+                                            <p className="px-3 py-6 text-center text-sm text-theme-text-muted">No notifications yet</p>
                                         )}
                                     </div>
 
-                                    <div className="border-t border-white/10 p-2">
+                                    <div className="border-t border-theme-text/10 p-2">
                                         <Link
                                             to="/social"
-                                            className="block rounded-xl px-3 py-2 text-center text-sm font-semibold text-violet-100 transition hover:bg-violet-400/15"
+                                            className="block rounded-xl px-3 py-2 text-center text-sm font-semibold text-theme-accent-soft transition hover:bg-violet-400/15"
                                             onClick={() => setIsNotificationMenuOpen(false)}
                                         >
                                             View social
@@ -692,9 +693,9 @@ export function NavBar({
                                 to={profileItem.to}
                                 className={({ isActive }) =>
                                     cn(
-                                        'relative flex size-[3.25rem] items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white',
-                                        isActive && 'bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-300/20',
-                                        isPremium && 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950',
+                                        'relative flex size-[3.25rem] items-center justify-center rounded-full text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text',
+                                        isActive && 'bg-theme-accent/15 text-theme-accent-soft ring-1 ring-theme-accent/25',
+                                        isPremium && 'ring-2 ring-theme-gold ring-offset-2 ring-offset-theme-bg',
                                     )
                                 }
                                 aria-label="Profile"
@@ -714,5 +715,33 @@ export function NavBar({
                 </div>
             </div>
         </nav>
+
+        <nav
+            className="fixed inset-x-0 bottom-0 z-40 border-t border-theme-text/10 bg-theme-bg pb-[env(safe-area-inset-bottom)] text-theme-text lg:hidden"
+            aria-label="Primary navigation"
+        >
+            <div className="flex items-stretch justify-around gap-0.5 px-1 pt-1">
+                {navigationItems.map((item) => {
+                    const Icon = item.icon ?? Dumbbell;
+
+                    return (
+                        <NavLink
+                            key={item.to}
+                            to={item.to}
+                            className={({ isActive }) =>
+                                cn(
+                                    'flex flex-1 flex-col items-center gap-1 rounded-lg py-1.5 text-[10px] font-medium text-theme-text-muted transition',
+                                    isActive ? 'text-theme-accent-soft' : 'hover:bg-theme-text/10 hover:text-theme-text',
+                                )
+                            }
+                        >
+                            <Icon className="size-5" aria-hidden="true" />
+                            <span className="max-w-full truncate">{item.label}</span>
+                        </NavLink>
+                    );
+                })}
+            </div>
+        </nav>
+        </>
     );
 }

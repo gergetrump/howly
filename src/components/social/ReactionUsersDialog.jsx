@@ -33,12 +33,12 @@ export function ReactionUsersDialog({
 
     return (
         <Dialog open={Boolean(reaction)} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="border-white/10 bg-[#24213d] text-white shadow-2xl sm:max-w-md">
+            <DialogContent className="border-theme-text/10 bg-theme-surface text-theme-text shadow-2xl sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold">
                         Reactions
                     </DialogTitle>
-                    <DialogDescription className="text-slate-300">
+                    <DialogDescription className="text-theme-text-soft">
                         {isStory ? 'People who liked this picture post' : 'People who reacted to this milestone'}
                     </DialogDescription>
                 </DialogHeader>
@@ -60,7 +60,7 @@ export function ReactionUsersDialog({
                                 trailingContent={isCurrentUserReaction ? (
                                     <button
                                         type="button"
-                                        className="rounded-full px-2 py-1 text-xl transition hover:bg-white/10 disabled:opacity-60"
+                                        className="rounded-full px-2 py-1 text-xl transition hover:bg-theme-text/10 disabled:opacity-60"
                                         aria-label={`Remove your ${emoji} reaction`}
                                         disabled={busy}
                                         onClick={() => onReact(reaction.post, emoji)}
@@ -75,7 +75,7 @@ export function ReactionUsersDialog({
                             />
                         );
                     }) : (
-                        <p className="text-sm text-slate-300">No reactions yet</p>
+                        <p className="text-sm text-theme-text-soft">No reactions yet</p>
                     )}
                 </div>
             </DialogContent>

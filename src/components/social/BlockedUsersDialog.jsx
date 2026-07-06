@@ -52,24 +52,24 @@ export function BlockedUsersDialog({ open, onOpenChange }) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border-white/10 bg-[#24213d] text-white shadow-2xl sm:max-w-md">
+            <DialogContent className="border-theme-text/10 bg-theme-surface text-theme-text shadow-2xl sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                        <Ban className="size-5 text-red-400" />
+                        <Ban className="size-5 text-theme-danger" />
                         Blocked Users
                     </DialogTitle>
-                    <DialogDescription className="text-slate-400 text-sm">
+                    <DialogDescription className="text-theme-text-muted text-sm">
                         Users listed here cannot message you, send friend requests, or view your stories and streak.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="mt-4 max-h-80 overflow-y-auto pr-1 space-y-3">
                     {isLoading ? (
-                        <p className="text-sm text-slate-400">Loading...</p>
+                        <p className="text-sm text-theme-text-muted">Loading...</p>
                     ) : error ? (
-                        <p className="text-sm text-red-400">{error}</p>
+                        <p className="text-sm text-theme-danger">{error}</p>
                     ) : blockedList.length === 0 ? (
-                        <p className="text-sm text-slate-400 text-center py-4">No blocked users.</p>
+                        <p className="text-sm text-theme-text-muted text-center py-4">No blocked users.</p>
                     ) : (
                         blockedList.map((blockedUser) => {
                             const displayName = getDisplayName(blockedUser);
@@ -77,12 +77,12 @@ export function BlockedUsersDialog({ open, onOpenChange }) {
                             const id = blockedUser.id || blockedUser._id;
 
                             return (
-                                <div key={id} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-white/5">
+                                <div key={id} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-theme-text/5">
                                     <div className="flex items-center gap-3 min-w-0">
                                         <UserAvatar user={blockedUser} className="size-9" />
                                         <div className="min-w-0">
                                             <h4 className="font-semibold text-sm truncate">{displayName}</h4>
-                                            <p className="text-xs text-slate-400 truncate">@{username}</p>
+                                            <p className="text-xs text-theme-text-muted truncate">@{username}</p>
                                         </div>
                                     </div>
                                     <Button

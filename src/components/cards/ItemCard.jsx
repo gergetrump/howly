@@ -78,7 +78,7 @@ export function ItemCard({
                     ) : imageSrc ? (
                         <img src={imageSrc} alt={name} className="max-h-full max-w-full object-contain" />
                     ) : (
-                        <span className="text-sm text-slate-400">Item image</span>
+                        <span className="text-sm text-theme-text-muted">Item image</span>
                     )}
                 </div>
                 <div className="space-y-2">
@@ -89,7 +89,7 @@ export function ItemCard({
                         {hasTitleMeta ? (
                             <div className="flex shrink-0 items-center gap-1.5" onClick={stopCardClick}>
                                 {premiumOnly ? <Badge className="shrink-0 bg-amber-300 text-slate-950">Premium</Badge> : null}
-                                {showOwnedBadge && owned ? <Badge className="shrink-0 bg-emerald-400 text-slate-950">Owned</Badge> : null}
+                                {showOwnedBadge && owned ? <Badge className="shrink-0 bg-theme-success text-theme-on-success">Owned</Badge> : null}
                                 {reserveBadgeSpace && !hasBadges ? (
                                     <Badge className="invisible shrink-0 bg-amber-300 text-slate-950">Premium</Badge>
                                 ) : null}
@@ -98,10 +98,10 @@ export function ItemCard({
                         ) : null}
                     </div>
                     {showPrice || children ? (
-                        <div className="flex items-center justify-between gap-3">
-                            {showPrice ? <MoonCoin amount={price} compact /> : <span />}
+                        <div className="space-y-2">
+                            {showPrice ? <MoonCoin amount={price} compact /> : null}
                             {children ? (
-                                <div className="ml-auto grid w-full max-w-40 grid-cols-2 gap-2" onClick={stopCardClick}>
+                                <div className="grid w-full grid-cols-2 gap-2" onClick={stopCardClick}>
                                     {children}
                                 </div>
                             ) : null}

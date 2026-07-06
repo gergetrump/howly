@@ -10,7 +10,7 @@ export function UserPanelRow({
     relationship = { status: 'none' },
     avatarClassName = 'size-11',
     className = '',
-    surfaceClassName = 'bg-white/8',
+    surfaceClassName = 'bg-theme-text/5',
     children,
     trailingContent,
     onOpenProfile,
@@ -39,7 +39,7 @@ export function UserPanelRow({
                     size="icon"
                     className={canAddFriend
                         ? 'size-9 shrink-0 rounded-full bg-violet-500 text-white hover:bg-violet-400'
-                        : 'size-9 shrink-0 rounded-full bg-white/10 text-slate-400 hover:bg-white/10'}
+                        : 'size-9 shrink-0 rounded-full bg-theme-text/10 text-theme-text-muted hover:bg-theme-text/10'}
                     aria-label={`Add ${getDisplayName(user)} as friend`}
                     disabled={!canAddFriend || busy}
                     onClick={() => onAddFriend(user)}

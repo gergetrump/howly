@@ -51,11 +51,11 @@ export function StreakRepairBanner({ onRescued }) {
     }
 
     return (
-        <div className="mx-4 flex items-center gap-3 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3">
-            <ShieldAlert className="size-5 shrink-0 text-amber-300" aria-hidden="true" />
+        <div className="mx-4 flex items-center gap-3 rounded-2xl border border-theme-gold/30 bg-amber-500/10 px-4 py-3">
+            <ShieldAlert className="size-5 shrink-0 text-theme-gold" aria-hidden="true" />
             <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white">Your streak is at risk!</p>
-                <p className="text-xs text-amber-200/90">
+                <p className="text-sm font-semibold text-theme-text">Your streak is at risk!</p>
+                <p className="text-xs text-theme-gold/90">
                     {canUseFreeze
                         ? `Use a shield within ${timeLeft} to save it.`
                         : `Grab a shield within ${timeLeft} to save it.`}

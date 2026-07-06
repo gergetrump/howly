@@ -136,9 +136,16 @@ export function ShopCustomizationPanel({
 
     if (!item || !customizationConfig) {
         return (
-            <aside className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-5 text-slate-300 shadow-xl shadow-slate-950/20 lg:sticky lg:top-24">
-                <h2 className="text-lg font-semibold text-white">Customize</h2>
-                <p className="mt-2 text-sm">Select an item to customize!</p>
+            <aside className="min-w-0 overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-text/5 p-5 text-theme-text-soft shadow-xl shadow-slate-950/20 lg:sticky lg:top-24">
+                <h2 className="text-lg font-semibold text-theme-text">Customize</h2>
+                {item ? (
+                    <>
+                        <p className="mt-1 truncate text-sm font-medium text-theme-text">{getItemDisplayName(item)}</p>
+                        <p className="mt-2 text-sm">This item comes in a fixed design — no customization options.</p>
+                    </>
+                ) : (
+                    <p className="mt-2 text-sm">Select an item to customize!</p>
+                )}
             </aside>
         );
     }
@@ -198,23 +205,23 @@ export function ShopCustomizationPanel({
     }
 
     return (
-        <aside className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 text-white shadow-xl shadow-slate-950/20 lg:sticky lg:top-24">
+        <aside className="min-w-0 overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-text/5 p-4 text-theme-text shadow-xl shadow-slate-950/20 lg:sticky lg:top-24">
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                     <h2 className="text-lg font-semibold">Customize</h2>
-                    <p className="truncate text-sm text-slate-300">{getItemDisplayName(item)}</p>
+                    <p className="truncate text-sm text-theme-text-soft">{getItemDisplayName(item)}</p>
                 </div>
-                <Palette className="mt-1 h-5 w-5 shrink-0 text-violet-200" aria-hidden="true" />
+                <Palette className="mt-1 h-5 w-5 shrink-0 text-theme-accent-soft" aria-hidden="true" />
             </div>
 
             <div className="mt-4 grid min-w-0 gap-4">
                 <div className="min-w-0">
-                    <div className="grid min-w-0 grid-cols-2 gap-1 rounded-xl bg-white/8 p-1">
+                    <div className="grid min-w-0 grid-cols-2 gap-1 rounded-xl bg-theme-text/5 p-1">
                         {customizationConfig.colorSlots.map((slot) => (
                             <button
                                 key={slot.key}
                                 type="button"
-                                className={`min-w-0 truncate rounded-lg px-2 py-1.5 text-xs font-semibold transition ${activeSlot === slot.key ? 'bg-white text-slate-950' : 'text-slate-200 hover:bg-white/10'}`}
+                                className={`min-w-0 truncate rounded-lg px-2 py-1.5 text-xs font-semibold transition ${activeSlot === slot.key ? 'bg-white text-slate-950' : 'text-theme-text hover:bg-theme-text/10'}`}
                                 aria-pressed={activeSlot === slot.key}
                                 onClick={() => onActiveSlotChange(slot.key)}
                             >
@@ -224,23 +231,23 @@ export function ShopCustomizationPanel({
                     </div>
                 </div>
 
-                <div className="min-w-0 rounded-2xl bg-sky-900/35 p-3 ring-1 ring-white/10">
+                <div className="min-w-0 rounded-2xl bg-sky-900/35 p-3 ring-1 ring-theme-text/10">
                     <div className="mb-3 flex min-w-0 items-center gap-3">
                         <span
-                            className="h-10 w-14 shrink-0 rounded-xl border border-white/15 sm:w-16"
+                            className="h-10 w-14 shrink-0 rounded-xl border border-theme-text/15 sm:w-16"
                             style={{ backgroundColor: selectedColor }}
                             aria-hidden="true"
                         />
                         <input
                             key={selectedColor}
                             defaultValue={selectedColor.toUpperCase().replace('#', '')}
-                            className="min-w-0 flex-1 border-b-2 border-white/70 bg-transparent text-base font-bold uppercase tracking-wide text-white outline-none"
+                            className="min-w-0 flex-1 border-b-2 border-theme-text/30 bg-transparent text-base font-bold uppercase tracking-wide text-theme-text outline-none"
                             aria-label={`${getItemDisplayName(item)} color hex code`}
                             onChange={handleHexInputChange}
                         />
                         <button
                             type="button"
-                            className="flex h-10 w-12 shrink-0 items-center justify-center gap-0.5 rounded-md border-2 border-white/70 bg-white/10 transition hover:bg-white/20"
+                            className="flex h-10 w-12 shrink-0 items-center justify-center gap-0.5 rounded-md border-2 border-theme-text/30 bg-theme-text/10 transition hover:bg-theme-text/20"
                             aria-label={colorMode === 'palette' ? 'Show color wheel' : 'Show color palette'}
                             onClick={() => setColorMode((currentMode) => (currentMode === 'palette' ? 'wheel' : 'palette'))}
                         >
@@ -256,12 +263,12 @@ export function ShopCustomizationPanel({
                                 </span>
                             ) : (
                                 <span
-                                    className="h-5 w-5 rounded-full border border-white/60"
+                                    className="h-5 w-5 rounded-full border border-theme-text/30"
                                     style={{ background: 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)' }}
                                     aria-hidden="true"
                                 />
                             )}
-                            <ChevronDown className="h-4 w-4 text-white" aria-hidden="true" />
+                            <ChevronDown className="h-4 w-4 text-theme-text" aria-hidden="true" />
                         </button>
                     </div>
 
@@ -271,7 +278,7 @@ export function ShopCustomizationPanel({
                                 <button
                                     key={`${color}-${index}`}
                                     type="button"
-                                    className={`aspect-square rounded-[0.2rem] border transition hover:scale-110 ${selectedColor.toUpperCase() === color ? 'border-white shadow-[0_0_0_2px_rgba(255,255,255,0.35)]' : 'border-white/15'}`}
+                                    className={`aspect-square rounded-[0.2rem] border transition hover:scale-110 ${selectedColor.toUpperCase() === color ? 'border-white shadow-[0_0_0_2px_rgba(255,255,255,0.35)]' : 'border-theme-text/15'}`}
                                     style={{ backgroundColor: color }}
                                     aria-label={`Use color ${color}`}
                                     onClick={() => onColorChange(activeSlot, color)}
@@ -290,7 +297,7 @@ export function ShopCustomizationPanel({
                                 onClick={handleColorWheelPick}
                             >
                                 <span
-                                    className="absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-slate-700 bg-white/30 shadow"
+                                    className="absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-theme-text/15 bg-white/30 shadow"
                                     style={{ left: `${markerX}%`, top: `${markerY}%` }}
                                     aria-hidden="true"
                                 />
@@ -310,11 +317,11 @@ export function ShopCustomizationPanel({
                 </div>
 
                 {textConfig ? (
-                    <label className="grid min-w-0 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-200">
+                    <label className="grid min-w-0 gap-2 text-xs font-semibold uppercase tracking-wide text-theme-text">
                         {textConfig.label}
                         <input
                             value={customization[textConfig.key] ?? ''}
-                            className="min-w-0 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-bold uppercase tracking-wide text-white outline-none focus:border-violet-200"
+                            className="min-w-0 rounded-xl border border-theme-text/20 bg-theme-text/10 px-3 py-2 text-sm font-bold uppercase tracking-wide text-theme-text outline-none focus:border-violet-200"
                             maxLength={MAX_CUSTOM_TEXT_LENGTH}
                             placeholder={textConfig.placeholder}
                             onChange={handleTextChange}
@@ -324,19 +331,19 @@ export function ShopCustomizationPanel({
 
                 {symbolConfig ? (
                     <div className="grid min-w-0 gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">{symbolConfig.label}</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-theme-text">{symbolConfig.label}</p>
                         {symbolConfig.colorKey ? (
-                            <div className="grid min-w-0 gap-2 rounded-xl bg-white/8 p-2">
+                            <div className="grid min-w-0 gap-2 rounded-xl bg-theme-text/5 p-2">
                                 <div className="flex min-w-0 items-center gap-2">
                                     <span
-                                        className="h-9 w-12 shrink-0 rounded-lg border border-white/15"
+                                        className="h-9 w-12 shrink-0 rounded-lg border border-theme-text/15"
                                         style={{ backgroundColor: customization[symbolConfig.colorKey] }}
                                         aria-hidden="true"
                                     />
                                     <input
                                         key={customization[symbolConfig.colorKey]}
                                         defaultValue={(customization[symbolConfig.colorKey] ?? '').replace('#', '')}
-                                        className="min-w-0 flex-1 border-b border-white/60 bg-transparent text-sm font-bold uppercase tracking-wide text-white outline-none"
+                                        className="min-w-0 flex-1 border-b border-theme-text/30 bg-transparent text-sm font-bold uppercase tracking-wide text-theme-text outline-none"
                                         aria-label={`${getItemDisplayName(item)} symbol color hex code`}
                                         onChange={handleSymbolHexInputChange}
                                     />
@@ -346,7 +353,7 @@ export function ShopCustomizationPanel({
                                         <button
                                             key={color}
                                             type="button"
-                                            className={`aspect-square rounded-md border transition hover:scale-110 ${customization[symbolConfig.colorKey]?.toUpperCase() === color ? 'border-white shadow-[0_0_0_2px_rgba(255,255,255,0.35)]' : 'border-white/15'}`}
+                                            className={`aspect-square rounded-md border transition hover:scale-110 ${customization[symbolConfig.colorKey]?.toUpperCase() === color ? 'border-white shadow-[0_0_0_2px_rgba(255,255,255,0.35)]' : 'border-theme-text/15'}`}
                                             style={{ backgroundColor: color }}
                                             aria-label={`Use symbol color ${color}`}
                                             onClick={() => onColorChange(symbolConfig.colorKey, color)}
@@ -355,7 +362,7 @@ export function ShopCustomizationPanel({
                                 </div>
                             </div>
                         ) : null}
-                        <div className="grid min-w-0 grid-cols-3 gap-2 rounded-xl bg-white/8 p-2">
+                        <div className="grid min-w-0 grid-cols-3 gap-2 rounded-xl bg-theme-text/5 p-2">
                             {symbolConfig.options.map((symbolOption) => {
                                 const SymbolVisual = SYMBOL_VISUALS[symbolOption.value];
                                 const isSelected = customization[symbolConfig.key] === symbolOption.value;
@@ -367,7 +374,7 @@ export function ShopCustomizationPanel({
                                     <button
                                         key={symbolOption.value}
                                         type="button"
-                                        className={`grid min-w-0 gap-1 rounded-xl border px-2 py-2 text-center text-xs font-semibold transition ${isSelected ? 'border-violet-200 bg-violet-400/35 text-white' : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'}`}
+                                        className={`grid min-w-0 gap-1 rounded-xl border px-2 py-2 text-center text-xs font-semibold transition ${isSelected ? 'border-theme-accent/40 bg-theme-accent/25 text-theme-text' : 'border-theme-text/10 bg-theme-text/5 text-theme-text hover:bg-theme-text/10'}`}
                                         aria-pressed={isSelected}
                                         onClick={() => onSymbolChange(
                                             symbolConfig.key,
@@ -396,21 +403,21 @@ export function ShopCustomizationPanel({
 
                 {canChangeSide ? (
                     <div className="grid min-w-0 gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-200">Side</p>
-                        <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/8 p-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-theme-text">Side</p>
+                        <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-theme-text/5 p-2">
                             <button
                                 type="button"
-                                className={`grid h-10 w-12 shrink-0 place-items-center rounded-lg border transition sm:w-14 ${selectedSide === 'left' ? 'border-violet-200 bg-violet-400/35 text-white' : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'}`}
+                                className={`grid h-10 w-12 shrink-0 place-items-center rounded-lg border transition sm:w-14 ${selectedSide === 'left' ? 'border-theme-accent/40 bg-theme-accent/25 text-theme-text' : 'border-theme-text/10 bg-theme-text/5 text-theme-text hover:bg-theme-text/10'}`}
                                 aria-label={`Move ${getItemDisplayName(item)} to the left side`}
                                 aria-pressed={selectedSide === 'left'}
                                 onClick={() => onSideChange('left')}
                             >
                                 <ArrowLeft className="h-5 w-5" aria-hidden="true" />
                             </button>
-                            <span className="min-w-0 truncate text-sm font-semibold capitalize text-slate-200">{selectedSide}</span>
+                            <span className="min-w-0 truncate text-sm font-semibold capitalize text-theme-text">{selectedSide}</span>
                             <button
                                 type="button"
-                                className={`grid h-10 w-12 shrink-0 place-items-center rounded-lg border transition sm:w-14 ${selectedSide === 'right' ? 'border-violet-200 bg-violet-400/35 text-white' : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'}`}
+                                className={`grid h-10 w-12 shrink-0 place-items-center rounded-lg border transition sm:w-14 ${selectedSide === 'right' ? 'border-theme-accent/40 bg-theme-accent/25 text-theme-text' : 'border-theme-text/10 bg-theme-text/5 text-theme-text hover:bg-theme-text/10'}`}
                                 aria-label={`Move ${getItemDisplayName(item)} to the right side`}
                                 aria-pressed={selectedSide === 'right'}
                                 onClick={() => onSideChange('right')}
@@ -424,7 +431,7 @@ export function ShopCustomizationPanel({
                 <ActionButton
                     type="button"
                     fullWidth
-                    className="h-10 bg-violet-500 text-white hover:bg-violet-400 disabled:bg-white/10 disabled:text-slate-400"
+                    className="h-10 bg-violet-500 text-white hover:bg-violet-400 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                     disabled={isAddToCartDisabled}
                     onClick={onAddToCart}
                 >

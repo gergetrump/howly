@@ -96,11 +96,11 @@ export function ShareMomentModal({
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="sm:max-w-md rounded-2xl bg-[#1e1b3a] border-0 p-8 text-white shadow-2xl">
+            <DialogContent className="sm:max-w-md rounded-2xl bg-theme-surface border-0 p-8 text-theme-text shadow-2xl">
                 <div className="flex flex-col gap-5">
                     <div>
                         <h2 className="text-xl font-bold">Share a moment 📸</h2>
-                        <p className="mt-1 text-sm text-slate-400">
+                        <p className="mt-1 text-sm text-theme-text-muted">
                             {sourceEmoji} {sourceTitle}
                         </p>
                     </div>
@@ -130,7 +130,7 @@ export function ShareMomentModal({
                             <button
                                 type="button"
                                 onClick={() => cameraInputRef.current?.click()}
-                                className="flex h-36 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/20 bg-white/5 text-slate-400 transition hover:border-purple-500/50 hover:text-white"
+                                className="flex h-36 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-theme-text/20 bg-theme-text/5 text-theme-text-muted transition hover:border-purple-500/50 hover:text-theme-text"
                             >
                                 <Camera className="size-7" aria-hidden="true" />
                                 <span className="text-sm font-medium">Take a photo</span>
@@ -138,7 +138,7 @@ export function ShareMomentModal({
                             <button
                                 type="button"
                                 onClick={() => galleryInputRef.current?.click()}
-                                className="flex h-36 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/20 bg-white/5 text-slate-400 transition hover:border-purple-500/50 hover:text-white"
+                                className="flex h-36 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-theme-text/20 bg-theme-text/5 text-theme-text-muted transition hover:border-purple-500/50 hover:text-theme-text"
                             >
                                 <ImageIcon className="size-7" aria-hidden="true" />
                                 <span className="text-sm font-medium">Pick from gallery</span>
@@ -171,17 +171,17 @@ export function ShareMomentModal({
                         onChange={(event) => setCaption(event.target.value)}
                         maxLength={200}
                         placeholder="Add a caption (optional)"
-                        className="h-12 rounded-2xl border-white/15 bg-white/5 text-white placeholder:text-slate-500"
+                        className="h-12 rounded-2xl border-theme-text/15 bg-theme-text/5 text-theme-text placeholder:text-theme-text-muted"
                     />
 
-                    {error && <p className="text-sm text-red-300">{error}</p>}
+                    {error && <p className="text-sm text-theme-danger">{error}</p>}
 
                     <div className="flex gap-3">
                         <Button
                             type="button"
                             variant="ghost"
                             onClick={() => handleOpenChange(false)}
-                            className="flex-1 rounded-2xl text-slate-400 hover:text-white"
+                            className="flex-1 rounded-2xl text-theme-text-muted hover:text-theme-text"
                         >
                             Maybe later
                         </Button>

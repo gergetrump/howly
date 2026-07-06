@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
+import { ThemePicker } from '@/components/common/ThemePicker.jsx';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -21,7 +22,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-// import { ThemeToggle } from '@/components/brand/ThemeToggle.jsx';
 import { logoutUser } from '@/services/authService';
 import {
     uploadCurrentUserProfilePicture,
@@ -34,25 +34,25 @@ import { useAuth } from '@/context/authContext';
 import { createManagePremiumSession } from '@/services/paymentService';
 import { sendFeedback } from '@/services/feedbackService';
 
-function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle, onClick, disabled }) {
+function SettingsRow({ icon: Icon, iconColor = 'text-theme-text-muted', title, subtitle, onClick, disabled }) {
     return (
         <button
             type="button"
             onClick={onClick}
             disabled={disabled}
-            className="flex min-h-20 w-full items-center justify-between border-b border-slate-700/50 bg-slate-800/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-slate-700/70 disabled:opacity-50"
+            className="flex min-h-20 w-full items-center justify-between border-b border-theme-text/10 bg-theme-surface/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-theme-surface-2/70 disabled:cursor-not-allowed disabled:opacity-60"
         >
             <div className="flex items-center gap-4">
                 <Icon className={`size-5 ${iconColor}`} />
                 <div>
-                    <p className="font-semibold text-white">{title}</p>
+                    <p className="font-semibold text-theme-text">{title}</p>
                     {subtitle && (
-                        <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
+                        <p className="mt-1 text-sm text-theme-text-muted">{subtitle}</p>
                     )}
                 </div>
             </div>
 
-            <ChevronRight className="size-5 text-slate-400" />
+            <ChevronRight className="size-5 text-theme-text-muted" />
         </button>
     );
 }
@@ -61,16 +61,16 @@ function SettingsRow({ icon: Icon, iconColor = 'text-slate-400', title, subtitle
 function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSubmitting, error, success }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border border-white/10 bg-slate-950 p-6 text-white sm:max-w-lg">
+            <DialogContent className="border border-theme-text/10 bg-theme-bg p-6 text-theme-text sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-white">Help & Feedback</DialogTitle>
-                    <DialogDescription className="text-slate-400">
+                    <DialogTitle className="text-xl font-bold text-theme-text">Help & Feedback</DialogTitle>
+                    <DialogDescription className="text-theme-text-muted">
                         Send a problem report or suggestion to the Howly team.
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={onSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-900 p-1">
+                    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-theme-surface p-1">
                         {[
                             { value: 'problem', label: 'Problem' },
                             { value: 'suggestion', label: 'Suggestion' },
@@ -79,7 +79,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                                 key={option.value}
                                 type="button"
                                 onClick={() => onFormChange({ ...form, type: option.value })}
-                                className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${form.type === option.value ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                                className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${form.type === option.value ? 'bg-white text-slate-950' : 'text-theme-text-soft hover:bg-theme-text/10 hover:text-theme-text'}`}
                             >
                                 {option.label}
                             </button>
@@ -87,36 +87,36 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                     </div>
 
                     <label className="block space-y-2">
-                        <span className="text-sm font-semibold text-white">Subject</span>
+                        <span className="text-sm font-semibold text-theme-text">Subject</span>
                         <input
                             type="text"
                             value={form.subject}
                             onChange={(event) => onFormChange({ ...form, subject: event.target.value })}
                             maxLength={120}
-                            className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition focus:border-howly-primary"
+                            className="w-full rounded-2xl border border-theme-text/10 bg-theme-surface px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
                             placeholder="Briefly summarize the topic."
                         />
                     </label>
 
                     <label className="block space-y-2">
-                        <span className="text-sm font-semibold text-white">Message</span>
+                        <span className="text-sm font-semibold text-theme-text">Message</span>
                         <textarea
                             value={form.message}
                             onChange={(event) => onFormChange({ ...form, message: event.target.value })}
                             rows={6}
                             maxLength={2000}
-                            className="w-full resize-none rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition focus:border-howly-primary"
+                            className="w-full resize-none rounded-2xl border border-theme-text/10 bg-theme-surface px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
                             placeholder="Tell us what happened or what would make Howly better."
                         />
                     </label>
 
-                    {error ? <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p> : null}
+                    {error ? <p className="rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">{error}</p> : null}
                     {success ? <p className="rounded-xl bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{success}</p> : null}
 
                     <Button
                         type="submit"
                         disabled={isSubmitting || form.subject.trim().length < 3 || form.message.trim().length < 10}
-                        className="w-full rounded-xl bg-white text-slate-950 hover:bg-slate-200"
+                        className="w-full rounded-xl bg-white text-slate-950 hover:bg-theme-invert/85"
                     >
                         {isSubmitting ? 'Sending...' : 'Send feedback'}
                     </Button>
@@ -129,10 +129,10 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
 function AboutDialog({ open, onOpenChange }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border border-white/10 bg-slate-950 p-6 text-white sm:max-w-md">
+            <DialogContent className="border border-theme-text/10 bg-theme-bg p-6 text-theme-text sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-white">About Howly</DialogTitle>
-                    <DialogDescription className="text-slate-400">
+                    <DialogTitle className="text-xl font-bold text-theme-text">About Howly</DialogTitle>
+                    <DialogDescription className="text-theme-text-muted">
                         We are four students who want to build a cute, motivating habit tracking website were friends can share their progress.
                     </DialogDescription>
                 </DialogHeader>
@@ -164,12 +164,12 @@ function GhostModeRow() {
     }
 
     return (
-        <div className="flex items-center justify-between rounded-2xl bg-slate-800/80 px-5 py-4">
+        <div className="flex items-center justify-between rounded-2xl bg-theme-surface/80 px-5 py-4">
             <div className="flex items-center gap-4">
-                <EyeOff className="size-5 text-slate-400" />
+                <EyeOff className="size-5 text-theme-text-muted" />
                 <div>
-                    <p className="font-semibold text-white">Ghost Mode</p>
-                    <p className="mt-1 text-sm text-slate-400">
+                    <p className="font-semibold text-theme-text">Ghost Mode</p>
+                    <p className="mt-1 text-sm text-theme-text-muted">
                         Hide your streak from friends
                     </p>
                 </div>
@@ -182,9 +182,9 @@ function GhostModeRow() {
                 role="switch"
                 aria-checked={isGhost}
                 aria-label="Toggle ghost mode"
-                className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${isGhost ? 'justify-end bg-howly-primary' : 'justify-start bg-slate-600'}`}
+                className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${isGhost ? 'justify-end bg-howly-primary' : 'justify-start bg-theme-surface-2'}`}
             >
-                <span className="size-5 rounded-full bg-white" />
+                <span className="size-5 rounded-full bg-theme-invert" />
             </button>
         </div>
     );
@@ -314,7 +314,7 @@ export function ProfilePage() {
                     subtitle="Manage your Howly account."
                     streakDays={0}
                 />
-                <p className="text-sm text-slate-300">Loading profile...</p>
+                <p className="text-sm text-theme-text-soft">Loading profile...</p>
             </Page>
         );
     }
@@ -327,7 +327,7 @@ export function ProfilePage() {
                     subtitle="Manage your Howly account."
                     streakDays={0}
                 />
-                <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                <p className="rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                     {error}
                 </p>
             </Page>
@@ -346,11 +346,11 @@ export function ProfilePage() {
                 streakDays={streak}
             />
 
-            <section className="rounded-2xl bg-slate-800/80 px-6 py-8 text-center shadow-lg">
+            <section className="rounded-2xl bg-theme-surface/80 px-6 py-8 text-center shadow-lg">
                 <div className="mx-auto flex flex-col items-center gap-3">
                     <div className="relative">
 
-                        <div className={`flex size-24 items-center justify-center overflow-hidden rounded-full bg-slate-700 ${isPremium ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-800' : ''}`}>
+                        <div className={`flex size-24 items-center justify-center overflow-hidden rounded-full bg-theme-surface-2 ${isPremium ? 'ring-2 ring-theme-gold ring-offset-2 ring-offset-theme-surface' : ''}`}>
                             {user?.profilePictureUrl ? (
                                 <img
                                     src={user.profilePictureUrl}
@@ -367,7 +367,7 @@ export function ProfilePage() {
                         <Button
                             asChild
                             disabled={isUploadingPicture}
-                            className="h-9 rounded-xl bg-white px-4 text-slate-950 hover:bg-slate-200"
+                            className="h-9 rounded-xl bg-theme-invert px-4 text-theme-invert-text hover:bg-theme-invert/85"
                         >
                             <label className="cursor-pointer">
                                 {isUploadingPicture ? 'Uploading...' : 'Change picture'}
@@ -386,23 +386,23 @@ export function ProfilePage() {
                             variant="outline"
                             onClick={handleDeleteProfilePicture}
                             disabled={isUploadingPicture || isDeletingPicture}
-                            className="h-9 rounded-xl border-white/20 bg-white/10 px-4 text-white hover:bg-white/20"
+                            className="h-9 rounded-xl border-theme-text/20 bg-theme-text/10 px-4 text-theme-text hover:bg-theme-text/20"
                         >
                             {isDeletingPicture ? 'Removing...' : 'Remove'}
                         </Button>
                     </div>
 
                     {pictureError && (
-                        <p className="text-sm text-red-300">{pictureError}</p>
+                        <p className="text-sm text-theme-danger">{pictureError}</p>
                     )}
                 </div>
 
-                <h2 className="mt-5 text-2xl font-bold text-white">{fullName}</h2>
-                <p className="mt-1 text-sm text-slate-400">@{username}</p>
+                <h2 className="mt-5 text-2xl font-bold text-theme-text">{fullName}</h2>
+                <p className="mt-1 text-sm text-theme-text-muted">@{username}</p>
 
                 {isPremium && (
                     <div className="mt-2 flex justify-center">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400/20 to-yellow-500/20 px-3 py-1 text-xs font-semibold text-amber-300 ring-1 ring-amber-400/30">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400/20 to-yellow-500/20 px-3 py-1 text-xs font-semibold text-theme-gold ring-1 ring-theme-gold/30">
                             <Crown className="h-3 w-3" aria-hidden="true" />
                             Premium
                         </span>
@@ -411,39 +411,43 @@ export function ProfilePage() {
 
                 <div className="mt-6 flex items-center justify-center gap-10">
                     <div>
-                        <div className="flex items-center justify-center gap-2 text-lg font-semibold text-white">
-                            <Flame className="size-5 text-yellow-300" />
+                        <div className="flex items-center justify-center gap-2 text-lg font-semibold text-theme-text">
+                            <Flame className="size-5 text-theme-gold" />
                             <span>{streak}</span>
                         </div>
-                        <p className="mt-1 text-sm text-slate-400">Day Streak</p>
+                        <p className="mt-1 text-sm text-theme-text-muted">Day Streak</p>
                     </div>
 
                     <div>
-                        <div className="flex items-center justify-center gap-2 text-lg font-semibold text-white">
-                            <Target className="size-5 text-emerald-400" />
+                        <div className="flex items-center justify-center gap-2 text-lg font-semibold text-theme-text">
+                            <Target className="size-5 text-theme-success" />
                             <span>{completed}</span>
                         </div>
-                        <p className="mt-1 text-sm text-slate-400">Completed</p>
+                        <p className="mt-1 text-sm text-theme-text-muted">Completed</p>
                     </div>
                 </div>
             </section>
+
+            <PageSection title="Appearance">
+                <ThemePicker />
+            </PageSection>
 
             <PageSection title="My Stories">
                 <button
                     type="button"
                     onClick={() => navigate('/stories')}
-                    className="flex w-full items-center justify-between gap-4 rounded-2xl bg-slate-800/80 px-5 py-4 text-left transition-colors hover:bg-slate-800"
+                    className="flex w-full items-center justify-between gap-4 rounded-2xl bg-theme-surface/80 px-5 py-4 text-left transition-colors hover:bg-theme-surface"
                 >
                     <div className="flex min-w-0 items-center gap-3">
                         <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-howly-primary/15 text-xl">
                             <span aria-hidden="true">📸</span>
                         </div>
                         <div className="min-w-0">
-                            <p className="font-semibold text-white">Story Archive</p>
-                            <p className="truncate text-sm text-slate-400">Your shared moments from the last 90 days</p>
+                            <p className="font-semibold text-theme-text">Story Archive</p>
+                            <p className="truncate text-sm text-theme-text-muted">Your shared moments from the last 90 days</p>
                         </div>
                     </div>
-                    <ChevronRight className="size-5 shrink-0 text-slate-400" aria-hidden="true" />
+                    <ChevronRight className="size-5 shrink-0 text-theme-text-muted" aria-hidden="true" />
                 </button>
             </PageSection>
 
@@ -453,7 +457,7 @@ export function ProfilePage() {
                     <div className="overflow-hidden rounded-2xl">
                         <SettingsRow
                             icon={Ban}
-                            iconColor="text-red-400"
+                            iconColor="text-theme-danger"
                             title="Blocked Users"
                             subtitle="Manage accounts you have blocked"
                             onClick={() => setIsBlockedUsersDialogOpen(true)}
@@ -467,7 +471,7 @@ export function ProfilePage() {
                     {isPremium ? (
                         <SettingsRow
                             icon={Crown}
-                            iconColor="text-yellow-400"
+                            iconColor="text-theme-gold"
                             title={isManagingPremium ? 'Opening portal...' : 'Manage your Premium Subscription'}
                             onClick={handleManagePremium}
                             disabled={isManagingPremium}
@@ -475,7 +479,7 @@ export function ProfilePage() {
                     ) : (
                         <SettingsRow
                             icon={Crown}
-                            iconColor="text-yellow-400"
+                            iconColor="text-theme-gold"
                             title="Upgrade to Premium"
                             onClick={handleUpgradeToPremium}
                         />
@@ -488,7 +492,7 @@ export function ProfilePage() {
                     />
                 </div>
                 {premiumError && (
-                    <p className="mt-3 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                    <p className="mt-3 rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                         {premiumError}
                     </p>
                 )}
@@ -505,7 +509,7 @@ export function ProfilePage() {
                 <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-full rounded-2xl bg-red-500/90 px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-red-600"
+                    className="w-full rounded-2xl bg-theme-danger/90 px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-theme-danger"
                 >
                     Log out
                 </button>

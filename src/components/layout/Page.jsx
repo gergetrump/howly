@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 export function Page({ theme = 'forest', backgroundSrc, showNav = true, children, className, contentClassName }) {
     return (
-        <main className={cn('relative min-h-screen pt-24', className)}>
+        <main className={cn('relative min-h-screen pt-24', showNav && 'pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-0', className)}>
             <Background theme={theme} backgroundSrc={backgroundSrc} />
             <PageContent className={contentClassName}>{children}</PageContent>
             {showNav ? <NavBar /> : null}

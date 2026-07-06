@@ -66,12 +66,12 @@ function SummaryCard({ icon: Icon, label, value, helper }) {
         <Card className={appCardClassName}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-12 items-center justify-center rounded-xl', appCardInsetClassName)}>
-                    <Icon className="size-6 text-emerald-300" aria-hidden="true" />
+                    <Icon className="size-6 text-theme-success" aria-hidden="true" />
                 </div>
                 <div>
-                    <p className="text-sm text-slate-300">{label}</p>
-                    <p className="text-2xl font-bold text-white">{value}</p>
-                    {helper ? <p className="text-xs text-slate-400">{helper}</p> : null}
+                    <p className="text-sm text-theme-text-soft">{label}</p>
+                    <p className="text-2xl font-bold text-theme-text">{value}</p>
+                    {helper ? <p className="text-xs text-theme-text-muted">{helper}</p> : null}
                 </div>
             </CardContent>
         </Card>
@@ -85,8 +85,8 @@ function TimelineChart({ dailyTotals }) {
     return (
         <Card className={appCardClassName}>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                    <TrendingUp className="size-5 text-emerald-300" aria-hidden="true" />
+                <CardTitle className="flex items-center gap-2 text-theme-text">
+                    <TrendingUp className="size-5 text-theme-success" aria-hidden="true" />
                     Daily completion trend
                 </CardTitle>
             </CardHeader>
@@ -104,7 +104,7 @@ function TimelineChart({ dailyTotals }) {
 
                         return (
                             <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center gap-2">
-                                <div className="relative flex h-36 w-full items-end justify-center rounded-t-lg bg-slate-950/30">
+                                <div className="relative flex h-36 w-full items-end justify-center rounded-t-lg bg-theme-bg/30">
                                     <div
                                         className="absolute bottom-0 w-3/5 rounded-t-lg border border-slate-300/35 bg-slate-400/35"
                                         style={{ height: `${expectedHeight}%` }}
@@ -117,7 +117,7 @@ function TimelineChart({ dailyTotals }) {
                                     />
                                 </div>
                                 <span
-                                    className="h-4 truncate text-[11px] text-slate-400"
+                                    className="h-4 truncate text-[11px] text-theme-text-muted"
                                     title={day.label}
                                 >
                                     {showLabel ? day.label : ''}
@@ -195,7 +195,7 @@ function MiniCompletionTrend({ daily }) {
 
                     return (
                         <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                            <div className="relative flex h-12 w-full items-end justify-center rounded-t-md bg-slate-950/30">
+                            <div className="relative flex h-12 w-full items-end justify-center rounded-t-md bg-theme-bg/30">
                                 <div
                                     className="absolute bottom-0 w-3/5 rounded-t-md border border-slate-300/25 bg-slate-400/25"
                                     style={{ height: `${expectedHeight}%` }}
@@ -211,7 +211,7 @@ function MiniCompletionTrend({ daily }) {
                     );
                 })}
             </div>
-            <div className="flex justify-between text-[11px] text-slate-400">
+            <div className="flex justify-between text-[11px] text-theme-text-muted">
                 <span>{visibleDays[0]?.label}</span>
                 <span>{visibleDays[visibleDays.length - 1]?.label}</span>
             </div>
@@ -272,7 +272,7 @@ function MiniMonthlyCompletionTrend({ monthly }) {
 function TimeMarker({ minutes, label }) {
     if (!label) {
         return (
-            <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
+            <p className="rounded-xl bg-theme-text/5 p-4 text-center text-sm text-theme-text-soft">
                 No completion time data yet.
             </p>
         );
@@ -287,11 +287,11 @@ function TimeMarker({ minutes, label }) {
                 }}
             >
                 <div
-                    className="absolute top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-slate-950 shadow-lg"
+                    className="absolute top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-theme-bg shadow-lg"
                     style={{ left: `${timePosition(minutes)}%` }}
                 />
             </div>
-            <div className="flex justify-between text-xs text-slate-400">
+            <div className="flex justify-between text-xs text-theme-text-muted">
                 <span>00:00</span>
                 <span>12:00</span>
                 <span>24:00</span>
@@ -310,16 +310,16 @@ function HabitPerformance({ summary, habits }) {
     return (
         <Card className={appCardClassName}>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                    <BarChart3 className="size-5 text-emerald-300" aria-hidden="true" />
+                <CardTitle className="flex items-center gap-2 text-theme-text">
+                    <BarChart3 className="size-5 text-theme-success" aria-hidden="true" />
                     Habit performance
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid gap-4 rounded-xl bg-white/5 p-4 md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)] md:items-center">
+                <div className="grid gap-4 rounded-xl bg-theme-text/5 p-4 md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)] md:items-center">
                     <div>
-                        <p className="text-sm text-slate-300">Overall average completion time</p>
-                        <p className="text-xl font-bold text-emerald-100">
+                        <p className="text-sm text-theme-text-soft">Overall average completion time</p>
+                        <p className="text-xl font-bold text-theme-success">
                             {summary.averageCompletionTime?.label ?? 'No data'}
                         </p>
                     </div>
@@ -338,7 +338,7 @@ function HabitPerformance({ summary, habits }) {
                             return (
                                 <div
                                     key={item.habit.id}
-                                    className="flex flex-col gap-4 rounded-xl border border-white/10 bg-white/5 p-4"
+                                    className="flex flex-col gap-4 rounded-xl border border-theme-text/10 bg-theme-text/5 p-4"
                                 >
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="flex min-w-0 items-center gap-3">
@@ -348,13 +348,13 @@ function HabitPerformance({ summary, habits }) {
                                             >
                                                 {item.habit.icon}
                                             </span>
-                                            <p className="truncate font-semibold text-white">{item.habit.title}</p>
+                                            <p className="truncate font-semibold text-theme-text">{item.habit.title}</p>
                                         </div>
                                         <div className="shrink-0 text-right">
-                                            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                                            <p className="text-[11px] font-medium uppercase tracking-wide text-theme-text-muted">
                                                 Ø Time
                                             </p>
-                                            <p className="text-lg font-bold text-emerald-100">
+                                            <p className="text-lg font-bold text-theme-success">
                                                 {averageTime?.label ?? 'No data'}
                                             </p>
                                         </div>
@@ -362,12 +362,12 @@ function HabitPerformance({ summary, habits }) {
 
                                     <div className="mt-auto space-y-2">
                                         <div className="flex items-center justify-between gap-3 text-sm">
-                                            <span className="text-slate-400">Follow-through</span>
-                                            <span className="shrink-0 font-medium text-slate-200">
+                                            <span className="text-theme-text-muted">Follow-through</span>
+                                            <span className="shrink-0 font-medium text-theme-text">
                                                 {item.completed}/{item.expected} · {percent(rate)}
                                             </span>
                                         </div>
-                                        <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                                        <div className="h-3 overflow-hidden rounded-full bg-theme-text/10">
                                             <div
                                                 className={cn('h-full rounded-full transition-all', getCompletionTone(rate))}
                                                 style={{ width: `${clampPercent(rate)}%` }}
@@ -379,7 +379,7 @@ function HabitPerformance({ summary, habits }) {
                         })}
                     </div>
                 ) : (
-                    <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
+                    <p className="rounded-xl bg-theme-text/5 p-4 text-center text-sm text-theme-text-soft">
                         Complete a habit to start seeing performance analytics.
                     </p>
                 )}
@@ -399,16 +399,16 @@ function ChallengePerformance({ summary, challenges, period }) {
     return (
         <Card className={appCardClassName}>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                    <Trophy className="size-5 text-emerald-300" aria-hidden="true" />
+                <CardTitle className="flex items-center gap-2 text-theme-text">
+                    <Trophy className="size-5 text-theme-success" aria-hidden="true" />
                     Challenge performance
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid gap-4 rounded-xl bg-white/5 p-4 md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)] md:items-center">
+                <div className="grid gap-4 rounded-xl bg-theme-text/5 p-4 md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)] md:items-center">
                     <div>
-                        <p className="text-sm text-slate-300">Overall average completion time</p>
-                        <p className="text-xl font-bold text-emerald-100">
+                        <p className="text-sm text-theme-text-soft">Overall average completion time</p>
+                        <p className="text-xl font-bold text-theme-success">
                             {summary.averageCompletionTime?.label ?? 'No data'}
                         </p>
                     </div>
@@ -428,35 +428,35 @@ function ChallengePerformance({ summary, challenges, period }) {
                             return (
                                 <div
                                     key={item.participant.id}
-                                    className="flex flex-col gap-4 rounded-xl border border-white/10 bg-white/5 p-4"
+                                    className="flex flex-col gap-4 rounded-xl border border-theme-text/10 bg-theme-text/5 p-4"
                                 >
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="min-w-0">
-                                            <p className="truncate font-semibold text-white">{item.challenge.title}</p>
-                                            <p className="truncate text-sm text-emerald-100">{item.habit.title}</p>
+                                            <p className="truncate font-semibold text-theme-text">{item.challenge.title}</p>
+                                            <p className="truncate text-sm text-theme-success">{item.habit.title}</p>
                                         </div>
                                         <div className="shrink-0 text-right">
-                                            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                                            <p className="text-[11px] font-medium uppercase tracking-wide text-theme-text-muted">
                                                 Ø Time
                                             </p>
-                                            <p className="text-lg font-bold text-emerald-100">
+                                            <p className="text-lg font-bold text-theme-success">
                                                 {averageTime?.label ?? 'No data'}
                                             </p>
                                         </div>
                                     </div>
 
                                     <div className="flex">
-                                        <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-slate-200">
+                                        <span className="rounded-full bg-theme-text/10 px-2.5 py-1 text-xs font-semibold text-theme-text">
                                             {item.participant.status}
                                         </span>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <div className="flex justify-between gap-3 text-sm text-slate-300">
+                                        <div className="flex justify-between gap-3 text-sm text-theme-text-soft">
                                             <span>Selected period</span>
                                             <span className="shrink-0">{item.completed}/{item.expected} · {percent(periodRate)}</span>
                                         </div>
-                                        <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                                        <div className="h-3 overflow-hidden rounded-full bg-theme-text/10">
                                             <div
                                                 className={cn('h-full rounded-full transition-all', getCompletionTone(periodRate))}
                                                 style={{ width: `${clampPercent(periodRate)}%` }}
@@ -465,13 +465,13 @@ function ChallengePerformance({ summary, challenges, period }) {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <div className="flex justify-between gap-3 text-sm text-slate-300">
+                                        <div className="flex justify-between gap-3 text-sm text-theme-text-soft">
                                             <span>Total progress</span>
                                             <span className="shrink-0">
                                                 {item.participant.daysCompleted}/{item.challenge.durationDays} days · {percent(totalRate)}
                                             </span>
                                         </div>
-                                        <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                                        <div className="h-2 overflow-hidden rounded-full bg-theme-text/10">
                                             <div
                                                 className="h-full rounded-full bg-emerald-300"
                                                 style={{ width: `${clampPercent(totalRate)}%` }}
@@ -491,7 +491,7 @@ function ChallengePerformance({ summary, challenges, period }) {
                         })}
                     </div>
                 ) : (
-                    <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
+                    <p className="rounded-xl bg-theme-text/5 p-4 text-center text-sm text-theme-text-soft">
                         Join a challenge and check off its habit to see challenge analytics.
                     </p>
                 )}
@@ -585,16 +585,16 @@ export function AnalyticsPage() {
 
             <PageSection width="full" title={`${PERIOD_LABELS[period]} overview`}>
                 <Tabs value={period} onValueChange={setPeriod}>
-                    <TabsList className="w-full border border-white/10 bg-white/10 text-white">
+                    <TabsList className="w-full border border-theme-text/10 bg-theme-surface text-theme-text">
                         <TabsTrigger
                             value="week"
-                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
                         >
                             Week
                         </TabsTrigger>
                         <TabsTrigger
                             value="month"
-                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
                         >
                             Month
                         </TabsTrigger>
@@ -608,14 +608,14 @@ export function AnalyticsPage() {
                 </Tabs>
 
                 {isLoading ? (
-                    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+                    <div className="flex items-center gap-2 rounded-xl border border-theme-text/10 bg-theme-text/5 p-4 text-sm text-theme-text">
                         <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                         Loading analytics
                     </div>
                 ) : null}
 
                 {error ? (
-                    <div className="rounded-xl border border-red-300/30 bg-red-500/10 p-4 text-sm text-red-100">
+                    <div className="rounded-xl border border-theme-danger/30 bg-theme-danger/10 p-4 text-sm text-theme-danger">
                         {error}
                     </div>
                 ) : null}

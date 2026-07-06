@@ -7,6 +7,7 @@ import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
 import { CompanionStage } from '@/components/brand';
+import { StreakCelebrationModal } from '@/components/brand/StreakCelebrationModal';
 import { AddHabitModal } from '@/components/habits/AddHabitModal.jsx';
 import { CompanionChatPanel } from '@/components/habits/CompanionChatPanel.jsx';
 import { StreakRepairBanner } from '@/components/habits/StreakRepairBanner.jsx';
@@ -36,7 +37,7 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
     const progressText = `${item.participant?.daysCompleted ?? 0}/${item.challenge?.durationDays ?? 0} days`;
 
     return (
-        <Card className={cn(appCardClassName, item.habit.isCompletedToday && 'bg-[#23423b] ring-emerald-300/25')}>
+        <Card className={cn(appCardClassName, item.habit.isCompletedToday && 'bg-theme-success-surface ring-theme-success/25')}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}>
                     <span aria-hidden="true">{item.habit.icon}</span>
@@ -44,19 +45,19 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
 
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate font-semibold text-white">{item.habit.title}</h3>
+                        <h3 className="truncate font-semibold text-theme-text">{item.habit.title}</h3>
                         {item.habit.category ? (
-                            <Badge className="border border-purple-400/30 bg-purple-500/15 text-purple-100 hover:bg-purple-500/15">
+                            <Badge className="border border-theme-accent/30 bg-theme-accent/15 text-theme-accent-soft hover:bg-theme-accent/15">
                                 {item.habit.category}
                             </Badge>
                         ) : null}
                     </div>
-                    <p className="mt-1 truncate text-sm text-slate-300">{item.challenge?.title}</p>
+                    <p className="mt-1 truncate text-sm text-theme-text-soft">{item.challenge?.title}</p>
                     <StreakBadge days={item.participant?.daysCompleted ?? 0} icon={'\uD83D\uDD25'} className="mt-1" />
                 </div>
 
                 <div className="flex shrink-0 items-center gap-3">
-                    <span className="text-sm font-medium text-white">{progressText}</span>
+                    <span className="text-sm font-medium text-theme-text">{progressText}</span>
                     <CompletionCircle
                         completed={item.habit.isCompletedToday}
                         onClick={() => onToggle(item)}
@@ -314,8 +315,17 @@ export function DashboardPage() {
     // refreshUser) to avoid the full-screen loading state in ProtectedRoute.
     async function refreshUserStreak() {
         try {
+            const previousStreak = user?.streak ?? 0;
             const freshUser = await getCurrentUser();
-            setUser(freshUser.user ?? freshUser);
+            const nextUser = freshUser.user ?? freshUser;
+            setUser(nextUser);
+
+            const nextStreak = nextUser?.streak ?? 0;
+            if (nextStreak > previousStreak) {
+                window.dispatchEvent(new CustomEvent('howly:overall-streak-up', {
+                    detail: { from: previousStreak, to: nextStreak },
+                }));
+            }
         } catch (error) {
             console.error('Failed to refresh overall streak:', error);
         }
@@ -406,9 +416,9 @@ export function DashboardPage() {
                 setUser(current => (current ? { ...current, coins: updatedHabit.boostReverted.coins } : current));
             }
 
-            // A check-in can complete the day → refresh the overall streak (🔥).
+            // A check-in can complete the day and an un-check can revoke it → refresh the overall streak (🔥).
+            refreshUserStreak();
             if (!wasCompleted) {
-                refreshUserStreak();
                 window.dispatchEvent(new Event('howly:habit-completed'));
             }
             window.dispatchEvent(new Event('howly:habit-progress-updated'));
@@ -565,6 +575,7 @@ export function DashboardPage() {
 
     return (
         <Page theme="forest">
+            <StreakCelebrationModal />
             <Heading
                 title={`Hi, ${user?.firstName || 'User'}!`}
                 subtitle="Let's make today count."
@@ -636,16 +647,16 @@ export function DashboardPage() {
                 onAction={openAddHabitDialog}
             >
                 <Tabs value={habitsTab} onValueChange={setHabitsTab}>
-                    <TabsList className="w-full border border-white/10 bg-white/10 text-white">
+                    <TabsList className="w-full border border-theme-text/10 bg-theme-surface text-theme-text">
                         <TabsTrigger
                             value="today"
-                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
                         >
                             Today ({todaysHabits.length})
                         </TabsTrigger>
                         <TabsTrigger
                             value="all"
-                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
                         >
                             All Habits ({habits.length})
                         </TabsTrigger>
@@ -654,20 +665,21 @@ export function DashboardPage() {
 
                 {habitsTab === 'today' ? (
                     todaysHabits.length === 0 ? (
-                        <p className="text-sm text-slate-400 text-center py-4">No habits scheduled for today. Take a break!</p>
+                        <p className="text-sm text-theme-text-muted text-center py-4">No habits scheduled for today. Take a break!</p>
                     ) : (
                         <CardGrid columns={todaysHabits.length === 1 ? 1 : 2}>
                             {todaysHabits.map((habit) => renderHabitCard(habit, true))}
                         </CardGrid>
                     )
                 ) : habits.length === 0 ? (
-                    <p className="text-sm text-slate-400 text-center py-4">No habits yet. Click "Add Habit" to start!</p>
+                    <p className="text-sm text-theme-text-muted text-center py-4">No habits yet. Click "Add Habit" to start!</p>
                 ) : (
                     <CardGrid columns={habits.length === 1 ? 1 : 2}>
                         {habits.map((habit) => renderHabitCard(habit, false))}
                     </CardGrid>
                 )}
             </PageSection>
+
 
             <PageSection title="My Challenges">
                 <CardGrid columns={challengeHabits.length === 1 ? 1 : 2}>
@@ -679,7 +691,7 @@ export function DashboardPage() {
                         />
                     ))}
                     {challengeHabits.length === 0 && (
-                        <p className="text-sm text-slate-400 text-center py-4">No active challenge habits yet.</p>
+                        <p className="text-sm text-theme-text-muted text-center py-4">No active challenge habits yet.</p>
                     )}
                 </CardGrid>
             </PageSection>
@@ -747,10 +759,10 @@ export function DashboardPage() {
             />
 
             <Dialog open={Boolean(riskConfirmHabit)} onOpenChange={(open) => { if (!open) setRiskConfirmHabit(null); }}>
-                <DialogContent className="rounded-3xl border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl sm:max-w-md">
+                <DialogContent className="rounded-3xl border-0 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
                     <DialogHeader className="space-y-3 pt-4 text-left">
                         <DialogTitle className="text-2xl font-bold tracking-tight">Your streak is at risk</DialogTitle>
-                        <DialogDescription className="text-base leading-relaxed text-slate-300">
+                        <DialogDescription className="text-base leading-relaxed text-theme-text-soft">
                             Completing “{riskConfirmHabit?.title}” now starts a new streak at 1. Your current {riskConfirmHabit?.streakCount}-day streak can still be saved with a shield.
                         </DialogDescription>
                     </DialogHeader>
@@ -771,14 +783,14 @@ export function DashboardPage() {
                             </Button>
                         )}
                         <Button
-                            className="h-14 w-full rounded-full border border-slate-700/50 bg-[#2a2746] text-lg font-semibold text-white hover:bg-[#343155] hover:text-white"
+                            className="h-14 w-full rounded-full border border-theme-text/10 bg-theme-surface-2 text-lg font-semibold text-theme-text hover:bg-theme-surface-2/80 hover:text-theme-text"
                             onClick={() => { const target = riskConfirmHabit; setRiskConfirmHabit(null); handleHabitCompletion(target); }}
                         >
                             Complete & restart
                         </Button>
                         <Button
                             variant="ghost"
-                            className="h-12 w-full rounded-full text-slate-300 hover:bg-white/5 hover:text-white"
+                            className="h-12 w-full rounded-full text-theme-text-soft hover:bg-theme-text/5 hover:text-theme-text"
                             onClick={() => setRiskConfirmHabit(null)}
                         >
                             Cancel

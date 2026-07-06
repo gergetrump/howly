@@ -1,4 +1,4 @@
 export const appCardClassName =
-    'border border-indigo-200/15 bg-howly-card text-white shadow-xl ring-indigo-100/10';
+    'border border-theme-text/10 bg-howly-card text-theme-text shadow-xl ring-theme-text/10';
 
-export const appCardInsetClassName = 'bg-white/12';
+export const appCardInsetClassName = 'bg-theme-text/10';

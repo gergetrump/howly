@@ -112,7 +112,7 @@ export function LoginPage() {
             <nav className="relative z-20 flex items-center justify-between px-6 py-4 md:px-12 lg:px-20">
                 <Link
                     to="/"
-                    className="flex items-center gap-2 text-xl font-bold text-white transition-opacity hover:opacity-80"
+                    className="flex items-center gap-2 text-xl font-bold text-theme-text transition-opacity hover:opacity-80"
                 >
                     <img src={howlyIcon} alt="" className="size-8 object-contain" />
                     <span className="font-heading tracking-tight">Howly</span>
@@ -120,7 +120,7 @@ export function LoginPage() {
 
                 <Button
                     variant="ghost"
-                    className="text-slate-300 hover:text-white"
+                    className="text-theme-text-soft hover:text-theme-text"
                     asChild
                 >
                     <Link to="/register">Sign up</Link>
@@ -131,7 +131,7 @@ export function LoginPage() {
                 <Card
                     className={cn(
                         appCardClassName,
-                        'w-full max-w-md border-slate-700/50 shadow-xl shadow-black/20',
+                        'w-full max-w-md border-theme-text/10 shadow-xl shadow-black/20',
                     )}
                 >
                     <CardContent className="p-8">
@@ -147,11 +147,11 @@ export function LoginPage() {
                                 Welcome back
                             </p>
 
-                            <h1 className="text-3xl font-bold tracking-tight text-white">
+                            <h1 className="text-3xl font-bold tracking-tight text-theme-text">
                                 Log in to Howly
                             </h1>
 
-                            <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                            <p className="mt-2 text-sm leading-relaxed text-theme-text-muted">
                                 Continue building your habits with your cosmic companion.
                             </p>
                         </div>
@@ -160,7 +160,7 @@ export function LoginPage() {
                             <div className="space-y-2">
                                 <label
                                     htmlFor="email"
-                                    className="text-sm font-medium text-slate-200"
+                                    className="text-sm font-medium text-theme-text"
                                 >
                                     Email
                                 </label>
@@ -174,12 +174,12 @@ export function LoginPage() {
                                     required
                                     autoComplete="email"
                                     placeholder="you@example.com"
-                                    className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-howly-primary"
+                                    className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
                                 />
                             </div>
 
                             {message && (
-                                <p className="rounded-xl border border-green-400/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
+                                <p className="rounded-xl border border-theme-success/30 bg-theme-success/10 px-4 py-3 text-sm text-theme-success">
                                     {message}
                                 </p>
                             )}
@@ -188,14 +188,14 @@ export function LoginPage() {
                                 <div className="flex items-center justify-between">
                                     <label
                                         htmlFor="password"
-                                        className="text-sm font-medium text-slate-200"
+                                        className="text-sm font-medium text-theme-text"
                                     >
                                         Password
                                     </label>
 
                                     <Link
                                         to="/forgot-password"
-                                        className="text-sm font-medium text-howly-primary transition-colors hover:text-pink-400"
+                                        className="text-sm font-medium text-howly-primary transition-colors hover:text-theme-love"
                                     >
                                         Forgot password?
                                     </Link>
@@ -210,12 +210,12 @@ export function LoginPage() {
                                     required
                                     autoComplete="current-password"
                                     placeholder="Enter your password"
-                                    className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-howly-primary"
+                                    className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
                                 />
                             </div>
 
                             {error && (
-                                <p className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                                <p className="rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                                     {error}
                                 </p>
                             )}
@@ -223,17 +223,17 @@ export function LoginPage() {
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="h-12 w-full rounded-full bg-howly-primary text-base font-semibold text-white shadow-lg shadow-howly-primary/25 transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="h-12 w-full rounded-full bg-howly-primary text-base font-semibold text-theme-text shadow-lg shadow-howly-primary/25 transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {isSubmitting ? 'Logging in...' : 'Log in'}
                             </Button>
                         </form>
 
-                        <p className="mt-6 text-center text-sm text-slate-400">
+                        <p className="mt-6 text-center text-sm text-theme-text-muted">
                             No account yet?{' '}
                             <Link
                                 to="/register"
-                                className="font-semibold text-howly-primary transition-colors hover:text-pink-400"
+                                className="font-semibold text-howly-primary transition-colors hover:text-theme-love"
                             >
                                 Create one
                             </Link>

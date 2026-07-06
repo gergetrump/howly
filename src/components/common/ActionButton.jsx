@@ -5,7 +5,7 @@ export function ActionButton({ fullWidth = false, className, children, ...props 
     return (
         <Button
             className={cn(
-                'bg-white text-slate-950 hover:bg-slate-200',
+                'bg-theme-invert text-theme-invert-text hover:bg-theme-invert/85',
                 fullWidth && 'w-full',
                 className,
             )}

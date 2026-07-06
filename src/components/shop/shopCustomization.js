@@ -233,6 +233,112 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
         ],
         symbol: flowerSymbolToggle,
     },
+    'blossom-crown': {
+        defaults: {
+            color: '#FFE1EB',
+            accentColor: '#FFF5F9',
+            leafColor: '#A8C48A',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Blossoms' },
+            { key: 'accentColor', label: 'Center bloom' },
+            { key: 'leafColor', label: 'Band' },
+        ],
+    },
+
+    balloon: wholeColorCustomization('#EF5A6F'),
+    'matcha-bowl': {
+        defaults: {
+            bowlColor: '#E3D6C0',
+            matchaColor: '#7CAD3E',
+        },
+        colorSlots: [
+            { key: 'bowlColor', label: 'Bowl' },
+            { key: 'matchaColor', label: 'Matcha' },
+        ],
+    },
+    'sakura-branch': {
+        defaults: {
+            blossomColor: '#F6BBC7',
+            branchColor: '#7A5A3E',
+        },
+        colorSlots: [
+            { key: 'blossomColor', label: 'Blossoms' },
+            { key: 'branchColor', label: 'Branch' },
+        ],
+    },
+    eyepatch: {
+        defaults: {
+            color: '#26262B',
+            side: 'right',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+        ],
+    },
+    book: {
+        defaults: {
+            coverColor: '#7D3A4A',
+            bookmarkColor: '#E0B13A',
+        },
+        colorSlots: [
+            { key: 'coverColor', label: 'Cover' },
+            { key: 'bookmarkColor', label: 'Bookmark' },
+        ],
+    },
+
+    'shell-crown': {
+        defaults: {
+            shellColor: '#F6CDBA',
+            starfishColor: '#E8895A',
+            pearlColor: '#FBF4EC',
+            bandColor: '#7FB8AE',
+        },
+        colorSlots: [
+            { key: 'shellColor', label: 'Shells' },
+            { key: 'starfishColor', label: 'Starfish' },
+            { key: 'pearlColor', label: 'Pearls' },
+            { key: 'bandColor', label: 'Band' },
+        ],
+    },
+
+    'straw-hat': {
+        defaults: {
+            strawColor: '#E8C88A',
+            ribbonColor: '#E6947A',
+        },
+        colorSlots: [
+            { key: 'strawColor', label: 'Straw' },
+            { key: 'ribbonColor', label: 'Ribbon' },
+        ],
+    },
+
+    'dango-skewer': {
+        defaults: {
+            topColor: '#F6BBC7',
+            middleColor: '#FFFDF5',
+            bottomColor: '#BFE0B2',
+        },
+        colorSlots: [
+            { key: 'topColor', label: 'Top' },
+            { key: 'middleColor', label: 'Middle' },
+            { key: 'bottomColor', label: 'Bottom' },
+        ],
+    },
+
+    'sensu-fan': {
+        defaults: {
+            color: '#F6BBC7',
+            borderColor: '#FFF0F6',
+            blossomColor: '#FFF5F9',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Fan' },
+            { key: 'borderColor', label: 'Border' },
+            { key: 'blossomColor', label: 'Blossoms' },
+        ],
+    },
+
     hairpin: {
         defaults: {
             color: '#FCE8EC',

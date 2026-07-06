@@ -90,10 +90,10 @@ function buildHighlights(plan) {
 
 function FeatureRow({ label, freeValue, premiumValue }) {
     return (
-        <div className="grid grid-cols-[1.25fr_0.8fr_0.8fr] items-center gap-3 border-b border-white/10 px-4 py-3 text-sm last:border-b-0">
-            <span className="font-medium text-white">{label}</span>
-            <span className="text-slate-300">{freeValue}</span>
-            <span className="font-semibold text-amber-200">{premiumValue}</span>
+        <div className="grid grid-cols-[1.25fr_0.8fr_0.8fr] items-center gap-3 border-b border-theme-text/10 px-4 py-3 text-sm last:border-b-0">
+            <span className="font-medium text-theme-text">{label}</span>
+            <span className="text-theme-text-soft">{freeValue}</span>
+            <span className="font-semibold text-theme-gold">{premiumValue}</span>
         </div>
     );
 }
@@ -187,10 +187,10 @@ export function PremiumPage() {
 
             <PageSection width="lg" align="center">
                 <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-                    <section className="rounded-2xl border border-white/10 bg-slate-900/80 p-6 shadow-2xl">
+                    <section className="rounded-2xl border border-theme-text/10 bg-theme-surface/80 p-6 shadow-2xl">
                         <div className="flex flex-col gap-5">
                             {redirectMessage ? (
-                                <p className="rounded-xl border border-amber-200/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+                                <p className="rounded-xl border border-amber-200/30 bg-amber-300/10 px-4 py-3 text-sm text-theme-gold">
                                     {redirectMessage}
                                 </p>
                             ) : null}
@@ -201,45 +201,45 @@ export function PremiumPage() {
                                         <Crown className="size-7" aria-hidden="true" />
                                     </span>
                                     <div>
-                                        <p className="text-sm font-semibold uppercase tracking-wide text-amber-200">
+                                        <p className="text-sm font-semibold uppercase tracking-wide text-theme-gold">
                                             Premium
                                         </p>
-                                        <h2 className="text-3xl font-bold text-white">
+                                        <h2 className="text-3xl font-bold text-theme-text">
                                             Unlock the full Howly plan
                                         </h2>
                                     </div>
                                 </div>
-                                <p className="mt-4 text-sm leading-6 text-slate-300">
+                                <p className="mt-4 text-sm leading-6 text-theme-text-soft">
                                     Premium removes the free limits that slow down bigger routines and gives you monthly rewards for the shop.
                                 </p>
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-2">
                                 {premiumHighlights.map(({ icon: Icon, title, text }) => (
-                                    <div key={title} className="rounded-xl border border-white/10 bg-white/5 p-4">
-                                        <Icon className="size-6 text-amber-200" aria-hidden="true" />
-                                        <h3 className="mt-3 font-semibold text-white">{title}</h3>
-                                        <p className="mt-1 text-sm leading-5 text-slate-400">{text}</p>
+                                    <div key={title} className="rounded-xl border border-theme-text/10 bg-theme-text/5 p-4">
+                                        <Icon className="size-6 text-theme-gold" aria-hidden="true" />
+                                        <h3 className="mt-3 font-semibold text-theme-text">{title}</h3>
+                                        <p className="mt-1 text-sm leading-5 text-theme-text-muted">{text}</p>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </section>
 
-                    <aside className="rounded-2xl border border-amber-200/30 bg-amber-300/10 p-6 text-white shadow-2xl">
-                        <p className="text-sm font-semibold uppercase tracking-wide text-amber-100">
+                    <aside className="rounded-2xl border border-amber-200/30 bg-amber-300/10 p-6 text-theme-text shadow-2xl">
+                        <p className="text-sm font-semibold uppercase tracking-wide text-theme-gold">
                             Monthly plan
                         </p>
                         <div className="mt-4 flex items-end gap-2">
                             <span className="text-5xl font-black">{formatPrice(premiumPlan)}</span>
-                            <span className="pb-2 text-sm text-amber-100">/ month</span>
+                            <span className="pb-2 text-sm text-theme-gold">/ month</span>
                         </div>
                         <p className="mt-4 text-sm leading-6 text-amber-50/90">
                             Cancel anytime. Premium stays active until the end of the paid billing period.
                         </p>
 
                         {error ? (
-                            <p className="mt-4 rounded-xl border border-red-300/30 bg-red-500/20 px-4 py-3 text-sm text-red-100">
+                            <p className="mt-4 rounded-xl border border-theme-danger/30 bg-red-500/20 px-4 py-3 text-sm text-theme-danger">
                                 {error}
                             </p>
                         ) : null}
@@ -249,7 +249,7 @@ export function PremiumPage() {
                                 type="button"
                                 onClick={handleManagePremium}
                                 disabled={isManagingPremium}
-                                className="mt-6 h-12 w-full bg-white text-slate-950 hover:bg-slate-200"
+                                className="mt-6 h-12 w-full bg-white text-slate-950 hover:bg-theme-invert/85"
                             >
                                 {isManagingPremium ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
                                 Manage Premium
@@ -271,7 +271,7 @@ export function PremiumPage() {
                                 type="button"
                                 variant="outline"
                                 onClick={() => navigate(returnTo)}
-                                className="mt-3 h-12 w-full border-white/20 bg-white/10 text-white hover:bg-white/20"
+                                className="mt-3 h-12 w-full border-theme-text/20 bg-theme-text/10 text-theme-text hover:bg-theme-text/20"
                             >
                                 Go back
                             </Button>
@@ -286,8 +286,8 @@ export function PremiumPage() {
                 title="Free vs Premium"
                 description={isLoadingPlan ? 'Loading plan details...' : 'Premium values come from the backend plan configuration.'}
             >
-                <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80 text-white shadow-xl">
-                    <div className="grid grid-cols-[1.25fr_0.8fr_0.8fr] gap-3 bg-white/5 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-300">
+                <div className="overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-surface/80 text-theme-text shadow-xl">
+                    <div className="grid grid-cols-[1.25fr_0.8fr_0.8fr] gap-3 bg-theme-text/5 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-theme-text-soft">
                         <span>Feature</span>
                         <span>{freePlan.label ?? 'Free'}</span>
                         <span>{premiumPlan.label ?? 'Premium'}</span>
@@ -326,12 +326,12 @@ export function PremiumPage() {
             </PageSection>
 
             <PageSection width="lg" align="center">
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-slate-300">
+                <div className="rounded-2xl border border-theme-text/10 bg-theme-text/5 p-5 text-sm text-theme-text-soft">
                     <div className="flex items-start gap-3">
                         {isPremium ? (
-                            <Check className="mt-0.5 size-5 shrink-0 text-emerald-300" aria-hidden="true" />
+                            <Check className="mt-0.5 size-5 shrink-0 text-theme-success" aria-hidden="true" />
                         ) : (
-                            <X className="mt-0.5 size-5 shrink-0 text-slate-400" aria-hidden="true" />
+                            <X className="mt-0.5 size-5 shrink-0 text-theme-text-muted" aria-hidden="true" />
                         )}
                         <p>
                             {isPremium

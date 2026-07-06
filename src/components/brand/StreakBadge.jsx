@@ -10,7 +10,7 @@ export function StreakBadge({ days = 0, showLabel = true, size = 'md', icon = 'ð
     return (
         <span
             className={cn(
-                'inline-flex items-center text-slate-300',
+                'inline-flex items-center text-theme-text-soft',
                 sizeClasses[size] ?? sizeClasses.md,
                 className,
             )}
