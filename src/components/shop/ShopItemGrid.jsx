@@ -71,9 +71,11 @@ export function ShopItemGrid({
                                             : renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', getItemCustomization(item))}
                                     >
                                         {isItemOwned(item) ? (
-                                            <div className="col-span-2 flex h-8 items-center gap-1.5 rounded-lg bg-theme-success/15 px-3 text-xs font-semibold text-theme-success">
-                                                <Check className="size-3.5" aria-hidden="true" />
-                                                Owned
+                                            <div className="col-span-2 flex h-[4.5rem] items-center">
+                                                <div className="flex h-8 w-full items-center gap-1.5 rounded-lg bg-theme-success/15 px-3 text-xs font-semibold text-theme-success">
+                                                    <Check className="size-3.5" aria-hidden="true" />
+                                                    Owned
+                                                </div>
                                             </div>
                                         ) : (
                                             <>
