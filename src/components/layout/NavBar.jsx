@@ -1,5 +1,6 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useNotificationStream } from '@/hooks/useNotificationStream';
 import { BarChart3, Bell, Dumbbell, Globe, Home, PackageOpen, ShoppingBag, Trash2, Trophy, UserRound, UsersRound } from 'lucide-react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
@@ -204,6 +205,7 @@ export function NavBar({
     className,
 }) {    
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
     const [notifications, setNotifications] = useState([]);
     const [removingNotificationIds, setRemovingNotificationIds] = useState([]);
@@ -304,6 +306,17 @@ export function NavBar({
 
     // Real-time SSE: prepend new notifications instantly.
     useNotificationStream((notification) => {
+        if (!isMenuOpenRef.current) {
+            toast(getNotificationMessage(notification), {
+                icon: <Bell className="size-4 text-theme-accent-soft" aria-hidden="true" />,
+                action: {
+                    label: 'View',
+                    onClick: () => navigate(getNotificationLink(notification), {
+                        state: getNotificationNavigationState(notification),
+                    }),
+                },
+            });
+        }
         setUnreadNotificationCount((currentCount) => (
             isMenuOpenRef.current ? currentCount : currentCount + 1
         ));
