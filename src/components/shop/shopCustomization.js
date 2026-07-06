@@ -88,6 +88,24 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             placeholder: 'HOWLY',
         },
     },
+    'sunset-jersey': {
+        defaults: {
+            color: '#3A2433',
+            line: '#FB923C',
+            textColor: '#FFE8B6',
+            text: 'HOWLY',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'line', label: 'Lines' },
+            { key: 'textColor', label: 'Text' },
+        ],
+        text: {
+            key: 'text',
+            label: 'Jersey text',
+            placeholder: 'HOWLY',
+        },
+    },
 
     'magic-wand': wholeColorCustomization('#D4A373'),
     necklace: {
@@ -378,6 +396,20 @@ export const ITEM_CUSTOMIZATION_CONFIG = {
             { key: 'color', label: 'Whole' },
             { key: 'buttonColor', label: 'Buttons' },
             { key: 'pocketColor', label: 'Pockets' },
+        ],
+    },
+    'ocean-top': {
+        defaults: {
+            color: '#123A4A',
+            waveColor: '#38BDF8',
+            pocketColor: '#2DD4BF',
+            buttonColor: '#DDF7FF',
+        },
+        colorSlots: [
+            { key: 'color', label: 'Whole' },
+            { key: 'waveColor', label: 'Waves' },
+            { key: 'pocketColor', label: 'Pockets' },
+            { key: 'buttonColor', label: 'Buttons' },
         ],
     },
     summertop: {

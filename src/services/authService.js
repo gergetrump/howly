@@ -15,10 +15,10 @@ export function verifyEmail(token) {
     });
 }
 
-export function resendVerificationEmail(email) {
+export function resendVerificationEmail(identifier) {
     return apiRequest('/auth/resend-verification', {
         method: 'POST',
-        body: JSON.stringify( {email} ),
+        body: JSON.stringify({ identifier }),
         redirectOnUnauthorized: false,
     });
 }

@@ -39,7 +39,7 @@ export default function Jersie({ className,
 
     const colorStroke = adjustColor(color,2, 'darken')
     const colorStroke2 = adjustColor(color,3, 'darken')
-    const jersieText = text?.trim() || DEFAULT_JERSIE_TEXT;
+    const jersieText = typeof text === 'string' ? text.trim() : DEFAULT_JERSIE_TEXT;
     const jersieTextWidth = getJersieTextWidth(jersieText);
 
     return (
