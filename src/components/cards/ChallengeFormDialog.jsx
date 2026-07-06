@@ -39,7 +39,7 @@ const FREQUENCIES = ['Daily', 'Weekly', 'Monthly'];
 const UNIT_LABELS = {
     L: 'l',
     ml: 'ml',
-    min: 'Min',
+    min: 'min',
     hours: 'Hours',
     km: 'km',
     steps: 'Steps',

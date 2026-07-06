@@ -31,6 +31,17 @@ const ICONS = [
 ];
 
 const UNITS = ['L', 'ml', 'min', 'hours', 'km', 'steps', 'times', 'pages', 'Custom'];
+const UNIT_LABELS = {
+    L: 'l',
+    ml: 'ml',
+    min: 'min',
+    hours: 'Hours',
+    km: 'km',
+    steps: 'Steps',
+    times: 'Times',
+    pages: 'Pages',
+    Custom: 'Custom',
+};
 
 const FREQUENCIES = ['Daily', 'Weekly', 'Monthly', 'Custom'];
 
@@ -283,7 +294,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                                             value={u}
                                             className="text-theme-text focus:!bg-theme-accent/40 focus:!text-theme-text data-[state=checked]:text-theme-text cursor-pointer [&_*]:!text-theme-text"
                                         >
-                                            {u}
+                                            {UNIT_LABELS[u] ?? u}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
