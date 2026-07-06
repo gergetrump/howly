@@ -19,6 +19,7 @@ import Habit from '../habits/habit.model.js';
 import { createNotification, deleteNotificationsByFilter, pushToUser } from '../notifications/notification.service.js';
 import { Notification } from '../notifications/notification.model.js';
 import ChallengeInvitation from '../challenges/challengeInvitation.model.js';
+import { toOffsetPage } from '../../utils/pagination.js';
 
 function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
@@ -297,19 +298,23 @@ export async function sendFriendRequest({ requesterId, recipientId }) {
   return { request: toFriendRequestResponse(request) };
 }
 
-export async function listFriendRequests({ userId }) {
+export async function listFriendRequests({ userId, incomingPagination = null, outgoingPagination = null }) {
+  const incomingQuery = FriendRequest.find({ recipient: userId, status: 'pending' })
+    .populate(['requester', 'recipient'])
+    .sort({ createdAt: -1 });
+  const outgoingQuery = FriendRequest.find({ requester: userId, status: 'pending' })
+    .populate(['requester', 'recipient'])
+    .sort({ createdAt: -1 });
   const [incoming, outgoing] = await Promise.all([
-    FriendRequest.find({ recipient: userId, status: 'pending' })
-      .populate(['requester', 'recipient'])
-      .sort({ createdAt: -1 }),
-    FriendRequest.find({ requester: userId, status: 'pending' })
-      .populate(['requester', 'recipient'])
-      .sort({ createdAt: -1 }),
+    incomingPagination ? incomingQuery.limit(incomingPagination.fetchLimit) : incomingQuery,
+    outgoingPagination ? outgoingQuery.limit(outgoingPagination.fetchLimit) : outgoingQuery,
   ]);
+  const incomingItems = incoming.map(toFriendRequestResponse);
+  const outgoingItems = outgoing.map(toFriendRequestResponse);
 
   return {
-    incoming: incoming.map(toFriendRequestResponse),
-    outgoing: outgoing.map(toFriendRequestResponse),
+    incoming: incomingPagination ? toOffsetPage(incomingItems, incomingPagination) : incomingItems,
+    outgoing: outgoingPagination ? toOffsetPage(outgoingItems, outgoingPagination) : outgoingItems,
   };
 }
 
@@ -397,14 +402,18 @@ export async function rejectFriendRequest({ requestId, userId }) {
   return { request: toFriendRequestResponse(request) };
 }
 
-export async function listFriends({ userId }) {
-  const friendships = await Friendship.find({
+export async function listFriends({ userId, pagination = null }) {
+  const friendshipsQuery = Friendship.find({
     $or: [{ userA: userId }, { userB: userId }],
   })
     .populate(['userA', 'userB'])
     .sort({ createdAt: -1 });
+  const friendships = await (pagination
+    ? friendshipsQuery.limit(pagination.fetchLimit)
+    : friendshipsQuery);
+  const friends = friendships.map((friendship) => toFriendshipResponse(friendship, userId));
 
-  return friendships.map((friendship) => toFriendshipResponse(friendship, userId));
+  return pagination ? toOffsetPage(friends, pagination) : friends;
 }
 
 export async function deleteFriend({ friendshipId, userId }) {
@@ -488,4 +497,3 @@ export async function getUsernamesWhoBlockedMe(userId) {
   const blockers = await User.find({ blockedUsers: userId }, 'username').lean();
   return blockers.map((u) => (u.username || '').toLowerCase());
 }
-
