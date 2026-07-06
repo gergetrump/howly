@@ -280,20 +280,23 @@ export async function confirmEmail(req, res) {
 }
 
 export async function resendVerificationEmail(req, res) {
-    console.log(req.body);
     try {
-        const { email } = req.body;
+        const identifier = typeof req.body.identifier === 'string'
+            ? req.body.identifier.trim()
+            : typeof req.body.email === 'string'
+                ? req.body.email.trim()
+                : '';
 
-        if (!email) {
+        if (!identifier) {
             return res.status(400).json({
-                message: 'Email is required',
+                message: 'Email or username is required',
             });
         }
 
-        await resendEmailVerification(email);
+        await resendEmailVerification(identifier);
 
         return res.status(200).json({
-            message: 'If an account with this email exists, a new verification link has been sent.',
+            message: 'If an account exists, a new verification link has been sent.',
         });
     } catch (error) {
         console.error('Resend verification email error:', error);

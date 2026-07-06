@@ -352,6 +352,63 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   );
 });
 
+test('milestone feed preserves equipped text-customizable items with no text', async () => {
+  const author = await buildUser({ username: 'blank_text_author', email: 'blank-text-author@example.com' });
+  const friend = await buildUser({ username: 'blank_text_friend', email: 'blank-text-friend@example.com' });
+  const companion = await Companion.create({ user: author._id, name: 'Luna', type: 'bear' });
+  const habit = await buildHabit(author, { title: 'Reading', streakCount: 10 });
+  const hoodie = await Item.create({
+    name: 'Hoodie',
+    type: 'clothing',
+    price: 500,
+    assetKey: 'hoodie',
+  });
+
+  await UserItem.create({
+    user: author._id,
+    item: hoodie._id,
+    equipped: true,
+    customization: {
+      color: '#4F772D',
+      stringColor: '#F8FAFC',
+      textColor: '#111827',
+      text: '',
+    },
+  });
+
+  await Friendship.create({
+    userA: author._id,
+    userB: friend._id,
+  });
+
+  await MilestonePost.create({
+    user: author._id,
+    habit: habit._id,
+    habitTitle: habit.title,
+    streakDays: habit.streakCount,
+  });
+
+  const feedResponse = await request(app)
+    .get('/api/milestones/feed')
+    .set('Authorization', authHeader(friend))
+    .expect(200);
+
+  const hoodieConfig = feedResponse.body[0].companion.equippedItemConfigs.find(
+    (item) => item.assetKey === 'hoodie',
+  );
+
+  assert.equal(feedResponse.body[0].companion.id, companion._id.toString());
+  assert.deepEqual(hoodieConfig, {
+    assetKey: 'hoodie',
+    customization: {
+      color: '#4F772D',
+      stringColor: '#F8FAFC',
+      textColor: '#111827',
+      text: '',
+    },
+  });
+});
+
 // Tests that picker emojis outside the preset list are accepted, while text is rejected
 test('milestone reactions accept custom picker emojis and reject non-emojis', async () => {
   const author = await buildUser({ username: 'custom_emoji_author', email: 'custom-emoji-author@example.com' });

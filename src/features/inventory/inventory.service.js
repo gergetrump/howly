@@ -35,22 +35,32 @@ const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
 const SIDEABLE_HEAD_ITEM_KEYS = new Set(['cute-hat', 'hairpin']);
 const EQUIP_SLOTS_BY_ASSET_KEY = {
     bag: 'body',
+    balloon: 'hand',
     'bambus-flute': 'hand',
     'bubble-tea': 'hand',
+    book: 'hand',
+    'blossom-crown': 'head',
     cup: 'hand',
     'cute-hat': 'head',
+    'dango-skewer': 'hand',
     'drink-togo': 'hand',
+    eyepatch: 'face',
     glasses: 'face',
     hairpin: 'head',
     hat: 'head',
     'hat-with-pompom': 'head',
     'magic-wand': 'hand',
+    'matcha-bowl': 'hand',
     necklace: 'neck',
     'hogwarts-scarf': 'neck',
     nerdglasses: 'face',
     phone: 'hand',
+    'sakura-branch': 'hand',
     'sakura-neckclace': 'neck',
     'sakura-pouch': 'hand',
+    'sensu-fan': 'hand',
+    'shell-crown': 'head',
+    'straw-hat': 'head',
     'warm-hat': 'head',
     'warm-hat-2-pompom': 'head',
 };
@@ -91,6 +101,12 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
         textColor: '#FFFFFF',
         text: 'HOWLY',
     },
+    'sunset-jersey': {
+        color: '#3A2433',
+        line: '#FB923C',
+        textColor: '#FFE8B6',
+        text: 'HOWLY',
+    },
     'magic-wand': wholeColorCustomization('#D4A373'),
     necklace: {
         color: '#990000',
@@ -117,6 +133,12 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
         color: '#F4EFE5',
         buttonColor: '#B18167',
         pocketColor: '#DDCEAF',
+    },
+    'ocean-top': {
+        color: '#123A4A',
+        waveColor: '#38BDF8',
+        pocketColor: '#2DD4BF',
+        buttonColor: '#DDF7FF',
     },
     summertop: {
         shirtColor: '#FFFFFF',
@@ -164,6 +186,48 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
         color: '#F6BBC7',
         chainColor: '#CEB88B',
     },
+    'blossom-crown': {
+        color: '#FFE1EB',
+        accentColor: '#FFF5F9',
+        leafColor: '#A8C48A',
+    },
+    balloon: wholeColorCustomization('#EF5A6F'),
+    'matcha-bowl': {
+        bowlColor: '#E3D6C0',
+        matchaColor: '#7CAD3E',
+    },
+    'sakura-branch': {
+        blossomColor: '#F6BBC7',
+        branchColor: '#7A5A3E',
+    },
+    eyepatch: {
+        color: '#26262B',
+        side: 'right',
+    },
+    book: {
+        coverColor: '#7D3A4A',
+        bookmarkColor: '#E0B13A',
+    },
+    'shell-crown': {
+        shellColor: '#F6CDBA',
+        starfishColor: '#E8895A',
+        pearlColor: '#FBF4EC',
+        bandColor: '#7FB8AE',
+    },
+    'straw-hat': {
+        strawColor: '#E8C88A',
+        ribbonColor: '#E6947A',
+    },
+    'dango-skewer': {
+        topColor: '#F6BBC7',
+        middleColor: '#FFFDF5',
+        bottomColor: '#BFE0B2',
+    },
+    'sensu-fan': {
+        color: '#F6BBC7',
+        borderColor: '#FFF0F6',
+        blossomColor: '#FFF5F9',
+    },
     dress: {
         color: '#F2E6FF',
         lacesColor: '#F1EBDF',
@@ -191,7 +255,7 @@ const CUSTOMIZABLE_ITEM_DEFAULTS = {
     },
     'winter-jacket': {
         jacketColor: '#392E18',
-        shirtColor: '#4A6741',
+        shirtColor: '#394F32',
         furColor: '#E1D3AE',
     },
     'bag': {

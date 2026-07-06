@@ -6,6 +6,7 @@ const CUSTOMIZATION_COLOR_FIELDS = [
     'textColor',
     'buttonColor',
     'pocketColor',
+    'waveColor',
     'jacketColor',
     'cordColor',
     'shirtColor',
@@ -26,6 +27,23 @@ const CUSTOMIZATION_COLOR_FIELDS = [
     'chainColor',
     'lacesColor',
     'stripeColor',
+    'accentColor',
+    'leafColor',
+    'bowlColor',
+    'matchaColor',
+    'blossomColor',
+    'branchColor',
+    'coverColor',
+    'bookmarkColor',
+    'shellColor',
+    'starfishColor',
+    'pearlColor',
+    'bandColor',
+    'ribbonColor',
+    'topColor',
+    'middleColor',
+    'bottomColor',
+    'borderColor',
     'pompomColor',
     'pompom1Color',
     'pompom2Color',
@@ -58,9 +76,7 @@ function sanitizeCustomization(customization = {}) {
             .slice(0, MAX_CUSTOM_TEXT_LENGTH)
             .toUpperCase();
 
-        if (text) {
-            sanitizedCustomization.text = text;
-        }
+        sanitizedCustomization.text = text;
     }
 
     if (typeof customization.side === 'string') {
