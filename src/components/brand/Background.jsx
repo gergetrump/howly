@@ -35,7 +35,7 @@ export function Background({ className, children }) {
             {isDarkTheme ? <Starfield /> : null}
 
             {/* The Moon (doubles as the sun in Sakura Light) */}
-            <Moon className="top-[8%] right-[12%] size-24 md:size-32" />
+            <Moon className="top-[8%] right-[4%] size-24 md:size-32" />
 
             {/* Falling cherry blossom petals */}
             {isSakura ? <FallingPetals /> : null}
