@@ -51,6 +51,11 @@ test('registering sends a pending account that requires email confirmation', asy
         .send({ email: 'new-user@example.com', password: 'password123' })
         .expect(403);
 
+    await request(app)
+        .post('/api/auth/login')
+        .send({ identifier: 'new-user', password: 'password123' })
+        .expect(403);
+
     const confirmResponse = await request(app)
         .get('/api/auth/verify-email')
         .query({ token: verificationToken })
@@ -66,6 +71,14 @@ test('registering sends a pending account that requires email confirmation', asy
 
     assert.ok(loginResponse.body.token);
     assert.equal(loginResponse.body.user.isEmailVerified, true);
+
+    const usernameLoginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({ identifier: 'new-user', password: 'password123' })
+        .expect(200);
+
+    assert.ok(usernameLoginResponse.body.token);
+    assert.equal(usernameLoginResponse.body.user.email, 'new-user@example.com');
 });
 
 test('browser verification requests receive an HTML confirmation page', async () => {

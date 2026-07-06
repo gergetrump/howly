@@ -70,6 +70,19 @@ function buildAccountVerificationLink(token) {
     return `${config.serverBaseUrl}/api/auth/verify-email?token=${token}&view=web`;
 }
 
+function buildLocalIdentifierQuery(identifier) {
+    const trimmedIdentifier = identifier.trim();
+    const normalizedEmail = trimmedIdentifier.toLowerCase();
+
+    return {
+        authProvider: 'local',
+        $or: [
+            { email: normalizedEmail },
+            { username: trimmedIdentifier },
+        ],
+    };
+}
+
 // Sign a new access token for the given user.
 export function signAccessToken(user) {
     return jwt.sign(buildTokenPayload(user), getJwtSecret(), {
@@ -113,11 +126,11 @@ export async function registerLocalUser({ username, email, firstName, lastName, 
 }
 
 // Validate a local user's credentials and return the user or an error message.
-export async function authenticateLocalUser({ email, password }) {
-    const user = await User.findOne({ email, authProvider: 'local' }).select('+passwordHash');
+export async function authenticateLocalUser({ identifier, password }) {
+    const user = await User.findOne(buildLocalIdentifierQuery(identifier)).select('+passwordHash');
 
     if (!user) {
-        return { error: 'Invalid email or password' };
+        return { error: 'Invalid email/username or password' };
     }
 
     if (user.isDeleted) {
@@ -127,7 +140,7 @@ export async function authenticateLocalUser({ email, password }) {
     const isValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isValid) {
-        return { error: 'Invalid email or password' };
+        return { error: 'Invalid email/username or password' };
     }
 
     if (!user.isEmailVerified) {
@@ -221,12 +234,9 @@ export async function verifyEmail(token) {
     return { user };
 }
 
-export async function resendEmailVerification(email) {
-    const normalizedEmail = email.toLowerCase().trim();
-
+export async function resendEmailVerification(identifier) {
     const user = await User.findOne({
-        email: normalizedEmail,
-        authProvider: 'local',
+        ...buildLocalIdentifierQuery(identifier),
         isDeleted: false,
     });
 
@@ -267,4 +277,3 @@ export async function resetPassword(token, newPassword) {
 
     return { user };
 }
-

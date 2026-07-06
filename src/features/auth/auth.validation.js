@@ -58,13 +58,17 @@ export function validateRegisterInput(body = {}) {
 // Validate login payload for local auth.
 export function validateLoginInput(body = {}) {
     const errors = [];
-    const email = isNonEmptyString(body.email) ? body.email.trim().toLowerCase() : '';
+    const identifier = isNonEmptyString(body.identifier)
+        ? body.identifier.trim()
+        : isNonEmptyString(body.email)
+            ? body.email.trim()
+            : '';
     const password = typeof body.password === 'string' ? body.password : '';
 
-    if (!email) {
-        errors.push('email is required');
-    } else if (!isValidEmail(email)) {
-        errors.push('email must be a valid email address');
+    if (!identifier) {
+        errors.push('email or username is required');
+    } else if (identifier.length > 254) {
+        errors.push('email or username is too long');
     }
 
     if (!password) {
@@ -75,5 +79,5 @@ export function validateLoginInput(body = {}) {
         return { error: errors.join(', ') };
     }
 
-    return { value: { email, password } };
+    return { value: { identifier, password } };
 }
