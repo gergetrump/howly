@@ -47,7 +47,6 @@ export function SocialPage() {
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [error, setError] = useState('');
-    const [notice, setNotice] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [busyRequestId, setBusyRequestId] = useState(null);
@@ -428,7 +427,6 @@ export function SocialPage() {
             outgoing: currentRequests.outgoing ?? [],
         }));
         setFriends((currentFriends) => [friendship, ...currentFriends]);
-        setNotice('Friend request accepted');
         setActivePanel('friends');
         window.dispatchEvent(new Event('howly:social-requests-updated'));
         window.dispatchEvent(new Event('howly:notifications-updated'));
@@ -438,13 +436,11 @@ export function SocialPage() {
     async function sendRequestToUser(targetUser, { closeProfile = false } = {}) {
         setIsSubmitting(true);
         setError('');
-        setNotice('');
 
         try {
             const request = await sendFriendRequest(targetUser.id);
 
             addOutgoingRequest(request);
-            setNotice(`Friend request sent to ${getDisplayName(targetUser)}`);
             window.dispatchEvent(new Event('howly:social-requests-updated'));
             void refreshSocialData({ silent: true });
 
@@ -519,7 +515,6 @@ export function SocialPage() {
 
         setIsSearching(true);
         setError('');
-        setNotice('');
 
         try {
             const users = await searchUsers(usernameQuery.trim());
@@ -546,7 +541,6 @@ export function SocialPage() {
     async function handleAcceptProfileFriendRequest(requestId) {
         setBusyRequestId(requestId);
         setError('');
-        setNotice('');
 
         try {
             const response = await acceptFriendRequest(requestId);
@@ -563,7 +557,6 @@ export function SocialPage() {
     async function handleAcceptRequest(requestId) {
         setBusyRequestId(requestId);
         setError('');
-        setNotice('');
 
         try {
             const response = await acceptFriendRequest(requestId);
@@ -579,7 +572,6 @@ export function SocialPage() {
     async function handleRejectRequest(requestId) {
         setBusyRequestId(requestId);
         setError('');
-        setNotice('');
 
         try {
             await rejectFriendRequest(requestId);
@@ -587,7 +579,6 @@ export function SocialPage() {
                 incoming: (currentRequests.incoming ?? []).filter((request) => request.id !== requestId),
                 outgoing: currentRequests.outgoing ?? [],
             }));
-            setNotice('Friend request rejected');
             window.dispatchEvent(new Event('howly:social-requests-updated'));
             window.dispatchEvent(new Event('howly:notifications-updated'));
             void refreshSocialData({ silent: true });
@@ -601,13 +592,11 @@ export function SocialPage() {
     async function handleDeleteFriend(friendshipId, friend) {
         setBusyFriendId(friendshipId);
         setError('');
-        setNotice('');
 
         try {
             await deleteFriend(friendshipId);
             setFriends((currentFriends) => currentFriends.filter((friendship) => friendship.id !== friendshipId));
             setFeed((currentFeed) => currentFeed.filter((post) => !sameId(post.user?.id, friend?.id)));
-            setNotice(`${getDisplayName(friend)} removed from your friends`);
             void refreshSocialData({ silent: true });
         } catch (err) {
             setError(getSocialErrorMessage(err));
@@ -740,7 +729,6 @@ export function SocialPage() {
             setBlockedUsers(blockedData ?? []);
             void refreshSocialData({ silent: true });
             setSelectedProfileUser(null);
-            setNotice('User blocked successfully.');
         } catch (err) {
             setError(getSocialErrorMessage(err));
         } finally {
@@ -755,7 +743,6 @@ export function SocialPage() {
             await unblockUser(targetUserId);
             const blockedData = await getBlockedUsers();
             setBlockedUsers(blockedData ?? []);
-            setNotice('User unblocked successfully.');
         } catch (err) {
             setError(getSocialErrorMessage(err));
         } finally {
@@ -821,7 +808,6 @@ export function SocialPage() {
                     usernameQuery={usernameQuery}
                     searchResults={searchResults}
                     pendingFriendRequestCount={pendingFriendRequestCount}
-                    notice={notice}
                     error={error}
                     isLoading={isLoading}
                     isSearching={isSearching}

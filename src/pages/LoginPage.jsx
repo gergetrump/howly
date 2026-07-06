@@ -17,7 +17,7 @@ export function LoginPage() {
     const { refreshUser } = useAuth();
 
     const [formData, setFormData] = useState({
-        email: '',
+        identifier: '',
         password: '',
     });
 
@@ -39,7 +39,7 @@ export function LoginPage() {
         if (email) {
             setFormData((currentData) => ({
                 ...currentData,
-                email,
+                identifier: email,
             }));
         }
 
@@ -85,7 +85,7 @@ export function LoginPage() {
 
             if (isNotVerified) {
                 try {
-                    await resendVerificationEmail(formData.email);
+                    await resendVerificationEmail(formData.identifier);
 
                     setError('');
                     setMessage(
@@ -159,21 +159,21 @@ export function LoginPage() {
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div className="space-y-2">
                                 <label
-                                    htmlFor="email"
+                                    htmlFor="identifier"
                                     className="text-sm font-medium text-theme-text"
                                 >
-                                    Email
+                                    Email or username
                                 </label>
 
                                 <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    value={formData.email}
+                                    id="identifier"
+                                    name="identifier"
+                                    type="text"
+                                    value={formData.identifier}
                                     onChange={handleChange}
                                     required
-                                    autoComplete="email"
-                                    placeholder="you@example.com"
+                                    autoComplete="username"
+                                    placeholder="you@example.com or username"
                                     className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
                                 />
                             </div>

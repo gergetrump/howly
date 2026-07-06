@@ -151,7 +151,6 @@ export function FriendsPanel({
     usernameQuery,
     searchResults,
     pendingFriendRequestCount,
-    notice,
     error,
     isLoading,
     isSearching,
@@ -271,7 +270,6 @@ export function FriendsPanel({
                 ) : null}
             </div>
 
-            {notice ? <p className="text-sm text-theme-success">{notice}</p> : null}
             {error ? <p className="text-sm text-theme-danger">{error}</p> : null}
         </aside>
     );
