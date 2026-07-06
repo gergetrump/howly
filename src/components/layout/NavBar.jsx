@@ -24,11 +24,11 @@ import { setNotificationMenuOpen } from '@/components/layout/notificationMenuSta
 const defaultItems = [
     { label: 'Home', to: '/dashboard', icon: Home },
     { label: 'Friends', to: '/social', icon: UsersRound },
-    { label: 'Community', to: '/community', icon: Globe },
+    { label: 'Challenges', to: '/challenges', icon: Trophy },
     { label: 'Shop', to: '/shop', icon: ShoppingBag },
     { label: 'Inventory', to: '/inventory', icon: PackageOpen },
-    { label: 'Challenges', to: '/challenges', icon: Trophy },
     { label: 'Analytics', to: '/analytics', icon: BarChart3 },
+    { label: 'Trends', to: '/community', icon: Globe },
     { label: 'Profile', to: '/profile', icon: UserRound },
 ];
 
