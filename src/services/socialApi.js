@@ -37,8 +37,20 @@ export function rejectFriendRequest(requestId) {
     });
 }
 
-export function getSocialFeed() {
-    return apiRequest('/milestones/feed');
+export function getSocialFeed({ limit, offset } = {}) {
+    const params = new URLSearchParams();
+
+    if (Number.isInteger(limit)) {
+        params.set('limit', String(limit));
+    }
+
+    if (Number.isInteger(offset)) {
+        params.set('offset', String(offset));
+    }
+
+    const query = params.toString();
+
+    return apiRequest(`/milestones/feed${query ? `?${query}` : ''}`);
 }
 
 export function reactToMilestone(postId, emoji) {

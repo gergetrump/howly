@@ -34,6 +34,7 @@ import { deleteStory, getStoryLikes, toggleStoryLike } from '@/services/storyApi
 import { useAuth } from '@/context/authContext';
 
 const SOCIAL_REFRESH_INTERVAL_MS = 10000;
+const SOCIAL_FEED_PAGE_SIZE = 10;
 
 export function SocialPage() {
     const { user } = useAuth();
@@ -41,6 +42,8 @@ export function SocialPage() {
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState({ incoming: [], outgoing: [] });
     const [feed, setFeed] = useState([]);
+    const [hasMoreFeed, setHasMoreFeed] = useState(false);
+    const [isLoadingMoreFeed, setIsLoadingMoreFeed] = useState(false);
     const [blockedUsers, setBlockedUsers] = useState([]);
     const [blockers, setBlockers] = useState([]);
     const [usernameQuery, setUsernameQuery] = useState('');
@@ -89,6 +92,66 @@ export function SocialPage() {
         : null;
     const hasScrolledRef = useRef(false);
     const refreshPromiseRef = useRef(null);
+    const feedLoadedCountRef = useRef(SOCIAL_FEED_PAGE_SIZE);
+
+    function normalizeFeedResponse(feedResponse) {
+        if (Array.isArray(feedResponse)) {
+            return {
+                items: feedResponse,
+                hasMore: false,
+                nextOffset: feedResponse.length,
+            };
+        }
+
+        return {
+            items: feedResponse?.items ?? [],
+            hasMore: feedResponse?.hasMore === true,
+            nextOffset: Number.isInteger(feedResponse?.nextOffset)
+                ? feedResponse.nextOffset
+                : (feedResponse?.items?.length ?? 0),
+        };
+    }
+
+    const handleLoadMoreFeed = useCallback(async () => {
+        if (isLoadingMoreFeed || !hasMoreFeed) {
+            return;
+        }
+
+        setIsLoadingMoreFeed(true);
+        setError('');
+
+        try {
+            const currentOffset = feedLoadedCountRef.current;
+            const feedResponse = await getSocialFeed({
+                limit: SOCIAL_FEED_PAGE_SIZE,
+                offset: currentOffset,
+            });
+            const nextPage = normalizeFeedResponse(feedResponse);
+
+            setFeed((currentFeed) => {
+                const seenPostKeys = new Set(currentFeed.map((post) => `${post.type}:${post.id}`));
+                const nextItems = nextPage.items.filter((post) => {
+                    const key = `${post.type}:${post.id}`;
+
+                    if (seenPostKeys.has(key)) {
+                        return false;
+                    }
+
+                    seenPostKeys.add(key);
+                    return true;
+                });
+                const nextFeed = [...currentFeed, ...nextItems];
+
+                return nextFeed;
+            });
+            feedLoadedCountRef.current = Math.max(nextPage.nextOffset, currentOffset + nextPage.items.length);
+            setHasMoreFeed(nextPage.hasMore);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoadingMoreFeed(false);
+        }
+    }, [hasMoreFeed, isLoadingMoreFeed]);
 
     function getProfileRelationship(profileUser) {
         if (!profileUser) {
@@ -136,17 +199,21 @@ export function SocialPage() {
         let request;
         request = (async () => {
             try {
+                const feedLimit = Math.max(feedLoadedCountRef.current, SOCIAL_FEED_PAGE_SIZE);
                 const [friendsData, requestsData, feedData, blockedData, blockersData] = await Promise.all([
                     getFriends(),
                     getFriendRequests(),
-                    getSocialFeed(),
+                    getSocialFeed({ limit: feedLimit, offset: 0 }),
                     getBlockedUsers(),
                     getBlockers(),
                 ]);
+                const nextFeed = normalizeFeedResponse(feedData);
 
                 setFriends(friendsData ?? []);
                 setRequests(requestsData ?? { incoming: [], outgoing: [] });
-                setFeed(feedData ?? []);
+                setFeed(nextFeed.items);
+                setHasMoreFeed(nextFeed.hasMore);
+                feedLoadedCountRef.current = Math.max(nextFeed.nextOffset, SOCIAL_FEED_PAGE_SIZE);
                 setBlockedUsers(blockedData ?? []);
                 setBlockers(blockersData ?? []);
                 window.dispatchEvent(new Event('howly:social-requests-updated'));
@@ -154,7 +221,7 @@ export function SocialPage() {
                 return {
                     friends: friendsData ?? [],
                     requests: requestsData ?? { incoming: [], outgoing: [] },
-                    feed: feedData ?? [],
+                    feed: nextFeed.items,
                     blockedUsers: blockedData ?? [],
                     blockers: blockersData ?? [],
                 };
@@ -278,7 +345,7 @@ export function SocialPage() {
     // If a notification deep-link target is not in the loaded feed,
     // show a temporary unavailable-post notice and clear the jump state.
     useEffect(() => {
-        if (!targetFeedPostId || isLoading) return undefined;
+        if (!targetFeedPostId || isLoading || isLoadingMoreFeed) return undefined;
 
         const targetExists = feed.some((post) => {
             if (targetStoryId) {
@@ -287,6 +354,11 @@ export function SocialPage() {
 
             return post.id === targetFeedPostId;
         });
+
+        if (!targetExists && hasMoreFeed) {
+            void handleLoadMoreFeed();
+            return undefined;
+        }
 
         if (!targetExists) {
             const timer = window.setTimeout(() => {
@@ -298,7 +370,16 @@ export function SocialPage() {
         }
 
         return undefined;
-    }, [targetFeedPostId, targetStoryId, isLoading, feed, showUnavailableNotificationBanner]);
+    }, [
+        targetFeedPostId,
+        targetStoryId,
+        isLoading,
+        isLoadingMoreFeed,
+        feed,
+        hasMoreFeed,
+        handleLoadMoreFeed,
+        showUnavailableNotificationBanner,
+    ]);
 
     useEffect(() => {
         if (
@@ -786,6 +867,9 @@ export function SocialPage() {
                     isLoading={isLoading}
                     busyPostId={busyPostId}
                     currentUserId={user?.id}
+                    hasMore={hasMoreFeed}
+                    isLoadingMore={isLoadingMoreFeed}
+                    onLoadMore={handleLoadMoreFeed}
                     onReact={handleReactToMilestone}
                     onOpenReactions={(feedPost) => setSelectedReaction({ post: feedPost })}
                     onToggleStoryLike={handleToggleStoryLike}
