@@ -20,7 +20,6 @@ function ChangeCompanionForm({ currentType, currentName, onSaved, onCancel }) {
 
     function handleSelectType(type) {
         setSelectedType(type);
-        setName(getDefaultCompanionName(type));
     }
 
     async function handleSave() {

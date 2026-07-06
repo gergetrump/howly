@@ -66,7 +66,6 @@ export function InventoryPage() {
     const [companionMessage, setCompanionMessage] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
     const { theme: activeTheme, setTheme } = useTheme();
-    const [pendingThemeId, setPendingThemeId] = useState(null);
     const [isChangeCompanionOpen, setIsChangeCompanionOpen] = useState(false);
     const [isCompanionPremiumPromptOpen, setIsCompanionPremiumPromptOpen] = useState(false);
     const isPremiumUser = user?.isPremium === true || user?.role === 'admin';
@@ -332,23 +331,10 @@ export function InventoryPage() {
     }
 
     const isThemesTab = activeCategory === 'theme';
-    const isAllTab = activeCategory === 'all';
-    const selectedThemeId = pendingThemeId ?? activeTheme;
-    const hasPendingTheme = Boolean(pendingThemeId) && pendingThemeId !== activeTheme;
+    const selectedThemeId = activeTheme;
 
-    function handleSaveTheme() {
-        if (hasPendingTheme) {
-            setTheme(pendingThemeId);
-        }
-    }
-
-    async function handleSaveAll() {
-        if (hasPendingTheme) {
-            setTheme(pendingThemeId);
-        }
-        if (hasUnsavedOutfitChanges && !isSavingOutfit) {
-            await handleSaveOutfit();
-        }
+    function handleThemeItemClick(item) {
+        setTheme(item.assetKey?.replace(/^theme-/, ''));
     }
 
     function handleSideChange(userItemId, side) {
@@ -569,18 +555,16 @@ export function InventoryPage() {
                             </TabsList>
                         </Tabs>
 
-                        <ActionButton
-                            type="button"
-                            className="bg-violet-500 px-5 text-white hover:bg-violet-400 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
-                            disabled={isThemesTab
-                                ? !hasPendingTheme
-                                : isAllTab
-                                    ? (isSavingOutfit || (!hasPendingTheme && !hasUnsavedOutfitChanges))
-                                    : (!hasUnsavedOutfitChanges || isSavingOutfit)}
-                            onClick={isThemesTab ? handleSaveTheme : isAllTab ? handleSaveAll : handleSaveOutfit}
-                        >
-                            {isThemesTab ? 'Save Theme' : isSavingOutfit ? 'Saving...' : isAllTab ? 'Save Theme' : 'Save Outfit'}
-                        </ActionButton>
+                        {isThemesTab ? null : (
+                            <ActionButton
+                                type="button"
+                                className="bg-violet-500 px-5 text-white hover:bg-violet-400 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
+                                disabled={!hasUnsavedOutfitChanges || isSavingOutfit}
+                                onClick={handleSaveOutfit}
+                            >
+                                {isSavingOutfit ? 'Saving...' : 'Save Outfit'}
+                            </ActionButton>
+                        )}
                     </div>
                 </div>
             </div>
@@ -623,7 +607,7 @@ export function InventoryPage() {
                                         ? <ThemeItemVisual item={item} />
                                         : renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', item.customization)}
                                     onClick={item.type === 'theme'
-                                        ? () => setPendingThemeId(item.assetKey?.replace(/^theme-/, ''))
+                                        ? () => handleThemeItemClick(item)
                                         : () => handleToggleEquipped(item)}
                                 >
                                     {item.type === 'powerUp' ? (
