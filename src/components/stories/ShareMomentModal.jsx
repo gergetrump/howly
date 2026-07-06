@@ -130,7 +130,7 @@ export function ShareMomentModal({
                             <button
                                 type="button"
                                 onClick={() => cameraInputRef.current?.click()}
-                                className="flex h-36 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-theme-text/20 bg-theme-text/5 text-theme-text-muted transition hover:border-purple-500/50 hover:text-theme-text"
+                                className="flex h-36 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-theme-text/20 bg-theme-text/5 text-theme-text-muted transition hover:border-theme-accent/50 hover:text-theme-text"
                             >
                                 <Camera className="size-7" aria-hidden="true" />
                                 <span className="text-sm font-medium">Take a photo</span>
@@ -138,7 +138,7 @@ export function ShareMomentModal({
                             <button
                                 type="button"
                                 onClick={() => galleryInputRef.current?.click()}
-                                className="flex h-36 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-theme-text/20 bg-theme-text/5 text-theme-text-muted transition hover:border-purple-500/50 hover:text-theme-text"
+                                className="flex h-36 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-theme-text/20 bg-theme-text/5 text-theme-text-muted transition hover:border-theme-accent/50 hover:text-theme-text"
                             >
                                 <ImageIcon className="size-7" aria-hidden="true" />
                                 <span className="text-sm font-medium">Pick from gallery</span>
@@ -187,9 +187,10 @@ export function ShareMomentModal({
                         </Button>
                         <Button
                             type="button"
+                            variant="primary"
                             onClick={handlePost}
                             disabled={isPosting || !imageFile}
-                            className="flex-1 rounded-2xl bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+                            className="flex-1 rounded-2xl disabled:opacity-50"
                         >
                             {isPosting ? 'Posting...' : 'Post Story'}
                         </Button>

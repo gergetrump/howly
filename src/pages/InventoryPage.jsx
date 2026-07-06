@@ -413,7 +413,8 @@ export function InventoryPage() {
                 <p className="text-sm font-medium text-theme-text">Try on some items at the Shop!</p>
                 <ActionButton
                     type="button"
-                    className="bg-violet-500 px-5 text-white hover:bg-violet-400"
+                    variant="primary"
+                    className="px-5"
                     onClick={() => navigate('/shop')}
                 >
                     Visit shop
@@ -558,7 +559,8 @@ export function InventoryPage() {
                         {isThemesTab ? null : (
                             <ActionButton
                                 type="button"
-                                className="bg-violet-500 px-5 text-white hover:bg-violet-400 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
+                                variant="primary"
+                                className="px-5 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                                 disabled={!hasUnsavedOutfitChanges || isSavingOutfit}
                                 onClick={handleSaveOutfit}
                             >
@@ -700,7 +702,7 @@ export function InventoryPage() {
                 <ActionButton
                     type="button"
                     fullWidth
-                    className="mt-6 h-12 rounded-2xl bg-gradient-to-r from-purple-600 to-purple-500 text-base font-semibold text-white shadow-lg shadow-purple-600/25 hover:from-purple-700 hover:to-purple-600"
+                    className="mt-6 h-12 rounded-2xl bg-gradient-to-r from-theme-accent to-theme-accent text-base font-semibold text-theme-on-accent shadow-lg shadow-black/25 hover:from-theme-accent-strong hover:to-theme-accent-strong"
                     disabled={!boostDialogHabitId || usingBoostItemId === boostDialogItem?.userItemId}
                     onClick={() => {
                         if (boostDialogItem) {

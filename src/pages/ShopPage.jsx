@@ -914,7 +914,7 @@ export function ShopPage() {
                         <div className="flex flex-wrap items-center justify-end gap-2">
                             <ActionButton
                                 type="button"
-                                className={`gap-2 px-4 ${cartItems.length === 0 ? 'bg-theme-text/10 text-theme-text-muted hover:bg-theme-text/15' : 'bg-violet-500 text-white hover:bg-violet-400'}`}
+                                className={`gap-2 px-4 ${cartItems.length === 0 ? 'bg-theme-text/10 text-theme-text-muted hover:bg-theme-text/15' : 'bg-theme-accent text-theme-on-accent hover:bg-theme-accent-strong'}`}
                                 onClick={() => setIsCartOpen(true)}
                             >
                                 <ShoppingCart className="h-4 w-4" aria-hidden="true" />

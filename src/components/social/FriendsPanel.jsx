@@ -194,7 +194,7 @@ export function FriendsPanel({
                 </div>
                 <Button
                     type="button"
-                    className="bg-violet-500 text-white hover:bg-violet-400"
+                    variant="primary"
                     onClick={() => onActivePanelChange('add')}
                 >
                     <Plus aria-hidden="true" />

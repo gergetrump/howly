@@ -47,7 +47,7 @@ export function PurchaseConfirmationDialog({
 
                     <ConfirmationDialogFooter className="mt-5 block">
                         <ConfirmationDialogAction
-                            className="h-10 w-full rounded-xl bg-violet-500 text-sm font-semibold text-white shadow-lg shadow-violet-950/30 hover:bg-violet-400 disabled:bg-violet-500/60"
+                            className="h-10 w-full rounded-xl bg-theme-accent text-sm font-semibold text-theme-on-accent shadow-lg shadow-black/30 hover:bg-theme-accent-strong disabled:bg-theme-accent/60"
                             disabled={itemsToBuy.length === 0 || buyingItemId === 'cart'}
                             onClick={() => onBuyItems(itemsToBuy)}
                         >

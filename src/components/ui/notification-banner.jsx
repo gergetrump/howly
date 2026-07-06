@@ -64,7 +64,7 @@ export function NotificationBanner({
             className={cn(
                 'relative flex items-start gap-4 overflow-hidden rounded-xl border px-5 py-4 opacity-0 shadow-xl shadow-slate-950/30 backdrop-blur transition duration-300 ease-out',
                 isVisible ? 'translate-y-0 scale-100 opacity-100' : '-translate-y-2 scale-[0.98]',
-                variant === 'milestone' && 'border-l-4 border-l-violet-400',
+                variant === 'milestone' && 'border-l-4 border-l-theme-accent',
                 variant === 'unavailable' && 'border-l-4 border-l-amber-300/80',
                 variantClasses[variant] ?? variantClasses.info,
                 className,
@@ -96,7 +96,7 @@ export function NotificationBanner({
             {autoCloseMs ? (
                 <div className="absolute inset-x-0 bottom-0 h-1 bg-theme-text/10">
                     <div
-                        className="h-full bg-violet-300"
+                        className="h-full bg-theme-accent"
                         style={{
                             width: isProgressRunning ? '0%' : '100%',
                             transition: isProgressRunning ? `width ${autoCloseMs}ms linear` : 'none',

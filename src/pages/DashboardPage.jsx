@@ -148,9 +148,10 @@ function HabitLimitCleanupDialog({
 
                     <Button
                         type="button"
+                        variant="primary"
                         onClick={onConfirm}
                         disabled={!canConfirm}
-                        className="h-12 w-full rounded-2xl bg-purple-600 text-base font-semibold text-white shadow-lg shadow-purple-600/25 hover:bg-purple-700 disabled:bg-white/10 disabled:text-slate-500"
+                        className="h-12 w-full rounded-2xl text-base shadow-lg shadow-black/25 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                     >
                         {isSaving ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
                         Keep Selected Habits
@@ -633,7 +634,7 @@ export function DashboardPage() {
                     <button
                         type="button"
                         onClick={() => setIsChatOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-purple-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-purple-600/25 transition-all hover:-translate-y-0.5 hover:from-purple-700 hover:to-purple-600"
+                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-theme-accent to-theme-accent px-5 py-2.5 text-sm font-semibold text-theme-on-accent shadow-lg shadow-black/25 transition-all hover:-translate-y-0.5 hover:from-theme-accent-strong hover:to-theme-accent-strong"
                     >
                         <Sparkles size={16} />
                         Ask {companion?.name || 'Howly'} for habit ideas

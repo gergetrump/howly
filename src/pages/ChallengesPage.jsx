@@ -161,7 +161,7 @@ function ChallengeInfoPopover() {
                 align="start"
                 side="bottom"
                 sideOffset={8}
-                className="z-[120] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-violet-200/20 bg-theme-bg/95 p-4 text-left text-xs leading-snug text-theme-text shadow-xl shadow-slate-950/30"
+                className="z-[120] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-theme-text/10 bg-theme-bg/95 p-4 text-left text-xs leading-snug text-theme-text shadow-xl shadow-black/30"
             >
                 <p className="text-sm font-bold text-theme-text">How Challenges Work</p>
                 <div className="mt-3 space-y-3">

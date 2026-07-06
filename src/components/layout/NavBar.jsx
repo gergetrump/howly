@@ -462,7 +462,7 @@ export function NavBar({
                                             {notifications.length ? (
                                                 <button
                                                     type="button"
-                                                    className="rounded-full px-2 py-1 text-xs font-semibold text-theme-accent-soft transition hover:bg-violet-400/15"
+                                                    className="rounded-full px-2 py-1 text-xs font-semibold text-theme-accent-soft transition hover:bg-theme-accent/15"
                                                     onClick={handleClearNotifications}
                                                 >
                                                     Clear all
@@ -490,7 +490,7 @@ export function NavBar({
                                                     className={cn(
                                                         'group notification-row flex gap-3 rounded-xl px-3 py-3 transition duration-200',
                                                         isVisuallyUnread
-                                                            ? 'bg-violet-500/10 text-theme-accent-soft hover:bg-violet-500/20'
+                                                            ? 'bg-theme-accent/10 text-theme-accent-soft hover:bg-theme-accent/20'
                                                             : 'bg-theme-surface-2/30 text-theme-text-soft hover:bg-theme-surface-2/45',
                                                         isRemoving && 'translate-x-8 opacity-0',
                                                     )}
@@ -499,7 +499,7 @@ export function NavBar({
                                                     <span
                                                         className={cn(
                                                             'mt-1 flex size-8 shrink-0 items-center justify-center rounded-full text-sm',
-                                                            isVisuallyUnread ? 'bg-violet-400/20' : 'bg-theme-surface-2/50',
+                                                            isVisuallyUnread ? 'bg-theme-accent/20' : 'bg-theme-surface-2/50',
                                                         )}
                                                     >
                                                         <Bell
@@ -539,7 +539,7 @@ export function NavBar({
                                     <div className="border-t border-theme-text/10 p-2">
                                         <Link
                                             to="/social"
-                                            className="block rounded-xl px-3 py-2 text-center text-sm font-semibold text-theme-accent-soft transition hover:bg-violet-400/15"
+                                            className="block rounded-xl px-3 py-2 text-center text-sm font-semibold text-theme-accent-soft transition hover:bg-theme-accent/15"
                                             onClick={() => setIsNotificationMenuOpen(false)}
                                         >
                                             View social

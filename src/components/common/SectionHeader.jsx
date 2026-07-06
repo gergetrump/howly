@@ -13,10 +13,11 @@ export function SectionHeader({ title, description, actionLabel, onAction, title
             </div>
 
             {actionLabel ? (
-                <Button 
-                    type="button" 
+                <Button
+                    type="button"
+                    variant="primary"
                     onClick={onAction}
-                    className="bg-theme-accent hover:bg-theme-accent-strong text-theme-on-accent border-0 shadow-lg shadow-theme-accent/20 px-5 py-5 text-sm font-semibold rounded-xl"
+                    className="border-0 shadow-lg shadow-theme-accent/20 px-5 py-5 text-sm"
                 >
                     <Plus className="mr-2 h-4 w-4" />
                     {actionLabel}

@@ -321,7 +321,7 @@ export function ShopCustomizationPanel({
                         {textConfig.label}
                         <input
                             value={customization[textConfig.key] ?? ''}
-                            className="min-w-0 rounded-xl border border-theme-text/20 bg-theme-text/10 px-3 py-2 text-sm font-bold uppercase tracking-wide text-theme-text outline-none focus:border-violet-200"
+                            className="min-w-0 rounded-xl border border-theme-text/20 bg-theme-text/10 px-3 py-2 text-sm font-bold uppercase tracking-wide text-theme-text outline-none focus:border-theme-accent"
                             maxLength={MAX_CUSTOM_TEXT_LENGTH}
                             placeholder={textConfig.placeholder}
                             onChange={handleTextChange}
@@ -431,7 +431,8 @@ export function ShopCustomizationPanel({
                 <ActionButton
                     type="button"
                     fullWidth
-                    className="h-10 bg-violet-500 text-white hover:bg-violet-400 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
+                    variant="primary"
+                    className="h-10 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                     disabled={isAddToCartDisabled}
                     onClick={onAddToCart}
                 >

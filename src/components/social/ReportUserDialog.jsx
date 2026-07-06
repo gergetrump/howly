@@ -118,7 +118,8 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
                         </NotificationBanner>
                         <Button
                             type="button"
-                            className="mt-5 w-full bg-violet-500 text-white hover:bg-violet-400"
+                            variant="primary"
+                            className="mt-5 w-full"
                             onClick={() => onOpenChange(false)}
                         >
                             Close
@@ -138,7 +139,7 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
                                             type="button"
                                             className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
                                                 isSelected
-                                                    ? 'border-violet-300 bg-violet-500 text-white'
+                                                    ? 'border-theme-accent bg-theme-accent text-theme-on-accent'
                                                     : 'border-theme-text/10 bg-theme-text/5 text-theme-text hover:bg-theme-text/10'
                                             }`}
                                             onClick={() => toggleTag(tag)}
@@ -160,7 +161,7 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
                                 value={message}
                                 rows={5}
                                 maxLength={2000}
-                                className="w-full resize-none rounded-2xl border border-theme-text/15 bg-theme-bg/35 px-4 py-3 text-sm text-theme-text outline-none transition placeholder:text-theme-text-muted focus:border-violet-300 focus:ring-2 focus:ring-violet-400/20"
+                                className="w-full resize-none rounded-2xl border border-theme-text/15 bg-theme-bg/35 px-4 py-3 text-sm text-theme-text outline-none transition placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-2 focus:ring-theme-accent/20"
                                 placeholder="Write a short description. This field is required."
                                 disabled={isSubmitting}
                                 onChange={(event) => setMessage(event.target.value)}
@@ -217,7 +218,8 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
 
                         <Button
                             type="submit"
-                            className="h-11 w-full rounded-full bg-violet-500 text-base font-semibold text-white hover:bg-violet-400"
+                            variant="primary"
+                            className="h-11 w-full rounded-full text-base"
                             disabled={isSubmitting}
                         >
                             <Send aria-hidden="true" />

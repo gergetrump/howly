@@ -331,7 +331,7 @@ export function StoryCommentSection({
                     isReply ? 'pl-8 mt-2 border-l border-theme-text/10' : ''
                 } ${
                     isHighlighted
-                        ? 'ring-2 ring-violet-400/60 bg-theme-accent/10'
+                        ? 'ring-2 ring-theme-accent/60 bg-theme-accent/10'
                         : ''
                 }`}
             >
@@ -339,7 +339,7 @@ export function StoryCommentSection({
                     type="button"
                     onClick={() => commentUser && onOpenProfile?.(commentUser)}
                     disabled={!commentUser || !onOpenProfile}
-                    className="shrink-0 rounded-full transition hover:opacity-85 focus:outline-none focus:ring-2 focus:ring-violet-400/70 focus:ring-offset-2 focus:ring-offset-theme-bg disabled:cursor-default disabled:hover:opacity-100"
+                    className="shrink-0 rounded-full transition hover:opacity-85 focus:outline-none focus:ring-2 focus:ring-theme-accent/70 focus:ring-offset-2 focus:ring-offset-theme-bg disabled:cursor-default disabled:hover:opacity-100"
                     aria-label={`Open ${commentUserName}'s profile preview`}
                 >
                     <img

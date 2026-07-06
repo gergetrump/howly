@@ -125,7 +125,8 @@ export function CartDialog({
                         </div>
                         <ActionButton
                             type="button"
-                            className="h-11 bg-violet-500 px-5 text-white hover:bg-violet-400 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
+                            variant="primary"
+                            className="h-11 px-5 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                             disabled={cartItemsToBuy.length === 0}
                             onClick={() => onOpenBuyConfirmation(cartItems)}
                         >
