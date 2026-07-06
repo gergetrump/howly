@@ -21,6 +21,7 @@ import {
     getFriendRequests,
     getFriends,
     getSocialFeed,
+    getMilestoneReactions,
     rejectFriendRequest,
     reactToMilestone,
     sendFriendRequest,
@@ -734,30 +735,34 @@ export function SocialPage() {
             return;
         }
 
-        setBusyPostId(post.id);
-        setError('');
-
-        try {
-            const likers = loadedLikers.length === post.likeCount
-                ? loadedLikers
-                : await getStoryLikes(post.id);
-
-            setSelectedReaction({
-                post: {
-                    ...post,
-                    type: 'story',
-                    reactions: (likers ?? []).map((liker) => ({
-                        emoji: '💜',
-                        user: liker,
-                    })),
-                },
-            });
-        } catch (err) {
-            setError(getSocialErrorMessage(err));
-        } finally {
-            setBusyPostId(null);
-        }
+        setSelectedReaction({
+            post: {
+                ...post,
+                type: 'story',
+                reactions: (loadedLikers ?? []).map((liker) => ({
+                    emoji: '💜',
+                    user: liker,
+                })),
+            },
+        });
     }
+
+    const handleLoadReactionUsers = useCallback(async (post, pagination) => {
+        if (post.type === 'story') {
+            const response = await getStoryLikes(post.id, pagination);
+
+            if (Array.isArray(response)) {
+                return response.map((liker) => ({ emoji: '💜', user: liker }));
+            }
+
+            return {
+                ...response,
+                items: (response?.items ?? []).map((liker) => ({ emoji: '💜', user: liker })),
+            };
+        }
+
+        return getMilestoneReactions(post.id, pagination);
+    }, []);
 
     async function handleDeleteStory(post) {
         await deleteStory(post.id);
@@ -922,6 +927,7 @@ export function SocialPage() {
                 }}
                 onAddFriend={handleSendProfileFriendRequest}
                 onReact={handleReactFromDialog}
+                onLoadUsers={handleLoadReactionUsers}
                 getRelationship={getProfileRelationship}
             />
             <UserPreviewDialog

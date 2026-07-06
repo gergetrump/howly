@@ -8,8 +8,20 @@ export function getUnreadNotificationCount(types) {
     return apiRequest(`/notifications/unread-count${query}`);
 }
 
-export function getNotifications() {
-    return apiRequest('/notifications');
+export function getNotifications({ limit, offset } = {}) {
+    const params = new URLSearchParams();
+
+    if (Number.isInteger(limit)) {
+        params.set('limit', String(limit));
+    }
+
+    if (Number.isInteger(offset)) {
+        params.set('offset', String(offset));
+    }
+
+    const query = params.toString();
+
+    return apiRequest(`/notifications${query ? `?${query}` : ''}`);
 }
 
 export function markNotificationRead(notificationId) {
