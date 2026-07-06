@@ -47,7 +47,7 @@ export default function Hoodie({
     const hoodieColor = color;
     const hoodieShadowColor = darkenColor(hoodieColor, 0.16);
     const hoodieSeamColor = darkenColor(hoodieColor, 0.08);
-    const hoodieText = text?.trim() || DEFAULT_HOODIE_TEXT;
+    const hoodieText = typeof text === 'string' ? text.trim() : DEFAULT_HOODIE_TEXT;
     const hoodieTextWidth = getHoodieTextWidth(hoodieText);
 
     return (

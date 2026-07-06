@@ -316,6 +316,22 @@ export function ShopPage() {
         },
         [items, selectedCategory],
     );
+    const ownedItemIds = useMemo(
+        () => new Set(
+            [...ownedItemSignatures]
+                .map((signature) => signature.split(':')[0])
+                .filter(Boolean),
+        ),
+        [ownedItemSignatures],
+    );
+    const orderedItems = useMemo(
+        () => [...filteredItems].sort(
+            (firstItem, secondItem) => (
+                Number(ownedItemIds.has(String(firstItem._id))) - Number(ownedItemIds.has(String(secondItem._id)))
+            ),
+        ),
+        [filteredItems, ownedItemIds],
+    );
     const selectedCustomItem = useMemo(() => {
         return items.find((item) => item._id === selectedCustomItemId) ?? null;
     }, [items, selectedCustomItemId]);
@@ -704,8 +720,33 @@ export function ShopPage() {
     }
 
     async function handleBuyItems(entriesForPurchase) {
-        setBuyingItemId('cart');
         setError('');
+
+        const totalCost = entriesForPurchase.reduce(
+            (total, entry) => total + ((getPurchaseEntryItem(entry)?.price ?? 0) * getPurchaseEntryQuantity(entry)),
+            0,
+        );
+        const availableCoins = user?.coins ?? 0;
+
+        if (totalCost > availableCoins) {
+            if (isFreeUser) {
+                openPremiumPageAfterPurchaseDialog(
+                    `You do not have enough moon coins for the whole cart (${totalCost} needed, you have ${availableCoins}). Premium gives you monthly bonus coins${premiumMonthlyCoins ? ` (${premiumMonthlyCoins} coins)` : ''}.`,
+                    '',
+                    'Not enough moon coins',
+                );
+            } else {
+                openPremiumPageAfterPurchaseDialog(
+                    `You do not have enough moon coins for the whole cart — you need ${totalCost} but have ${availableCoins}. Remove some items first.`,
+                    '',
+                    'Not enough moon coins',
+                    false,
+                );
+            }
+            return;
+        }
+
+        setBuyingItemId('cart');
         const purchasedEntries = [];
         const purchasedQuantitiesByCartKey = {};
         let failedEntry = null;
@@ -883,6 +924,7 @@ export function ShopPage() {
                         error={error}
                         items={items}
                         filteredItems={filteredItems}
+                        orderedItems={orderedItems}
                         getItemCustomization={getItemCustomization}
                         onAddCurrentItemToCart={handleAddCurrentItemToCart}
                         isItemOwned={isItemOwned}

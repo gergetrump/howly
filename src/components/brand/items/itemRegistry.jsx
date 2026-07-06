@@ -38,6 +38,7 @@ import MatchaBowl, { MatchaBowlLayer } from './MatchaBowl';
 import SakuraBranch, { SakuraBranchLayer } from './SakuraBranch';
 import Necklace, { NecklaceLayer } from './Necklace';
 import Nerdglasses, { NerdglassesLayer } from './Nerdglasses';
+import OceanTop, { OceanTopLayer } from './OceanTop';
 import Phone, { PhoneLayer } from './Phone';
 import SakuraNeckclace, { SakuraNeckclaceLayer } from './SakuraNeckclace';
 import SakuraOutfit, { SakuraOutfitLayer } from './SakuraOutfit';
@@ -48,6 +49,7 @@ import StrawHat, { StrawHatLayer } from './StrawHat';
 import { SneakerLayer, SneakerPair } from './Sneaker';
 import Suit, { SuitLayer } from './Suit';
 import Summertop, { SummertopLayer } from './Summertop';
+import SunsetJersey, { SunsetJerseyLayer } from './SunsetJersey';
 import Top, { TopLayer } from './Top';
 import TopWarm, { TopWarmLayer } from './TopWarm';
 import { WarmBootsLayer, WarmBootsPair } from './WarmBoots';
@@ -336,6 +338,14 @@ const itemRegistry = {
         transform: 'translate(45 835)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },
+    'sunset-jersey': {
+        type: 'clothing',
+        displayName: 'Sunset Jersey',
+        visual: SunsetJersey,
+        layer: SunsetJerseyLayer,
+        transform: 'translate(45 835)',
+        previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
     'gryffindor-sweater': {
         type: 'clothing',
         displayName: 'Gryffindor Sweater',
@@ -504,6 +514,14 @@ const itemRegistry = {
         type: 'clothing',
         visual: TopWarm,
         layer: TopWarmLayer,
+        transform: 'translate(70 850)',
+        previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'ocean-top': {
+        type: 'clothing',
+        displayName: 'Ocean Top',
+        visual: OceanTop,
+        layer: OceanTopLayer,
         transform: 'translate(70 850)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
     },

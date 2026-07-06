@@ -181,19 +181,34 @@ export function InventoryPage() {
     );
     const savedItemSides = useMemo(() => getInventorySides(inventory), [getInventorySides, inventory]);
 
+    const streakShields = user?.streakShields ?? 0;
     const filteredItems = useMemo(
         () => {
             const base = activeCategory === 'all'
                 ? ownedItems
                 : ownedItems.filter((item) => itemMatchesCategory(item, activeCategory));
 
-            if (activeCategory === 'all' || activeCategory === 'theme') {
-                return [DEFAULT_THEME_ITEM, ...base];
+            let result = base;
+
+            if ((activeCategory === 'all' || activeCategory === 'powerUp') && streakShields > 0) {
+                result = [{
+                    userItemId: 'streak-shield-reserve',
+                    type: 'powerUp',
+                    assetKey: 'streak-freeze',
+                    name: 'Streak Shield',
+                    quantity: streakShields,
+                    price: 0,
+                    premiumOnly: false,
+                }, ...result];
             }
 
-            return base;
+            if (activeCategory === 'all' || activeCategory === 'theme') {
+                result = [DEFAULT_THEME_ITEM, ...result];
+            }
+
+            return result;
         },
-        [activeCategory, ownedItems],
+        [activeCategory, ownedItems, streakShields],
     );
     const boostDialogItem = useMemo(
         () => ownedItems.find((item) => item.userItemId === boostDialogItemId) ?? null,
@@ -317,11 +332,22 @@ export function InventoryPage() {
     }
 
     const isThemesTab = activeCategory === 'theme';
+    const isAllTab = activeCategory === 'all';
     const selectedThemeId = pendingThemeId ?? activeTheme;
+    const hasPendingTheme = Boolean(pendingThemeId) && pendingThemeId !== activeTheme;
 
     function handleSaveTheme() {
-        if (pendingThemeId && pendingThemeId !== activeTheme) {
+        if (hasPendingTheme) {
             setTheme(pendingThemeId);
+        }
+    }
+
+    async function handleSaveAll() {
+        if (hasPendingTheme) {
+            setTheme(pendingThemeId);
+        }
+        if (hasUnsavedOutfitChanges && !isSavingOutfit) {
+            await handleSaveOutfit();
         }
     }
 
@@ -547,11 +573,13 @@ export function InventoryPage() {
                             type="button"
                             className="bg-violet-500 px-5 text-white hover:bg-violet-400 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                             disabled={isThemesTab
-                                ? (!pendingThemeId || pendingThemeId === activeTheme)
-                                : (!hasUnsavedOutfitChanges || isSavingOutfit)}
-                            onClick={isThemesTab ? handleSaveTheme : handleSaveOutfit}
+                                ? !hasPendingTheme
+                                : isAllTab
+                                    ? (isSavingOutfit || (!hasPendingTheme && !hasUnsavedOutfitChanges))
+                                    : (!hasUnsavedOutfitChanges || isSavingOutfit)}
+                            onClick={isThemesTab ? handleSaveTheme : isAllTab ? handleSaveAll : handleSaveOutfit}
                         >
-                            {isThemesTab ? 'Save theme' : (isSavingOutfit ? 'Saving...' : 'Save Outfit')}
+                            {isThemesTab ? 'Save Theme' : isSavingOutfit ? 'Saving...' : isAllTab ? 'Save Theme' : 'Save Outfit'}
                         </ActionButton>
                     </div>
                 </div>
@@ -599,7 +627,7 @@ export function InventoryPage() {
                                         : () => handleToggleEquipped(item)}
                                 >
                                     {item.type === 'powerUp' ? (
-                                        renderBoostControls(item)
+                                        item.assetKey === 'streak-freeze' ? null : renderBoostControls(item)
                                     ) : item.type === 'theme' ? null : (
                                         <div className="col-span-2 flex min-h-8 justify-end">
                                             {renderSideControls(item)}

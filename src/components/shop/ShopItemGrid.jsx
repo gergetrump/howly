@@ -9,6 +9,7 @@ export function ShopItemGrid({
     error,
     items,
     filteredItems,
+    orderedItems,
     getItemCustomization,
     onAddCurrentItemToCart,
     isItemOwned,
@@ -37,10 +38,6 @@ export function ShopItemGrid({
         }
         openBuyConfirmation([createPurchaseEntry(item)]);
     }
-
-    const orderedItems = [...filteredItems].sort(
-        (firstItem, secondItem) => Number(isItemOwned(firstItem)) - Number(isItemOwned(secondItem)),
-    );
 
     return (
         <div className="relative rounded-2xl border border-theme-text/10 bg-theme-text/5 p-3 shadow-xl shadow-slate-950/20">
