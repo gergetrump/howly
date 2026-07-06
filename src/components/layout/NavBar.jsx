@@ -49,6 +49,7 @@ const brandSizes = {
 };
 
 const navStatBadgeClassName = 'min-h-10 gap-0 px-2 py-1.5 text-[0px] font-bold leading-none sm:gap-2 sm:px-3.5 sm:text-sm';
+const NOTIFICATION_PAGE_SIZE = 10;
 
 function formatNotificationTime(createdAt) {
     if (!createdAt) {
@@ -75,6 +76,24 @@ function formatNotificationTime(createdAt) {
     return `${Math.floor(elapsedHours / 24)}d`;
 }
 
+function normalizeNotificationPage(response) {
+    if (Array.isArray(response)) {
+        return {
+            items: response,
+            hasMore: false,
+            nextOffset: response.length,
+        };
+    }
+
+    return {
+        items: response?.items ?? [],
+        hasMore: response?.hasMore === true,
+        nextOffset: Number.isInteger(response?.nextOffset)
+            ? response.nextOffset
+            : (response?.items?.length ?? 0),
+    };
+}
+
 export function NavBar({
     items = defaultItems,
     brandSize = 'lg',
@@ -87,11 +106,14 @@ export function NavBar({
     const [visibleUnreadNotificationIds, setVisibleUnreadNotificationIds] = useState(new Set());
     const [isNotificationMenuOpen, setIsNotificationMenuOpen] = useState(false);
     const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+    const [isLoadingMoreNotifications, setIsLoadingMoreNotifications] = useState(false);
+    const [hasMoreNotifications, setHasMoreNotifications] = useState(false);
     const notificationMenuRef = useRef(null);
     const notificationListRef = useRef(null);
     const readingNotificationIdsRef = useRef(new Set());
     const pendingNotificationReadPromisesRef = useRef(new Map());
     const hasLoadedNotificationsRef = useRef(false);
+    const notificationLoadedCountRef = useRef(NOTIFICATION_PAGE_SIZE);
     // Stays true while the notification dropdown is open so background refreshes
     // don't overwrite the bell counter mid-session.
     const isMenuOpenRef = useRef(false);
@@ -282,19 +304,75 @@ export function NavBar({
         hasLoadedNotificationsRef.current = true;
 
         try {
-            const notificationList = await getNotifications();
-            const nextNotifications = notificationList ?? [];
+            const notificationList = await getNotifications({
+                limit: NOTIFICATION_PAGE_SIZE,
+                offset: 0,
+            });
+            const notificationPage = normalizeNotificationPage(notificationList);
+            const nextNotifications = notificationPage.items;
 
             setNotifications(nextNotifications);
             setRemovingNotificationIds([]);
+            setHasMoreNotifications(notificationPage.hasMore);
+            notificationLoadedCountRef.current = Math.max(notificationPage.nextOffset, NOTIFICATION_PAGE_SIZE);
             setVisibleUnreadNotificationIds(
                 new Set(nextNotifications.filter((notification) => !notification.readAt).map((notification) => notification.id))
             );
         } catch {
             setNotifications([]);
+            setHasMoreNotifications(false);
             setVisibleUnreadNotificationIds(new Set());
         } finally {
             setIsLoadingNotifications(false);
+        }
+    }
+
+    async function handleLoadMoreNotifications() {
+        if (isLoadingMoreNotifications || !hasMoreNotifications) {
+            return;
+        }
+
+        setIsLoadingMoreNotifications(true);
+
+        try {
+            const currentOffset = notificationLoadedCountRef.current;
+            const notificationList = await getNotifications({
+                limit: NOTIFICATION_PAGE_SIZE,
+                offset: currentOffset,
+            });
+            const notificationPage = normalizeNotificationPage(notificationList);
+
+            setNotifications((currentNotifications) => {
+                const seenIds = new Set(currentNotifications.map((notification) => notification.id));
+                const nextItems = notificationPage.items.filter((notification) => {
+                    if (seenIds.has(notification.id)) {
+                        return false;
+                    }
+
+                    seenIds.add(notification.id);
+                    return true;
+                });
+
+                return [...currentNotifications, ...nextItems];
+            });
+            notificationLoadedCountRef.current = Math.max(
+                notificationPage.nextOffset,
+                currentOffset + notificationPage.items.length
+            );
+            setHasMoreNotifications(notificationPage.hasMore);
+            setVisibleUnreadNotificationIds((currentIds) => {
+                const nextIds = new Set(currentIds);
+                notificationPage.items.forEach((notification) => {
+                    if (!notification.readAt) {
+                        nextIds.add(notification.id);
+                    }
+                });
+                return nextIds;
+            });
+        } catch {
+            // Keep the loaded page intact if older notifications fail to load.
+        } finally {
+            setIsLoadingMoreNotifications(false);
         }
     }
 
@@ -304,6 +382,8 @@ export function NavBar({
             setNotifications([]);
             setRemovingNotificationIds([]);
             setVisibleUnreadNotificationIds(new Set());
+            setHasMoreNotifications(false);
+            notificationLoadedCountRef.current = NOTIFICATION_PAGE_SIZE;
             setUnreadNotificationCount(0);
             window.dispatchEvent(new Event('howly:notifications-updated'));
         } catch {
@@ -330,6 +410,10 @@ export function NavBar({
                 setUnreadNotificationCount((currentCount) => Math.max(0, currentCount - 1));
             }
             window.setTimeout(() => {
+                notificationLoadedCountRef.current = Math.max(
+                    0,
+                    notificationLoadedCountRef.current - 1
+                );
                 setNotifications((currentNotifications) =>
                     currentNotifications.filter((notification) => notification.id !== notificationId)
                 );
@@ -471,11 +555,12 @@ export function NavBar({
                                         </div>
                                     </div>
 
-                                    <div ref={notificationListRef} className="max-h-80 overflow-y-auto p-2">
+                                    <div ref={notificationListRef} className="max-h-80 space-y-2 overflow-y-auto p-2">
                                         {isLoadingNotifications ? (
                                             <p className="px-3 py-6 text-center text-sm text-theme-text-muted">Loading...</p>
                                         ) : notifications.length ? (
-                                            notifications.map((notification) => {
+                                            <>
+                                            {notifications.map((notification) => {
                                                 const isRemoving = removingNotificationIds.includes(notification.id);
                                                 const isUnread = !notification.readAt;
                                                 const isVisuallyUnread = visibleUnreadNotificationIds.has(notification.id);
@@ -530,20 +615,21 @@ export function NavBar({
                                                     </button>
                                                 </Link>
                                                 );
-                                            })
+                                            })}
+                                            {hasMoreNotifications ? (
+                                                <button
+                                                    type="button"
+                                                    className="w-full rounded-xl px-3 py-2 text-sm font-semibold text-theme-accent-soft transition hover:bg-violet-400/15 disabled:cursor-wait disabled:opacity-60"
+                                                    disabled={isLoadingMoreNotifications}
+                                                    onClick={handleLoadMoreNotifications}
+                                                >
+                                                    {isLoadingMoreNotifications ? 'Loading...' : 'Load more'}
+                                                </button>
+                                            ) : null}
+                                            </>
                                         ) : (
                                             <p className="px-3 py-6 text-center text-sm text-theme-text-muted">No notifications yet</p>
                                         )}
-                                    </div>
-
-                                    <div className="border-t border-theme-text/10 p-2">
-                                        <Link
-                                            to="/social"
-                                            className="block rounded-xl px-3 py-2 text-center text-sm font-semibold text-theme-accent-soft transition hover:bg-theme-accent/15"
-                                            onClick={() => setIsNotificationMenuOpen(false)}
-                                        >
-                                            View social
-                                        </Link>
                                     </div>
                                 </div>
                             ) : null}

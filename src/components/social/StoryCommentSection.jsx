@@ -35,7 +35,10 @@ export function StoryCommentSection({
     comments = [],
     setComments,
     isLoading = false,
+    isLoadingMore = false,
     hasLoadedComments = false,
+    hasMoreComments = false,
+    onLoadMoreComments,
     onOpenProfile,
     isStoryOwner = false,
     blockedUsers = [],
@@ -115,13 +118,18 @@ export function StoryCommentSection({
     // When a notification click provides a target comment, scroll to that
     // comment and briefly highlight it once for that click.
     useEffect(() => {
-        if (!targetCommentId || isLoading || !hasLoadedComments) return;
+        if (!targetCommentId || isLoading || isLoadingMore || !hasLoadedComments) return;
         const highlightKey = targetCommentToken ?? targetCommentId;
         if (hasHighlightedRef.current === highlightKey) return;
 
         const targetComment = comments.find((comment) => comment.id === targetCommentId);
 
         if (!targetComment) {
+            if (hasMoreComments && onLoadMoreComments) {
+                void onLoadMoreComments();
+                return;
+            }
+
             hasHighlightedRef.current = highlightKey;
             onTargetCommentUnavailable?.();
             return;
@@ -188,8 +196,11 @@ export function StoryCommentSection({
         targetCommentId,
         targetCommentToken,
         isLoading,
+        isLoadingMore,
         hasLoadedComments,
+        hasMoreComments,
         comments,
+        onLoadMoreComments,
         onTargetCommentHandled,
         onTargetCommentUnavailable,
     ]);
@@ -425,6 +436,16 @@ export function StoryCommentSection({
                             );
                         })
                     )}
+                    {hasMoreComments ? (
+                        <button
+                            type="button"
+                            className="w-full rounded-lg px-3 py-2 text-sm font-semibold text-theme-accent-soft transition hover:bg-theme-text/10 disabled:cursor-wait disabled:opacity-60"
+                            disabled={isLoadingMore}
+                            onClick={() => onLoadMoreComments?.()}
+                        >
+                            {isLoadingMore ? 'Loading...' : 'Load more comments'}
+                        </button>
+                    ) : null}
                 </div>
 
                 {/* Error Message */}

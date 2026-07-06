@@ -29,8 +29,24 @@ export function toggleStoryLike(storyId) {
     return apiRequest(`/stories/${storyId}/like`, { method: 'POST' });
 }
 
-export function getStoryLikes(storyId) {
-    return apiRequest(`/stories/${storyId}/likes`);
+function buildPaginationQuery({ limit, offset } = {}) {
+    const params = new URLSearchParams();
+
+    if (Number.isInteger(limit)) {
+        params.set('limit', String(limit));
+    }
+
+    if (Number.isInteger(offset)) {
+        params.set('offset', String(offset));
+    }
+
+    const query = params.toString();
+
+    return query ? `?${query}` : '';
+}
+
+export function getStoryLikes(storyId, pagination) {
+    return apiRequest(`/stories/${storyId}/likes${buildPaginationQuery(pagination)}`);
 }
 
 export function getStoryMentionCandidates(storyId) {
@@ -41,8 +57,8 @@ export function deleteStory(storyId) {
     return apiRequest(`/stories/${storyId}`, { method: 'DELETE' });
 }
 
-export function getStoryComments(storyId) {
-    return apiRequest(`/stories/${storyId}/comments`);
+export function getStoryComments(storyId, pagination) {
+    return apiRequest(`/stories/${storyId}/comments${buildPaginationQuery(pagination)}`);
 }
 
 export function postStoryComment(storyId, content, parentCommentId = null) {
