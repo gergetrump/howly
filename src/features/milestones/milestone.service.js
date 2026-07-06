@@ -390,7 +390,7 @@ export async function createMilestonePostForHabit(habit) {
   return { milestonePost };
 }
 
-export async function getFriendFeed({ userId }) {
+export async function getFriendFeed({ userId, limit = null }) {
   const friendships = await Friendship.find({
     $or: [{ userA: userId }, { userB: userId }],
   }).lean();
@@ -416,13 +416,16 @@ export async function getFriendFeed({ userId }) {
   });
 
   const now = new Date();
-  const posts = await MilestonePost.find({
+  const postsQuery = MilestonePost.find({
     user: { $in: [...visibleUserIds] },
     visibleUntil: { $gt: now },
   })
     .populate('user')
     .populate('habit')
     .sort({ createdAt: -1 });
+  const posts = await (Number.isInteger(limit) && limit > 0
+    ? postsQuery.limit(limit)
+    : postsQuery);
 
   const reactions = await MilestoneLike.find({
     user: userId,

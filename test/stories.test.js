@@ -237,6 +237,58 @@ test('GET /api/milestones/feed includes the user\'s own active stories', async (
   assert.equal(stories[0].user.id, user._id.toString());
 });
 
+test('GET /api/milestones/feed supports limit and offset pagination', async () => {
+  const user = await buildUser();
+  const friend = await buildUser();
+  await makeFriends(user, friend);
+  const habit = await buildHabit(friend);
+  const now = Date.now();
+
+  for (let index = 0; index < 12; index += 1) {
+    await buildStory(friend, habit, {
+      caption: `Story ${index}`,
+      createdAt: new Date(now - index * 1000),
+      updatedAt: new Date(now - index * 1000),
+    });
+  }
+
+  const firstPageResponse = await request(app)
+    .get('/api/milestones/feed?limit=10&offset=0')
+    .set('Authorization', authHeader(user))
+    .expect(200);
+
+  assert.equal(Array.isArray(firstPageResponse.body), false);
+  assert.equal(firstPageResponse.body.items.length, 10);
+  assert.equal(firstPageResponse.body.hasMore, true);
+  assert.equal(firstPageResponse.body.nextOffset, 10);
+  assert.equal(firstPageResponse.body.items[0].caption, 'Story 0');
+  assert.equal(firstPageResponse.body.items[9].caption, 'Story 9');
+
+  const secondPageResponse = await request(app)
+    .get('/api/milestones/feed?limit=10&offset=10')
+    .set('Authorization', authHeader(user))
+    .expect(200);
+
+  assert.equal(secondPageResponse.body.items.length, 2);
+  assert.equal(secondPageResponse.body.hasMore, false);
+  assert.equal(secondPageResponse.body.nextOffset, 12);
+  assert.deepEqual(
+    secondPageResponse.body.items.map((story) => story.caption),
+    ['Story 10', 'Story 11'],
+  );
+});
+
+test('GET /api/milestones/feed rejects invalid pagination params', async () => {
+  const user = await buildUser();
+
+  const response = await request(app)
+    .get('/api/milestones/feed?limit=0&offset=-1')
+    .set('Authorization', authHeader(user))
+    .expect(400);
+
+  assert.match(response.body.message, /limit/);
+});
+
 // --- POST /api/stories/:storyId/like ---
 
 test('a friend can like and unlike a story (toggle)', async () => {

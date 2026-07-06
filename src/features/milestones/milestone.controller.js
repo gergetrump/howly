@@ -1,6 +1,6 @@
 import * as milestoneService from './milestone.service.js';
 import { getFriendFeedStories } from '../stories/story.service.js';
-import { validateMilestonePostId } from './milestone.validation.js';
+import { validateFeedPagination, validateMilestonePostId } from './milestone.validation.js';
 
 const badRequest = (res, message, code) => {
   const body = { message };
@@ -14,15 +14,34 @@ const badRequest = (res, message, code) => {
 
 // Mixed feed: milestones + stories from the user and their friends, newest first
 export async function getFriendFeed(req, res) {
+  const { error, value: pagination } = validateFeedPagination(req.query);
+
+  if (error) {
+    return badRequest(res, error);
+  }
+
   const [milestones, stories] = await Promise.all([
-    milestoneService.getFriendFeed({ userId: req.user.id }),
-    getFriendFeedStories({ userId: req.user.id }),
+    milestoneService.getFriendFeed({ userId: req.user.id, limit: pagination?.fetchLimit }),
+    getFriendFeedStories({ userId: req.user.id, limit: pagination?.fetchLimit }),
   ]);
 
   const feed = [
     ...milestones.map((post) => ({ type: 'milestone', ...post })),
     ...stories.map((story) => ({ type: 'story', ...story })),
   ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  if (pagination) {
+    const end = pagination.offset + pagination.limit;
+    const items = feed.slice(pagination.offset, end);
+
+    return res.status(200).json({
+      items,
+      hasMore: feed.length > end,
+      limit: pagination.limit,
+      offset: pagination.offset,
+      nextOffset: pagination.offset + items.length,
+    });
+  }
 
   return res.status(200).json(feed);
 }

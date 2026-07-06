@@ -222,7 +222,7 @@ async function toVisibleStoryResponse(story, userId, likedStoryIds = new Set()) 
 }
 
 // Stories from the user and their friends that are still inside the 30-day feed window
-export async function getFriendFeedStories({ userId }) {
+export async function getFriendFeedStories({ userId, limit = null }) {
   const friendships = await Friendship.find({
     $or: [{ userA: userId }, { userB: userId }],
   }).lean();
@@ -234,12 +234,15 @@ export async function getFriendFeedStories({ userId }) {
     visibleUserIds.add(friendId.toString());
   });
 
-  const stories = await Story.find({
+  const storiesQuery = Story.find({
     user: { $in: [...visibleUserIds] },
     feedExpiresAt: { $gt: new Date() },
   })
     .populate('user')
     .sort({ createdAt: -1 });
+  const stories = await (Number.isInteger(limit) && limit > 0
+    ? storiesQuery.limit(limit)
+    : storiesQuery);
 
   const likes = await StoryLike.find({
     user: userId,
