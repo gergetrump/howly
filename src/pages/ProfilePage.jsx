@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
-import { ThemePicker } from '@/components/common/ThemePicker.jsx';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -427,10 +426,6 @@ export function ProfilePage() {
                     </div>
                 </div>
             </section>
-
-            <PageSection title="Appearance">
-                <ThemePicker />
-            </PageSection>
 
             <PageSection title="My Stories">
                 <button
