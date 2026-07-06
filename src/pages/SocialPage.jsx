@@ -861,7 +861,7 @@ export function SocialPage() {
                 </div>
             )}
 
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,22rem)] lg:items-start xl:gap-12">
+            <div className="mx-auto grid w-full max-w-[98rem] gap-14 lg:grid-cols-[minmax(0,64rem)_minmax(25.5rem,26rem)] lg:items-start lg:justify-center xl:gap-24">
                 <SocialFeed
                     feed={feed}
                     isLoading={isLoading}

@@ -169,19 +169,19 @@ export function FriendsPanel({
     getRelationship,
 }) {
     return (
-        <aside className="ml-auto w-full max-w-[42rem] space-y-3 lg:sticky lg:top-24 lg:max-w-[22rem] lg:max-h-[calc(100vh-8rem)] lg:flex lg:flex-col">
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <div className="inline-flex rounded-lg border border-theme-text/10 bg-theme-text/10 p-1 text-sm text-theme-text-soft">
+        <aside className="ml-auto w-full max-w-[42rem] space-y-3 lg:sticky lg:top-24 lg:max-w-[26rem] lg:max-h-[calc(100vh-8rem)] lg:flex lg:flex-col">
+            <div className="flex items-center gap-2 shrink-0">
+                <div className="grid w-72 grid-cols-2 rounded-lg border border-theme-text/10 bg-theme-text/10 p-1 text-sm text-theme-text-soft">
                     <button
                         type="button"
-                        className={`rounded-md px-3 py-2 font-medium transition ${activePanel === 'friends' ? 'bg-white text-slate-950' : 'hover:bg-theme-text/10 hover:text-theme-text'}`}
+                        className={`rounded-md px-3 py-2 text-center font-medium transition ${activePanel === 'friends' ? 'bg-white text-slate-950' : 'hover:bg-theme-text/10 hover:text-theme-text'}`}
                         onClick={() => onActivePanelChange('friends')}
                     >
                         Friends
                     </button>
                     <button
                         type="button"
-                        className={`relative rounded-md px-3 py-2 font-medium transition ${activePanel === 'requests' ? 'bg-white text-slate-950' : 'hover:bg-theme-text/10 hover:text-theme-text'}`}
+                        className={`relative rounded-md px-3 py-2 text-center font-medium transition ${activePanel === 'requests' ? 'bg-white text-slate-950' : 'hover:bg-theme-text/10 hover:text-theme-text'}`}
                         onClick={() => onActivePanelChange('requests')}
                     >
                         Friend Requests
@@ -194,7 +194,7 @@ export function FriendsPanel({
                 </div>
                 <Button
                     type="button"
-                    className="bg-violet-500 text-white hover:bg-violet-400"
+                    className="h-11 w-28 bg-violet-500 text-white hover:bg-violet-400"
                     onClick={() => onActivePanelChange('add')}
                 >
                     <Plus aria-hidden="true" />
