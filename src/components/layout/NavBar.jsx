@@ -1,7 +1,5 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
-import { useNotificationStream } from '@/hooks/useNotificationStream';
 import { BarChart3, Bell, Dumbbell, Globe, Home, PackageOpen, ShoppingBag, Trash2, Trophy, UserRound, UsersRound } from 'lucide-react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
@@ -16,6 +14,12 @@ import {
 import howlyIcon from '@/assets/wolf.svg';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/authContext';
+import {
+    getNotificationLink,
+    getNotificationMessage,
+    getNotificationNavigationState,
+} from '@/components/layout/notificationHelpers';
+import { setNotificationMenuOpen } from '@/components/layout/notificationMenuState';
 
 const defaultItems = [
     { label: 'Home', to: '/dashboard', icon: Home },
@@ -45,134 +49,6 @@ const brandSizes = {
 };
 
 const navStatBadgeClassName = 'min-h-10 gap-0 px-2 py-1.5 text-[0px] font-bold leading-none sm:gap-2 sm:px-3.5 sm:text-sm';
-
-function getActorName(actor) {
-    return actor?.firstName || actor?.username || 'Someone';
-}
-
-function getNotificationMessage(notification) {
-    const actorName = getActorName(notification.actor);
-
-    switch (notification.type) {
-        case 'friend_request_received':
-            return `${actorName} sent you a friend request`;
-        case 'friend_request_accepted':
-            return `${actorName} accepted your friend request`;
-        case 'milestone_reacted': {
-            const reactions = Array.isArray(notification.metadata?.emojis) && notification.metadata.emojis.length
-                ? notification.metadata.emojis.join(' ')
-                : notification.metadata?.emoji;
-
-            return `${actorName} reacted to your milestone${reactions ? ` ${reactions}` : ''}`;
-        }
-        case 'story_liked':
-            return `${actorName} liked your post`;
-        case 'story_commented':
-            return `${actorName} commented on your post`;
-        case 'story_tagged': {
-            if (notification.metadata?.taggedOnOwnPost) {
-                return `${actorName} tagged you on your post`;
-            }
-
-            const storyOwnerName = notification.metadata?.storyOwnerName;
-            return storyOwnerName
-                ? `${actorName} tagged you on ${storyOwnerName}'s post`
-                : `${actorName} tagged you in a post`;
-        }
-        case 'challenge_invitation_received': {
-            const challengeTitle = notification.metadata?.challengeTitle;
-            return challengeTitle
-                ? `${actorName} invited you to ${challengeTitle}`
-                : `${actorName} invited you to a challenge`;
-        }
-        default:
-            return `${actorName} has an update for you`;
-    }
-}
-
-function getNotificationLink(notification) {
-    const entityId = notification.entityId;
-    const commentId = notification.metadata?.commentId;
-
-    switch (notification.type) {
-        case 'story_tagged':
-        case 'story_commented':
-            if (entityId && commentId) {
-                return `/social?storyId=${entityId}&commentId=${commentId}`;
-            }
-            return '/social';
-        case 'story_liked':
-            return entityId ? `/social?storyId=${entityId}` : '/social';
-        case 'milestone_reacted':
-            return entityId ? `/social?postId=${entityId}` : '/social';
-        case 'challenge_invitation_received':
-            return '/challenges';
-        default:
-            return '/social';
-    }
-}
-
-function getNotificationNavigationState(notification) {
-    const entityId = notification.entityId;
-    const commentId = notification.metadata?.commentId;
-
-    if (!entityId) {
-        return undefined;
-    }
-
-    if (notification.type === 'friend_request_received') {
-        return {
-            notificationJump: {
-                requestId: entityId,
-                type: notification.type,
-                actorId: notification.actor?.id ?? notification.actor?._id ?? null,
-                metadata: notification.metadata ?? {},
-                token: `${notification.id}-${Date.now()}`,
-            },
-        };
-    }
-
-    if (notification.type === 'story_tagged' || notification.type === 'story_commented' || notification.type === 'story_liked') {
-        return {
-            notificationJump: {
-                storyId: entityId,
-                commentId: commentId ?? null,
-                type: notification.type,
-                actorId: notification.actor?.id ?? notification.actor?._id ?? null,
-                metadata: notification.metadata ?? {},
-                token: `${notification.id}-${Date.now()}`,
-            },
-        };
-    }
-
-    if (notification.type === 'milestone_reacted') {
-        return {
-            notificationJump: {
-                postId: entityId,
-                postType: 'milestone',
-                type: notification.type,
-                actorId: notification.actor?.id ?? notification.actor?._id ?? null,
-                metadata: notification.metadata ?? {},
-                token: `${notification.id}-${Date.now()}`,
-            },
-        };
-    }
-
-    if (notification.type === 'challenge_invitation_received') {
-        return {
-            notificationJump: {
-                invitationId: entityId,
-                challengeId: notification.metadata?.challengeId ?? null,
-                type: notification.type,
-                actorId: notification.actor?.id ?? notification.actor?._id ?? null,
-                metadata: notification.metadata ?? {},
-                token: `${notification.id}-${Date.now()}`,
-            },
-        };
-    }
-
-    return undefined;
-}
 
 function formatNotificationTime(createdAt) {
     if (!createdAt) {
@@ -205,7 +81,6 @@ export function NavBar({
     className,
 }) {    
     const { user } = useAuth();
-    const navigate = useNavigate();
     const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
     const [notifications, setNotifications] = useState([]);
     const [removingNotificationIds, setRemovingNotificationIds] = useState([]);
@@ -304,41 +179,12 @@ export function NavBar({
         };
     }, [user]);
 
-    // Real-time SSE: prepend new notifications instantly.
-    useNotificationStream((notification) => {
-        if (!isMenuOpenRef.current) {
-            toast(getNotificationMessage(notification), {
-                icon: <Bell className="size-4 text-theme-accent-soft" aria-hidden="true" />,
-                action: {
-                    label: 'View',
-                    onClick: () => navigate(getNotificationLink(notification), {
-                        state: getNotificationNavigationState(notification),
-                    }),
-                },
-            });
-        }
-        setUnreadNotificationCount((currentCount) => (
-            isMenuOpenRef.current ? currentCount : currentCount + 1
-        ));
-        setNotifications((current) => {
-            if (!hasLoadedNotificationsRef.current) return current;
-            if (current.some((currentNotification) => currentNotification.id === notification.id)) return current;
-            return [notification, ...current];
-        });
-        if (isMenuOpenRef.current) {
-            setVisibleUnreadNotificationIds((currentIds) => {
-                const nextIds = new Set(currentIds);
-                nextIds.add(notification.id);
-                return nextIds;
-            });
-        }
-    }, Boolean(user));
-
     useEffect(() => {
         function handleDocumentPointerDown(event) {
             if (!notificationMenuRef.current?.contains(event.target)) {
                 // Sync ref first so refreshNotifications sees the menu as closed.
                 isMenuOpenRef.current = false;
+                setNotificationMenuOpen(false);
                 setIsNotificationMenuOpen(false);
                 setVisibleUnreadNotificationIds(new Set());
                 // Re-fetch the true unread count now that the dropdown is closed.
@@ -422,6 +268,7 @@ export function NavBar({
         const nextIsOpen = !isNotificationMenuOpen;
 
         isMenuOpenRef.current = nextIsOpen;
+        setNotificationMenuOpen(nextIsOpen);
         setIsNotificationMenuOpen(nextIsOpen);
 
         if (!nextIsOpen) {
@@ -514,6 +361,7 @@ export function NavBar({
         });
         // Close the menu and re-sync the bell counter.
         isMenuOpenRef.current = false;
+        setNotificationMenuOpen(false);
         setIsNotificationMenuOpen(false);
 
         if (!wasUnread) {
