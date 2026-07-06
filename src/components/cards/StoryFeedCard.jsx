@@ -24,6 +24,27 @@ import {
     ConfirmationDialogTitle,
 } from "@/components/ui/confirmation-dialog";
 
+const STORY_COMMENT_PAGE_SIZE = 10;
+const STORY_LIKE_PAGE_SIZE = 20;
+
+function normalizePageResponse(response) {
+    if (Array.isArray(response)) {
+        return {
+            items: response,
+            hasMore: false,
+            nextOffset: response.length,
+        };
+    }
+
+    return {
+        items: response?.items ?? [],
+        hasMore: response?.hasMore === true,
+        nextOffset: Number.isInteger(response?.nextOffset)
+            ? response.nextOffset
+            : (response?.items?.length ?? 0),
+    };
+}
+
 // Context line per source type, e.g. "completed Morning Run 🏃"
 function buildContextLine(story) {
     const title = `${story.sourceTitle} ${story.sourceEmoji}`;
@@ -135,6 +156,12 @@ export function StoryFeedCard({
     const [likers, setLikers] = useState([]);
     const [comments, setComments] = useState([]);
     const [isLoadingComments, setIsLoadingComments] = useState(false);
+    const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
+    const [hasMoreComments, setHasMoreComments] = useState(false);
+    const [nextCommentsOffset, setNextCommentsOffset] = useState(0);
+    const [isLoadingMoreLikers, setIsLoadingMoreLikers] = useState(false);
+    const [hasMoreLikers, setHasMoreLikers] = useState(false);
+    const [nextLikersOffset, setNextLikersOffset] = useState(0);
     const [hasLoadedComments, setHasLoadedComments] = useState(false);
     const [localStory, setLocalStory] = useState(story);
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
@@ -167,19 +194,28 @@ export function StoryFeedCard({
     useEffect(() => {
         if (!story.likeCount) {
             setLikers([]);
+            setHasMoreLikers(false);
+            setNextLikersOffset(0);
             return undefined;
         }
 
         let isCurrent = true;
 
-        getStoryLikes(story.id)
-            .then((nextLikers) => {
+        getStoryLikes(story.id, { limit: STORY_LIKE_PAGE_SIZE, offset: 0 })
+            .then((response) => {
                 if (isCurrent) {
-                    setLikers(nextLikers ?? []);
+                    const page = normalizePageResponse(response);
+                    setLikers(page.items);
+                    setHasMoreLikers(page.hasMore);
+                    setNextLikersOffset(Math.max(page.nextOffset, page.items.length));
                 }
             })
             .catch((likesError) => {
                 console.error('Failed to load story likes:', likesError);
+                if (isCurrent) {
+                    setHasMoreLikers(false);
+                    setNextLikersOffset(0);
+                }
             });
 
         return () => {
@@ -193,6 +229,8 @@ export function StoryFeedCard({
         if (!shouldLoadComments) {
             setComments([]);
             setHasLoadedComments(false);
+            setHasMoreComments(false);
+            setNextCommentsOffset(0);
             return undefined;
         }
 
@@ -202,10 +240,13 @@ export function StoryFeedCard({
             setIsLoadingComments(true);
         }
 
-        getStoryComments(story.id)
+        getStoryComments(story.id, { limit: STORY_COMMENT_PAGE_SIZE, offset: 0 })
             .then((res) => {
-                if (isCurrent && Array.isArray(res)) {
-                    setComments(res);
+                if (isCurrent) {
+                    const page = normalizePageResponse(res);
+                    setComments(page.items);
+                    setHasMoreComments(page.hasMore);
+                    setNextCommentsOffset(Math.max(page.nextOffset, page.items.length));
                 }
             })
             .catch((err) => {
@@ -222,6 +263,83 @@ export function StoryFeedCard({
             isCurrent = false;
         };
     }, [story.id, story.commentCount, isCommentsOpen]);
+
+    async function handleLoadMoreComments() {
+        if (isLoadingMoreComments || !hasMoreComments) {
+            return [];
+        }
+
+        setIsLoadingMoreComments(true);
+
+        try {
+            const response = await getStoryComments(story.id, {
+                limit: STORY_COMMENT_PAGE_SIZE,
+                offset: nextCommentsOffset,
+            });
+            const page = normalizePageResponse(response);
+
+            setComments((currentComments) => {
+                const seenIds = new Set(currentComments.map((comment) => comment.id));
+                const nextItems = page.items.filter((comment) => {
+                    if (seenIds.has(comment.id)) {
+                        return false;
+                    }
+
+                    seenIds.add(comment.id);
+                    return true;
+                });
+
+                return [...currentComments, ...nextItems];
+            });
+            setHasMoreComments(page.hasMore);
+            setNextCommentsOffset(Math.max(page.nextOffset, nextCommentsOffset + page.items.length));
+
+            return page.items;
+        } catch (err) {
+            console.error('Failed to load more story comments:', err);
+            return [];
+        } finally {
+            setIsLoadingMoreComments(false);
+        }
+    }
+
+    async function handleLoadMoreLikers() {
+        if (isLoadingMoreLikers || !hasMoreLikers) {
+            return;
+        }
+
+        setIsLoadingMoreLikers(true);
+
+        try {
+            const response = await getStoryLikes(story.id, {
+                limit: STORY_LIKE_PAGE_SIZE,
+                offset: nextLikersOffset,
+            });
+            const page = normalizePageResponse(response);
+
+            setLikers((currentLikers) => {
+                const seenIds = new Set(currentLikers.map((liker) => liker.id || liker._id));
+                const nextItems = page.items.filter((liker) => {
+                    const likerId = liker.id || liker._id;
+
+                    if (seenIds.has(likerId)) {
+                        return false;
+                    }
+
+                    seenIds.add(likerId);
+                    return true;
+                });
+
+                return [...currentLikers, ...nextItems];
+            });
+            setHasMoreLikers(page.hasMore);
+            setNextLikersOffset(Math.max(page.nextOffset, nextLikersOffset + page.items.length));
+        } catch (err) {
+            console.error('Failed to load more story likes:', err);
+        } finally {
+            setIsLoadingMoreLikers(false);
+        }
+    }
 
     async function handleDelete() {
         try {
@@ -311,7 +429,10 @@ export function StoryFeedCard({
                                 comments={visibleComments}
                                 setComments={setComments}
                                 isLoading={isLoadingComments}
+                                isLoadingMore={isLoadingMoreComments}
                                 hasLoadedComments={hasLoadedComments}
+                                hasMoreComments={hasMoreComments}
+                                onLoadMoreComments={handleLoadMoreComments}
                                 onOpenProfile={onOpenProfile}
                                 blockedUsers={blockedUsers}
                                 blockers={blockers}
@@ -374,7 +495,10 @@ export function StoryFeedCard({
                                 comments={visibleComments}
                                 setComments={setComments}
                                 isLoading={isLoadingComments}
+                                isLoadingMore={isLoadingMoreComments}
                                 hasLoadedComments={hasLoadedComments}
+                                hasMoreComments={hasMoreComments}
+                                onLoadMoreComments={handleLoadMoreComments}
                                 onOpenProfile={onOpenProfile}
                                 blockedUsers={blockedUsers}
                                 blockers={blockers}
@@ -383,7 +507,10 @@ export function StoryFeedCard({
                                 onTargetCommentHandled={onTargetCommentHandled}
                                 onTargetCommentUnavailable={onTargetCommentUnavailable}
                                 onCommentAdded={() => setLocalStory(prev => ({ ...prev, commentCount: (prev.commentCount || 0) + 1 }))}
-                                onCommentDeleted={(count) => setLocalStory(prev => ({ ...prev, commentCount: Math.max(0, (prev.commentCount || 0) - (count || 1)) }))}
+                                onCommentDeleted={(count) => {
+                                    setNextCommentsOffset((offset) => Math.max(0, offset - (count || 1)));
+                                    setLocalStory(prev => ({ ...prev, commentCount: Math.max(0, (prev.commentCount || 0) - (count || 1)) }));
+                                }}
                             />
                         )}
                     </div>
@@ -433,7 +560,8 @@ export function StoryFeedCard({
                         </DialogHeader>
                         <div className="grid max-h-[23rem] gap-2 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
                             {visibleLikers.length ? (
-                                visibleLikers.map((liker) => (
+                                <>
+                                {visibleLikers.map((liker) => (
                                     <div
                                         key={liker.id || liker._id}
                                         className="flex items-center gap-3 rounded-xl bg-theme-text/5 px-3 py-2"
@@ -453,7 +581,19 @@ export function StoryFeedCard({
                                         </div>
                                         <Heart className="ml-auto size-4 fill-theme-love text-theme-love" />
                                     </div>
-                                ))
+                                ))}
+                                {hasMoreLikers ? (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="w-full text-theme-accent-soft hover:bg-violet-400/15 hover:text-theme-accent-soft"
+                                        disabled={isLoadingMoreLikers}
+                                        onClick={handleLoadMoreLikers}
+                                    >
+                                        {isLoadingMoreLikers ? 'Loading...' : 'Load more'}
+                                    </Button>
+                                ) : null}
+                                </>
                             ) : (
                                 <p className="text-sm text-theme-text-soft">No likes yet</p>
                             )}

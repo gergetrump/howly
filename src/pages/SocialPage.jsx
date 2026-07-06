@@ -21,6 +21,7 @@ import {
     getFriendRequests,
     getFriends,
     getSocialFeed,
+    getMilestoneReactions,
     rejectFriendRequest,
     reactToMilestone,
     sendFriendRequest,
@@ -34,13 +35,23 @@ import { deleteStory, getStoryLikes, toggleStoryLike } from '@/services/storyApi
 import { useAuth } from '@/context/authContext';
 
 const SOCIAL_REFRESH_INTERVAL_MS = 10000;
+const SOCIAL_FEED_PAGE_SIZE = 10;
+const FRIEND_PAGE_SIZE = 10;
+const FRIEND_REQUEST_PAGE_SIZE = 10;
+const OUTGOING_REQUEST_LOOKUP_LIMIT = 50;
 
 export function SocialPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [friends, setFriends] = useState([]);
+    const [hasMoreFriends, setHasMoreFriends] = useState(false);
+    const [isLoadingMoreFriends, setIsLoadingMoreFriends] = useState(false);
     const [requests, setRequests] = useState({ incoming: [], outgoing: [] });
+    const [hasMoreIncomingRequests, setHasMoreIncomingRequests] = useState(false);
+    const [isLoadingMoreIncomingRequests, setIsLoadingMoreIncomingRequests] = useState(false);
     const [feed, setFeed] = useState([]);
+    const [hasMoreFeed, setHasMoreFeed] = useState(false);
+    const [isLoadingMoreFeed, setIsLoadingMoreFeed] = useState(false);
     const [blockedUsers, setBlockedUsers] = useState([]);
     const [blockers, setBlockers] = useState([]);
     const [usernameQuery, setUsernameQuery] = useState('');
@@ -89,6 +100,182 @@ export function SocialPage() {
         : null;
     const hasScrolledRef = useRef(false);
     const refreshPromiseRef = useRef(null);
+    const feedLoadedCountRef = useRef(SOCIAL_FEED_PAGE_SIZE);
+    const friendsLoadedCountRef = useRef(FRIEND_PAGE_SIZE);
+    const incomingRequestsLoadedCountRef = useRef(FRIEND_REQUEST_PAGE_SIZE);
+
+    function normalizeFeedResponse(feedResponse) {
+        if (Array.isArray(feedResponse)) {
+            return {
+                items: feedResponse,
+                hasMore: false,
+                nextOffset: feedResponse.length,
+            };
+        }
+
+        return {
+            items: feedResponse?.items ?? [],
+            hasMore: feedResponse?.hasMore === true,
+            nextOffset: Number.isInteger(feedResponse?.nextOffset)
+                ? feedResponse.nextOffset
+                : (feedResponse?.items?.length ?? 0),
+        };
+    }
+
+    function normalizeListPage(response) {
+        if (Array.isArray(response)) {
+            return {
+                items: response,
+                hasMore: false,
+                nextOffset: response.length,
+            };
+        }
+
+        return {
+            items: response?.items ?? [],
+            hasMore: response?.hasMore === true,
+            nextOffset: Number.isInteger(response?.nextOffset)
+                ? response.nextOffset
+                : (response?.items?.length ?? 0),
+        };
+    }
+
+    function normalizeFriendRequestsResponse(requestsResponse) {
+        const incoming = normalizeListPage(requestsResponse?.incoming ?? []);
+        const outgoing = normalizeListPage(requestsResponse?.outgoing ?? []);
+
+        return {
+            incoming,
+            outgoing,
+        };
+    }
+
+    const handleLoadMoreFeed = useCallback(async () => {
+        if (isLoadingMoreFeed || !hasMoreFeed) {
+            return;
+        }
+
+        setIsLoadingMoreFeed(true);
+        setError('');
+
+        try {
+            const currentOffset = feedLoadedCountRef.current;
+            const feedResponse = await getSocialFeed({
+                limit: SOCIAL_FEED_PAGE_SIZE,
+                offset: currentOffset,
+            });
+            const nextPage = normalizeFeedResponse(feedResponse);
+
+            setFeed((currentFeed) => {
+                const seenPostKeys = new Set(currentFeed.map((post) => `${post.type}:${post.id}`));
+                const nextItems = nextPage.items.filter((post) => {
+                    const key = `${post.type}:${post.id}`;
+
+                    if (seenPostKeys.has(key)) {
+                        return false;
+                    }
+
+                    seenPostKeys.add(key);
+                    return true;
+                });
+                const nextFeed = [...currentFeed, ...nextItems];
+
+                return nextFeed;
+            });
+            feedLoadedCountRef.current = Math.max(nextPage.nextOffset, currentOffset + nextPage.items.length);
+            setHasMoreFeed(nextPage.hasMore);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoadingMoreFeed(false);
+        }
+    }, [hasMoreFeed, isLoadingMoreFeed]);
+
+    const handleLoadMoreFriends = useCallback(async () => {
+        if (isLoadingMoreFriends || !hasMoreFriends) {
+            return;
+        }
+
+        setIsLoadingMoreFriends(true);
+        setError('');
+
+        try {
+            const currentOffset = friendsLoadedCountRef.current;
+            const friendsResponse = await getFriends({
+                limit: FRIEND_PAGE_SIZE,
+                offset: currentOffset,
+            });
+            const nextPage = normalizeListPage(friendsResponse);
+
+            setFriends((currentFriends) => {
+                const seenIds = new Set(currentFriends.map((friendship) => friendship.id));
+                const nextItems = nextPage.items.filter((friendship) => {
+                    if (seenIds.has(friendship.id)) {
+                        return false;
+                    }
+
+                    seenIds.add(friendship.id);
+                    return true;
+                });
+
+                return [...currentFriends, ...nextItems];
+            });
+            friendsLoadedCountRef.current = Math.max(nextPage.nextOffset, currentOffset + nextPage.items.length);
+            setHasMoreFriends(nextPage.hasMore);
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setIsLoadingMoreFriends(false);
+        }
+    }, [hasMoreFriends, isLoadingMoreFriends]);
+
+    const handleLoadMoreIncomingRequests = useCallback(async () => {
+        if (isLoadingMoreIncomingRequests || !hasMoreIncomingRequests) {
+            return;
+        }
+
+        setIsLoadingMoreIncomingRequests(true);
+        setError('');
+
+        try {
+            const currentOffset = incomingRequestsLoadedCountRef.current;
+            const requestsResponse = await getFriendRequests({
+                incomingLimit: FRIEND_REQUEST_PAGE_SIZE,
+                incomingOffset: currentOffset,
+                outgoingLimit: OUTGOING_REQUEST_LOOKUP_LIMIT,
+                outgoingOffset: 0,
+            });
+            const nextRequests = normalizeFriendRequestsResponse(requestsResponse);
+
+            setRequests((currentRequests) => {
+                const seenIncomingIds = new Set((currentRequests.incoming ?? []).map((request) => request.id));
+                const nextIncoming = nextRequests.incoming.items.filter((request) => {
+                    if (seenIncomingIds.has(request.id)) {
+                        return false;
+                    }
+
+                    seenIncomingIds.add(request.id);
+                    return true;
+                });
+
+                return {
+                    incoming: [...(currentRequests.incoming ?? []), ...nextIncoming],
+                    outgoing: nextRequests.outgoing.items.length
+                        ? nextRequests.outgoing.items
+                        : (currentRequests.outgoing ?? []),
+                };
+            });
+            incomingRequestsLoadedCountRef.current = Math.max(
+                nextRequests.incoming.nextOffset,
+                currentOffset + nextRequests.incoming.items.length,
+            );
+            setHasMoreIncomingRequests(nextRequests.incoming.hasMore);
+        } catch (err) {
+            setError(getSocialErrorMessage(err));
+        } finally {
+            setIsLoadingMoreIncomingRequests(false);
+        }
+    }, [hasMoreIncomingRequests, isLoadingMoreIncomingRequests]);
 
     function getProfileRelationship(profileUser) {
         if (!profileUser) {
@@ -136,25 +323,48 @@ export function SocialPage() {
         let request;
         request = (async () => {
             try {
+                const feedLimit = Math.max(feedLoadedCountRef.current, SOCIAL_FEED_PAGE_SIZE);
+                const friendsLimit = Math.max(friendsLoadedCountRef.current, FRIEND_PAGE_SIZE);
+                const incomingRequestsLimit = Math.max(incomingRequestsLoadedCountRef.current, FRIEND_REQUEST_PAGE_SIZE);
                 const [friendsData, requestsData, feedData, blockedData, blockersData] = await Promise.all([
-                    getFriends(),
-                    getFriendRequests(),
-                    getSocialFeed(),
+                    getFriends({ limit: friendsLimit, offset: 0 }),
+                    getFriendRequests({
+                        incomingLimit: incomingRequestsLimit,
+                        incomingOffset: 0,
+                        outgoingLimit: OUTGOING_REQUEST_LOOKUP_LIMIT,
+                        outgoingOffset: 0,
+                    }),
+                    getSocialFeed({ limit: feedLimit, offset: 0 }),
                     getBlockedUsers(),
                     getBlockers(),
                 ]);
+                const nextFeed = normalizeFeedResponse(feedData);
+                const nextFriends = normalizeListPage(friendsData);
+                const nextRequests = normalizeFriendRequestsResponse(requestsData);
 
-                setFriends(friendsData ?? []);
-                setRequests(requestsData ?? { incoming: [], outgoing: [] });
-                setFeed(feedData ?? []);
+                setFriends(nextFriends.items);
+                setHasMoreFriends(nextFriends.hasMore);
+                friendsLoadedCountRef.current = Math.max(nextFriends.nextOffset, FRIEND_PAGE_SIZE);
+                setRequests({
+                    incoming: nextRequests.incoming.items,
+                    outgoing: nextRequests.outgoing.items,
+                });
+                setHasMoreIncomingRequests(nextRequests.incoming.hasMore);
+                incomingRequestsLoadedCountRef.current = Math.max(nextRequests.incoming.nextOffset, FRIEND_REQUEST_PAGE_SIZE);
+                setFeed(nextFeed.items);
+                setHasMoreFeed(nextFeed.hasMore);
+                feedLoadedCountRef.current = Math.max(nextFeed.nextOffset, SOCIAL_FEED_PAGE_SIZE);
                 setBlockedUsers(blockedData ?? []);
                 setBlockers(blockersData ?? []);
                 window.dispatchEvent(new Event('howly:social-requests-updated'));
 
                 return {
-                    friends: friendsData ?? [],
-                    requests: requestsData ?? { incoming: [], outgoing: [] },
-                    feed: feedData ?? [],
+                    friends: nextFriends.items,
+                    requests: {
+                        incoming: nextRequests.incoming.items,
+                        outgoing: nextRequests.outgoing.items,
+                    },
+                    feed: nextFeed.items,
                     blockedUsers: blockedData ?? [],
                     blockers: blockersData ?? [],
                 };
@@ -278,7 +488,7 @@ export function SocialPage() {
     // If a notification deep-link target is not in the loaded feed,
     // show a temporary unavailable-post notice and clear the jump state.
     useEffect(() => {
-        if (!targetFeedPostId || isLoading) return undefined;
+        if (!targetFeedPostId || isLoading || isLoadingMoreFeed) return undefined;
 
         const targetExists = feed.some((post) => {
             if (targetStoryId) {
@@ -287,6 +497,11 @@ export function SocialPage() {
 
             return post.id === targetFeedPostId;
         });
+
+        if (!targetExists && hasMoreFeed) {
+            void handleLoadMoreFeed();
+            return undefined;
+        }
 
         if (!targetExists) {
             const timer = window.setTimeout(() => {
@@ -298,7 +513,16 @@ export function SocialPage() {
         }
 
         return undefined;
-    }, [targetFeedPostId, targetStoryId, isLoading, feed, showUnavailableNotificationBanner]);
+    }, [
+        targetFeedPostId,
+        targetStoryId,
+        isLoading,
+        isLoadingMoreFeed,
+        feed,
+        hasMoreFeed,
+        handleLoadMoreFeed,
+        showUnavailableNotificationBanner,
+    ]);
 
     useEffect(() => {
         if (
@@ -422,10 +646,12 @@ export function SocialPage() {
     }
 
     function acceptRequestLocally(requestId, friendship) {
+        incomingRequestsLoadedCountRef.current = Math.max(0, incomingRequestsLoadedCountRef.current - 1);
         setRequests((currentRequests) => ({
             incoming: (currentRequests.incoming ?? []).filter((request) => request.id !== requestId),
             outgoing: currentRequests.outgoing ?? [],
         }));
+        friendsLoadedCountRef.current += 1;
         setFriends((currentFriends) => [friendship, ...currentFriends]);
         setActivePanel('friends');
         window.dispatchEvent(new Event('howly:social-requests-updated'));
@@ -494,7 +720,13 @@ export function SocialPage() {
     useEffect(() => {
         function handleFriendRequestsRefreshed(event) {
             if (event.detail) {
-                setRequests(event.detail);
+                const nextRequests = normalizeFriendRequestsResponse(event.detail);
+                setRequests({
+                    incoming: nextRequests.incoming.items,
+                    outgoing: nextRequests.outgoing.items,
+                });
+                setHasMoreIncomingRequests(nextRequests.incoming.hasMore);
+                incomingRequestsLoadedCountRef.current = Math.max(nextRequests.incoming.nextOffset, FRIEND_REQUEST_PAGE_SIZE);
             }
         }
 
@@ -575,6 +807,7 @@ export function SocialPage() {
 
         try {
             await rejectFriendRequest(requestId);
+            incomingRequestsLoadedCountRef.current = Math.max(0, incomingRequestsLoadedCountRef.current - 1);
             setRequests((currentRequests) => ({
                 incoming: (currentRequests.incoming ?? []).filter((request) => request.id !== requestId),
                 outgoing: currentRequests.outgoing ?? [],
@@ -595,6 +828,7 @@ export function SocialPage() {
 
         try {
             await deleteFriend(friendshipId);
+            friendsLoadedCountRef.current = Math.max(0, friendsLoadedCountRef.current - 1);
             setFriends((currentFriends) => currentFriends.filter((friendship) => friendship.id !== friendshipId));
             setFeed((currentFeed) => currentFeed.filter((post) => !sameId(post.user?.id, friend?.id)));
             void refreshSocialData({ silent: true });
@@ -653,30 +887,34 @@ export function SocialPage() {
             return;
         }
 
-        setBusyPostId(post.id);
-        setError('');
-
-        try {
-            const likers = loadedLikers.length === post.likeCount
-                ? loadedLikers
-                : await getStoryLikes(post.id);
-
-            setSelectedReaction({
-                post: {
-                    ...post,
-                    type: 'story',
-                    reactions: (likers ?? []).map((liker) => ({
-                        emoji: '💜',
-                        user: liker,
-                    })),
-                },
-            });
-        } catch (err) {
-            setError(getSocialErrorMessage(err));
-        } finally {
-            setBusyPostId(null);
-        }
+        setSelectedReaction({
+            post: {
+                ...post,
+                type: 'story',
+                reactions: (loadedLikers ?? []).map((liker) => ({
+                    emoji: '💜',
+                    user: liker,
+                })),
+            },
+        });
     }
+
+    const handleLoadReactionUsers = useCallback(async (post, pagination) => {
+        if (post.type === 'story') {
+            const response = await getStoryLikes(post.id, pagination);
+
+            if (Array.isArray(response)) {
+                return response.map((liker) => ({ emoji: '💜', user: liker }));
+            }
+
+            return {
+                ...response,
+                items: (response?.items ?? []).map((liker) => ({ emoji: '💜', user: liker })),
+            };
+        }
+
+        return getMilestoneReactions(post.id, pagination);
+    }, []);
 
     async function handleDeleteStory(post) {
         await deleteStory(post.id);
@@ -780,12 +1018,15 @@ export function SocialPage() {
                 </div>
             )}
 
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,22rem)] lg:items-start xl:gap-12">
+            <div className="mx-auto grid w-full max-w-[98rem] gap-14 lg:grid-cols-[minmax(0,64rem)_minmax(25.5rem,26rem)] lg:items-start lg:justify-center xl:gap-24">
                 <SocialFeed
                     feed={feed}
                     isLoading={isLoading}
                     busyPostId={busyPostId}
                     currentUserId={user?.id}
+                    hasMore={hasMoreFeed}
+                    isLoadingMore={isLoadingMoreFeed}
+                    onLoadMore={handleLoadMoreFeed}
                     onReact={handleReactToMilestone}
                     onOpenReactions={(feedPost) => setSelectedReaction({ post: feedPost })}
                     onToggleStoryLike={handleToggleStoryLike}
@@ -805,6 +1046,10 @@ export function SocialPage() {
                     activePanel={activePanel}
                     friends={friends}
                     requests={requests}
+                    hasMoreFriends={hasMoreFriends}
+                    isLoadingMoreFriends={isLoadingMoreFriends}
+                    hasMoreIncomingRequests={hasMoreIncomingRequests}
+                    isLoadingMoreIncomingRequests={isLoadingMoreIncomingRequests}
                     usernameQuery={usernameQuery}
                     searchResults={searchResults}
                     pendingFriendRequestCount={pendingFriendRequestCount}
@@ -820,6 +1065,8 @@ export function SocialPage() {
                     onSendFriendRequest={handleSendFriendRequest}
                     onAcceptRequest={handleAcceptRequest}
                     onRejectRequest={handleRejectRequest}
+                    onLoadMoreFriends={handleLoadMoreFriends}
+                    onLoadMoreIncomingRequests={handleLoadMoreIncomingRequests}
                     onDeleteFriend={handleDeleteFriend}
                     onBlockUser={handleBlockUser}
                     onOpenProfile={setSelectedProfileUser}
@@ -838,6 +1085,7 @@ export function SocialPage() {
                 }}
                 onAddFriend={handleSendProfileFriendRequest}
                 onReact={handleReactFromDialog}
+                onLoadUsers={handleLoadReactionUsers}
                 getRelationship={getProfileRelationship}
             />
             <UserPreviewDialog

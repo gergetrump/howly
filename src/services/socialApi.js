@@ -1,7 +1,21 @@
 import { apiRequest } from './apiClient';
 
-export function getFriends() {
-    return apiRequest('/social/friends');
+function buildPaginationQuery(params = {}) {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+        if (Number.isInteger(value)) {
+            searchParams.set(key, String(value));
+        }
+    });
+
+    const query = searchParams.toString();
+
+    return query ? `?${query}` : '';
+}
+
+export function getFriends({ limit, offset } = {}) {
+    return apiRequest(`/social/friends${buildPaginationQuery({ limit, offset })}`);
 }
 
 export function getFriendHabits(userId) {
@@ -14,8 +28,22 @@ export function deleteFriend(friendshipId) {
     });
 }
 
-export function getFriendRequests() {
-    return apiRequest('/social/friends/requests');
+export function getFriendRequests({
+    incomingLimit,
+    incomingOffset,
+    outgoingLimit,
+    outgoingOffset,
+    limit,
+    offset,
+} = {}) {
+    return apiRequest(`/social/friends/requests${buildPaginationQuery({
+        incomingLimit,
+        incomingOffset,
+        outgoingLimit,
+        outgoingOffset,
+        limit,
+        offset,
+    })}`);
 }
 
 export function sendFriendRequest(userId) {
@@ -37,8 +65,20 @@ export function rejectFriendRequest(requestId) {
     });
 }
 
-export function getSocialFeed() {
-    return apiRequest('/milestones/feed');
+export function getSocialFeed({ limit, offset } = {}) {
+    const params = new URLSearchParams();
+
+    if (Number.isInteger(limit)) {
+        params.set('limit', String(limit));
+    }
+
+    if (Number.isInteger(offset)) {
+        params.set('offset', String(offset));
+    }
+
+    const query = params.toString();
+
+    return apiRequest(`/milestones/feed${query ? `?${query}` : ''}`);
 }
 
 export function reactToMilestone(postId, emoji) {
@@ -46,6 +86,22 @@ export function reactToMilestone(postId, emoji) {
         method: 'POST',
         body: JSON.stringify({ emoji }),
     });
+}
+
+export function getMilestoneReactions(postId, { limit, offset } = {}) {
+    const params = new URLSearchParams();
+
+    if (Number.isInteger(limit)) {
+        params.set('limit', String(limit));
+    }
+
+    if (Number.isInteger(offset)) {
+        params.set('offset', String(offset));
+    }
+
+    const query = params.toString();
+
+    return apiRequest(`/milestones/${postId}/reactions${query ? `?${query}` : ''}`);
 }
 
 export function likeMilestone(postId) {
