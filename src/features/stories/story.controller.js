@@ -1,5 +1,10 @@
 import * as storyService from './story.service.js';
-import { validateCommentInput, validateCreateStoryInput, validateStoryId } from './story.validation.js';
+import {
+  validateCommentInput,
+  validateCreateStoryInput,
+  validateStoryId,
+  validateStoryListPagination,
+} from './story.validation.js';
 
 const badRequest = (res, message, code) => {
   const body = { message };
@@ -87,9 +92,18 @@ export async function getStoryLikes(req, res) {
     return badRequest(res, error);
   }
 
+  const { error: paginationError, value: pagination } = validateStoryListPagination(req.query, {
+    defaultLimit: 20,
+  });
+
+  if (paginationError) {
+    return badRequest(res, paginationError);
+  }
+
   const { likers, errorCode } = await storyService.getStoryLikes({
     userId: req.user.id,
     storyId: req.params.storyId,
+    pagination,
   });
 
   if (errorCode === 'STORY_NOT_FOUND') {
@@ -179,9 +193,18 @@ export async function getStoryComments(req, res) {
     return badRequest(res, error);
   }
 
+  const { error: paginationError, value: pagination } = validateStoryListPagination(req.query, {
+    defaultLimit: 10,
+  });
+
+  if (paginationError) {
+    return badRequest(res, paginationError);
+  }
+
   const { comments, errorCode } = await storyService.getStoryComments({
     userId: req.user.id,
     storyId: req.params.storyId,
+    pagination,
   });
 
   if (errorCode === 'STORY_NOT_FOUND') {

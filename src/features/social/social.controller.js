@@ -4,6 +4,7 @@ import {
   validateFriendshipId,
   validateSendFriendRequestInput,
 } from './social.validation.js';
+import { validateOffsetPagination } from '../../utils/pagination.js';
 
 const USER_LOOKUP_FAILED_MESSAGE = 'Hmm, that didn\'t work. Check if the username is correct.';
 
@@ -50,7 +51,46 @@ export async function sendFriendRequest(req, res) {
 }
 
 export async function listFriendRequests(req, res) {
-  const requests = await socialService.listFriendRequests({ userId: req.user.id });
+  const hasIncomingPagination = req.query.limit !== undefined
+    || req.query.offset !== undefined
+    || req.query.incomingLimit !== undefined
+    || req.query.incomingOffset !== undefined;
+  const hasOutgoingPagination = req.query.limit !== undefined
+    || req.query.offset !== undefined
+    || req.query.outgoingLimit !== undefined
+    || req.query.outgoingOffset !== undefined;
+  const incomingValidation = validateOffsetPagination(
+    {
+      limit: req.query.incomingLimit ?? req.query.limit,
+      offset: req.query.incomingOffset ?? req.query.offset,
+    },
+    {
+      defaultLimit: 10,
+      maxLimit: 50,
+      hasPagination: hasIncomingPagination,
+    },
+  );
+  const outgoingValidation = validateOffsetPagination(
+    {
+      limit: req.query.outgoingLimit ?? req.query.limit,
+      offset: req.query.outgoingOffset ?? req.query.offset,
+    },
+    {
+      defaultLimit: 50,
+      maxLimit: 50,
+      hasPagination: hasOutgoingPagination,
+    },
+  );
+
+  if (incomingValidation.error || outgoingValidation.error) {
+    return badRequest(res, incomingValidation.error || outgoingValidation.error);
+  }
+
+  const requests = await socialService.listFriendRequests({
+    userId: req.user.id,
+    incomingPagination: incomingValidation.value,
+    outgoingPagination: outgoingValidation.value,
+  });
 
   return res.status(200).json(requests);
 }
@@ -94,7 +134,19 @@ export async function rejectFriendRequest(req, res) {
 }
 
 export async function listFriends(req, res) {
-  const friends = await socialService.listFriends({ userId: req.user.id });
+  const { error, value: pagination } = validateOffsetPagination(req.query, {
+    defaultLimit: 10,
+    maxLimit: 50,
+  });
+
+  if (error) {
+    return badRequest(res, error);
+  }
+
+  const friends = await socialService.listFriends({
+    userId: req.user.id,
+    pagination,
+  });
 
   return res.status(200).json(friends);
 }

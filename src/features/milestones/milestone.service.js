@@ -8,6 +8,7 @@ import UserItem from '../inventory/inventory.model.js';
 import { hasPremiumAccess } from '../../config/plans.js';
 import config from '../../../config.js';
 import { createNotification, deleteNotificationsByFilter } from '../notifications/notification.service.js';
+import { toOffsetPage } from '../../utils/pagination.js';
 import {
   MilestoneLike,
   MilestonePost,
@@ -390,7 +391,7 @@ export async function createMilestonePostForHabit(habit) {
   return { milestonePost };
 }
 
-export async function getFriendFeed({ userId }) {
+export async function getFriendFeed({ userId, limit = null }) {
   const friendships = await Friendship.find({
     $or: [{ userA: userId }, { userB: userId }],
   }).lean();
@@ -416,13 +417,16 @@ export async function getFriendFeed({ userId }) {
   });
 
   const now = new Date();
-  const posts = await MilestonePost.find({
+  const postsQuery = MilestonePost.find({
     user: { $in: [...visibleUserIds] },
     visibleUntil: { $gt: now },
   })
     .populate('user')
     .populate('habit')
     .sort({ createdAt: -1 });
+  const posts = await (Number.isInteger(limit) && limit > 0
+    ? postsQuery.limit(limit)
+    : postsQuery);
 
   const reactions = await MilestoneLike.find({
     user: userId,
@@ -572,5 +576,41 @@ export async function toggleMilestoneLike({ userId, milestonePostId, emoji = 'ðŸ
       updatedReactionEmojis,
       userId
     ),
+  };
+}
+
+export async function getMilestoneReactions({ userId, milestonePostId, pagination = null }) {
+  const post = await MilestonePost.findById(milestonePostId).lean();
+
+  if (!post || post.visibleUntil <= new Date()) {
+    return { errorCode: 'MILESTONE_POST_NOT_FOUND' };
+  }
+
+  if (!sameId(post.user, userId) && !(await areFriends(userId, post.user))) {
+    return { errorCode: 'MILESTONE_POST_NOT_FOUND' };
+  }
+
+  const blockedSet = await getBlockedUserIds(userId);
+  const query = { milestonePost: milestonePostId };
+
+  if (blockedSet.size > 0) {
+    query.user = { $nin: [...blockedSet].map((id) => new mongoose.Types.ObjectId(id)) };
+  }
+
+  const reactionsQuery = MilestoneLike.find(query)
+    .populate('user')
+    .sort({ createdAt: -1 })
+    .lean();
+  const reactions = await (pagination ? reactionsQuery.limit(pagination.fetchLimit) : reactionsQuery);
+  const items = reactions
+    .map((reaction) => ({
+      emoji: reaction.emoji,
+      user: toReactionUserResponse(reaction.user),
+      createdAt: reaction.createdAt,
+    }))
+    .filter((reaction) => reaction.user);
+
+  return {
+    reactions: pagination ? toOffsetPage(items, pagination) : items,
   };
 }

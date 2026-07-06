@@ -15,6 +15,7 @@ import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cl
 import { toPublicUser } from '../users/user.service.js';
 import { createNotification, deleteNotificationsByFilter } from '../notifications/notification.service.js';
 import User from '../users/user.model.js';
+import { toOffsetPage } from '../../utils/pagination.js';
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 const DAY_IN_MS = 24 * HOUR_IN_MS;
@@ -222,7 +223,7 @@ async function toVisibleStoryResponse(story, userId, likedStoryIds = new Set()) 
 }
 
 // Stories from the user and their friends that are still inside the 30-day feed window
-export async function getFriendFeedStories({ userId }) {
+export async function getFriendFeedStories({ userId, limit = null }) {
   const friendships = await Friendship.find({
     $or: [{ userA: userId }, { userB: userId }],
   }).lean();
@@ -234,12 +235,15 @@ export async function getFriendFeedStories({ userId }) {
     visibleUserIds.add(friendId.toString());
   });
 
-  const stories = await Story.find({
+  const storiesQuery = Story.find({
     user: { $in: [...visibleUserIds] },
     feedExpiresAt: { $gt: new Date() },
   })
     .populate('user')
     .sort({ createdAt: -1 });
+  const stories = await (Number.isInteger(limit) && limit > 0
+    ? storiesQuery.limit(limit)
+    : storiesQuery);
 
   const likes = await StoryLike.find({
     user: userId,
@@ -376,7 +380,7 @@ export async function toggleStoryLike({ userId, storyId }) {
 
 // Who liked a story — the owner can always see it (incl. their archive); friends
 // only while the story is still inside the feed window.
-export async function getStoryLikes({ userId, storyId }) {
+export async function getStoryLikes({ userId, storyId, pagination = null }) {
   const story = await Story.findById(storyId).lean();
 
   if (!story) {
@@ -389,18 +393,21 @@ export async function getStoryLikes({ userId, storyId }) {
     return { errorCode: 'STORY_NOT_FOUND' };
   }
 
-  const likes = await StoryLike.find({ story: storyId })
+  const blockedSet = await getBlockedUserIds(userId);
+  const query = { story: storyId };
+
+  if (blockedSet.size > 0) {
+    query.user = { $nin: [...blockedSet].map((id) => new mongoose.Types.ObjectId(id)) };
+  }
+
+  const likesQuery = StoryLike.find(query)
     .populate('user')
     .sort({ createdAt: -1 })
     .lean();
+  const likes = await (pagination ? likesQuery.limit(pagination.fetchLimit) : likesQuery);
+  const likers = likes.map((like) => toPublicUser(like.user)).filter(Boolean);
 
-  const blockedSet = await getBlockedUserIds(userId);
-  const filteredLikes = likes.filter((like) => {
-    const likerId = like.user?._id?.toString() || like.user?.toString();
-    return !blockedSet.has(likerId);
-  });
-
-  return { likers: filteredLikes.map((like) => toPublicUser(like.user)).filter(Boolean) };
+  return { likers: pagination ? toOffsetPage(likers, pagination) : likers };
 }
 
 export async function getStoryMentionCandidates({ userId, storyId }) {
@@ -569,7 +576,7 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
   return { comment: toStoryCommentResponse(comment) };
 }
 
-export async function getStoryComments({ userId, storyId }) {
+export async function getStoryComments({ userId, storyId, pagination = null }) {
   const story = await Story.findById(storyId).lean();
 
   if (!story) {
@@ -582,18 +589,49 @@ export async function getStoryComments({ userId, storyId }) {
     return { errorCode: 'STORY_NOT_FOUND' };
   }
 
-  const comments = await StoryComment.find({ story: storyId })
+  const blockedSet = await getBlockedUserIds(userId);
+  const commentVisibilityQuery = { story: storyId };
+
+  if (blockedSet.size > 0) {
+    commentVisibilityQuery.user = { $nin: [...blockedSet].map((id) => new mongoose.Types.ObjectId(id)) };
+  }
+
+  if (pagination) {
+    const parents = await StoryComment.find({
+      ...commentVisibilityQuery,
+      parentComment: null,
+    })
+      .populate('user')
+      .sort({ createdAt: 1 })
+      .limit(pagination.fetchLimit)
+      .lean();
+    const pagedParents = toOffsetPage(parents, pagination);
+    const parentIds = pagedParents.items.map((comment) => comment._id);
+    const replies = parentIds.length
+      ? await StoryComment.find({
+        ...commentVisibilityQuery,
+        parentComment: { $in: parentIds },
+      })
+        .populate('user')
+        .sort({ createdAt: 1 })
+        .lean()
+      : [];
+    const comments = [...pagedParents.items, ...replies].map(toStoryCommentResponse);
+
+    return {
+      comments: {
+        ...pagedParents,
+        items: comments,
+      },
+    };
+  }
+
+  const comments = await StoryComment.find(commentVisibilityQuery)
     .populate('user')
     .sort({ createdAt: 1 })
     .lean();
 
-  const blockedSet = await getBlockedUserIds(userId);
-  const filteredComments = comments.filter((comment) => {
-    const commenterId = comment.user?._id?.toString() || comment.user?.toString();
-    return !blockedSet.has(commenterId);
-  });
-
-  return { comments: filteredComments.map(toStoryCommentResponse) };
+  return { comments: comments.map(toStoryCommentResponse) };
 }
 
 export async function deleteStoryComment({ userId, storyId, commentId }) {

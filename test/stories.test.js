@@ -237,6 +237,58 @@ test('GET /api/milestones/feed includes the user\'s own active stories', async (
   assert.equal(stories[0].user.id, user._id.toString());
 });
 
+test('GET /api/milestones/feed supports limit and offset pagination', async () => {
+  const user = await buildUser();
+  const friend = await buildUser();
+  await makeFriends(user, friend);
+  const habit = await buildHabit(friend);
+  const now = Date.now();
+
+  for (let index = 0; index < 12; index += 1) {
+    await buildStory(friend, habit, {
+      caption: `Story ${index}`,
+      createdAt: new Date(now - index * 1000),
+      updatedAt: new Date(now - index * 1000),
+    });
+  }
+
+  const firstPageResponse = await request(app)
+    .get('/api/milestones/feed?limit=10&offset=0')
+    .set('Authorization', authHeader(user))
+    .expect(200);
+
+  assert.equal(Array.isArray(firstPageResponse.body), false);
+  assert.equal(firstPageResponse.body.items.length, 10);
+  assert.equal(firstPageResponse.body.hasMore, true);
+  assert.equal(firstPageResponse.body.nextOffset, 10);
+  assert.equal(firstPageResponse.body.items[0].caption, 'Story 0');
+  assert.equal(firstPageResponse.body.items[9].caption, 'Story 9');
+
+  const secondPageResponse = await request(app)
+    .get('/api/milestones/feed?limit=10&offset=10')
+    .set('Authorization', authHeader(user))
+    .expect(200);
+
+  assert.equal(secondPageResponse.body.items.length, 2);
+  assert.equal(secondPageResponse.body.hasMore, false);
+  assert.equal(secondPageResponse.body.nextOffset, 12);
+  assert.deepEqual(
+    secondPageResponse.body.items.map((story) => story.caption),
+    ['Story 10', 'Story 11'],
+  );
+});
+
+test('GET /api/milestones/feed rejects invalid pagination params', async () => {
+  const user = await buildUser();
+
+  const response = await request(app)
+    .get('/api/milestones/feed?limit=0&offset=-1')
+    .set('Authorization', authHeader(user))
+    .expect(400);
+
+  assert.match(response.body.message, /limit/);
+});
+
 // --- POST /api/stories/:storyId/like ---
 
 test('a friend can like and unlike a story (toggle)', async () => {
@@ -577,6 +629,48 @@ test('friends can see who liked a visible story', async () => {
   assert.equal(response.body[0].username, 'story_liker');
 });
 
+test('story likes support limit and offset pagination', async () => {
+  const owner = await buildUser({ username: 'paged_like_owner' });
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+  const likers = await Promise.all(
+    Array.from({ length: 12 }, (_, index) =>
+      buildUser({
+        username: `paged_liker_${index}`,
+        email: `paged_liker_${index}@example.com`,
+      })
+    )
+  );
+
+  await Promise.all(likers.map((liker) => makeFriends(owner, liker)));
+  await StoryLike.insertMany(
+    likers.map((liker, index) => ({
+      story: story._id,
+      user: liker._id,
+      createdAt: new Date(Date.now() + index),
+      updatedAt: new Date(Date.now() + index),
+    }))
+  );
+
+  const firstPage = await request(app)
+    .get(`/api/stories/${story._id}/likes?limit=10&offset=0`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(firstPage.body.items.length, 10);
+  assert.equal(firstPage.body.hasMore, true);
+  assert.equal(firstPage.body.nextOffset, 10);
+
+  const secondPage = await request(app)
+    .get(`/api/stories/${story._id}/likes?limit=10&offset=10`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(secondPage.body.items.length, 2);
+  assert.equal(secondPage.body.hasMore, false);
+  assert.equal(secondPage.body.nextOffset, 12);
+});
+
 test('strangers cannot see who liked a story', async () => {
   const owner = await buildUser();
   const stranger = await buildUser();
@@ -652,6 +746,48 @@ test('a user can comment on their own story and see the comment list', async () 
 
   assert.equal(getResponse.body.length, 1);
   assert.equal(getResponse.body[0].content, 'Nice story!');
+});
+
+test('story comments paginate top-level threads with their replies', async () => {
+  const owner = await buildUser({ username: 'paged_comment_owner' });
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+  const parents = await StoryComment.insertMany(
+    Array.from({ length: 12 }, (_, index) => ({
+      story: story._id,
+      user: owner._id,
+      content: `Parent ${index}`,
+      parentComment: null,
+      createdAt: new Date(Date.now() + index),
+      updatedAt: new Date(Date.now() + index),
+    }))
+  );
+
+  await StoryComment.create({
+    story: story._id,
+    user: owner._id,
+    content: 'Reply to first parent',
+    parentComment: parents[0]._id,
+  });
+
+  const firstPage = await request(app)
+    .get(`/api/stories/${story._id}/comments?limit=10&offset=0`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(firstPage.body.hasMore, true);
+  assert.equal(firstPage.body.nextOffset, 10);
+  assert.equal(firstPage.body.items.filter((comment) => !comment.parentComment).length, 10);
+  assert.equal(firstPage.body.items.some((comment) => comment.parentComment === parents[0]._id.toString()), true);
+
+  const secondPage = await request(app)
+    .get(`/api/stories/${story._id}/comments?limit=10&offset=10`)
+    .set('Authorization', authHeader(owner))
+    .expect(200);
+
+  assert.equal(secondPage.body.hasMore, false);
+  assert.equal(secondPage.body.nextOffset, 12);
+  assert.equal(secondPage.body.items.length, 2);
 });
 
 test('parallel comments keep story commentCount accurate', async () => {

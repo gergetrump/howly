@@ -1,8 +1,11 @@
 import mongoose from 'mongoose';
 import { STORY_SOURCE_TYPES } from './story.model.js';
+import { validateOffsetPagination } from '../../utils/pagination.js';
 
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
+const DEFAULT_STORY_LIST_LIMIT = 10;
+const MAX_STORY_LIST_LIMIT = 50;
 
 export function validateStoryId(id) {
   if (!isNonEmptyString(id) || !isValidObjectId(id)) {
@@ -77,4 +80,11 @@ export function validateCommentInput(body = {}) {
       parentCommentId,
     },
   };
+}
+
+export function validateStoryListPagination(query = {}, options = {}) {
+  return validateOffsetPagination(query, {
+    defaultLimit: options.defaultLimit ?? DEFAULT_STORY_LIST_LIMIT,
+    maxLimit: options.maxLimit ?? MAX_STORY_LIST_LIMIT,
+  });
 }

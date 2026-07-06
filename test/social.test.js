@@ -206,3 +206,83 @@ test('social flow deletes friendships for both users', async () => {
   assert.equal(recipientFriendsResponse.body.length, 0);
   assert.equal(await Friendship.countDocuments(), 0);
 });
+
+test('GET /api/social/friends supports limit and offset pagination', async () => {
+  const currentUser = await buildUser({ username: 'paged_friends_owner', email: 'paged-friends-owner@example.com' });
+  const friends = await Promise.all(
+    Array.from({ length: 12 }, (_, index) =>
+      buildUser({
+        username: `paged_friend_${index}`,
+        email: `paged-friend-${index}@example.com`,
+      })
+    )
+  );
+
+  await Friendship.insertMany(
+    friends.map((friend, index) => ({
+      userA: currentUser._id,
+      userB: friend._id,
+      createdAt: new Date(Date.now() + index),
+      updatedAt: new Date(Date.now() + index),
+    }))
+  );
+
+  const firstPage = await request(app)
+    .get('/api/social/friends?limit=10&offset=0')
+    .set('Authorization', authHeader(currentUser))
+    .expect(200);
+
+  assert.equal(firstPage.body.items.length, 10);
+  assert.equal(firstPage.body.hasMore, true);
+  assert.equal(firstPage.body.nextOffset, 10);
+
+  const secondPage = await request(app)
+    .get('/api/social/friends?limit=10&offset=10')
+    .set('Authorization', authHeader(currentUser))
+    .expect(200);
+
+  assert.equal(secondPage.body.items.length, 2);
+  assert.equal(secondPage.body.hasMore, false);
+  assert.equal(secondPage.body.nextOffset, 12);
+});
+
+test('GET /api/social/friends/requests supports incoming request pagination', async () => {
+  const recipient = await buildUser({ username: 'paged_request_recipient', email: 'paged-request-recipient@example.com' });
+  const requesters = await Promise.all(
+    Array.from({ length: 12 }, (_, index) =>
+      buildUser({
+        username: `paged_requester_${index}`,
+        email: `paged-requester-${index}@example.com`,
+      })
+    )
+  );
+
+  await FriendRequest.insertMany(
+    requesters.map((requester, index) => ({
+      requester: requester._id,
+      recipient: recipient._id,
+      status: 'pending',
+      createdAt: new Date(Date.now() + index),
+      updatedAt: new Date(Date.now() + index),
+    }))
+  );
+
+  const firstPage = await request(app)
+    .get('/api/social/friends/requests?incomingLimit=10&incomingOffset=0&outgoingLimit=50&outgoingOffset=0')
+    .set('Authorization', authHeader(recipient))
+    .expect(200);
+
+  assert.equal(firstPage.body.incoming.items.length, 10);
+  assert.equal(firstPage.body.incoming.hasMore, true);
+  assert.equal(firstPage.body.incoming.nextOffset, 10);
+  assert.equal(firstPage.body.outgoing.items.length, 0);
+
+  const secondPage = await request(app)
+    .get('/api/social/friends/requests?incomingLimit=10&incomingOffset=10&outgoingLimit=50&outgoingOffset=0')
+    .set('Authorization', authHeader(recipient))
+    .expect(200);
+
+  assert.equal(secondPage.body.incoming.items.length, 2);
+  assert.equal(secondPage.body.incoming.hasMore, false);
+  assert.equal(secondPage.body.incoming.nextOffset, 12);
+});
