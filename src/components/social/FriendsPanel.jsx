@@ -148,6 +148,10 @@ export function FriendsPanel({
     activePanel,
     friends,
     requests,
+    hasMoreFriends = false,
+    isLoadingMoreFriends = false,
+    hasMoreIncomingRequests = false,
+    isLoadingMoreIncomingRequests = false,
     usernameQuery,
     searchResults,
     pendingFriendRequestCount,
@@ -163,6 +167,8 @@ export function FriendsPanel({
     onSendFriendRequest,
     onAcceptRequest,
     onRejectRequest,
+    onLoadMoreFriends,
+    onLoadMoreIncomingRequests,
     onDeleteFriend,
     onBlockUser,
     onOpenProfile,
@@ -187,7 +193,7 @@ export function FriendsPanel({
                         Friend Requests
                         {pendingFriendRequestCount > 0 ? (
                             <span className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white border border-[#24213d] shadow-sm">
-                                {pendingFriendRequestCount}
+                                {hasMoreIncomingRequests ? `${pendingFriendRequestCount}+` : pendingFriendRequestCount}
                             </span>
                         ) : null}
                     </button>
@@ -228,6 +234,17 @@ export function FriendsPanel({
                                     )}
                                 />
                             ))}
+                            {hasMoreFriends ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="w-full text-theme-accent-soft hover:bg-violet-400/15 hover:text-theme-accent-soft"
+                                    disabled={isLoadingMoreFriends}
+                                    onClick={onLoadMoreFriends}
+                                >
+                                    {isLoadingMoreFriends ? 'Loading...' : 'Load more'}
+                                </Button>
+                            ) : null}
                         </div>
                     ) : (
                         <EmptyState>No friends yet</EmptyState>
@@ -249,6 +266,17 @@ export function FriendsPanel({
                                     onOpenProfile={onOpenProfile}
                                 />
                             ))}
+                            {hasMoreIncomingRequests ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="w-full text-theme-accent-soft hover:bg-violet-400/15 hover:text-theme-accent-soft"
+                                    disabled={isLoadingMoreIncomingRequests}
+                                    onClick={onLoadMoreIncomingRequests}
+                                >
+                                    {isLoadingMoreIncomingRequests ? 'Loading...' : 'Load more'}
+                                </Button>
+                            ) : null}
                         </div>
                     ) : (
                         <EmptyState>No pending requests</EmptyState>

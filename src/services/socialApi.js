@@ -1,7 +1,21 @@
 import { apiRequest } from './apiClient';
 
-export function getFriends() {
-    return apiRequest('/social/friends');
+function buildPaginationQuery(params = {}) {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+        if (Number.isInteger(value)) {
+            searchParams.set(key, String(value));
+        }
+    });
+
+    const query = searchParams.toString();
+
+    return query ? `?${query}` : '';
+}
+
+export function getFriends({ limit, offset } = {}) {
+    return apiRequest(`/social/friends${buildPaginationQuery({ limit, offset })}`);
 }
 
 export function getFriendHabits(userId) {
@@ -14,8 +28,22 @@ export function deleteFriend(friendshipId) {
     });
 }
 
-export function getFriendRequests() {
-    return apiRequest('/social/friends/requests');
+export function getFriendRequests({
+    incomingLimit,
+    incomingOffset,
+    outgoingLimit,
+    outgoingOffset,
+    limit,
+    offset,
+} = {}) {
+    return apiRequest(`/social/friends/requests${buildPaginationQuery({
+        incomingLimit,
+        incomingOffset,
+        outgoingLimit,
+        outgoingOffset,
+        limit,
+        offset,
+    })}`);
 }
 
 export function sendFriendRequest(userId) {
