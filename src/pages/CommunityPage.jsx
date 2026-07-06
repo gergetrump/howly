@@ -20,7 +20,7 @@ const PERIOD_IN_RANGE_LABELS = {
     month: 'in the last 30 days',
 };
 
-const periodTabTriggerClassName = 'px-3 py-1 text-xs text-white/70 data-active:!bg-white/20 data-active:!text-white sm:text-sm';
+const periodTabTriggerClassName = 'px-3 py-1 text-xs text-theme-text-soft data-active:!bg-theme-invert data-active:!text-theme-invert-text sm:text-sm';
 
 function formatCategory(value) {
     return value?.categoryLabel ?? 'No data';
@@ -66,10 +66,10 @@ function standingHelperText(standing, periodInRange) {
 
 function standingValueClassName(standing) {
     if (standing?.display === 'percent') {
-        return 'text-emerald-300';
+        return 'text-theme-success';
     }
 
-    return 'text-white';
+    return 'text-theme-text';
 }
 
 function formatTrendValue(trend) {
@@ -91,11 +91,11 @@ function formatTrendValue(trend) {
 
 function trendValueClassName(trend) {
     if (!trend || trend.direction === 'flat' || trend.changePercent === 0) {
-        return 'text-white';
+        return 'text-theme-text';
     }
 
     if (trend.display === 'new' || trend.direction === 'up') {
-        return 'text-emerald-300';
+        return 'text-theme-success';
     }
 
     return 'text-amber-300';
@@ -129,7 +129,7 @@ function TrendDelta({ trend, className, size = 'sm' }) {
 function PeriodToggle({ period, onPeriodChange }) {
     return (
         <Tabs value={period} onValueChange={onPeriodChange}>
-            <TabsList className="h-9 w-auto shrink-0 border border-white/10 bg-white/5 p-1 text-white">
+            <TabsList className="h-9 w-auto shrink-0 border border-theme-text/10 bg-theme-text/5 p-1 text-theme-text">
                 <TabsTrigger value="24h" className={periodTabTriggerClassName}>
                     24 hours
                 </TabsTrigger>
@@ -152,9 +152,9 @@ function SummaryCard({ icon: Icon, label, value, helper, valueClassName }) {
                     <Icon className="size-6 text-purple-300" aria-hidden="true" />
                 </div>
                 <div>
-                    <p className="text-sm text-slate-300">{label}</p>
-                    <p className={cn('text-2xl font-bold tabular-nums', valueClassName ?? 'text-white')}>{value}</p>
-                    {helper ? <p className="text-xs text-slate-400">{helper}</p> : null}
+                    <p className="text-sm text-theme-text-soft">{label}</p>
+                    <p className={cn('text-2xl font-bold tabular-nums', valueClassName ?? 'text-theme-text')}>{value}</p>
+                    {helper ? <p className="text-xs text-theme-text-muted">{helper}</p> : null}
                 </div>
             </CardContent>
         </Card>
@@ -164,7 +164,7 @@ function SummaryCard({ icon: Icon, label, value, helper, valueClassName }) {
 function CategoryBreakdown({ categories, showTrends }) {
     if (!categories?.length) {
         return (
-            <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
+            <p className="rounded-xl bg-theme-text/5 p-4 text-center text-sm text-theme-text-soft">
                 No classified check-ins yet. Habits need taxonomy labels to appear here.
             </p>
         );
@@ -177,13 +177,13 @@ function CategoryBreakdown({ categories, showTrends }) {
             {categories.map((item) => (
                 <div key={item.categoryKey} className="space-y-2">
                     <div className="flex items-center justify-between gap-3 text-sm">
-                        <span className="font-medium text-white">{item.categoryLabel}</span>
-                        <span className="flex shrink-0 items-center gap-2 text-slate-300">
+                        <span className="font-medium text-theme-text">{item.categoryLabel}</span>
+                        <span className="flex shrink-0 items-center gap-2 text-theme-text-soft">
                             <span>{item.share}%</span>
                             {showTrends ? <TrendDelta trend={item.trend} className="w-12 text-right" /> : null}
                         </span>
                     </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-3 overflow-hidden rounded-full bg-theme-text/10">
                         <div
                             className="h-full rounded-full bg-gradient-to-r from-purple-600 to-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.25)] transition-all"
                             style={{ width: `${Math.max((item.checkIns / maxCheckIns) * 100, item.checkIns ? 4 : 0)}%` }}
@@ -198,7 +198,7 @@ function CategoryBreakdown({ categories, showTrends }) {
 function TrendingHabits({ habits, showTrends }) {
     if (!habits?.length) {
         return (
-            <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-slate-300">
+            <p className="rounded-xl bg-theme-text/5 p-4 text-center text-sm text-theme-text-soft">
                 No trending habits yet. Check-ins on classified habits will show up here.
             </p>
         );
@@ -209,13 +209,13 @@ function TrendingHabits({ habits, showTrends }) {
             {habits.map((item, index) => (
                 <div
                     key={item.canonicalHabitKey}
-                    className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-4"
+                    className="flex items-center justify-between gap-4 rounded-xl border border-theme-text/10 bg-theme-text/5 p-4"
                 >
                     <div className="min-w-0">
-                        <p className="font-semibold text-white">
+                        <p className="font-semibold text-theme-text">
                             {index + 1}. {item.label}
                         </p>
-                        <p className="truncate text-sm text-slate-300">
+                        <p className="truncate text-sm text-theme-text-soft">
                             {item.categoryLabel ?? 'Unclassified'}
                         </p>
                     </div>
@@ -281,21 +281,21 @@ export function CommunityPage() {
 
             <div className="space-y-8">
                 {error ? (
-                    <div className="rounded-xl border border-red-300/30 bg-red-500/10 p-4 text-sm text-red-100">
+                    <div className="rounded-xl border border-theme-danger/30 bg-theme-danger/10 p-4 text-sm text-theme-danger">
                         {error}
                     </div>
                 ) : null}
 
                 <PageSection width="full">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                        <h2 className="text-lg font-semibold text-white">
+                        <h2 className="text-lg font-semibold text-theme-text">
                             {PERIOD_HEADINGS[period] ?? PERIOD_HEADINGS.week}
                         </h2>
                         <PeriodToggle period={period} onPeriodChange={setPeriod} />
                     </div>
 
                     {isLoading ? (
-                        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+                        <div className="flex items-center gap-2 rounded-xl border border-theme-text/10 bg-theme-text/5 p-4 text-sm text-theme-text-soft">
                             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                             Loading community analytics
                         </div>
@@ -320,17 +320,17 @@ export function CommunityPage() {
 
                 <Card className={appCardClassName}>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-white">
+                        <CardTitle className="flex items-center gap-2 text-theme-text">
                             <BarChart3 className="size-5 text-purple-300" aria-hidden="true" />
                             What Howly is working on
                         </CardTitle>
-                        <CardDescription className="text-slate-300">
+                        <CardDescription className="text-theme-text-soft">
                             Share of habit completions across life areas {periodInRange}.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
-                            <div className="flex items-center gap-2 rounded-xl bg-white/5 p-4 text-sm text-slate-200">
+                            <div className="flex items-center gap-2 rounded-xl bg-theme-text/5 p-4 text-sm text-theme-text-soft">
                                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                                 Loading categories
                             </div>
@@ -345,17 +345,17 @@ export function CommunityPage() {
 
                 <Card className={appCardClassName}>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-white">
+                        <CardTitle className="flex items-center gap-2 text-theme-text">
                             <Sparkles className="size-5 text-purple-300" aria-hidden="true" />
                             Trending on Howly
                         </CardTitle>
-                        <CardDescription className="text-slate-300">
+                        <CardDescription className="text-theme-text-soft">
                             The standard habit types rising or falling {periodInRange}.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
-                            <div className="flex items-center gap-2 rounded-xl bg-white/5 p-4 text-sm text-slate-200">
+                            <div className="flex items-center gap-2 rounded-xl bg-theme-text/5 p-4 text-sm text-theme-text-soft">
                                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                                 Loading trending habits
                             </div>
@@ -368,7 +368,7 @@ export function CommunityPage() {
                     </CardContent>
                 </Card>
 
-                <p className="text-center text-xs text-slate-400">
+                <p className="text-center text-xs text-theme-text-muted">
                     Anonymous patterns only — shares and trends, never individual habit names or usernames. Your consistency rank is a private benchmark against the community.
                 </p>
             </div>

@@ -60,7 +60,7 @@ function SettingsRow({ icon: Icon, iconColor = 'text-theme-text-muted', title, s
 function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSubmitting, error, success }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border border-theme-text/10 bg-theme-bg p-6 text-theme-text sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-theme-text">Help & Feedback</DialogTitle>
                     <DialogDescription className="text-theme-text-muted">
@@ -69,7 +69,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                 </DialogHeader>
 
                 <form onSubmit={onSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-theme-surface p-1">
+                    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-theme-surface-2 p-1">
                         {[
                             { value: 'problem', label: 'Problem' },
                             { value: 'suggestion', label: 'Suggestion' },
@@ -92,7 +92,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                             value={form.subject}
                             onChange={(event) => onFormChange({ ...form, subject: event.target.value })}
                             maxLength={120}
-                            className="w-full rounded-2xl border border-theme-text/10 bg-theme-surface px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
+                            className="w-full rounded-2xl border border-theme-text/10 bg-theme-surface-2 px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
                             placeholder="Briefly summarize the topic."
                         />
                     </label>
@@ -104,7 +104,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                             onChange={(event) => onFormChange({ ...form, message: event.target.value })}
                             rows={6}
                             maxLength={2000}
-                            className="w-full resize-none rounded-2xl border border-theme-text/10 bg-theme-surface px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
+                            className="w-full resize-none rounded-2xl border border-theme-text/10 bg-theme-surface-2 px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
                             placeholder="Tell us what happened or what would make Howly better."
                         />
                     </label>
@@ -128,7 +128,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
 function AboutDialog({ open, onOpenChange }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border border-theme-text/10 bg-theme-bg p-6 text-theme-text sm:max-w-md">
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-theme-text">About Howly</DialogTitle>
                     <DialogDescription className="text-theme-text-muted">

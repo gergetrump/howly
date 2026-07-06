@@ -759,7 +759,7 @@ export function DashboardPage() {
             />
 
             <Dialog open={Boolean(riskConfirmHabit)} onOpenChange={(open) => { if (!open) setRiskConfirmHabit(null); }}>
-                <DialogContent className="rounded-3xl border-0 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
+                <DialogContent className="p-8">
                     <DialogHeader className="space-y-3 pt-4 text-left">
                         <DialogTitle className="text-2xl font-bold tracking-tight">Your streak is at risk</DialogTitle>
                         <DialogDescription className="text-base leading-relaxed text-theme-text-soft">

@@ -392,7 +392,7 @@ export function StoryFeedCard({
 
             {isConfirmingDelete && (
                 <ConfirmationDialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
-                    <ConfirmationDialogContent className="bg-theme-surface border-0 text-theme-text rounded-3xl p-8 sm:max-w-md flex flex-col items-center text-center shadow-2xl z-[100]">
+                    <ConfirmationDialogContent className="p-8 flex flex-col items-center text-center z-[100]">
                         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-theme-danger/10 mb-2 border border-theme-danger/20">
                             <Trash2 className="h-8 w-8 text-theme-danger" />
                         </div>

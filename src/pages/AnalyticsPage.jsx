@@ -106,7 +106,7 @@ function TimelineChart({ dailyTotals }) {
                             <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center gap-2">
                                 <div className="relative flex h-36 w-full items-end justify-center rounded-t-lg bg-theme-bg/30">
                                     <div
-                                        className="absolute bottom-0 w-3/5 rounded-t-lg border border-slate-300/35 bg-slate-400/35"
+                                        className="absolute bottom-0 w-3/5 rounded-t-lg border border-theme-text/10 bg-theme-text/10"
                                         style={{ height: `${expectedHeight}%` }}
                                         title={`${day.expected} scheduled`}
                                     />
@@ -137,8 +137,8 @@ function MonthlyCompletionChart({ monthlyTotals }) {
     return (
         <Card className={appCardClassName}>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                    <TrendingUp className="size-5 text-emerald-300" aria-hidden="true" />
+                <CardTitle className="flex items-center gap-2 text-theme-text">
+                    <TrendingUp className="size-5 text-theme-success" aria-hidden="true" />
                     Monthly completion overview
                 </CardTitle>
             </CardHeader>
@@ -150,12 +150,12 @@ function MonthlyCompletionChart({ monthlyTotals }) {
 
                         return (
                             <div key={month.key} className="flex min-w-0 flex-1 flex-col items-center gap-2">
-                                <div className="relative flex h-40 w-full items-end justify-center rounded-t-lg bg-slate-950/30">
-                                    <div className="absolute bottom-0 h-full w-3/5 rounded-t-lg border border-slate-300/25 bg-slate-400/20" />
+                                <div className="relative flex h-40 w-full items-end justify-center rounded-t-lg bg-theme-text/5">
+                                    <div className="absolute bottom-0 h-full w-3/5 rounded-t-lg border border-theme-text/10 bg-theme-text/10" />
                                     <div
                                         className={cn(
                                             'absolute bottom-0 w-3/5 rounded-t-lg shadow-[0_0_14px_rgba(110,231,183,0.28)]',
-                                            hasData ? getCompletionTone(month.completionRate) : 'bg-slate-600/50',
+                                            hasData ? getCompletionTone(month.completionRate) : 'bg-theme-text/15',
                                         )}
                                         style={{ height: `${height}%` }}
                                         title={hasData
@@ -163,16 +163,16 @@ function MonthlyCompletionChart({ monthlyTotals }) {
                                             : `${month.label}: No data`}
                                     />
                                 </div>
-                                <span className="h-4 text-[11px] font-medium text-slate-400" title={month.label}>
+                                <span className="h-4 text-[11px] font-medium text-theme-text-muted" title={month.label}>
                                     {month.label.slice(0, 1)}
                                 </span>
                             </div>
                         );
                     })}
                 </div>
-                <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-white/5 px-4 py-3 text-xs text-slate-300">
+                <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-theme-text/5 px-4 py-3 text-xs text-theme-text-soft">
                     <span>Each bar shows the average habit completion for that month.</span>
-                    <span className="shrink-0 text-slate-400">No data = no scheduled habits</span>
+                    <span className="shrink-0 text-theme-text-muted">No data = no scheduled habits</span>
                 </div>
             </CardContent>
         </Card>
@@ -197,7 +197,7 @@ function MiniCompletionTrend({ daily }) {
                         <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center gap-1">
                             <div className="relative flex h-12 w-full items-end justify-center rounded-t-md bg-theme-bg/30">
                                 <div
-                                    className="absolute bottom-0 w-3/5 rounded-t-md border border-slate-300/25 bg-slate-400/25"
+                                    className="absolute bottom-0 w-3/5 rounded-t-md border border-theme-text/10 bg-theme-text/10"
                                     style={{ height: `${expectedHeight}%` }}
                                     title={`${day.label}: ${day.expected ? 'scheduled' : 'not scheduled'}`}
                                 />
@@ -235,12 +235,12 @@ function MiniMonthlyCompletionTrend({ monthly }) {
 
                     return (
                         <div key={month.key} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                            <div className="relative flex h-14 w-full items-end justify-center rounded-t-md bg-slate-950/30">
-                                <div className="absolute bottom-0 h-full w-3/5 rounded-t-md border border-slate-300/25 bg-slate-400/20" />
+                            <div className="relative flex h-14 w-full items-end justify-center rounded-t-md bg-theme-text/5">
+                                <div className="absolute bottom-0 h-full w-3/5 rounded-t-md border border-theme-text/10 bg-theme-text/10" />
                                 <div
                                     className={cn(
                                         'absolute bottom-0 w-3/5 rounded-t-md shadow-[0_0_10px_rgba(110,231,183,0.22)]',
-                                        hasData ? getCompletionTone(month.completionRate) : 'bg-slate-600/45',
+                                        hasData ? getCompletionTone(month.completionRate) : 'bg-theme-text/15',
                                     )}
                                     style={{ height: `${completedHeight}%` }}
                                     title={hasData
@@ -252,7 +252,7 @@ function MiniMonthlyCompletionTrend({ monthly }) {
                     );
                 })}
             </div>
-            <div className="flex justify-between text-[11px] text-slate-400">
+            <div className="flex justify-between text-[11px] text-theme-text-muted">
                 <span>J</span>
                 <span>F</span>
                 <span>M</span>
@@ -287,7 +287,7 @@ function TimeMarker({ minutes, label }) {
                 }}
             >
                 <div
-                    className="absolute top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-theme-bg shadow-lg"
+                    className="absolute top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-theme-text/40 bg-theme-bg shadow-lg"
                     style={{ left: `${timePosition(minutes)}%` }}
                 />
             </div>
@@ -600,7 +600,7 @@ export function AnalyticsPage() {
                         </TabsTrigger>
                         <TabsTrigger
                             value="year"
-                            className="text-white/70 data-active:!bg-white/20 data-active:!text-white"
+                            className="text-theme-text-soft data-active:!bg-theme-invert data-active:!text-theme-invert-text"
                         >
                             Year
                         </TabsTrigger>
