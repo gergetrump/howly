@@ -469,7 +469,7 @@ export function NavBar({
                                         </div>
                                     </div>
 
-                                    <div ref={notificationListRef} className="max-h-80 overflow-y-auto p-2">
+                                    <div ref={notificationListRef} className="max-h-80 space-y-2 overflow-y-auto p-2">
                                         {isLoadingNotifications ? (
                                             <p className="px-3 py-6 text-center text-sm text-theme-text-muted">Loading...</p>
                                         ) : notifications.length ? (
@@ -532,16 +532,6 @@ export function NavBar({
                                         ) : (
                                             <p className="px-3 py-6 text-center text-sm text-theme-text-muted">No notifications yet</p>
                                         )}
-                                    </div>
-
-                                    <div className="border-t border-theme-text/10 p-2">
-                                        <Link
-                                            to="/social"
-                                            className="block rounded-xl px-3 py-2 text-center text-sm font-semibold text-theme-accent-soft transition hover:bg-violet-400/15"
-                                            onClick={() => setIsNotificationMenuOpen(false)}
-                                        >
-                                            View social
-                                        </Link>
                                     </div>
                                 </div>
                             ) : null}
