@@ -704,8 +704,33 @@ export function ShopPage() {
     }
 
     async function handleBuyItems(entriesForPurchase) {
-        setBuyingItemId('cart');
         setError('');
+
+        const totalCost = entriesForPurchase.reduce(
+            (total, entry) => total + ((getPurchaseEntryItem(entry)?.price ?? 0) * getPurchaseEntryQuantity(entry)),
+            0,
+        );
+        const availableCoins = user?.coins ?? 0;
+
+        if (totalCost > availableCoins) {
+            if (isFreeUser) {
+                openPremiumPageAfterPurchaseDialog(
+                    `You do not have enough moon coins for the whole cart (${totalCost} needed, you have ${availableCoins}). Premium gives you monthly bonus coins${premiumMonthlyCoins ? ` (${premiumMonthlyCoins} coins)` : ''}.`,
+                    '',
+                    'Not enough moon coins',
+                );
+            } else {
+                openPremiumPageAfterPurchaseDialog(
+                    `You do not have enough moon coins for the whole cart — you need ${totalCost} but have ${availableCoins}. Remove some items first.`,
+                    '',
+                    'Not enough moon coins',
+                    false,
+                );
+            }
+            return;
+        }
+
+        setBuyingItemId('cart');
         const purchasedEntries = [];
         const purchasedQuantitiesByCartKey = {};
         let failedEntry = null;
