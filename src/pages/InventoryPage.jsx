@@ -181,19 +181,34 @@ export function InventoryPage() {
     );
     const savedItemSides = useMemo(() => getInventorySides(inventory), [getInventorySides, inventory]);
 
+    const streakShields = user?.streakShields ?? 0;
     const filteredItems = useMemo(
         () => {
             const base = activeCategory === 'all'
                 ? ownedItems
                 : ownedItems.filter((item) => itemMatchesCategory(item, activeCategory));
 
-            if (activeCategory === 'all' || activeCategory === 'theme') {
-                return [DEFAULT_THEME_ITEM, ...base];
+            let result = base;
+
+            if ((activeCategory === 'all' || activeCategory === 'powerUp') && streakShields > 0) {
+                result = [{
+                    userItemId: 'streak-shield-reserve',
+                    type: 'powerUp',
+                    assetKey: 'streak-freeze',
+                    name: 'Streak Shield',
+                    quantity: streakShields,
+                    price: 0,
+                    premiumOnly: false,
+                }, ...result];
             }
 
-            return base;
+            if (activeCategory === 'all' || activeCategory === 'theme') {
+                result = [DEFAULT_THEME_ITEM, ...result];
+            }
+
+            return result;
         },
-        [activeCategory, ownedItems],
+        [activeCategory, ownedItems, streakShields],
     );
     const boostDialogItem = useMemo(
         () => ownedItems.find((item) => item.userItemId === boostDialogItemId) ?? null,
@@ -599,7 +614,7 @@ export function InventoryPage() {
                                         : () => handleToggleEquipped(item)}
                                 >
                                     {item.type === 'powerUp' ? (
-                                        renderBoostControls(item)
+                                        item.assetKey === 'streak-freeze' ? null : renderBoostControls(item)
                                     ) : item.type === 'theme' ? null : (
                                         <div className="col-span-2 flex min-h-8 justify-end">
                                             {renderSideControls(item)}
