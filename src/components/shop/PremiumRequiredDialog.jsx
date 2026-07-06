@@ -33,17 +33,17 @@ export function PremiumRequiredDialog({
         >
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+                className="absolute inset-0 bg-theme-bg/70 backdrop-blur-sm"
                 onClick={onClose}
                 aria-hidden="true"
             />
 
             {/* Dialog panel */}
-            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl shadow-slate-950/60">
+            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-theme-text/10 bg-theme-surface p-6 shadow-2xl shadow-slate-950/60">
                 {/* Close button */}
                 <button
                     type="button"
-                    className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-white/10 hover:text-white"
+                    className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-lg text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text"
                     aria-label="Close dialog"
                     onClick={onClose}
                 >
@@ -58,11 +58,11 @@ export function PremiumRequiredDialog({
 
                 <h2
                     id="premium-required-title"
-                    className="mb-2 text-lg font-bold text-white"
+                    className="mb-2 text-lg font-bold text-theme-text"
                 >
                     {title}
                 </h2>
-                <p className="mb-6 text-sm text-slate-300">
+                <p className="mb-6 text-sm text-theme-text-soft">
                     {description}
                 </p>
 
@@ -79,7 +79,7 @@ export function PremiumRequiredDialog({
                         </button>
                         <button
                             type="button"
-                            className="w-full rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white"
+                            className="w-full rounded-xl border border-theme-text/10 px-4 py-2.5 text-sm font-semibold text-theme-text-soft transition hover:bg-theme-text/10 hover:text-theme-text"
                             onClick={onClose}
                         >
                             Maybe later

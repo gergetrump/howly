@@ -3,27 +3,27 @@ import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const variantClasses = {
-    success: 'border-emerald-300/30 bg-emerald-400/15 text-emerald-50',
-    error: 'border-red-300/30 bg-red-400/15 text-red-50',
+    success: 'border-theme-success/30 bg-emerald-400/15 text-theme-success',
+    error: 'border-theme-danger/30 bg-red-400/15 text-red-50',
     info: 'border-sky-300/30 bg-sky-400/15 text-sky-50',
-    milestone: 'border-white/10 bg-[#25243a] text-white',
-    unavailable: 'border-amber-200/25 bg-slate-950/90 text-white ring-1 ring-amber-200/10',
+    milestone: 'border-theme-text/10 bg-[#25243a] text-theme-text',
+    unavailable: 'border-amber-200/25 bg-theme-bg/90 text-theme-text ring-1 ring-amber-200/10',
 };
 
 const iconClasses = {
-    success: 'bg-emerald-300/15 text-emerald-100',
-    error: 'bg-red-300/15 text-red-100',
+    success: 'bg-emerald-300/15 text-theme-success',
+    error: 'bg-red-300/15 text-theme-danger',
     info: 'bg-sky-300/15 text-sky-100',
-    milestone: 'bg-slate-950/40 text-2xl',
-    unavailable: 'bg-amber-300/15 text-amber-100',
+    milestone: 'bg-theme-bg/40 text-2xl',
+    unavailable: 'bg-amber-300/15 text-theme-gold',
 };
 
 const eyebrowClasses = {
-    success: 'text-emerald-100/70',
-    error: 'text-red-100/75',
+    success: 'text-theme-success/70',
+    error: 'text-theme-danger/75',
     info: 'text-sky-100/75',
-    milestone: 'text-slate-400',
-    unavailable: 'text-amber-100/75',
+    milestone: 'text-theme-text-muted',
+    unavailable: 'text-theme-gold/75',
 };
 
 export function NotificationBanner({
@@ -86,7 +86,7 @@ export function NotificationBanner({
             {onClose ? (
                 <button
                     type="button"
-                    className="rounded-full p-1 opacity-70 transition hover:bg-white/10 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                    className="rounded-full p-1 opacity-70 transition hover:bg-theme-text/10 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                     aria-label="Dismiss notification"
                     onClick={onClose}
                 >
@@ -94,7 +94,7 @@ export function NotificationBanner({
                 </button>
             ) : null}
             {autoCloseMs ? (
-                <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
+                <div className="absolute inset-x-0 bottom-0 h-1 bg-theme-text/10">
                     <div
                         className="h-full bg-violet-300"
                         style={{

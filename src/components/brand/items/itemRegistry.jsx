@@ -1,4 +1,7 @@
 import Bag, { BagLayer } from './Bag';
+import Balloon, { BalloonLayer } from './Balloon';
+import Book, { BookLayer } from './Book';
+import BlossomCrown, { BlossomCrownLayer } from './BlossomCrown';
 import { BallerinaLayer, BallerinaPair } from './Ballerina';
 import BambusFlute, { BambusFluteLayer } from './BambusFlute';
 import { BambusShoesLayer, BambusShoesPair } from './BambusShoes';
@@ -9,15 +12,30 @@ import { CuteBallerinasLayer, CuteBallerinasPair } from './CuteBallerinas';
 import CuteHat, { CuteHatLayer } from './CuteHat';
 import Dress, { DressLayer } from './Dress';
 import DrinkTogo, { DrinkTogoLayer } from './DrinkTogo';
+import Eyepatch, { EyepatchLayer } from './Eyepatch';
 import { GlassesLayer, GlassesPreview } from './Glasses';
+import DangoSkewer, { DangoSkewerLayer } from './DangoSkewer';
 import Hairpin, { HairpinLayer } from './Hairpin';
+import SensuFan, { SensuFanLayer } from './SensuFan';
 import Hat, { HatLayer } from './Hat';
 import HatWithPompom, { HatWithPompomLayer } from './HatWithPompom';
 import HogwartsCape, { HogwartsCapeLayer } from './HogwartsCape';
 import HogwartsScarf, { HogwartsScarfLayer } from './HogwartsScarf';
 import Hoodie, { HoodieLayer } from './Hoodie';
+import {
+    GryffindorSweater,
+    GryffindorSweaterLayer,
+    SlytherinSweater,
+    SlytherinSweaterLayer,
+    RavenclawSweater,
+    RavenclawSweaterLayer,
+    HufflepuffSweater,
+    HufflepuffSweaterLayer,
+} from './HouseSweater';
 import Jersie, { JersieLayer } from './Jersie';
 import MagicWand, { MagicWandLayer } from './MagicWand';
+import MatchaBowl, { MatchaBowlLayer } from './MatchaBowl';
+import SakuraBranch, { SakuraBranchLayer } from './SakuraBranch';
 import Necklace, { NecklaceLayer } from './Necklace';
 import Nerdglasses, { NerdglassesLayer } from './Nerdglasses';
 import Phone, { PhoneLayer } from './Phone';
@@ -25,6 +43,8 @@ import SakuraNeckclace, { SakuraNeckclaceLayer } from './SakuraNeckclace';
 import SakuraOutfit, { SakuraOutfitLayer } from './SakuraOutfit';
 import SakuraPouch, { SakuraPouchLayer } from './SakuraPouch';
 import Scar, { ScarLayer } from './Scar';
+import ShellCrown, { ShellCrownLayer } from './ShellCrown';
+import StrawHat, { StrawHatLayer } from './StrawHat';
 import { SneakerLayer, SneakerPair } from './Sneaker';
 import Suit, { SuitLayer } from './Suit';
 import Summertop, { SummertopLayer } from './Summertop';
@@ -56,6 +76,32 @@ const itemRegistry = {
         type: 'powerUp',
         visual: BigBoost,
         previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'balloon': {
+        type: 'accessory',
+        equipSlot: 'hand',
+        displayName: 'Balloon',
+        visual: Balloon,
+        layer: BalloonLayer,
+        transform: 'translate(1288 1055) scale(1.7) translate(-80 -600)',
+        sideTransforms: {
+            right: 'translate(1288 1055) scale(1.7) translate(-80 -600)',
+            left: 'translate(104 1055) scale(-1.7 1.7) translate(-80 -600)',
+        },
+        previewClassName: 'max-h-[88%] max-w-[48%]',
+    },
+    'book': {
+        type: 'accessory',
+        equipSlot: 'hand',
+        displayName: 'Book',
+        visual: Book,
+        layer: BookLayer,
+        transform: 'translate(1288 1055) rotate(16) scale(1.7) translate(-82 -197)',
+        sideTransforms: {
+            right: 'translate(1288 1055) rotate(16) scale(1.7) translate(-82 -197)',
+            left: 'translate(104 1055) scale(-1 1) rotate(16) scale(1.7) translate(-82 -197)',
+        },
+        previewClassName: 'max-h-[82%] max-w-[60%]',
     },
     'streak-freeze': {
         type: 'powerUp',
@@ -159,12 +205,66 @@ const itemRegistry = {
         },
         previewClassName: 'max-h-[82%] max-w-[56%]',
     },
+    'eyepatch': {
+        type: 'accessory',
+        equipSlot: 'face',
+        displayName: 'Eyepatch',
+        visual: Eyepatch,
+        layer: EyepatchLayer,
+        transform: 'translate(1032 639) scale(2.2) translate(-200 -210)',
+        sideTransforms: {
+            right: 'translate(1032 639) scale(2.2) translate(-200 -210)',
+            left: 'translate(377 639) scale(-2.2 2.2) translate(-200 -210)',
+        },
+        previewClassName: 'max-h-[74%] max-w-[74%]',
+    },
     'glasses': {
         type: 'accessory',
         equipSlot: 'face',
         visual: GlassesPreview,
         layer: GlassesLayer,
         transform: 'translate(485 550)',
+        previewClassName: 'max-h-[64%] max-w-[80%]',
+    },
+    'blossom-crown': {
+        type: 'accessory',
+        equipSlot: 'head',
+        visual: BlossomCrown,
+        layer: BlossomCrownLayer,
+        transform: 'translate(166 10) scale(1.12 1)',
+        previewClassName: 'max-h-[58%] max-w-[86%]',
+    },
+    'shell-crown': {
+        type: 'accessory',
+        equipSlot: 'head',
+        displayName: 'Shell Crown',
+        visual: ShellCrown,
+        layer: ShellCrownLayer,
+        transform: 'translate(166 10) scale(1.12 1)',
+        previewClassName: 'max-h-[58%] max-w-[86%]',
+    },
+    'dango-skewer': {
+        type: 'accessory',
+        equipSlot: 'hand',
+        visual: DangoSkewer,
+        layer: DangoSkewerLayer,
+        transform: 'translate(1360 1070) rotate(20) scale(2.2) translate(-35 -195)',
+        sideTransforms: {
+            right: 'translate(1360 1070) rotate(20) scale(2.2) translate(-35 -195)',
+            left: 'translate(162 1070) scale(-1 1) rotate(20) scale(2.2) translate(-35 -195)',
+        },
+        previewClassName: 'max-h-[84%] max-w-[48%]',
+    },
+    'sensu-fan': {
+        type: 'accessory',
+        equipSlot: 'hand',
+        visual: SensuFan,
+        layer: SensuFanLayer,
+        transform: 'translate(1330 1070) rotate(18) scale(2.3) translate(-124 -143)',
+        sideTransforms: {
+            right: 'translate(1330 1070) rotate(18) scale(2.3) translate(-124 -143)',
+            left: 'translate(192 1070) scale(-1 1) rotate(18) scale(2.3) translate(-124 -143)',
+        },
         previewClassName: 'max-h-[64%] max-w-[80%]',
     },
     hairpin: {
@@ -186,6 +286,15 @@ const itemRegistry = {
         layer: HatLayer,
         transform: 'translate(20 -115) scale(0.95 0.95)',
         previewClassName: 'max-h-[72%] max-w-[82%]',
+    },
+    'straw-hat': {
+        type: 'accessory',
+        equipSlot: 'head',
+        displayName: 'Straw Hat',
+        visual: StrawHat,
+        layer: StrawHatLayer,
+        transform: 'translate(20 -115) scale(0.95 0.95)',
+        previewClassName: 'max-h-[68%] max-w-[86%]',
     },
     'hat-with-pompom': {
         type: 'accessory',
@@ -226,6 +335,64 @@ const itemRegistry = {
         layer: JersieLayer,
         transform: 'translate(45 835)',
         previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'gryffindor-sweater': {
+        type: 'clothing',
+        displayName: 'Gryffindor Sweater',
+        visual: GryffindorSweater,
+        layer: GryffindorSweaterLayer,
+        transform: 'translate(45 835)',
+        previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'slytherin-sweater': {
+        type: 'clothing',
+        displayName: 'Slytherin Sweater',
+        visual: SlytherinSweater,
+        layer: SlytherinSweaterLayer,
+        transform: 'translate(45 835)',
+        previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'ravenclaw-sweater': {
+        type: 'clothing',
+        displayName: 'Ravenclaw Sweater',
+        visual: RavenclawSweater,
+        layer: RavenclawSweaterLayer,
+        transform: 'translate(45 835)',
+        previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'hufflepuff-sweater': {
+        type: 'clothing',
+        displayName: 'Hufflepuff Sweater',
+        visual: HufflepuffSweater,
+        layer: HufflepuffSweaterLayer,
+        transform: 'translate(45 835)',
+        previewClassName: 'max-h-[78%] max-w-[78%]',
+    },
+    'matcha-bowl': {
+        type: 'accessory',
+        equipSlot: 'hand',
+        displayName: 'Matcha Bowl',
+        visual: MatchaBowl,
+        layer: MatchaBowlLayer,
+        transform: 'translate(1288 1055) scale(2.0) translate(-120 -184)',
+        sideTransforms: {
+            right: 'translate(1288 1055) scale(2.0) translate(-120 -184)',
+            left: 'translate(104 1055) scale(-2.0 2.0) translate(-120 -184)',
+        },
+        previewClassName: 'max-h-[70%] max-w-[80%]',
+    },
+    'sakura-branch': {
+        type: 'accessory',
+        equipSlot: 'hand',
+        displayName: 'Sakura Branch',
+        visual: SakuraBranch,
+        layer: SakuraBranchLayer,
+        transform: 'translate(1288 1055) scale(1.9) translate(-100 -294)',
+        sideTransforms: {
+            right: 'translate(1288 1055) scale(1.9) translate(-100 -294)',
+            left: 'translate(104 1055) scale(-1.9 1.9) translate(-100 -294)',
+        },
+        previewClassName: 'max-h-[86%] max-w-[60%]',
     },
     'magic-wand': {
         type: 'accessory',

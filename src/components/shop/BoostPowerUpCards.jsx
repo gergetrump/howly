@@ -109,7 +109,7 @@ export function BoostPowerUpCards({
                 dense
                 titleAction={(
                     <div className="flex items-center gap-1.5">
-                        <span className="rounded-full border border-violet-300/30 bg-violet-400/15 px-2 py-1 text-[10px] font-bold text-violet-100">
+                        <span className="rounded-full border border-violet-300/30 bg-violet-400/15 px-2 py-1 text-[10px] font-bold text-theme-accent-soft">
                             {boost.rewardLabel}
                         </span>
                         <Popover
@@ -121,7 +121,7 @@ export function BoostPowerUpCards({
                             <PopoverTrigger asChild>
                                 <button
                                     type="button"
-                                    className="grid h-6 w-6 place-items-center rounded-full border border-white/10 bg-white/10 text-slate-200 transition hover:bg-white/20 hover:text-white"
+                                    className="grid h-6 w-6 place-items-center rounded-full border border-theme-text/10 bg-theme-text/10 text-theme-text transition hover:bg-theme-text/20 hover:text-theme-text"
                                     aria-label={`What does ${item.name || boost.fallbackName} do?`}
                                 >
                                     <CircleHelp className="h-3.5 w-3.5" aria-hidden="true" />
@@ -131,7 +131,7 @@ export function BoostPowerUpCards({
                                 align="end"
                                 side="bottom"
                                 sideOffset={8}
-                                className="z-[120] w-52 rounded-xl border border-violet-200/20 bg-slate-950/95 p-3 text-left text-[11px] font-semibold leading-snug text-slate-100 shadow-xl shadow-slate-950/30"
+                                className="z-[120] w-52 rounded-xl border border-violet-200/20 bg-theme-bg/95 p-3 text-left text-[11px] font-semibold leading-snug text-theme-text shadow-xl shadow-slate-950/30"
                             >
                                 {boost.description}
                             </PopoverContent>
@@ -143,7 +143,7 @@ export function BoostPowerUpCards({
                 <ActionButton
                     type="button"
                     fullWidth
-                    className="h-8 px-3 text-xs disabled:bg-white/10 disabled:text-slate-500"
+                    className="col-span-2 h-8 px-3 text-xs disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                     disabled={cartQuantityMax}
                     onClick={() => guardPremium(item, () => onAddToCart?.(item))}
                 >
@@ -152,7 +152,7 @@ export function BoostPowerUpCards({
                 <ActionButton
                     type="button"
                     fullWidth
-                    className="h-8 px-3 text-xs disabled:bg-white/10 disabled:text-slate-500"
+                    className="col-span-2 h-8 px-3 text-xs disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                     disabled={isBuying || ownedQuantityMax || monthlyQuantityMax}
                     onClick={() => guardPremium(item, () => onBuy?.(item))}
                 >

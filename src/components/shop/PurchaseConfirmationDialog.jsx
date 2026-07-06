@@ -24,12 +24,12 @@ export function PurchaseConfirmationDialog({
 
     return (
         <ConfirmationDialog open={itemsToBuy.length > 0} onOpenChange={onOpenChange}>
-            <ConfirmationDialogContent className="overflow-hidden rounded-3xl border border-violet-300/20 bg-[#1e1b3a] p-0 text-white shadow-2xl shadow-violet-950/40 sm:max-w-md">
+            <ConfirmationDialogContent className="overflow-hidden rounded-3xl border border-violet-300/20 bg-theme-surface p-0 text-theme-text shadow-2xl shadow-violet-950/40 sm:max-w-md">
                 <div className="relative bg-gradient-to-br from-violet-500/25 via-transparent to-fuchsia-500/15 px-8 pb-8 pt-18">
                     <ConfirmationDialogCancel
                         size="icon"
                         variant="ghost"
-                        className="absolute left-5 top-5 h-10 w-10 rounded-full bg-white/12 text-white hover:bg-white/20 hover:text-white"
+                        className="absolute left-5 top-5 h-10 w-10 rounded-full bg-theme-text/10 text-theme-text hover:bg-theme-text/20 hover:text-theme-text"
                         aria-label="Close purchase confirmation"
                     >
                         <X className="h-5 w-5" aria-hidden="true" />

@@ -30,7 +30,7 @@ export function FriendRequestCard({ request, busy, onAccept, onReject, onOpenPro
                     <Button
                         type="button"
                         size="icon"
-                        className="size-9 rounded-full border border-white/15 bg-white/10 text-slate-100 hover:bg-white/20"
+                        className="size-9 rounded-full border border-theme-text/15 bg-theme-text/10 text-theme-text hover:bg-theme-text/20"
                         aria-label="Reject friend request"
                         disabled={busy}
                         onClick={() => onReject(request.id)}

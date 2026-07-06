@@ -116,7 +116,7 @@ export function CompanionAvatar({
             </svg>
 
             {showName ? (
-                <figcaption className="text-sm font-semibold text-pink-100">{name}</figcaption>
+                <figcaption className="text-sm font-semibold text-theme-love">{name}</figcaption>
             ) : null}
         </figure>
     );

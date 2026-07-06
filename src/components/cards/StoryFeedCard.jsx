@@ -41,9 +41,9 @@ function buildContextLine(story) {
 }
 
 const SOURCE_TYPE_COLORS = {
-    habit: 'text-purple-300',
-    challenge: 'text-orange-300',
-    milestone: 'text-yellow-300',
+    habit: 'text-theme-accent-soft',
+    challenge: 'text-theme-gold',
+    milestone: 'text-theme-gold',
 };
 
 function getLikerName(liker) {
@@ -247,19 +247,19 @@ export function StoryFeedCard({
                         />
                         <div className="min-w-0">
                             <CardTitle className="truncate">{displayName}</CardTitle>
-                            <p className={`mt-1 truncate text-sm ${SOURCE_TYPE_COLORS[story.sourceType] ?? 'text-slate-300'}`}>
+                            <p className={`mt-1 truncate text-sm ${SOURCE_TYPE_COLORS[story.sourceType] ?? 'text-theme-text-soft'}`}>
                                 {buildContextLine(story)}
                             </p>
                         </div>
                     </div>
 
                     <div className={`flex shrink-0 items-center gap-2 ${readOnlyComments ? 'pr-10' : ''}`}>
-                        {meta ? <span className="text-sm text-slate-400">{meta}</span> : null}
+                        {meta ? <span className="text-sm text-theme-text-muted">{meta}</span> : null}
                         {isOwn && onDelete && !readOnlyComments ? (
                             <button
                                 type="button"
                                 onClick={() => setIsConfirmingDelete(true)}
-                                className="flex size-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-red-500/10 hover:text-red-300"
+                                className="flex size-8 shrink-0 items-center justify-center rounded-full text-theme-text-muted transition hover:bg-theme-danger/10 hover:text-theme-danger"
                                 aria-label="Delete story"
                             >
                                 <Trash2 className="size-4" />
@@ -269,7 +269,7 @@ export function StoryFeedCard({
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className={fullImage ? 'flex justify-center overflow-hidden rounded-2xl bg-slate-900/40' : 'overflow-hidden rounded-2xl'}>
+                <div className={fullImage ? 'flex justify-center overflow-hidden rounded-2xl bg-theme-surface-2/40' : 'overflow-hidden rounded-2xl'}>
                     <img
                         src={cloudinaryUrl(story.imageUrl, { width: 1080 })}
                         alt={`Story by ${isOwn ? 'you' : authorName}`}
@@ -279,10 +279,10 @@ export function StoryFeedCard({
                 </div>
 
                 {story.caption ? (
-                    <p className={readOnlyComments ? 'text-sm font-semibold text-slate-100' : 'text-sm text-slate-200'}>{story.caption}</p>
+                    <p className={readOnlyComments ? 'text-sm font-semibold text-theme-text' : 'text-sm text-theme-text'}>{story.caption}</p>
                 ) : null}
 
-                {error && <p className="text-sm text-red-300">{error}</p>}
+                {error && <p className="text-sm text-theme-danger">{error}</p>}
 
                 {readOnlyComments ? (
                     <div className="mt-4 space-y-4">
@@ -291,18 +291,18 @@ export function StoryFeedCard({
                                 type="button"
                                 onClick={() => localStory.likeCount && setIsLikersOpen(true)}
                                 disabled={!localStory.likeCount}
-                                className="inline-flex items-center gap-1.5 font-semibold text-pink-300 transition enabled:hover:text-pink-200 disabled:cursor-default disabled:text-slate-500"
+                                className="inline-flex items-center gap-1.5 font-semibold text-theme-love transition enabled:hover:text-theme-love disabled:cursor-default disabled:text-theme-text-muted"
                             >
                                 <Heart className={`size-4 ${localStory.likeCount ? 'fill-current' : ''}`} />
                                 {localStory.likeCount}
                             </button>
-                            <span className="inline-flex items-center gap-1.5 font-medium text-slate-400">
+                            <span className="inline-flex items-center gap-1.5 font-medium text-theme-text-muted">
                                 <MessageCircle className="size-4" />
                                 {localStory.commentCount}
                             </span>
                         </div>
 
-                        <div className="border-t border-white/10 pt-4">
+                        <div className="border-t border-theme-text/10 pt-4">
                             <StoryCommentSection
                                 story={localStory}
                                 currentUserId={currentUserId}
@@ -319,11 +319,11 @@ export function StoryFeedCard({
                         </div>
 
                         {isOwn && onDelete ? (
-                            <div className="border-t border-white/10 pt-3">
+                            <div className="border-t border-theme-text/10 pt-3">
                                 <button
                                     type="button"
                                     onClick={() => setIsConfirmingDelete(true)}
-                                    className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition hover:text-red-300"
+                                    className="inline-flex items-center gap-1.5 text-sm font-medium text-theme-text-muted transition hover:text-theme-danger"
                                 >
                                     <Trash2 className="size-4" />
                                     Delete story
@@ -342,10 +342,10 @@ export function StoryFeedCard({
                                     type="button"
                                     onClick={() => setIsCommentsOpen(!isCommentsOpen)}
                                     className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition ${
-                                        isCommentsOpen || localStory.commentCount > 0 ? 'text-blue-400 hover:bg-blue-500/10' : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
+                                        isCommentsOpen || localStory.commentCount > 0 ? 'text-theme-accent hover:bg-theme-accent/10' : 'text-theme-text-muted hover:bg-theme-text/10 hover:text-theme-text'
                                     }`}
                                 >
-                                    <MessageCircle className={`size-4 ${isCommentsOpen || localStory.commentCount > 0 ? 'fill-blue-400/20' : ''}`} />
+                                    <MessageCircle className={`size-4 ${isCommentsOpen || localStory.commentCount > 0 ? 'fill-theme-accent/20' : ''}`} />
                                     {localStory.commentCount > 0 && <span>{localStory.commentCount}</span>}
                                 </button>
                             </div>
@@ -353,10 +353,10 @@ export function StoryFeedCard({
 
                         {/* Social Summary Text (Below Icons Row) */}
                         {(localStory.likeCount > 0 || localStory.commentCount > 0) ? (
-                            <div className="flex items-center text-sm text-slate-300">
+                            <div className="flex items-center text-sm text-theme-text-soft">
                                 <button
                                     type="button"
-                                    className={`min-w-0 truncate text-left transition ${localStory.likeCount ? 'hover:text-white' : 'cursor-default'}`}
+                                    className={`min-w-0 truncate text-left transition ${localStory.likeCount ? 'hover:text-theme-text' : 'cursor-default'}`}
                                     onClick={() => localStory.likeCount && onOpenLikes?.(localStory, visibleLikers)}
                                     disabled={!localStory.likeCount}
                                 >
@@ -392,13 +392,13 @@ export function StoryFeedCard({
 
             {isConfirmingDelete && (
                 <ConfirmationDialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
-                    <ConfirmationDialogContent className="bg-[#1e1b3a] border-0 text-white rounded-3xl p-8 sm:max-w-md flex flex-col items-center text-center shadow-2xl z-[100]">
-                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10 mb-2 border border-red-500/20">
-                            <Trash2 className="h-8 w-8 text-red-400" />
+                    <ConfirmationDialogContent className="bg-theme-surface border-0 text-theme-text rounded-3xl p-8 sm:max-w-md flex flex-col items-center text-center shadow-2xl z-[100]">
+                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-theme-danger/10 mb-2 border border-theme-danger/20">
+                            <Trash2 className="h-8 w-8 text-theme-danger" />
                         </div>
                         <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-4 text-center">
                             <ConfirmationDialogTitle className="text-2xl font-bold tracking-tight text-center">Delete this story?</ConfirmationDialogTitle>
-                            <ConfirmationDialogDescription className="text-base text-slate-300 text-center">
+                            <ConfirmationDialogDescription className="text-base text-theme-text-soft text-center">
                                 This will permanently remove your story post, likes, and comments. This can't be undone.
                             </ConfirmationDialogDescription>
                         </ConfirmationDialogHeader>
@@ -406,7 +406,7 @@ export function StoryFeedCard({
                             <AlertDialogPrimitive.Cancel asChild>
                                 <Button 
                                     variant="outline"
-                                    className="w-full h-14 rounded-full bg-[#2a2746] border border-slate-700/50 text-white hover:bg-[#343155] hover:text-white mt-0 text-lg font-semibold"
+                                    className="w-full h-14 rounded-full bg-theme-surface-2 border border-theme-text/10 text-theme-text hover:bg-theme-surface-2/80 hover:text-theme-text mt-0 text-lg font-semibold"
                                 >
                                     Keep it
                                 </Button>
@@ -427,7 +427,7 @@ export function StoryFeedCard({
 
             {readOnlyComments && (
                 <Dialog open={isLikersOpen} onOpenChange={setIsLikersOpen}>
-                    <DialogContent className="border-white/10 bg-[#24213d] text-white shadow-2xl sm:max-w-md">
+                    <DialogContent className="border-theme-text/10 bg-theme-surface text-theme-text shadow-2xl sm:max-w-md">
                         <DialogHeader>
                             <DialogTitle className="text-xl font-bold">Likes</DialogTitle>
                         </DialogHeader>
@@ -436,26 +436,26 @@ export function StoryFeedCard({
                                 visibleLikers.map((liker) => (
                                     <div
                                         key={liker.id || liker._id}
-                                        className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-2"
+                                        className="flex items-center gap-3 rounded-xl bg-theme-text/5 px-3 py-2"
                                     >
                                         <img
                                             src={liker.profilePictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'}
                                             alt=""
-                                            className="size-9 rounded-full bg-slate-800 object-cover"
+                                            className="size-9 rounded-full bg-theme-surface-2 object-cover"
                                         />
                                         <div className="min-w-0">
-                                            <p className="truncate font-semibold text-slate-100">
+                                            <p className="truncate font-semibold text-theme-text">
                                                 {liker.firstName || liker.username || 'someone'}
                                             </p>
                                             {liker.username ? (
-                                                <p className="truncate text-xs text-slate-400">@{liker.username}</p>
+                                                <p className="truncate text-xs text-theme-text-muted">@{liker.username}</p>
                                             ) : null}
                                         </div>
-                                        <Heart className="ml-auto size-4 fill-pink-400 text-pink-400" />
+                                        <Heart className="ml-auto size-4 fill-theme-love text-theme-love" />
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-sm text-slate-300">No likes yet</p>
+                                <p className="text-sm text-theme-text-soft">No likes yet</p>
                             )}
                         </div>
                     </DialogContent>

@@ -79,9 +79,9 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
     const bubble = phase === 'thinking' ? lines.thinking : phase === 'results' ? lines.results : lines.greeting;
 
     return (
-        <div className={cn('min-w-0 flex-1 rounded-2xl border border-purple-500/20 bg-[#1e1b3a]/70 p-4 text-white shadow-xl', className)}>
+        <div className={cn('min-w-0 flex-1 rounded-2xl border border-theme-accent/20 bg-theme-surface/70 p-4 text-theme-text shadow-xl', className)}>
             <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-sm font-semibold text-purple-100">
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-theme-accent-soft">
                     <Sparkles size={15} aria-hidden="true" />
                     {companionName}
                 </span>
@@ -89,39 +89,39 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                     type="button"
                     onClick={onClose}
                     aria-label="Close"
-                    className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+                    className="rounded-lg p-1 text-theme-text-muted transition-colors hover:bg-theme-text/10 hover:text-theme-text"
                 >
                     <X size={16} />
                 </button>
             </div>
 
-            <p className="mt-2 inline-block rounded-2xl bg-[#2d2b55]/70 px-3 py-2 text-sm text-purple-100">
+            <p className="mt-2 inline-block rounded-2xl bg-theme-surface-2/70 px-3 py-2 text-sm text-theme-accent-soft">
                 {bubble}
             </p>
 
             {error ? (
-                <p className="mt-2 rounded-xl border border-red-300/30 bg-red-500/10 px-3 py-2 text-xs text-red-100">
+                <p className="mt-2 rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-3 py-2 text-xs text-theme-danger">
                     {error}
                 </p>
             ) : null}
 
             {phase === 'results' ? (
                 <div className="mt-3 space-y-2">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-purple-300">Goal</p>
-                    <p className="rounded-xl border border-purple-500/20 bg-purple-500/10 px-3 py-2 text-sm font-semibold text-white">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-theme-accent-soft">Goal</p>
+                    <p className="rounded-xl border border-theme-accent/20 bg-theme-accent/10 px-3 py-2 text-sm font-semibold text-theme-text">
                         {goal}
                     </p>
 
-                    <p className="pt-1 text-[11px] font-medium uppercase tracking-wide text-purple-300">Suggested habits</p>
+                    <p className="pt-1 text-[11px] font-medium uppercase tracking-wide text-theme-accent-soft">Suggested habits</p>
                     {habits.map((habit) => (
                         <div
                             key={habit.key}
-                            className="flex items-center gap-2 rounded-xl border border-purple-500/20 bg-[#2d2b55]/50 p-2.5"
+                            className="flex items-center gap-2 rounded-xl border border-theme-accent/20 bg-theme-surface-2/50 p-2.5"
                         >
                             <span className="text-lg" aria-hidden="true">{habit.icon}</span>
                             <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium text-white">{habit.title}</p>
-                                <p className="text-xs text-purple-300">
+                                <p className="truncate text-sm font-medium text-theme-text">{habit.title}</p>
+                                <p className="text-xs text-theme-accent-soft">
                                     {habit.frequency}
                                     {habit.category ? ` · ${habit.category}` : ''}
                                 </p>
@@ -133,7 +133,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                                     () => setHabits((previous) => previous.filter((entry) => entry.key !== habit.key)),
                                 )}
                                 aria-label="Edit habit"
-                                className="rounded-lg p-1.5 text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+                                className="rounded-lg p-1.5 text-theme-text-soft transition-colors hover:bg-theme-text/10 hover:text-theme-text"
                             >
                                 <Pencil size={15} />
                             </button>
@@ -149,7 +149,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                         </div>
                     ))}
                     {habits.length === 0 ? (
-                        <p className="py-2 text-center text-xs text-purple-300">All set — ask for more ideas below.</p>
+                        <p className="py-2 text-center text-xs text-theme-accent-soft">All set — ask for more ideas below.</p>
                     ) : null}
                 </div>
             ) : null}
@@ -160,7 +160,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                     onChange={(event) => setInput(event.target.value)}
                     placeholder="Type a goal or a sentence…"
                     maxLength={200}
-                    className="min-w-0 flex-1 rounded-xl border border-purple-500/20 bg-[#2d2b55]/60 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-purple-500"
+                    className="min-w-0 flex-1 rounded-xl border border-theme-accent/20 bg-theme-surface-2/60 px-3 py-2 text-sm text-theme-text outline-none placeholder:text-theme-text-muted focus:border-theme-accent"
                 />
                 <button
                     type="submit"

@@ -74,7 +74,7 @@ export function VerifyEmailPage() {
             <nav className="relative z-20 flex items-center justify-between px-6 py-4 md:px-12 lg:px-20">
                 <Link
                     to="/"
-                    className="flex items-center gap-2 text-xl font-bold text-white transition-opacity hover:opacity-80"
+                    className="flex items-center gap-2 text-xl font-bold text-theme-text transition-opacity hover:opacity-80"
                 >
                     <img src={howlyIcon} alt="" className="size-8 object-contain" />
                     <span className="font-heading tracking-tight">Howly</span>
@@ -82,7 +82,7 @@ export function VerifyEmailPage() {
 
                 <Button
                     variant="ghost"
-                    className="text-slate-300 hover:text-white"
+                    className="text-theme-text-soft hover:text-theme-text"
                     asChild
                 >
                     <Link to="/login">Log in</Link>
@@ -93,7 +93,7 @@ export function VerifyEmailPage() {
                 <Card
                     className={cn(
                         appCardClassName,
-                        'w-full max-w-md border-slate-700/50 shadow-xl shadow-black/20',
+                        'w-full max-w-md border-theme-text/10 shadow-xl shadow-black/20',
                     )}
                 >
                     <CardContent className="p-8">
@@ -109,29 +109,29 @@ export function VerifyEmailPage() {
                                 Verify email
                             </p>
 
-                            <h1 className="text-3xl font-bold tracking-tight text-white">
+                            <h1 className="text-3xl font-bold tracking-tight text-theme-text">
                                 Confirm your account
                             </h1>
 
-                            <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                            <p className="mt-2 text-sm leading-relaxed text-theme-text-muted">
                                 We are checking your verification link.
                             </p>
                         </div>
 
                         {isVerifying && (
-                            <p className="rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-slate-300">
+                            <p className="rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text-soft">
                                 Verifying your email address...
                             </p>
                         )}
 
                         {message && (
-                            <p className="rounded-xl border border-green-400/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
+                            <p className="rounded-xl border border-theme-success/30 bg-theme-success/10 px-4 py-3 text-sm text-theme-success">
                                 {message}
                             </p>
                         )}
 
                         {error && (
-                            <p className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                            <p className="rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                                 {error}
                             </p>
                         )}
@@ -139,7 +139,7 @@ export function VerifyEmailPage() {
                         <div className="mt-6 flex justify-center">
                             <Button
                                 asChild
-                                className="h-12 rounded-full bg-howly-primary text-base font-semibold text-white shadow-lg shadow-howly-primary/25 transition-all hover:-translate-y-0.5 hover:opacity-90"
+                                className="h-12 rounded-full bg-howly-primary text-base font-semibold text-theme-text shadow-lg shadow-howly-primary/25 transition-all hover:-translate-y-0.5 hover:opacity-90"
                             >
                                 <Link to="/login">Go to login</Link>
                             </Button>

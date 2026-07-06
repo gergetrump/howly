@@ -113,21 +113,21 @@ export function PremiumUpgradeDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg rounded-2xl border-white/10 bg-[#1e1b3a] p-8 text-white shadow-2xl">
+            <DialogContent className="sm:max-w-lg rounded-2xl border-theme-text/10 bg-theme-surface p-8 text-theme-text shadow-2xl">
                 <DialogHeader className="items-center text-center">
                     <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-300 text-slate-950 shadow-lg shadow-amber-300/20">
                         <Crown className="size-7" aria-hidden="true" />
                     </div>
                     <DialogTitle className="text-2xl font-bold">Upgrade to Premium</DialogTitle>
-                    <DialogDescription className="text-base text-slate-300">
+                    <DialogDescription className="text-base text-theme-text-soft">
                         {message}
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="rounded-2xl border border-theme-text/10 bg-theme-text/5 p-4">
                     <ul className="space-y-3">
                         {premiumBenefits.map((benefit) => (
-                            <li key={benefit} className="flex items-start gap-3 text-sm text-slate-100">
+                            <li key={benefit} className="flex items-start gap-3 text-sm text-theme-text">
                                 <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-400 text-slate-950">
                                     <Check className="size-3.5" aria-hidden="true" />
                                 </span>
@@ -138,18 +138,18 @@ export function PremiumUpgradeDialog({
                 </div>
 
                 {checkoutError ? (
-                    <p className="rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                    <p className="rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                         {checkoutError}
                     </p>
                 ) : null}
 
-                <DialogFooter className="border-white/10 bg-white/5">
+                <DialogFooter className="border-theme-text/10 bg-theme-text/5">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                         disabled={isCheckingOut}
-                        className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+                        className="border-theme-text/20 bg-theme-text/10 text-theme-text hover:bg-theme-text/20"
                     >
                         Cancel
                     </Button>

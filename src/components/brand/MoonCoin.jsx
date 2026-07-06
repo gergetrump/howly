@@ -57,13 +57,13 @@ export function MoonCoin({ amount, compact = false, className }) {
     return (
         <span
             className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-sm font-bold text-yellow-400',
+                'inline-flex items-center gap-1.5 rounded-full border border-theme-gold/20 bg-theme-gold/10 px-3 py-1 text-sm font-bold text-theme-gold',
                 compact && 'px-2 py-0.5 text-xs',
                 className,
             )}
         >
             <MoonCoinIcon compact={compact} />
-            <span className="!text-yellow-400">{amount}</span>
+            <span className="!text-theme-gold">{amount}</span>
         </span>
     );
 }

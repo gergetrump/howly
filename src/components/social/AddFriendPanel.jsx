@@ -20,13 +20,13 @@ export function AddFriendPanel({
                 <Input
                     value={usernameQuery}
                     placeholder="Search username"
-                    className="border-white/20 bg-white/10 text-slate-50 placeholder:text-slate-300"
+                    className="border-theme-text/20 bg-theme-text/10 text-slate-50 placeholder:text-theme-text-soft"
                     disabled={isSearching}
                     onChange={(event) => onUsernameQueryChange(event.target.value)}
                 />
                 <Button
                     type="submit"
-                    className="bg-white text-slate-950 hover:bg-slate-200"
+                    className="bg-white text-slate-950 hover:bg-theme-invert/85"
                     disabled={isSearching}
                 >
                     <Send aria-hidden="true" />

@@ -7,6 +7,8 @@ import { CompanionAvatar } from '@/components/brand';
 import { ChangeCompanionDialog } from '@/components/habits/ChangeCompanionDialog';
 import { PremiumRequiredDialog } from '@/components/shop';
 import { getItemDisplayName, getItemEquipSlot, hasItemSideOptions, renderShopItemVisual } from '@/components/brand/items/itemRegistry';
+import { ThemeItemVisual } from '@/components/common/ThemeItemVisual.jsx';
+import { useTheme } from '@/context/themeContext';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -32,6 +34,17 @@ import { cn } from '@/lib/utils';
 const SINGLE_EQUIP_SLOTS = new Set(['body', 'face', 'head', 'neck']);
 const SIDEABLE_HEAD_ITEM_KEYS = new Set(['cute-hat', 'hairpin']);
 
+// The free default theme is always available to switch back to, even though
+// it is not a purchased inventory item.
+const DEFAULT_THEME_ITEM = {
+    userItemId: 'default-theme-forest-dark',
+    type: 'theme',
+    assetKey: 'theme-forest-dark',
+    name: 'Forest Dark',
+    price: 0,
+    premiumOnly: false,
+};
+
 function isSideableHeadItem(assetKey) {
     return SIDEABLE_HEAD_ITEM_KEYS.has(assetKey);
 }
@@ -52,6 +65,8 @@ export function InventoryPage() {
     const [error, setError] = useState('');
     const [companionMessage, setCompanionMessage] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
+    const { theme: activeTheme, setTheme } = useTheme();
+    const [pendingThemeId, setPendingThemeId] = useState(null);
     const [isChangeCompanionOpen, setIsChangeCompanionOpen] = useState(false);
     const [isCompanionPremiumPromptOpen, setIsCompanionPremiumPromptOpen] = useState(false);
     const isPremiumUser = user?.isPremium === true || user?.role === 'admin';
@@ -167,9 +182,17 @@ export function InventoryPage() {
     const savedItemSides = useMemo(() => getInventorySides(inventory), [getInventorySides, inventory]);
 
     const filteredItems = useMemo(
-        () => activeCategory === 'all'
-            ? ownedItems
-            : ownedItems.filter((item) => itemMatchesCategory(item, activeCategory)),
+        () => {
+            const base = activeCategory === 'all'
+                ? ownedItems
+                : ownedItems.filter((item) => itemMatchesCategory(item, activeCategory));
+
+            if (activeCategory === 'all' || activeCategory === 'theme') {
+                return [DEFAULT_THEME_ITEM, ...base];
+            }
+
+            return base;
+        },
         [activeCategory, ownedItems],
     );
     const boostDialogItem = useMemo(
@@ -293,6 +316,15 @@ export function InventoryPage() {
         }
     }
 
+    const isThemesTab = activeCategory === 'theme';
+    const selectedThemeId = pendingThemeId ?? activeTheme;
+
+    function handleSaveTheme() {
+        if (pendingThemeId && pendingThemeId !== activeTheme) {
+            setTheme(pendingThemeId);
+        }
+    }
+
     function handleSideChange(userItemId, side) {
         setError('');
         setCompanionMessage('');
@@ -341,7 +373,7 @@ export function InventoryPage() {
             <div className="flex items-center gap-1">
                 <button
                     type="button"
-                    className={`grid h-7 w-7 place-items-center rounded-md border transition ${selectedSide === 'left' ? 'border-violet-200 bg-violet-400/35 text-white' : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'}`}
+                    className={`grid h-7 w-7 place-items-center rounded-md border transition ${selectedSide === 'left' ? 'border-theme-accent/40 bg-theme-accent/25 text-theme-text' : 'border-theme-text/10 bg-theme-text/5 text-theme-text hover:bg-theme-text/10'}`}
                     aria-label={`Move ${getItemDisplayName(item)} to the left side`}
                     aria-pressed={selectedSide === 'left'}
                     disabled={isSavingOutfit}
@@ -351,7 +383,7 @@ export function InventoryPage() {
                 </button>
                 <button
                     type="button"
-                    className={`grid h-7 w-7 place-items-center rounded-md border transition ${selectedSide === 'right' ? 'border-violet-200 bg-violet-400/35 text-white' : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'}`}
+                    className={`grid h-7 w-7 place-items-center rounded-md border transition ${selectedSide === 'right' ? 'border-theme-accent/40 bg-theme-accent/25 text-theme-text' : 'border-theme-text/10 bg-theme-text/5 text-theme-text hover:bg-theme-text/10'}`}
                     aria-label={`Move ${getItemDisplayName(item)} to the right side`}
                     aria-pressed={selectedSide === 'right'}
                     disabled={isSavingOutfit}
@@ -366,7 +398,7 @@ export function InventoryPage() {
     function renderShopEmptyState() {
         return (
             <div className="flex min-h-48 flex-col items-center justify-center gap-4 text-center">
-                <p className="text-sm font-medium text-slate-200">Try on some items at the Shop!</p>
+                <p className="text-sm font-medium text-theme-text">Try on some items at the Shop!</p>
                 <ActionButton
                     type="button"
                     className="bg-violet-500 px-5 text-white hover:bg-violet-400"
@@ -464,14 +496,14 @@ export function InventoryPage() {
                         equippedItemConfigs={equippedItemConfigs}
                     />
                     {companionMessage ? (
-                        <div className="absolute left-1/2 top-8 ml-28 max-w-64 rounded-2xl bg-white/10 px-4 py-3 text-left text-sm font-semibold text-white shadow-xl shadow-slate-950/30 ring-1 ring-white/15 before:absolute before:left-[-12px] before:top-1/2 before:h-0 before:w-0 before:-translate-y-1/2 before:border-y-[10px] before:border-r-[12px] before:border-y-transparent before:border-r-white/10">
+                        <div className="absolute left-1/2 top-8 ml-28 max-w-64 rounded-2xl bg-theme-text/10 px-4 py-3 text-left text-sm font-semibold text-theme-text shadow-xl shadow-slate-950/30 ring-1 ring-white/15 before:absolute before:left-[-12px] before:top-1/2 before:h-0 before:w-0 before:-translate-y-1/2 before:border-y-[10px] before:border-r-[12px] before:border-y-transparent before:border-r-white/10">
                             {companionMessage}
                         </div>
                     ) : null}
                     <div className="flex flex-wrap items-center justify-center gap-2">
                         <ActionButton
                             type="button"
-                            className="h-9 bg-white/10 px-4 text-sm text-white hover:bg-white/20 disabled:text-slate-500"
+                            className="h-9 bg-theme-text/10 px-4 text-sm text-theme-text hover:bg-theme-text/20 disabled:text-theme-text-muted"
                             disabled={draftEquippedItemIds.size === 0 || isSavingOutfit}
                             onClick={() => {
                                 setError('');
@@ -495,15 +527,15 @@ export function InventoryPage() {
                 </section>
 
                 <div className="min-w-0 space-y-3">
-                    <h2 className="text-xl font-semibold text-white">Owned Items</h2>
+                    <h2 className="text-xl font-semibold text-theme-text">Owned Items</h2>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-                            <TabsList className="h-auto flex-wrap border border-white/10 bg-white/10 p-1 text-slate-300">
+                            <TabsList className="h-auto flex-wrap border border-theme-text/10 bg-theme-surface p-1 text-theme-text-soft">
                                 {ITEM_CATEGORIES.map((category) => (
                                     <TabsTrigger
                                         key={category.value}
                                         value={category.value}
-                                        className="px-3 py-1.5 text-slate-300 data-active:bg-white data-active:text-slate-950"
+                                        className="px-3 py-1.5 !text-theme-text-soft data-active:!bg-theme-invert data-active:!text-theme-invert-text"
                                     >
                                         {category.label}
                                     </TabsTrigger>
@@ -513,11 +545,13 @@ export function InventoryPage() {
 
                         <ActionButton
                             type="button"
-                            className="bg-violet-500 px-5 text-white hover:bg-violet-400 disabled:bg-white/10 disabled:text-slate-400"
-                            disabled={!hasUnsavedOutfitChanges || isSavingOutfit}
-                            onClick={handleSaveOutfit}
+                            className="bg-violet-500 px-5 text-white hover:bg-violet-400 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
+                            disabled={isThemesTab
+                                ? (!pendingThemeId || pendingThemeId === activeTheme)
+                                : (!hasUnsavedOutfitChanges || isSavingOutfit)}
+                            onClick={isThemesTab ? handleSaveTheme : handleSaveOutfit}
                         >
-                            {isSavingOutfit ? 'Saving...' : 'Save Outfit'}
+                            {isThemesTab ? 'Save theme' : (isSavingOutfit ? 'Saving...' : 'Save Outfit')}
                         </ActionButton>
                     </div>
                 </div>
@@ -525,19 +559,15 @@ export function InventoryPage() {
 
             <PageSection className="min-w-0">
                 <div className="max-h-[31rem] overflow-y-auto pr-2 [scrollbar-gutter:stable]">
-                    {error ? <p className="text-sm text-red-300">{error}</p> : null}
+                    {error ? <p className="text-sm text-theme-danger">{error}</p> : null}
 
                     {isLoading ? (
                         <div className="flex min-h-48 items-center justify-center text-center">
-                            <p className="text-sm text-slate-300">Loading your inventory...</p>
+                            <p className="text-sm text-theme-text-soft">Loading your inventory...</p>
                         </div>
                     ) : null}
 
-                    {!isLoading && !error && ownedItems.length === 0 ? (
-                        renderShopEmptyState()
-                    ) : null}
-
-                    {!isLoading && !error && ownedItems.length > 0 && filteredItems.length === 0 ? (
+                    {!isLoading && !error && filteredItems.length === 0 ? (
                         renderShopEmptyState()
                     ) : null}
 
@@ -549,22 +579,28 @@ export function InventoryPage() {
                                     name={getItemDisplayName(item)}
                                     price={item.price}
                                     premiumOnly={item.premiumOnly}
-                                    equipped={item.equipped}
+                                    equipped={item.type === 'theme'
+                                        ? item.assetKey?.replace(/^theme-/, '') === selectedThemeId
+                                        : item.equipped}
                                     showPrice={false}
                                     dense
                                     interactive={item.type !== 'powerUp'}
                                     disabled={isSavingOutfit}
                                     cornerBadge={item.type === 'powerUp' ? (
-                                        <span className="rounded-full border border-white/10 bg-white/10 px-2 py-1 text-[10px] font-bold text-white">
+                                        <span className="rounded-full border border-theme-text/10 bg-theme-surface px-2 py-1 text-[10px] font-bold text-theme-text">
                                             x{item.quantity}
                                         </span>
                                     ) : null}
-                                    visual={renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', item.customization)}
-                                    onClick={() => handleToggleEquipped(item)}
+                                    visual={item.type === 'theme'
+                                        ? <ThemeItemVisual item={item} />
+                                        : renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', item.customization)}
+                                    onClick={item.type === 'theme'
+                                        ? () => setPendingThemeId(item.assetKey?.replace(/^theme-/, ''))
+                                        : () => handleToggleEquipped(item)}
                                 >
                                     {item.type === 'powerUp' ? (
                                         renderBoostControls(item)
-                                    ) : (
+                                    ) : item.type === 'theme' ? null : (
                                         <div className="col-span-2 flex min-h-8 justify-end">
                                             {renderSideControls(item)}
                                         </div>
@@ -597,24 +633,24 @@ export function InventoryPage() {
                 }
             }}
         >
-            <DialogContent className="rounded-2xl border-0 bg-[#1e1b3a] p-8 text-white shadow-2xl sm:max-w-md">
-                <h2 className="mb-2 text-center text-2xl font-bold tracking-tight text-white">
+            <DialogContent className="rounded-2xl border-0 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
+                <h2 className="mb-2 text-center text-2xl font-bold tracking-tight text-theme-text">
                     Apply boost
                 </h2>
-                <p className="mb-6 text-center text-sm text-slate-300">
+                <p className="mb-6 text-center text-sm text-theme-text-soft">
                     Choose a habit for {boostDialogItem ? getItemDisplayName(boostDialogItem) : 'this boost'}
                 </p>
 
                 <div className="mb-6 flex gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-left">
                     <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400" />
-                    <p className="text-xs leading-relaxed text-amber-100/90">
+                    <p className="text-xs leading-relaxed text-theme-gold/90">
                         If the selected habit is deleted later on, the boost cannot be further used.
                     </p>
                 </div>
 
                 <div 
                     className={cn(
-                        "mb-4 rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm text-red-100 transition-opacity duration-200",
+                        "mb-4 rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger transition-opacity duration-200",
                         boostDialogError ? "opacity-100" : "opacity-0 pointer-events-none select-none"
                     )}
                     aria-hidden={!boostDialogError}
@@ -623,7 +659,7 @@ export function InventoryPage() {
                 </div>
 
                 <div className="space-y-2.5">
-                    <Label className="text-sm font-medium text-white">Habit</Label>
+                    <Label className="text-sm font-medium text-theme-text">Habit</Label>
                     <Select
                         value={boostDialogHabitId}
                         onValueChange={(nextHabitId) => {
@@ -632,15 +668,15 @@ export function InventoryPage() {
                         }}
                         disabled={usingBoostItemId === boostDialogItem?.userItemId}
                     >
-                        <SelectTrigger className="!h-12 w-full rounded-2xl border-purple-500/20 bg-[#2d2b55]/60 text-white focus:ring-purple-500/20 [&>svg]:text-white [&>svg]:opacity-50">
+                        <SelectTrigger className="!h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:ring-theme-accent/20 [&>svg]:text-theme-text [&>svg]:opacity-50">
                             <SelectValue placeholder="Choose a habit" />
                         </SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4} className="z-[100] max-h-60 w-[var(--radix-select-trigger-width)] rounded-xl border-purple-500/20 bg-[#1e1b3a]">
+                        <SelectContent position="popper" sideOffset={4} className="z-[100] max-h-60 w-[var(--radix-select-trigger-width)] rounded-xl border-theme-accent/20 bg-theme-surface">
                             {habits.map((habit) => (
                                 <SelectItem
                                     key={habit.id}
                                     value={habit.id}
-                                    className="cursor-pointer text-white focus:!bg-purple-600/40 focus:!text-white data-[state=checked]:text-white [&_*]:!text-white"
+                                    className="cursor-pointer text-theme-text focus:!bg-theme-accent/40 focus:!text-theme-text data-[state=checked]:text-theme-text [&_*]:!text-theme-text"
                                 >
                                     {habit.title}
                                 </SelectItem>
