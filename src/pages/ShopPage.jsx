@@ -885,6 +885,14 @@ export function ShopPage() {
                         previewItemKeys={previewItemKeys}
                         previewItemConfigs={previewItemConfigs}
                     />
+                    <ActionButton
+                        type="button"
+                        className="h-9 bg-theme-text/10 px-4 text-sm text-theme-text hover:bg-theme-text/20 disabled:text-theme-text-muted"
+                        disabled={previewItems.length === 0}
+                        onClick={clearPreviewItems}
+                    >
+                        Unequip all
+                    </ActionButton>
                 </section>
 
                 <PageSection title="Shop Items" className="min-w-0">
@@ -906,11 +914,12 @@ export function ShopPage() {
                         <div className="flex flex-wrap items-center justify-end gap-2">
                             <ActionButton
                                 type="button"
-                                className="h-9 bg-theme-text/10 px-4 text-sm text-theme-text hover:bg-theme-text/20 disabled:text-theme-text-muted"
-                                disabled={previewItems.length === 0}
-                                onClick={clearPreviewItems}
+                                className={`gap-2 px-4 ${cartItems.length === 0 ? 'bg-theme-text/10 text-theme-text-muted hover:bg-theme-text/15' : 'bg-violet-500 text-white hover:bg-violet-400'}`}
+                                onClick={() => setIsCartOpen(true)}
                             >
-                                Unequip all
+                                <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+                                Cart
+                                <span className="rounded-full bg-theme-text/20 px-2 py-0.5 text-xs">{cartItemCount}</span>
                             </ActionButton>
                         </div>
                     </div>
@@ -980,17 +989,6 @@ export function ShopPage() {
                         onPremiumRequired={handlePremiumRequired}
                     />
 
-                    <div className="mt-4 flex justify-end">
-                        <ActionButton
-                            type="button"
-                            className={`gap-2 px-4 ${cartItems.length === 0 ? 'bg-theme-text/10 text-theme-text-muted hover:bg-theme-text/15' : 'bg-violet-500 text-white hover:bg-violet-400'}`}
-                            onClick={() => setIsCartOpen(true)}
-                        >
-                            <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-                            Cart
-                            <span className="rounded-full bg-theme-text/20 px-2 py-0.5 text-xs">{cartItemCount}</span>
-                        </ActionButton>
-                    </div>
                 </PageSection>
 
                 <ShopCustomizationPanel

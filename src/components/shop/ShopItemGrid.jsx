@@ -41,9 +41,9 @@ export function ShopItemGrid({
 
     return (
         <div className="relative rounded-2xl border border-theme-text/10 bg-theme-text/5 p-3 shadow-xl shadow-slate-950/20">
-            <div className="h-[34rem] max-h-[34rem] overflow-y-scroll pr-2 [scrollbar-gutter:stable]">
+            <div>
                 {!isLoading && !error && items.length > 0 && filteredItems.length === 0 && !leadingCard ? (
-                    <div className="flex h-full items-center justify-center text-center">
+                    <div className="flex min-h-48 items-center justify-center text-center">
                         <p className="text-sm text-theme-text-soft">No items in this category yet</p>
                     </div>
                 ) : null}
@@ -106,7 +106,6 @@ export function ShopItemGrid({
                     </CardGrid>
                 ) : null}
             </div>
-            <div className="pointer-events-none absolute inset-x-3 bottom-3 h-10 rounded-b-xl bg-gradient-to-t from-howly-card to-transparent" />
         </div>
     );
 }

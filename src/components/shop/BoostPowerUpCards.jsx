@@ -105,7 +105,6 @@ export function BoostPowerUpCards({
                 price={item.price}
                 premiumOnly={item.premiumOnly}
                 showOwnedBadge={false}
-                reserveBadgeSpace
                 dense
                 titleAction={(
                     <div className="flex items-center gap-1.5">
