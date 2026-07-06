@@ -12,4 +12,4 @@ export const STARTER_HABITS = [
     { id: 'journal', title: 'Journal', icon: '✍️', frequency: 'Daily' },
 ];
 
-export const FREE_TIER_HABIT_LIMIT = 2;
+export const FREE_TIER_HABIT_LIMIT = STARTER_HABITS.length;
