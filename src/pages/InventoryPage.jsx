@@ -332,11 +332,22 @@ export function InventoryPage() {
     }
 
     const isThemesTab = activeCategory === 'theme';
+    const isAllTab = activeCategory === 'all';
     const selectedThemeId = pendingThemeId ?? activeTheme;
+    const hasPendingTheme = Boolean(pendingThemeId) && pendingThemeId !== activeTheme;
 
     function handleSaveTheme() {
-        if (pendingThemeId && pendingThemeId !== activeTheme) {
+        if (hasPendingTheme) {
             setTheme(pendingThemeId);
+        }
+    }
+
+    async function handleSaveAll() {
+        if (hasPendingTheme) {
+            setTheme(pendingThemeId);
+        }
+        if (hasUnsavedOutfitChanges && !isSavingOutfit) {
+            await handleSaveOutfit();
         }
     }
 
@@ -562,11 +573,13 @@ export function InventoryPage() {
                             type="button"
                             className="bg-violet-500 px-5 text-white hover:bg-violet-400 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                             disabled={isThemesTab
-                                ? (!pendingThemeId || pendingThemeId === activeTheme)
-                                : (!hasUnsavedOutfitChanges || isSavingOutfit)}
-                            onClick={isThemesTab ? handleSaveTheme : handleSaveOutfit}
+                                ? !hasPendingTheme
+                                : isAllTab
+                                    ? (isSavingOutfit || (!hasPendingTheme && !hasUnsavedOutfitChanges))
+                                    : (!hasUnsavedOutfitChanges || isSavingOutfit)}
+                            onClick={isThemesTab ? handleSaveTheme : isAllTab ? handleSaveAll : handleSaveOutfit}
                         >
-                            {isThemesTab ? 'Save theme' : (isSavingOutfit ? 'Saving...' : 'Save Outfit')}
+                            {isThemesTab ? 'Save Theme' : isSavingOutfit ? 'Saving...' : isAllTab ? 'Save Theme' : 'Save Outfit'}
                         </ActionButton>
                     </div>
                 </div>
