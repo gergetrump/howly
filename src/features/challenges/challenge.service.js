@@ -14,6 +14,13 @@ import {
     scheduleTaxonomyForHabit,
 } from '../taxonomy/taxonomy.service.js';
 import { createNotification } from '../notifications/notification.service.js';
+import {
+    buildRecommendationReason,
+    buildUserHabitProfile,
+    loadRecommendationLabels,
+    resolveDefaultChallengeSort,
+    sortChallengesByRecommendation,
+} from './challengeRecommendation.service.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const COINS_PER_CHALLENGE_DAY = 5;
@@ -342,7 +349,7 @@ function hasStartLockedUpdates(updates) {
     return START_LOCKED_UPDATE_FIELDS.some((field) => updates[field] !== undefined);
 }
 
-function serializeChallenge(challenge, participantCount = 0, viewerParticipant = null) {
+function serializeChallenge(challenge, participantCount = 0, viewerParticipant = null, extras = {}) {
     if (!challenge) {
         return null;
     }
@@ -371,6 +378,9 @@ function serializeChallenge(challenge, participantCount = 0, viewerParticipant =
         viewerParticipantPendingRewardCoins: viewerParticipant
             ? getRewardCoins(challenge, viewerParticipant)
             : 0,
+        ...(extras.recommendationReason
+            ? { recommendationReason: extras.recommendationReason }
+            : {}),
         createdAt: challenge.createdAt,
         updatedAt: challenge.updatedAt,
     };
@@ -602,6 +612,7 @@ export async function listChallenges(filters = {}, user) {
     }
 
     const query = conditions.length ? { $and: conditions } : {};
+    const sortMode = resolveDefaultChallengeSort(filters);
     const challenges = await Challenge.find(query).sort({ createdAt: -1 });
     const challengeIds = challenges.map((challenge) => challenge._id);
     const [participantCounts, viewerParticipations, visibilityFriendIds, blockedRelationshipIds] = await Promise.all([
@@ -618,6 +629,33 @@ export async function listChallenges(filters = {}, user) {
             viewerParticipant: viewerParticipations.get(challenge._id.toString()),
         })
     ));
+
+    if (sortMode === 'recommended') {
+        const profile = await buildUserHabitProfile(user.id);
+        const sortedChallenges = sortChallengesByRecommendation(
+            visibleChallenges,
+            profile,
+            participantCounts,
+            viewerParticipations,
+        );
+        const labelKeys = sortedChallenges.flatMap((challenge) => [
+            challenge.taxonomy?.canonicalHabitKey,
+            challenge.taxonomy?.categoryKey,
+            challenge.taxonomy?.subcategoryKey,
+        ]);
+        const labels = await loadRecommendationLabels(labelKeys);
+
+        return sortedChallenges.map((challenge) => (
+            serializeChallenge(
+                challenge,
+                participantCounts.get(challenge._id.toString()) ?? 0,
+                viewerParticipations.get(challenge._id.toString()),
+                {
+                    recommendationReason: buildRecommendationReason(challenge, profile, labels),
+                },
+            )
+        ));
+    }
 
     return visibleChallenges.map((challenge) => (
         serializeChallenge(

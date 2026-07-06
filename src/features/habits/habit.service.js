@@ -20,6 +20,12 @@ import {
     scheduleTaxonomyForHabit,
 } from '../taxonomy/taxonomy.service.js';
 
+const ACTIVE_HABIT_FILTER = { deletedAt: null };
+
+function withActiveHabitFilter(query) {
+    return { ...query, ...ACTIVE_HABIT_FILTER };
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────
 
 /**
@@ -227,10 +233,10 @@ async function assertCanCreateHabits(userId, requestedHabitCount = 1) {
     }
 
     const plan = getPlanForUser(user);
-    const currentHabitCount = await Habit.countDocuments({
+    const currentHabitCount = await Habit.countDocuments(withActiveHabitFilter({
         ownerId: userId,
         source: { $ne: 'challenge' },
-    });
+    }));
     const nextHabitCount = currentHabitCount + requestedHabitCount;
 
     if (nextHabitCount <= plan.limits.maxHabits) {
@@ -254,11 +260,11 @@ export async function getHabitsForUser(userId, { page = 1, limit = 20 } = {}) {
     const skip = (page - 1) * limit;
 
     const [habits, total] = await Promise.all([
-        Habit.find({ ownerId: userId, source: { $ne: 'challenge' } })
+        Habit.find(withActiveHabitFilter({ ownerId: userId, source: { $ne: 'challenge' } }))
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit),
-        Habit.countDocuments({ ownerId: userId, source: { $ne: 'challenge' } }),
+        Habit.countDocuments(withActiveHabitFilter({ ownerId: userId, source: { $ne: 'challenge' } })),
     ]);
 
     const dtos = habits.map(toHabitDto);
@@ -279,7 +285,7 @@ export async function getHabitsForUser(userId, { page = 1, limit = 20 } = {}) {
  * Get a single habit by ID.
  */
 export async function getHabitById(habitId, userId) {
-    const habit = await Habit.findOne({ _id: habitId, ownerId: userId });
+    const habit = await Habit.findOne(withActiveHabitFilter({ _id: habitId, ownerId: userId }));
 
     if (!habit) {
         throw ApiError.notFound('Habit not found.');
@@ -339,7 +345,7 @@ export async function createHabitsFromTemplates(userId, templates) {
  * Partially update a habit. Enforces ownership.
  */
 export async function updateHabit(habitId, userId, data) {
-    const habit = await Habit.findOne({ _id: habitId, ownerId: userId });
+    const habit = await Habit.findOne(withActiveHabitFilter({ _id: habitId, ownerId: userId }));
 
     if (!habit) {
         throw ApiError.notFound('Habit not found.');
@@ -371,7 +377,11 @@ export async function updateHabit(habitId, userId, data) {
  * Delete a habit. Enforces ownership.
  */
 export async function deleteHabit(habitId, userId) {
-    const habit = await Habit.findOneAndDelete({ _id: habitId, ownerId: userId });
+    const habit = await Habit.findOneAndUpdate(
+        withActiveHabitFilter({ _id: habitId, ownerId: userId }),
+        { $set: { deletedAt: new Date() } },
+        { returnDocument: 'after' },
+    );
 
     if (!habit) {
         throw ApiError.notFound('Habit not found.');
@@ -385,7 +395,7 @@ export async function deleteHabit(habitId, userId) {
  * Handles streak calculation based on the habit's frequency.
  */
 export async function completeHabit(habitId, userId) {
-    const habit = await Habit.findOne({ _id: habitId, ownerId: userId });
+    const habit = await Habit.findOne(withActiveHabitFilter({ _id: habitId, ownerId: userId }));
 
     if (!habit) {
         throw ApiError.notFound('Habit not found.');
@@ -450,7 +460,7 @@ export async function completeHabit(habitId, userId) {
  * Reverts the streak count and lastCompletedAt.
  */
 export async function uncompleteHabit(habitId, userId) {
-    const habit = await Habit.findOne({ _id: habitId, ownerId: userId });
+    const habit = await Habit.findOne(withActiveHabitFilter({ _id: habitId, ownerId: userId }));
 
     if (!habit) {
         throw ApiError.notFound('Habit not found.');
@@ -509,7 +519,7 @@ async function creditOverallStreak(userId) {
     }
 
     // Challenge habits are excluded
-    const habits = await Habit.find({ ownerId: userId, source: { $ne: 'challenge' } })
+    const habits = await Habit.find(withActiveHabitFilter({ ownerId: userId, source: { $ne: 'challenge' } }))
         .select('frequency lastCompletedAt customDays');
     const dueToday = habits.filter(isDueToday);
 

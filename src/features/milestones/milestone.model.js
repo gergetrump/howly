@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 const MILESTONE_INTERVAL_DAYS = 10;
-const MILESTONE_VISIBLE_HOURS = 7 * 24;
+const MILESTONE_VISIBLE_HOURS = 30 * 24;
 
 const milestonePostSchema = new Schema(
   {

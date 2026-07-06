@@ -8,7 +8,9 @@
     "dev": "node src/server.js",
     "test": "node --test",
     "seed:taxonomy": "node scripts/seed-taxonomy.js",
-    "backfill:taxonomy": "node scripts/backfill-taxonomy.js"
+    "backfill:taxonomy": "node scripts/backfill-taxonomy.js",
+    "seed:demo-users": "node scripts/seed-demo-users.js",
+    "clean:demo-users": "node scripts/clean-demo-users.js"
   },
   "repository": {
     "type": "git",

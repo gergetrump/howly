@@ -1,0 +1,3945 @@
+{
+"version": 1,
+"categories": [
+{
+"key": "movement",
+"label": "Movement",
+"description": "Physical activity, exercise, mobility, and active routines.",
+"sortOrder": 10,
+"status": "active"
+},
+{
+"key": "nutrition",
+"label": "Nutrition",
+"description": "Eating and drinking habits that support everyday wellbeing.",
+"sortOrder": 20,
+"status": "active"
+},
+{
+"key": "sleep",
+"label": "Sleep",
+"description": "Sleep preparation, sleep timing, rest, and recovery routines.",
+"sortOrder": 30,
+"status": "active"
+},
+{
+"key": "mindfulness",
+"label": "Mindfulness",
+"description": "Mental calm, reflection, gratitude, and awareness practices.",
+"sortOrder": 40,
+"status": "active"
+},
+{
+"key": "productivity",
+"label": "Productivity",
+"description": "Planning, focus, organization, and execution habits.",
+"sortOrder": 50,
+"status": "active"
+},
+{
+"key": "learning",
+"label": "Learning",
+"description": "Reading, studying, skill building, and knowledge growth.",
+"sortOrder": 60,
+"status": "active"
+},
+{
+"key": "health",
+"label": "Health",
+"description": "General preventive wellbeing habits that do not require medical advice.",
+"sortOrder": 70,
+"status": "active"
+},
+{
+"key": "personal-care",
+"label": "Personal Care",
+"description": "Daily hygiene, grooming, and self-maintenance routines.",
+"sortOrder": 80,
+"status": "active"
+},
+{
+"key": "social",
+"label": "Social",
+"description": "Relationships, communication, community, and connection habits.",
+"sortOrder": 90,
+"status": "active"
+},
+{
+"key": "home",
+"label": "Home",
+"description": "Household cleaning, tidying, chores, and home maintenance.",
+"sortOrder": 100,
+"status": "active"
+},
+{
+"key": "finance",
+"label": "Finance",
+"description": "Budgeting, saving, spending awareness, and financial admin.",
+"sortOrder": 110,
+"status": "active"
+},
+{
+"key": "creativity",
+"label": "Creativity",
+"description": "Creative expression, practice, making, and artistic routines.",
+"sortOrder": 120,
+"status": "active"
+},
+{
+"key": "digital-wellbeing",
+"label": "Digital Wellbeing",
+"description": "Screen time, phone use, social media, and digital clutter habits.",
+"sortOrder": 130,
+"status": "active"
+},
+{
+"key": "outdoors",
+"label": "Outdoors",
+"description": "Nature, fresh air, sunlight, and environmentally aware routines.",
+"sortOrder": 140,
+"status": "active"
+}
+],
+"subcategories": [
+{
+"key": "cardio",
+"label": "Cardio",
+"categoryKey": "movement",
+"description": "Heart-rate-focused activities and endurance movement.",
+"sortOrder": 10,
+"status": "active"
+},
+{
+"key": "strength",
+"label": "Strength",
+"categoryKey": "movement",
+"description": "Resistance training and muscle-building routines.",
+"sortOrder": 20,
+"status": "active"
+},
+{
+"key": "mobility",
+"label": "Mobility",
+"categoryKey": "movement",
+"description": "Stretching, flexibility, balance, and joint-friendly movement.",
+"sortOrder": 30,
+"status": "active"
+},
+{
+"key": "active-transport",
+"label": "Active Transport",
+"categoryKey": "movement",
+"description": "Movement built into commuting and daily travel.",
+"sortOrder": 40,
+"status": "active"
+},
+{
+"key": "hydration",
+"label": "Hydration",
+"categoryKey": "nutrition",
+"description": "Water and healthy drinking routines.",
+"sortOrder": 50,
+"status": "active"
+},
+{
+"key": "meals",
+"label": "Meals",
+"categoryKey": "nutrition",
+"description": "Regular meal preparation and meal consistency.",
+"sortOrder": 60,
+"status": "active"
+},
+{
+"key": "fruits-vegetables",
+"label": "Fruits & Vegetables",
+"categoryKey": "nutrition",
+"description": "Eating more produce and balanced plant foods.",
+"sortOrder": 70,
+"status": "active"
+},
+{
+"key": "mindful-eating",
+"label": "Mindful Eating",
+"categoryKey": "nutrition",
+"description": "Awareness, moderation, and intentional eating routines.",
+"sortOrder": 80,
+"status": "active"
+},
+{
+"key": "sleep-routine",
+"label": "Sleep Routine",
+"categoryKey": "sleep",
+"description": "Wind-down actions that prepare the body for sleep.",
+"sortOrder": 90,
+"status": "active"
+},
+{
+"key": "sleep-schedule",
+"label": "Sleep Schedule",
+"categoryKey": "sleep",
+"description": "Consistent bedtimes, wake times, and sleep timing.",
+"sortOrder": 100,
+"status": "active"
+},
+{
+"key": "sleep-environment",
+"label": "Sleep Environment",
+"categoryKey": "sleep",
+"description": "Bedroom setup habits that support better rest.",
+"sortOrder": 110,
+"status": "active"
+},
+{
+"key": "rest-recovery",
+"label": "Rest & Recovery",
+"categoryKey": "sleep",
+"description": "Short rest, naps, relaxation, and recovery routines.",
+"sortOrder": 120,
+"status": "active"
+},
+{
+"key": "meditation",
+"label": "Meditation",
+"categoryKey": "mindfulness",
+"description": "Formal meditation and present-moment awareness practices.",
+"sortOrder": 130,
+"status": "active"
+},
+{
+"key": "breathing",
+"label": "Breathing",
+"categoryKey": "mindfulness",
+"description": "Calming breathwork and breathing awareness routines.",
+"sortOrder": 140,
+"status": "active"
+},
+{
+"key": "journaling",
+"label": "Journaling",
+"categoryKey": "mindfulness",
+"description": "Written reflection, mood check-ins, and self-awareness.",
+"sortOrder": 150,
+"status": "active"
+},
+{
+"key": "gratitude",
+"label": "Gratitude",
+"categoryKey": "mindfulness",
+"description": "Noticing positive moments and appreciation.",
+"sortOrder": 160,
+"status": "active"
+},
+{
+"key": "planning",
+"label": "Planning",
+"categoryKey": "productivity",
+"description": "Planning days, weeks, tasks, and priorities.",
+"sortOrder": 170,
+"status": "active"
+},
+{
+"key": "focus",
+"label": "Focus",
+"categoryKey": "productivity",
+"description": "Deep work, distraction reduction, and sustained attention.",
+"sortOrder": 180,
+"status": "active"
+},
+{
+"key": "organization",
+"label": "Organization",
+"categoryKey": "productivity",
+"description": "Keeping tasks, notes, files, and spaces organized.",
+"sortOrder": 190,
+"status": "active"
+},
+{
+"key": "goals",
+"label": "Goals",
+"categoryKey": "productivity",
+"description": "Goal review, progress tracking, and accountability.",
+"sortOrder": 200,
+"status": "active"
+},
+{
+"key": "reading",
+"label": "Reading",
+"categoryKey": "learning",
+"description": "Reading books, articles, and long-form material.",
+"sortOrder": 210,
+"status": "active"
+},
+{
+"key": "language-learning",
+"label": "Language Learning",
+"categoryKey": "learning",
+"description": "Practicing vocabulary, grammar, listening, and speaking.",
+"sortOrder": 220,
+"status": "active"
+},
+{
+"key": "academic-study",
+"label": "Academic Study",
+"categoryKey": "learning",
+"description": "Coursework, exam preparation, and structured studying.",
+"sortOrder": 230,
+"status": "active"
+},
+{
+"key": "skill-practice",
+"label": "Skill Practice",
+"categoryKey": "learning",
+"description": "Deliberate practice for practical and professional skills.",
+"sortOrder": 240,
+"status": "active"
+},
+{
+"key": "preventive-health",
+"label": "Preventive Health",
+"categoryKey": "health",
+"description": "General preventive routines and safe health admin.",
+"sortOrder": 250,
+"status": "active"
+},
+{
+"key": "body-care",
+"label": "Body Care",
+"categoryKey": "health",
+"description": "Gentle care for the body, posture, eyes, and movement breaks.",
+"sortOrder": 260,
+"status": "active"
+},
+{
+"key": "ergonomics",
+"label": "Ergonomics",
+"categoryKey": "health",
+"description": "Workstation and posture habits that reduce strain.",
+"sortOrder": 270,
+"status": "active"
+},
+{
+"key": "energy-management",
+"label": "Energy Management",
+"categoryKey": "health",
+"description": "Pacing, breaks, and sustainable daily energy habits.",
+"sortOrder": 280,
+"status": "active"
+},
+{
+"key": "hygiene",
+"label": "Hygiene",
+"categoryKey": "personal-care",
+"description": "Basic cleanliness and oral care routines.",
+"sortOrder": 290,
+"status": "active"
+},
+{
+"key": "grooming",
+"label": "Grooming",
+"categoryKey": "personal-care",
+"description": "Hair, skin, shaving, and appearance routines.",
+"sortOrder": 300,
+"status": "active"
+},
+{
+"key": "self-maintenance",
+"label": "Self Maintenance",
+"categoryKey": "personal-care",
+"description": "Small routines that keep personal life maintained.",
+"sortOrder": 310,
+"status": "active"
+},
+{
+"key": "clothing-care",
+"label": "Clothing Care",
+"categoryKey": "personal-care",
+"description": "Laundry, outfit preparation, and clothing upkeep.",
+"sortOrder": 320,
+"status": "active"
+},
+{
+"key": "family",
+"label": "Family",
+"categoryKey": "social",
+"description": "Connection and care routines with family members.",
+"sortOrder": 330,
+"status": "active"
+},
+{
+"key": "friends",
+"label": "Friends",
+"categoryKey": "social",
+"description": "Maintaining friendships and casual social connection.",
+"sortOrder": 340,
+"status": "active"
+},
+{
+"key": "partner",
+"label": "Partner",
+"categoryKey": "social",
+"description": "Intentional connection with a romantic partner.",
+"sortOrder": 350,
+"status": "active"
+},
+{
+"key": "community",
+"label": "Community",
+"categoryKey": "social",
+"description": "Group participation, helping others, and belonging.",
+"sortOrder": 360,
+"status": "active"
+},
+{
+"key": "cleaning",
+"label": "Cleaning",
+"categoryKey": "home",
+"description": "Cleaning surfaces, rooms, and household areas.",
+"sortOrder": 370,
+"status": "active"
+},
+{
+"key": "tidying",
+"label": "Tidying",
+"categoryKey": "home",
+"description": "Putting items away and reducing everyday mess.",
+"sortOrder": 380,
+"status": "active"
+},
+{
+"key": "chores",
+"label": "Chores",
+"categoryKey": "home",
+"description": "Recurring household responsibilities and domestic tasks.",
+"sortOrder": 390,
+"status": "active"
+},
+{
+"key": "maintenance",
+"label": "Maintenance",
+"categoryKey": "home",
+"description": "Small home upkeep and repair routines.",
+"sortOrder": 400,
+"status": "active"
+},
+{
+"key": "budgeting",
+"label": "Budgeting",
+"categoryKey": "finance",
+"description": "Planning money use and reviewing budgets.",
+"sortOrder": 410,
+"status": "active"
+},
+{
+"key": "saving",
+"label": "Saving",
+"categoryKey": "finance",
+"description": "Setting aside money and building financial buffers.",
+"sortOrder": 420,
+"status": "active"
+},
+{
+"key": "expense-tracking",
+"label": "Expense Tracking",
+"categoryKey": "finance",
+"description": "Recording and reviewing spending.",
+"sortOrder": 430,
+"status": "active"
+},
+{
+"key": "financial-admin",
+"label": "Financial Admin",
+"categoryKey": "finance",
+"description": "Bills, documents, subscriptions, and money-related tasks.",
+"sortOrder": 440,
+"status": "active"
+},
+{
+"key": "writing",
+"label": "Writing",
+"categoryKey": "creativity",
+"description": "Creative writing, drafting, and written expression.",
+"sortOrder": 450,
+"status": "active"
+},
+{
+"key": "music",
+"label": "Music",
+"categoryKey": "creativity",
+"description": "Playing, singing, listening practice, and music creation.",
+"sortOrder": 460,
+"status": "active"
+},
+{
+"key": "visual-art",
+"label": "Visual Art",
+"categoryKey": "creativity",
+"description": "Drawing, painting, design, and visual expression.",
+"sortOrder": 470,
+"status": "active"
+},
+{
+"key": "making",
+"label": "Making",
+"categoryKey": "creativity",
+"description": "Crafts, building, cooking creatively, and hands-on projects.",
+"sortOrder": 480,
+"status": "active"
+},
+{
+"key": "screen-time",
+"label": "Screen Time",
+"categoryKey": "digital-wellbeing",
+"description": "Managing total screen use and digital boundaries.",
+"sortOrder": 490,
+"status": "active"
+},
+{
+"key": "phone-habits",
+"label": "Phone Habits",
+"categoryKey": "digital-wellbeing",
+"description": "Intentional phone use and reducing compulsive checking.",
+"sortOrder": 500,
+"status": "active"
+},
+{
+"key": "social-media",
+"label": "Social Media",
+"categoryKey": "digital-wellbeing",
+"description": "Conscious use of feeds, posts, and online platforms.",
+"sortOrder": 510,
+"status": "active"
+},
+{
+"key": "digital-organization",
+"label": "Digital Organization",
+"categoryKey": "digital-wellbeing",
+"description": "Keeping files, inboxes, apps, and devices organized.",
+"sortOrder": 520,
+"status": "active"
+},
+{
+"key": "nature-time",
+"label": "Nature Time",
+"categoryKey": "outdoors",
+"description": "Spending time in natural environments.",
+"sortOrder": 530,
+"status": "active"
+},
+{
+"key": "sunlight",
+"label": "Sunlight",
+"categoryKey": "outdoors",
+"description": "Getting safe daylight and fresh air.",
+"sortOrder": 540,
+"status": "active"
+},
+{
+"key": "outdoor-activity",
+"label": "Outdoor Activity",
+"categoryKey": "outdoors",
+"description": "Low-barrier activity outside the home.",
+"sortOrder": 550,
+"status": "active"
+},
+{
+"key": "sustainability",
+"label": "Sustainability",
+"categoryKey": "outdoors",
+"description": "Eco-conscious routines and reducing waste.",
+"sortOrder": 560,
+"status": "active"
+}
+],
+"canonicalHabits": [
+{
+"key": "run",
+"label": "Run",
+"categoryKey": "movement",
+"subcategoryKey": "cardio",
+"description": "Going for a run or jog, independent of distance, pace, route, or time of day.",
+"aliases": [
+"jog",
+"go running",
+"morning run",
+"evening run",
+"5k run",
+"jogging"
+],
+"status": "active"
+},
+{
+"key": "walk",
+"label": "Walk",
+"categoryKey": "movement",
+"subcategoryKey": "cardio",
+"description": "Walking for health, steps, light cardio, or a daily movement routine.",
+"aliases": [
+"go for a walk",
+"daily walk",
+"walk outside",
+"take a walk",
+"step walk",
+"walk around"
+],
+"status": "active"
+},
+{
+"key": "cycle",
+"label": "Cycle",
+"categoryKey": "movement",
+"subcategoryKey": "cardio",
+"description": "Riding a bicycle for exercise, commuting, or general fitness.",
+"aliases": [
+"bike ride",
+"go biking",
+"cycling",
+"ride bike",
+"bicycle ride",
+"spin bike"
+],
+"status": "active"
+},
+{
+"key": "swim",
+"label": "Swim",
+"categoryKey": "movement",
+"subcategoryKey": "cardio",
+"description": "Swimming laps or doing general swimming as a fitness routine.",
+"aliases": [
+"go swimming",
+"swimming laps",
+"pool workout",
+"lap swim",
+"swim session"
+],
+"status": "active"
+},
+{
+"key": "strength-train",
+"label": "Strength Train",
+"categoryKey": "movement",
+"subcategoryKey": "strength",
+"description": "Doing resistance training with weights, machines, bands, or bodyweight, including habits titled morning workout.",
+"aliases": [
+"lift weights",
+"gym workout",
+"weight training",
+"resistance training",
+"strength workout",
+"hit the gym",
+"morning workout",
+"morning exercise",
+"workout",
+"exercise session"
+],
+"status": "active"
+},
+{
+"key": "do-push-ups",
+"label": "Do Push-Ups",
+"categoryKey": "movement",
+"subcategoryKey": "strength",
+"description": "Practicing push-ups as a bodyweight strength habit.",
+"aliases": [
+"pushups",
+"push up practice",
+"do press ups",
+"upper body pushups",
+"daily pushups"
+],
+"status": "active"
+},
+{
+"key": "do-squats",
+"label": "Do Squats",
+"categoryKey": "movement",
+"subcategoryKey": "strength",
+"description": "Practicing squats as a lower-body strength habit.",
+"aliases": [
+"squat workout",
+"bodyweight squats",
+"daily squats",
+"leg squats",
+"squat practice"
+],
+"status": "active"
+},
+{
+"key": "core-workout",
+"label": "Core Workout",
+"categoryKey": "movement",
+"subcategoryKey": "strength",
+"description": "Training abdominal and trunk muscles through planks, crunches, or similar exercises.",
+"aliases": [
+"abs workout",
+"plank",
+"core training",
+"ab exercises",
+"stomach workout",
+"do crunches"
+],
+"status": "active"
+},
+{
+"key": "stretch",
+"label": "Stretch",
+"categoryKey": "movement",
+"subcategoryKey": "mobility",
+"description": "General stretching to improve flexibility, comfort, or movement readiness.",
+"aliases": [
+"stretching",
+"morning stretch",
+"evening stretch",
+"full body stretch",
+"stretch routine",
+"daily stretches"
+],
+"status": "active"
+},
+{
+"key": "yoga",
+"label": "Yoga",
+"categoryKey": "movement",
+"subcategoryKey": "mobility",
+"description": "Practicing yoga poses, flows, or gentle yoga movement.",
+"aliases": [
+"do yoga",
+"yoga flow",
+"yoga practice",
+"sun salutation",
+"home yoga",
+"yoga session"
+],
+"status": "active"
+},
+{
+"key": "mobility-drills",
+"label": "Mobility Drills",
+"categoryKey": "movement",
+"subcategoryKey": "mobility",
+"description": "Intentional joint mobility exercises for hips, shoulders, back, or full body.",
+"aliases": [
+"mobility routine",
+"joint mobility",
+"hip mobility",
+"shoulder mobility",
+"movement drills",
+"mobility work"
+],
+"status": "active"
+},
+{
+"key": "balance-practice",
+"label": "Balance Practice",
+"categoryKey": "movement",
+"subcategoryKey": "mobility",
+"description": "Practicing balance, stability, or coordination exercises.",
+"aliases": [
+"balance exercises",
+"stability practice",
+"one leg balance",
+"balance training",
+"coordination drills"
+],
+"status": "active"
+},
+{
+"key": "take-stairs",
+"label": "Take Stairs",
+"categoryKey": "movement",
+"subcategoryKey": "active-transport",
+"description": "Choosing stairs instead of elevators or escalators as everyday movement.",
+"aliases": [
+"use stairs",
+"stairs instead of elevator",
+"climb stairs",
+"take the steps",
+"walk stairs"
+],
+"status": "active"
+},
+{
+"key": "walk-commute",
+"label": "Walk Commute",
+"categoryKey": "movement",
+"subcategoryKey": "active-transport",
+"description": "Walking for commuting, errands, or part of a regular route.",
+"aliases": [
+"walk to work",
+"walk to class",
+"walk to station",
+"commute on foot",
+"walk errands"
+],
+"status": "active"
+},
+{
+"key": "bike-commute",
+"label": "Bike Commute",
+"categoryKey": "movement",
+"subcategoryKey": "active-transport",
+"description": "Cycling as transportation to work, class, errands, or appointments.",
+"aliases": [
+"bike to work",
+"bike to university",
+"cycle commute",
+"commute by bike",
+"ride to work"
+],
+"status": "active"
+},
+{
+"key": "stand-more",
+"label": "Stand More",
+"categoryKey": "movement",
+"subcategoryKey": "active-transport",
+"description": "Adding more standing and light movement into sedentary parts of the day.",
+"aliases": [
+"stand up more",
+"use standing desk",
+"stand during work",
+"stand instead of sit",
+"standing breaks"
+],
+"status": "active"
+},
+{
+"key": "drink-water",
+"label": "Drink Water",
+"categoryKey": "nutrition",
+"subcategoryKey": "hydration",
+"description": "Drinking water regularly without tying the concept to a specific volume.",
+"aliases": [
+"hydrate",
+"drink more water",
+"water intake",
+"have water",
+"daily water",
+"drink a glass of water"
+],
+"status": "active"
+},
+{
+"key": "refill-water-bottle",
+"label": "Refill Water Bottle",
+"categoryKey": "nutrition",
+"subcategoryKey": "hydration",
+"description": "Keeping a water bottle filled to make hydration easier.",
+"aliases": [
+"fill bottle",
+"refill bottle",
+"prepare water bottle",
+"keep water nearby",
+"water bottle ready"
+],
+"status": "active"
+},
+{
+"key": "limit-sugary-drinks",
+"label": "Limit Sugary Drinks",
+"categoryKey": "nutrition",
+"subcategoryKey": "hydration",
+"description": "Reducing soda, sweet drinks, or sugar-heavy beverages in a general way.",
+"aliases": [
+"less soda",
+"avoid sugary drinks",
+"cut soft drinks",
+"reduce sweet drinks",
+"skip soda"
+],
+"status": "active"
+},
+{
+"key": "drink-tea",
+"label": "Drink Tea",
+"categoryKey": "nutrition",
+"subcategoryKey": "hydration",
+"description": "Having tea as a calming or hydration-related routine.",
+"aliases": [
+"make tea",
+"herbal tea",
+"green tea",
+"tea break",
+"cup of tea"
+],
+"status": "active"
+},
+{
+"key": "eat-breakfast",
+"label": "Eat Breakfast",
+"categoryKey": "nutrition",
+"subcategoryKey": "meals",
+"description": "Eating a morning meal when it fits the user's routine.",
+"aliases": [
+"have breakfast",
+"breakfast",
+"morning meal",
+"eat in the morning",
+"make breakfast"
+],
+"status": "active"
+},
+{
+"key": "cook-meal",
+"label": "Cook Meal",
+"categoryKey": "nutrition",
+"subcategoryKey": "meals",
+"description": "Preparing a home-cooked meal without specifying cuisine or meal size.",
+"aliases": [
+"cook dinner",
+"make lunch",
+"home cooked meal",
+"prepare food",
+"cook at home",
+"make a meal"
+],
+"status": "active"
+},
+{
+"key": "meal-prep",
+"label": "Meal Prep",
+"categoryKey": "nutrition",
+"subcategoryKey": "meals",
+"description": "Preparing meals or ingredients ahead of time for later use.",
+"aliases": [
+"prep meals",
+"batch cook",
+"prepare lunches",
+"food prep",
+"meal planning prep",
+"cook ahead"
+],
+"status": "active"
+},
+{
+"key": "eat-regular-meals",
+"label": "Eat Regular Meals",
+"categoryKey": "nutrition",
+"subcategoryKey": "meals",
+"description": "Keeping a consistent meal rhythm and avoiding unintentionally skipping meals.",
+"aliases": [
+"regular eating",
+"dont skip meals",
+"eat meals",
+"meal routine",
+"eat on schedule"
+],
+"status": "active"
+},
+{
+"key": "eat-fruit",
+"label": "Eat Fruit",
+"categoryKey": "nutrition",
+"subcategoryKey": "fruits-vegetables",
+"description": "Eating fruit as part of a normal daily diet.",
+"aliases": [
+"have fruit",
+"eat an apple",
+"daily fruit",
+"fruit serving",
+"fruit snack"
+],
+"status": "active"
+},
+{
+"key": "eat-vegetables",
+"label": "Eat Vegetables",
+"categoryKey": "nutrition",
+"subcategoryKey": "fruits-vegetables",
+"description": "Eating vegetables with meals or snacks in a general way.",
+"aliases": [
+"eat veggies",
+"vegetable serving",
+"add vegetables",
+"more veggies",
+"greens",
+"eat salad"
+],
+"status": "active"
+},
+{
+"key": "prepare-salad",
+"label": "Prepare Salad",
+"categoryKey": "nutrition",
+"subcategoryKey": "fruits-vegetables",
+"description": "Making or eating a salad as a produce-focused habit.",
+"aliases": [
+"make salad",
+"eat salad",
+"salad bowl",
+"prepare greens",
+"side salad"
+],
+"status": "active"
+},
+{
+"key": "add-protein-to-meal",
+"label": "Add Protein to Meal",
+"categoryKey": "nutrition",
+"subcategoryKey": "fruits-vegetables",
+"description": "Including a protein source in meals without prescribing a specific diet.",
+"aliases": [
+"protein with meal",
+"eat protein",
+"protein breakfast",
+"add protein",
+"balanced meal"
+],
+"status": "active"
+},
+{
+"key": "eat-mindfully",
+"label": "Eat Mindfully",
+"categoryKey": "nutrition",
+"subcategoryKey": "mindful-eating",
+"description": "Eating with attention to hunger, fullness, taste, and pace.",
+"aliases": [
+"mindful eating",
+"eat slowly",
+"no rushing meals",
+"focus while eating",
+"slow eating"
+],
+"status": "active"
+},
+{
+"key": "avoid-late-snacking",
+"label": "Avoid Late Snacking",
+"categoryKey": "nutrition",
+"subcategoryKey": "mindful-eating",
+"description": "Reducing unplanned snacks late in the day or close to sleep.",
+"aliases": [
+"no late snacks",
+"stop night snacking",
+"avoid midnight snack",
+"evening snack control",
+"skip late snack"
+],
+"status": "active"
+},
+{
+"key": "limit-junk-food",
+"label": "Limit Junk Food",
+"categoryKey": "nutrition",
+"subcategoryKey": "mindful-eating",
+"description": "Reducing highly processed snacks, fast food, or low-nutrition convenience foods.",
+"aliases": [
+"less junk food",
+"avoid junk food",
+"reduce fast food",
+"skip chips",
+"eat less sweets",
+"no junk"
+],
+"status": "active"
+},
+{
+"key": "plan-groceries",
+"label": "Plan Groceries",
+"categoryKey": "nutrition",
+"subcategoryKey": "mindful-eating",
+"description": "Planning grocery needs before shopping to support better food choices.",
+"aliases": [
+"grocery list",
+"plan shopping",
+"make grocery list",
+"food shopping plan",
+"shopping list"
+],
+"status": "active"
+},
+{
+"key": "wind-down",
+"label": "Wind Down",
+"categoryKey": "sleep",
+"subcategoryKey": "sleep-routine",
+"description": "Doing calming activities before sleep to transition away from the day.",
+"aliases": [
+"bedtime routine",
+"night routine",
+"prepare for bed",
+"evening wind down",
+"relax before bed"
+],
+"status": "active"
+},
+{
+"key": "avoid-caffeine-late",
+"label": "Avoid Caffeine Late",
+"categoryKey": "sleep",
+"subcategoryKey": "sleep-routine",
+"description": "Avoiding coffee or caffeine later in the day to support sleep.",
+"aliases": [
+"no late coffee",
+"stop caffeine",
+"avoid evening coffee",
+"no caffeine after lunch",
+"cut late caffeine"
+],
+"status": "active"
+},
+{
+"key": "read-before-bed",
+"label": "Read Before Bed",
+"categoryKey": "sleep",
+"subcategoryKey": "sleep-routine",
+"description": "Reading as a calm pre-sleep routine without focusing on amount.",
+"aliases": [
+"bedtime reading",
+"read at night",
+"book before sleep",
+"night reading",
+"read in bed"
+],
+"status": "active"
+},
+{
+"key": "screen-free-before-bed",
+"label": "Screen-Free Before Bed",
+"categoryKey": "sleep",
+"subcategoryKey": "sleep-routine",
+"description": "Reducing phone, computer, or TV use before going to sleep.",
+"aliases": [
+"no phone before bed",
+"no screens at night",
+"screen free night",
+"put phone away before bed",
+"offline before sleep"
+],
+"status": "active"
+},
+{
+"key": "go-to-bed-on-time",
+"label": "Go to Bed on Time",
+"categoryKey": "sleep",
+"subcategoryKey": "sleep-schedule",
+"description": "Going to bed around the intended bedtime consistently.",
+"aliases": [
+"sleep on time",
+"bed on time",
+"early bedtime",
+"go sleep earlier",
+"stick to bedtime"
+],
+"status": "active"
+},
+{
+"key": "wake-up-on-time",
+"label": "Wake Up on Time",
+"categoryKey": "sleep",
+"subcategoryKey": "sleep-schedule",
+"description": "Getting out of bed around the intended wake-up time.",
+"aliases": [
+"wake up early",
+"get up on time",
+"rise on time",
+"morning wakeup",
+"no oversleeping"
+],
+"status": "active"
+},
+{
+"key": "consistent-sleep-schedule",
+"label": "Consistent Sleep Schedule",
+"categoryKey": "sleep",
+"subcategoryKey": "sleep-schedule",
+"description": "Keeping sleep and wake times relatively consistent across days.",
+"aliases": [
+"same bedtime",
+"same wake time",
+"regular sleep schedule",
+"sleep consistency",
+"fixed sleep routine"
+],
+"status": "active"
+},
+{
+"key": "track-sleep",
+"label": "Track Sleep",
+"categoryKey": "sleep",
+"subcategoryKey": "sleep-schedule",
+"description": "Recording sleep timing or sleep quality for self-awareness.",
+"aliases": [
+"sleep log",
+"log sleep",
+"sleep diary",
+"record sleep",
+"track bedtime"
+],
+"status": "active"
+},
+{
+"key": "make-bedroom-dark",
+"label": "Make Bedroom Dark",
+"categoryKey": "sleep",
+"subcategoryKey": "sleep-environment",
+"description": "Reducing light in the bedroom to create a more restful sleep environment.",
+"aliases": [
+"dark room",
+"close curtains",
+"blackout room",
+"dim bedroom",
+"turn off lights"
+],
+"status": "active"
+},
+{
+"key": "prepare-bed",
+"label": "Prepare Bed",
+"categoryKey": "sleep",
+"subcategoryKey": "sleep-environment",
+"description": "Making the bed or setting up the sleeping area before bedtime.",
+"aliases": [
+"make bed for sleep",
+"set up bed",
+"prepare bedroom",
+"turn down bed",
+"ready bed"
+],
+"status": "active"
+},
+{
+"key": "cool-bedroom",
+"label": "Cool Bedroom",
+"categoryKey": "sleep",
+"subcategoryKey": "sleep-environment",
+"description": "Keeping the bedroom comfortably cool or ventilated before sleeping.",
+"aliases": [
+"air out bedroom",
+"cool room",
+"open window before bed",
+"fresh air bedroom",
+"ventilate bedroom"
+],
+"status": "active"
+},
+{
+"key": "quiet-sleep-space",
+"label": "Quiet Sleep Space",
+"categoryKey": "sleep",
+"subcategoryKey": "sleep-environment",
+"description": "Reducing noise or creating a quieter sleep setting.",
+"aliases": [
+"quiet bedroom",
+"reduce noise",
+"use earplugs",
+"calm sleep space",
+"silence room"
+],
+"status": "active"
+},
+{
+"key": "take-break",
+"label": "Take Break",
+"categoryKey": "sleep",
+"subcategoryKey": "rest-recovery",
+"description": "Taking a short intentional break to recover attention and energy.",
+"aliases": [
+"short break",
+"rest break",
+"take a pause",
+"pause work",
+"recovery break"
+],
+"status": "active"
+},
+{
+"key": "power-nap",
+"label": "Power Nap",
+"categoryKey": "sleep",
+"subcategoryKey": "rest-recovery",
+"description": "Taking a short nap for rest or recovery without defining a fixed length.",
+"aliases": [
+"nap",
+"take a nap",
+"short nap",
+"afternoon nap",
+"rest eyes"
+],
+"status": "active"
+},
+{
+"key": "relax",
+"label": "Relax",
+"categoryKey": "sleep",
+"subcategoryKey": "rest-recovery",
+"description": "Doing a relaxing activity to recover from stress or effort.",
+"aliases": [
+"unwind",
+"chill",
+"rest",
+"relaxation time",
+"take it easy"
+],
+"status": "active"
+},
+{
+"key": "do-recovery-routine",
+"label": "Do Recovery Routine",
+"categoryKey": "sleep",
+"subcategoryKey": "rest-recovery",
+"description": "Doing gentle recovery actions after exercise or demanding days.",
+"aliases": [
+"recovery work",
+"post workout recovery",
+"foam roll",
+"recover body",
+"rest routine"
+],
+"status": "active"
+},
+{
+"key": "meditate",
+"label": "Meditate",
+"categoryKey": "mindfulness",
+"subcategoryKey": "meditation",
+"description": "Practicing meditation for awareness, calm, or focus.",
+"aliases": [
+"meditation",
+"sit in silence",
+"mindfulness meditation",
+"daily meditation",
+"guided meditation"
+],
+"status": "active"
+},
+{
+"key": "body-scan",
+"label": "Body Scan",
+"categoryKey": "mindfulness",
+"subcategoryKey": "meditation",
+"description": "Checking in with body sensations through a structured awareness practice.",
+"aliases": [
+"body scan meditation",
+"scan body",
+"body awareness",
+"mindful body check",
+"somatic check in"
+],
+"status": "active"
+},
+{
+"key": "mindful-moment",
+"label": "Mindful Moment",
+"categoryKey": "mindfulness",
+"subcategoryKey": "meditation",
+"description": "Taking a brief pause to notice the present moment.",
+"aliases": [
+"be present",
+"mindfulness pause",
+"present moment",
+"mindful minute",
+"pause and notice"
+],
+"status": "active"
+},
+{
+"key": "loving-kindness",
+"label": "Loving-Kindness",
+"categoryKey": "mindfulness",
+"subcategoryKey": "meditation",
+"description": "Practicing kindness-oriented reflection toward oneself or others.",
+"aliases": [
+"metta",
+"kindness meditation",
+"compassion meditation",
+"send kindness",
+"loving kindness practice"
+],
+"status": "active"
+},
+{
+"key": "deep-breathing",
+"label": "Deep Breathing",
+"categoryKey": "mindfulness",
+"subcategoryKey": "breathing",
+"description": "Doing slow intentional breaths to calm down or reset.",
+"aliases": [
+"breathing exercise",
+"breathe deeply",
+"deep breaths",
+"slow breathing",
+"calm breathing"
+],
+"status": "active"
+},
+{
+"key": "box-breathing",
+"label": "Box Breathing",
+"categoryKey": "mindfulness",
+"subcategoryKey": "breathing",
+"description": "Practicing a structured equal-count breathing pattern.",
+"aliases": [
+"square breathing",
+"4 4 4 4 breathing",
+"box breath",
+"breathing square",
+"structured breathing"
+],
+"status": "active"
+},
+{
+"key": "breathing-break",
+"label": "Breathing Break",
+"categoryKey": "mindfulness",
+"subcategoryKey": "breathing",
+"description": "Taking a short pause to focus on breathing during the day.",
+"aliases": [
+"breath break",
+"pause to breathe",
+"mindful breathing break",
+"breathing pause",
+"reset breath"
+],
+"status": "active"
+},
+{
+"key": "exhale-practice",
+"label": "Exhale Practice",
+"categoryKey": "mindfulness",
+"subcategoryKey": "breathing",
+"description": "Using longer exhales or gentle breath release for relaxation.",
+"aliases": [
+"long exhale",
+"slow exhale",
+"extended exhale",
+"release breath",
+"calming exhale"
+],
+"status": "active"
+},
+{
+"key": "journal",
+"label": "Journal",
+"categoryKey": "mindfulness",
+"subcategoryKey": "journaling",
+"description": "Writing personal reflections, thoughts, feelings, or daily notes.",
+"aliases": [
+"write journal",
+"journaling",
+"diary",
+"daily journal",
+"reflect in journal"
+],
+"status": "active"
+},
+{
+"key": "mood-check-in",
+"label": "Mood Check-In",
+"categoryKey": "mindfulness",
+"subcategoryKey": "journaling",
+"description": "Noticing and recording current mood or emotional state.",
+"aliases": [
+"track mood",
+"mood journal",
+"emotion check",
+"feelings check in",
+"how am i feeling"
+],
+"status": "active"
+},
+{
+"key": "write-reflection",
+"label": "Write Reflection",
+"categoryKey": "mindfulness",
+"subcategoryKey": "journaling",
+"description": "Reflecting on the day, an event, or personal progress in writing.",
+"aliases": [
+"daily reflection",
+"reflect on day",
+"self reflection",
+"evening reflection",
+"write thoughts"
+],
+"status": "active"
+},
+{
+"key": "brain-dump",
+"label": "Brain Dump",
+"categoryKey": "mindfulness",
+"subcategoryKey": "journaling",
+"description": "Writing down thoughts, worries, or tasks to clear mental clutter.",
+"aliases": [
+"dump thoughts",
+"clear mind",
+"write everything down",
+"thought dump",
+"mental unload"
+],
+"status": "active"
+},
+{
+"key": "write-gratitude",
+"label": "Write Gratitude",
+"categoryKey": "mindfulness",
+"subcategoryKey": "gratitude",
+"description": "Writing down things one is grateful for or appreciates.",
+"aliases": [
+"gratitude journal",
+"three good things",
+"grateful list",
+"write thankful notes",
+"daily gratitude"
+],
+"status": "active"
+},
+{
+"key": "notice-positive-moment",
+"label": "Notice Positive Moment",
+"categoryKey": "mindfulness",
+"subcategoryKey": "gratitude",
+"description": "Intentionally noticing a good moment from the day.",
+"aliases": [
+"positive moment",
+"good thing today",
+"daily highlight",
+"find the good",
+"small win"
+],
+"status": "active"
+},
+{
+"key": "give-compliment",
+"label": "Give Compliment",
+"categoryKey": "mindfulness",
+"subcategoryKey": "gratitude",
+"description": "Sharing a sincere compliment or appreciation with someone.",
+"aliases": [
+"compliment someone",
+"say something nice",
+"appreciate someone",
+"give praise",
+"kind words"
+],
+"status": "active"
+},
+{
+"key": "self-appreciation",
+"label": "Self Appreciation",
+"categoryKey": "mindfulness",
+"subcategoryKey": "gratitude",
+"description": "Acknowledging something positive about oneself or one's effort.",
+"aliases": [
+"appreciate myself",
+"self gratitude",
+"self praise",
+"recognize effort",
+"be kind to myself"
+],
+"status": "active"
+},
+{
+"key": "plan-day",
+"label": "Plan Day",
+"categoryKey": "productivity",
+"subcategoryKey": "planning",
+"description": "Choosing priorities, tasks, or schedule for the day.",
+"aliases": [
+"daily planning",
+"make daily plan",
+"plan today",
+"morning plan",
+"set daily priorities"
+],
+"status": "active"
+},
+{
+"key": "plan-week",
+"label": "Plan Week",
+"categoryKey": "productivity",
+"subcategoryKey": "planning",
+"description": "Looking ahead and organizing tasks, events, and priorities for the week.",
+"aliases": [
+"weekly planning",
+"week plan",
+"plan the week",
+"weekly review plan",
+"schedule week"
+],
+"status": "active"
+},
+{
+"key": "write-to-do-list",
+"label": "Write To-Do List",
+"categoryKey": "productivity",
+"subcategoryKey": "planning",
+"description": "Creating a list of tasks to remember and act on.",
+"aliases": [
+"todo list",
+"make task list",
+"write tasks",
+"task list",
+"things to do"
+],
+"status": "active"
+},
+{
+"key": "prioritize-tasks",
+"label": "Prioritize Tasks",
+"categoryKey": "productivity",
+"subcategoryKey": "planning",
+"description": "Deciding which tasks matter most or should be done first.",
+"aliases": [
+"set priorities",
+"pick top tasks",
+"choose priority",
+"rank tasks",
+"most important task"
+],
+"status": "active"
+},
+{
+"key": "deep-work",
+"label": "Deep Work",
+"categoryKey": "productivity",
+"subcategoryKey": "focus",
+"description": "Working on a cognitively demanding task with sustained focus.",
+"aliases": [
+"focus work",
+"deep focus",
+"work block",
+"focus session",
+"do focused work"
+],
+"status": "active"
+},
+{
+"key": "use-focus-timer",
+"label": "Use Focus Timer",
+"categoryKey": "productivity",
+"subcategoryKey": "focus",
+"description": "Working with a timer, pomodoro, or timed focus block.",
+"aliases": [
+"pomodoro",
+"start timer",
+"focus timer",
+"25 minute work",
+"timed focus"
+],
+"status": "active"
+},
+{
+"key": "avoid-multitasking",
+"label": "Avoid Multitasking",
+"categoryKey": "productivity",
+"subcategoryKey": "focus",
+"description": "Working on one task at a time instead of switching constantly.",
+"aliases": [
+"single task",
+"one task at a time",
+"stop multitasking",
+"focus on one thing",
+"monotask"
+],
+"status": "active"
+},
+{
+"key": "remove-distractions",
+"label": "Remove Distractions",
+"categoryKey": "productivity",
+"subcategoryKey": "focus",
+"description": "Reducing interruptions, noise, notifications, or clutter before focused work.",
+"aliases": [
+"distraction free",
+"block distractions",
+"turn off notifications",
+"clear distractions",
+"focus setup"
+],
+"status": "active"
+},
+{
+"key": "organize-workspace",
+"label": "Organize Workspace",
+"categoryKey": "productivity",
+"subcategoryKey": "organization",
+"description": "Keeping the desk or work area organized and ready to use.",
+"aliases": [
+"clean desk",
+"tidy workspace",
+"desk reset",
+"organize desk",
+"clear workspace"
+],
+"status": "active"
+},
+{
+"key": "review-calendar",
+"label": "Review Calendar",
+"categoryKey": "productivity",
+"subcategoryKey": "organization",
+"description": "Checking upcoming events, deadlines, and commitments.",
+"aliases": [
+"check calendar",
+"calendar review",
+"look at schedule",
+"review schedule",
+"calendar check"
+],
+"status": "active"
+},
+{
+"key": "organize-notes",
+"label": "Organize Notes",
+"categoryKey": "productivity",
+"subcategoryKey": "organization",
+"description": "Sorting, cleaning, or structuring notes for later use.",
+"aliases": [
+"clean notes",
+"sort notes",
+"note organization",
+"organize notebook",
+"tidy notes"
+],
+"status": "active"
+},
+{
+"key": "process-inbox",
+"label": "Process Inbox",
+"categoryKey": "productivity",
+"subcategoryKey": "organization",
+"description": "Reviewing and organizing email, messages, or task inboxes.",
+"aliases": [
+"inbox zero",
+"check inbox",
+"clear inbox",
+"email processing",
+"message inbox"
+],
+"status": "active"
+},
+{
+"key": "review-goals",
+"label": "Review Goals",
+"categoryKey": "productivity",
+"subcategoryKey": "goals",
+"description": "Checking progress toward current goals and adjusting attention.",
+"aliases": [
+"goal review",
+"check goals",
+"review objectives",
+"look at goals",
+"track goals"
+],
+"status": "active"
+},
+{
+"key": "track-progress",
+"label": "Track Progress",
+"categoryKey": "productivity",
+"subcategoryKey": "goals",
+"description": "Recording progress on a habit, project, or personal goal.",
+"aliases": [
+"progress log",
+"log progress",
+"track results",
+"measure progress",
+"update tracker"
+],
+"status": "active"
+},
+{
+"key": "set-intention",
+"label": "Set Intention",
+"categoryKey": "productivity",
+"subcategoryKey": "goals",
+"description": "Choosing a guiding intention or focus for a time period.",
+"aliases": [
+"daily intention",
+"set focus",
+"intention setting",
+"choose intention",
+"focus of the day"
+],
+"status": "active"
+},
+{
+"key": "celebrate-small-win",
+"label": "Celebrate Small Win",
+"categoryKey": "productivity",
+"subcategoryKey": "goals",
+"description": "Acknowledging completion, progress, or a small accomplishment.",
+"aliases": [
+"small win",
+"note achievement",
+"celebrate progress",
+"recognize win",
+"win of the day"
+],
+"status": "active"
+},
+{
+"key": "read",
+"label": "Read",
+"categoryKey": "learning",
+"subcategoryKey": "reading",
+"description": "Reading books, articles, papers, or other written material for learning or enjoyment, including timed sessions like read 30 minutes.",
+"aliases": [
+"read book",
+"read pages",
+"daily reading",
+"read article",
+"read paper",
+"read chapter",
+"read 30 minutes",
+"read for 30 minutes",
+"30 minute read",
+"reading session"
+],
+"status": "active"
+},
+{
+"key": "listen-to-audiobook",
+"label": "Listen to Audiobook",
+"categoryKey": "learning",
+"subcategoryKey": "reading",
+"description": "Listening to an audiobook or spoken long-form content.",
+"aliases": [
+"audiobook",
+"listen to book",
+"audio book",
+"book listening",
+"audible"
+],
+"status": "active"
+},
+{
+"key": "summarize-reading",
+"label": "Summarize Reading",
+"categoryKey": "learning",
+"subcategoryKey": "reading",
+"description": "Writing or saying a short summary of something read.",
+"aliases": [
+"reading notes",
+"summarize chapter",
+"write book notes",
+"reading summary",
+"note what i read"
+],
+"status": "active"
+},
+{
+"key": "read-newsletter",
+"label": "Read Newsletter",
+"categoryKey": "learning",
+"subcategoryKey": "reading",
+"description": "Reading curated newsletters or educational email digests.",
+"aliases": [
+"newsletter reading",
+"read email newsletter",
+"industry newsletter",
+"morning newsletter",
+"newsletter catchup"
+],
+"status": "active"
+},
+{
+"key": "practice-vocabulary",
+"label": "Practice Vocabulary",
+"categoryKey": "learning",
+"subcategoryKey": "language-learning",
+"description": "Practicing or studying a target language, including general practice language sessions and vocabulary review.",
+"aliases": [
+"vocab practice",
+"learn words",
+"anki vocabulary",
+"flashcards",
+"language words",
+"practice language",
+"language practice",
+"learn language",
+"study language",
+"language learning"
+],
+"status": "active"
+},
+{
+"key": "practice-speaking",
+"label": "Practice Speaking",
+"categoryKey": "learning",
+"subcategoryKey": "language-learning",
+"description": "Speaking or rehearsing phrases in a language being learned.",
+"aliases": [
+"speak language",
+"conversation practice",
+"practice pronunciation",
+"language speaking",
+"talk in target language"
+],
+"status": "active"
+},
+{
+"key": "practice-listening",
+"label": "Practice Listening",
+"categoryKey": "learning",
+"subcategoryKey": "language-learning",
+"description": "Listening to audio, videos, podcasts, or conversations in a target language.",
+"aliases": [
+"language listening",
+"listen in language",
+"listening practice",
+"comprehension practice",
+"target language audio"
+],
+"status": "active"
+},
+{
+"key": "practice-grammar",
+"label": "Practice Grammar",
+"categoryKey": "learning",
+"subcategoryKey": "language-learning",
+"description": "Studying or applying grammar rules in a target language.",
+"aliases": [
+"grammar practice",
+"language grammar",
+"do grammar exercises",
+"grammar drills",
+"learn grammar"
+],
+"status": "active"
+},
+{
+"key": "study",
+"label": "Study",
+"categoryKey": "learning",
+"subcategoryKey": "academic-study",
+"description": "Studying course material, notes, textbooks, or lecture content.",
+"aliases": [
+"study session",
+"do coursework",
+"study notes",
+"learn class material",
+"study for class"
+],
+"status": "active"
+},
+{
+"key": "review-lecture-notes",
+"label": "Review Lecture Notes",
+"categoryKey": "learning",
+"subcategoryKey": "academic-study",
+"description": "Revisiting lecture notes to reinforce understanding.",
+"aliases": [
+"go over notes",
+"lecture review",
+"review class notes",
+"study lecture notes",
+"read notes"
+],
+"status": "active"
+},
+{
+"key": "do-practice-problems",
+"label": "Do Practice Problems",
+"categoryKey": "learning",
+"subcategoryKey": "academic-study",
+"description": "Solving exercises, problem sets, or practice questions.",
+"aliases": [
+"practice questions",
+"problem set",
+"do exercises",
+"solve tasks",
+"practice problems"
+],
+"status": "active"
+},
+{
+"key": "prepare-for-exam",
+"label": "Prepare for Exam",
+"categoryKey": "learning",
+"subcategoryKey": "academic-study",
+"description": "Working on exam preparation in a general way.",
+"aliases": [
+"exam prep",
+"study for exam",
+"revise for test",
+"test preparation",
+"prepare test"
+],
+"status": "active"
+},
+{
+"key": "code",
+"label": "Code",
+"categoryKey": "learning",
+"subcategoryKey": "skill-practice",
+"description": "Practicing programming, software development, or coding exercises.",
+"aliases": [
+"programming",
+"write code",
+"coding practice",
+"leetcode",
+"build project",
+"software practice"
+],
+"status": "active"
+},
+{
+"key": "practice-typing",
+"label": "Practice Typing",
+"categoryKey": "learning",
+"subcategoryKey": "skill-practice",
+"description": "Improving typing speed, accuracy, or keyboard familiarity.",
+"aliases": [
+"typing practice",
+"touch typing",
+"keyboard practice",
+"typing drills",
+"type faster"
+],
+"status": "active"
+},
+{
+"key": "practice-public-speaking",
+"label": "Practice Public Speaking",
+"categoryKey": "learning",
+"subcategoryKey": "skill-practice",
+"description": "Rehearsing presentations, speaking clearly, or communicating ideas aloud.",
+"aliases": [
+"presentation practice",
+"speech practice",
+"rehearse talk",
+"practice speaking aloud",
+"public speaking"
+],
+"status": "active"
+},
+{
+"key": "take-online-course",
+"label": "Take Online Course",
+"categoryKey": "learning",
+"subcategoryKey": "skill-practice",
+"description": "Learning through online lessons, tutorials, or structured courses.",
+"aliases": [
+"watch course",
+"online class",
+"course lesson",
+"udemy course",
+"coursera lesson",
+"tutorial"
+],
+"status": "active"
+},
+{
+"key": "book-health-checkup",
+"label": "Book Health Checkup",
+"categoryKey": "health",
+"subcategoryKey": "preventive-health",
+"description": "Scheduling a general preventive health appointment or routine checkup.",
+"aliases": [
+"schedule checkup",
+"book doctor appointment",
+"health appointment",
+"annual checkup",
+"preventive check"
+],
+"status": "active"
+},
+{
+"key": "attend-health-appointment",
+"label": "Attend Health Appointment",
+"categoryKey": "health",
+"subcategoryKey": "preventive-health",
+"description": "Going to a scheduled general health, dental, or wellness appointment.",
+"aliases": [
+"go to appointment",
+"doctor visit",
+"dentist appointment",
+"health visit",
+"checkup appointment"
+],
+"status": "active"
+},
+{
+"key": "wash-hands",
+"label": "Wash Hands",
+"categoryKey": "health",
+"subcategoryKey": "preventive-health",
+"description": "Washing hands as a hygiene and prevention routine.",
+"aliases": [
+"hand washing",
+"clean hands",
+"wash my hands",
+"sanitize hands",
+"use soap"
+],
+"status": "active"
+},
+{
+"key": "update-health-admin",
+"label": "Update Health Admin",
+"categoryKey": "health",
+"subcategoryKey": "preventive-health",
+"description": "Handling general health paperwork, insurance, appointments, or records.",
+"aliases": [
+"health paperwork",
+"medical admin",
+"insurance health docs",
+"organize health records",
+"health documents"
+],
+"status": "active"
+},
+{
+"key": "posture-check",
+"label": "Posture Check",
+"categoryKey": "health",
+"subcategoryKey": "body-care",
+"description": "Checking and adjusting posture during sitting, standing, or working.",
+"aliases": [
+"fix posture",
+"sit straight",
+"posture reminder",
+"check posture",
+"stand tall"
+],
+"status": "active"
+},
+{
+"key": "eye-rest",
+"label": "Eye Rest",
+"categoryKey": "health",
+"subcategoryKey": "body-care",
+"description": "Giving eyes a break from close-up work or screens.",
+"aliases": [
+"rest eyes",
+"look away from screen",
+"eye break",
+"20 20 20",
+"screen eye break"
+],
+"status": "active"
+},
+{
+"key": "gentle-movement-break",
+"label": "Gentle Movement Break",
+"categoryKey": "health",
+"subcategoryKey": "body-care",
+"description": "Taking a low-intensity movement break to reduce stiffness.",
+"aliases": [
+"movement break",
+"walk around",
+"stand and move",
+"stretch break",
+"loosen up"
+],
+"status": "active"
+},
+{
+"key": "body-check-in",
+"label": "Body Check-In",
+"categoryKey": "health",
+"subcategoryKey": "body-care",
+"description": "Noticing body tension, comfort, hunger, thirst, or fatigue without diagnosing symptoms.",
+"aliases": [
+"check body",
+"body awareness",
+"notice tension",
+"physical check in",
+"how does my body feel"
+],
+"status": "active"
+},
+{
+"key": "adjust-workstation",
+"label": "Adjust Workstation",
+"categoryKey": "health",
+"subcategoryKey": "ergonomics",
+"description": "Setting up chair, screen, keyboard, or desk position for comfortable work.",
+"aliases": [
+"fix desk setup",
+"ergonomic setup",
+"adjust chair",
+"set monitor height",
+"workspace ergonomics"
+],
+"status": "active"
+},
+{
+"key": "sit-with-feet-grounded",
+"label": "Sit With Feet Grounded",
+"categoryKey": "health",
+"subcategoryKey": "ergonomics",
+"description": "Sitting with stable support and a comfortable lower-body position.",
+"aliases": [
+"feet flat",
+"sit properly",
+"chair posture",
+"ergonomic sitting",
+"stable sitting"
+],
+"status": "active"
+},
+{
+"key": "relax-shoulders",
+"label": "Relax Shoulders",
+"categoryKey": "health",
+"subcategoryKey": "ergonomics",
+"description": "Releasing shoulder tension during work or daily activities.",
+"aliases": [
+"drop shoulders",
+"shoulder relaxation",
+"unclench shoulders",
+"shoulder check",
+"loosen shoulders"
+],
+"status": "active"
+},
+{
+"key": "alternate-sitting-standing",
+"label": "Alternate Sitting and Standing",
+"categoryKey": "health",
+"subcategoryKey": "ergonomics",
+"description": "Switching between sitting, standing, and light movement during the day.",
+"aliases": [
+"sit stand routine",
+"change position",
+"standing desk routine",
+"alternate posture",
+"switch posture"
+],
+"status": "active"
+},
+{
+"key": "take-lunch-break",
+"label": "Take Lunch Break",
+"categoryKey": "health",
+"subcategoryKey": "energy-management",
+"description": "Taking a real break for lunch instead of working through it.",
+"aliases": [
+"lunch break",
+"proper lunch",
+"pause for lunch",
+"eat away from desk",
+"midday break"
+],
+"status": "active"
+},
+{
+"key": "pace-work",
+"label": "Pace Work",
+"categoryKey": "health",
+"subcategoryKey": "energy-management",
+"description": "Balancing effort with breaks to avoid overloading the day.",
+"aliases": [
+"pace myself",
+"work sustainably",
+"manage energy",
+"avoid overworking",
+"steady work"
+],
+"status": "active"
+},
+{
+"key": "do-evening-reset",
+"label": "Do Evening Reset",
+"categoryKey": "health",
+"subcategoryKey": "energy-management",
+"description": "Doing a short reset after work or study to transition into personal time.",
+"aliases": [
+"after work reset",
+"evening decompression",
+"transition from work",
+"reset after day",
+"post work break"
+],
+"status": "active"
+},
+{
+"key": "check-energy-level",
+"label": "Check Energy Level",
+"categoryKey": "health",
+"subcategoryKey": "energy-management",
+"description": "Noticing current energy and adjusting plans or breaks accordingly.",
+"aliases": [
+"energy check",
+"how tired am i",
+"check fatigue",
+"daily energy check",
+"notice energy"
+],
+"status": "active"
+},
+{
+"key": "brush-teeth",
+"label": "Brush Teeth",
+"categoryKey": "personal-care",
+"subcategoryKey": "hygiene",
+"description": "Brushing teeth as part of a daily oral hygiene routine.",
+"aliases": [
+"brush my teeth",
+"tooth brushing",
+"clean teeth",
+"morning teeth",
+"night teeth"
+],
+"status": "active"
+},
+{
+"key": "floss",
+"label": "Floss",
+"categoryKey": "personal-care",
+"subcategoryKey": "hygiene",
+"description": "Cleaning between teeth with floss or similar oral care tools.",
+"aliases": [
+"dental floss",
+"floss teeth",
+"interdental cleaning",
+"flossing",
+"use floss"
+],
+"status": "active"
+},
+{
+"key": "shower",
+"label": "Shower",
+"categoryKey": "personal-care",
+"subcategoryKey": "hygiene",
+"description": "Taking a shower or washing the body as part of hygiene.",
+"aliases": [
+"take shower",
+"have a shower",
+"wash body",
+"daily shower",
+"rinse off"
+],
+"status": "active"
+},
+{
+"key": "wash-face",
+"label": "Wash Face",
+"categoryKey": "personal-care",
+"subcategoryKey": "hygiene",
+"description": "Washing the face as part of a simple skincare or hygiene routine.",
+"aliases": [
+"clean face",
+"face wash",
+"wash my face",
+"morning face wash",
+"night face wash"
+],
+"status": "active"
+},
+{
+"key": "skincare",
+"label": "Skincare",
+"categoryKey": "personal-care",
+"subcategoryKey": "grooming",
+"description": "Doing a simple skincare routine such as cleansing or moisturizing.",
+"aliases": [
+"skin care",
+"moisturize",
+"apply cream",
+"face routine",
+"skincare routine"
+],
+"status": "active"
+},
+{
+"key": "shave",
+"label": "Shave",
+"categoryKey": "personal-care",
+"subcategoryKey": "grooming",
+"description": "Shaving or trimming facial or body hair as a grooming routine.",
+"aliases": [
+"trim beard",
+"beard grooming",
+"shaving",
+"facial hair trim",
+"razor shave"
+],
+"status": "active"
+},
+{
+"key": "hair-care",
+"label": "Hair Care",
+"categoryKey": "personal-care",
+"subcategoryKey": "grooming",
+"description": "Washing, brushing, styling, or maintaining hair.",
+"aliases": [
+"brush hair",
+"wash hair",
+"style hair",
+"hair routine",
+"comb hair"
+],
+"status": "active"
+},
+{
+"key": "nail-care",
+"label": "Nail Care",
+"categoryKey": "personal-care",
+"subcategoryKey": "grooming",
+"description": "Cutting, cleaning, or maintaining nails.",
+"aliases": [
+"cut nails",
+"trim nails",
+"clean nails",
+"nail routine",
+"file nails"
+],
+"status": "active"
+},
+{
+"key": "prepare-for-day",
+"label": "Prepare for Day",
+"categoryKey": "personal-care",
+"subcategoryKey": "self-maintenance",
+"description": "Getting ready for the day with a basic personal routine.",
+"aliases": [
+"get ready",
+"morning routine",
+"start day routine",
+"prepare morning",
+"ready for work"
+],
+"status": "active"
+},
+{
+"key": "pack-bag",
+"label": "Pack Bag",
+"categoryKey": "personal-care",
+"subcategoryKey": "self-maintenance",
+"description": "Preparing a bag, backpack, or essentials for the day or next outing.",
+"aliases": [
+"pack backpack",
+"prepare bag",
+"pack work bag",
+"get bag ready",
+"pack essentials"
+],
+"status": "active"
+},
+{
+"key": "take-outfit-photo",
+"label": "Take Outfit Photo",
+"categoryKey": "personal-care",
+"subcategoryKey": "self-maintenance",
+"description": "Documenting an outfit or appearance for personal tracking or confidence.",
+"aliases": [
+"outfit check",
+"fit check",
+"take ootd",
+"outfit picture",
+"mirror photo"
+],
+"status": "active"
+},
+{
+"key": "check-calendar-before-leaving",
+"label": "Check Calendar Before Leaving",
+"categoryKey": "personal-care",
+"subcategoryKey": "self-maintenance",
+"description": "Reviewing plans, items, or timing before leaving home.",
+"aliases": [
+"check schedule before leaving",
+"before leaving check",
+"leaving checklist",
+"check appointments",
+"day check"
+],
+"status": "active"
+},
+{
+"key": "do-laundry",
+"label": "Do Laundry",
+"categoryKey": "personal-care",
+"subcategoryKey": "clothing-care",
+"description": "Washing clothes, towels, or bedding as a routine.",
+"aliases": [
+"wash clothes",
+"laundry",
+"start laundry",
+"clothes wash",
+"laundry load"
+],
+"status": "active"
+},
+{
+"key": "fold-laundry",
+"label": "Fold Laundry",
+"categoryKey": "personal-care",
+"subcategoryKey": "clothing-care",
+"description": "Folding or putting away clean laundry.",
+"aliases": [
+"put away laundry",
+"fold clothes",
+"sort laundry",
+"laundry folding",
+"clothes away"
+],
+"status": "active"
+},
+{
+"key": "prepare-outfit",
+"label": "Prepare Outfit",
+"categoryKey": "personal-care",
+"subcategoryKey": "clothing-care",
+"description": "Choosing or setting out clothes ahead of time.",
+"aliases": [
+"pick outfit",
+"lay out clothes",
+"choose clothes",
+"outfit prep",
+"plan outfit"
+],
+"status": "active"
+},
+{
+"key": "clean-shoes",
+"label": "Clean Shoes",
+"categoryKey": "personal-care",
+"subcategoryKey": "clothing-care",
+"description": "Cleaning or maintaining shoes.",
+"aliases": [
+"shoe cleaning",
+"wipe shoes",
+"polish shoes",
+"clean sneakers",
+"shoe care"
+],
+"status": "active"
+},
+{
+"key": "call-family",
+"label": "Call Family",
+"categoryKey": "social",
+"subcategoryKey": "family",
+"description": "Calling, texting, or checking in with family members.",
+"aliases": [
+"phone family",
+"text family",
+"call parents",
+"check in with family",
+"message family"
+],
+"status": "active"
+},
+{
+"key": "family-time",
+"label": "Family Time",
+"categoryKey": "social",
+"subcategoryKey": "family",
+"description": "Spending intentional time with family in person or remotely.",
+"aliases": [
+"spend time with family",
+"family dinner",
+"visit family",
+"family hangout",
+"quality time family"
+],
+"status": "active"
+},
+{
+"key": "help-family-member",
+"label": "Help Family Member",
+"categoryKey": "social",
+"subcategoryKey": "family",
+"description": "Supporting a family member with a small task, errand, or conversation.",
+"aliases": [
+"help parents",
+"support family",
+"assist family",
+"family favor",
+"help sibling"
+],
+"status": "active"
+},
+{
+"key": "share-family-update",
+"label": "Share Family Update",
+"categoryKey": "social",
+"subcategoryKey": "family",
+"description": "Sending or sharing a small update with family.",
+"aliases": [
+"update family",
+"send family photo",
+"family message",
+"share news with family",
+"family check in"
+],
+"status": "active"
+},
+{
+"key": "message-friend",
+"label": "Message Friend",
+"categoryKey": "social",
+"subcategoryKey": "friends",
+"description": "Reaching out to a friend by message or chat.",
+"aliases": [
+"text friend",
+"check in with friend",
+"send friend message",
+"dm friend",
+"reply to friend"
+],
+"status": "active"
+},
+{
+"key": "meet-friend",
+"label": "Meet Friend",
+"categoryKey": "social",
+"subcategoryKey": "friends",
+"description": "Spending time with a friend in person or through a planned call.",
+"aliases": [
+"hang out with friend",
+"see friend",
+"coffee with friend",
+"friend meetup",
+"catch up with friend"
+],
+"status": "active"
+},
+{
+"key": "reply-to-messages",
+"label": "Reply to Messages",
+"categoryKey": "social",
+"subcategoryKey": "friends",
+"description": "Responding to personal messages from friends or acquaintances.",
+"aliases": [
+"answer texts",
+"reply texts",
+"respond to messages",
+"message replies",
+"catch up on messages"
+],
+"status": "active"
+},
+{
+"key": "plan-social-activity",
+"label": "Plan Social Activity",
+"categoryKey": "social",
+"subcategoryKey": "friends",
+"description": "Arranging a social event, meetup, call, or shared activity.",
+"aliases": [
+"make plans",
+"schedule hangout",
+"plan meetup",
+"organize social event",
+"plan with friends"
+],
+"status": "active"
+},
+{
+"key": "quality-time-with-partner",
+"label": "Quality Time With Partner",
+"categoryKey": "social",
+"subcategoryKey": "partner",
+"description": "Spending intentional, undistracted time with a romantic partner.",
+"aliases": [
+"date time",
+"partner time",
+"quality time",
+"spend time together",
+"date night"
+],
+"status": "active"
+},
+{
+"key": "check-in-with-partner",
+"label": "Check In With Partner",
+"categoryKey": "social",
+"subcategoryKey": "partner",
+"description": "Having a short emotional, practical, or day-to-day check-in with a partner.",
+"aliases": [
+"relationship check in",
+"talk with partner",
+"ask partner how they are",
+"partner conversation",
+"couple check in"
+],
+"status": "active"
+},
+{
+"key": "show-appreciation-to-partner",
+"label": "Show Appreciation to Partner",
+"categoryKey": "social",
+"subcategoryKey": "partner",
+"description": "Expressing gratitude, affection, or recognition to a partner.",
+"aliases": [
+"thank partner",
+"appreciate partner",
+"say i love you",
+"kind gesture partner",
+"compliment partner"
+],
+"status": "active"
+},
+{
+"key": "plan-date",
+"label": "Plan Date",
+"categoryKey": "social",
+"subcategoryKey": "partner",
+"description": "Planning a date, shared activity, or intentional couple time.",
+"aliases": [
+"date planning",
+"plan date night",
+"organize date",
+"couple activity",
+"romantic plan"
+],
+"status": "active"
+},
+{
+"key": "attend-community-event",
+"label": "Attend Community Event",
+"categoryKey": "social",
+"subcategoryKey": "community",
+"description": "Joining a club, group, class, local event, or community gathering.",
+"aliases": [
+"go to event",
+"club meeting",
+"community meetup",
+"attend meetup",
+"group event"
+],
+"status": "active"
+},
+{
+"key": "volunteer",
+"label": "Volunteer",
+"categoryKey": "social",
+"subcategoryKey": "community",
+"description": "Helping a cause, group, neighbor, or community through unpaid contribution.",
+"aliases": [
+"volunteering",
+"community service",
+"help out",
+"do volunteer work",
+"support cause"
+],
+"status": "active"
+},
+{
+"key": "help-someone",
+"label": "Help Someone",
+"categoryKey": "social",
+"subcategoryKey": "community",
+"description": "Doing a helpful act for another person in everyday life.",
+"aliases": [
+"help a person",
+"do a favor",
+"assist someone",
+"kind act",
+"help others"
+],
+"status": "active"
+},
+{
+"key": "network",
+"label": "Network",
+"categoryKey": "social",
+"subcategoryKey": "community",
+"description": "Building or maintaining professional or interest-based connections.",
+"aliases": [
+"professional networking",
+"reach out professionally",
+"connect with someone",
+"linkedin outreach",
+"networking"
+],
+"status": "active"
+},
+{
+"key": "clean-room",
+"label": "Clean Room",
+"categoryKey": "home",
+"subcategoryKey": "cleaning",
+"description": "Cleaning a bedroom, living space, or personal room.",
+"aliases": [
+"clean bedroom",
+"room cleaning",
+"clean my room",
+"tidy and clean room",
+"clean living space"
+],
+"status": "active"
+},
+{
+"key": "clean-kitchen",
+"label": "Clean Kitchen",
+"categoryKey": "home",
+"subcategoryKey": "cleaning",
+"description": "Cleaning kitchen surfaces, sink, counters, or appliances.",
+"aliases": [
+"kitchen cleaning",
+"wipe counters",
+"clean sink",
+"clean stove",
+"clean kitchen surfaces"
+],
+"status": "active"
+},
+{
+"key": "clean-bathroom",
+"label": "Clean Bathroom",
+"categoryKey": "home",
+"subcategoryKey": "cleaning",
+"description": "Cleaning toilet, sink, shower, mirror, or bathroom surfaces.",
+"aliases": [
+"bathroom cleaning",
+"clean toilet",
+"clean shower",
+"wipe bathroom",
+"clean sink bathroom"
+],
+"status": "active"
+},
+{
+"key": "vacuum",
+"label": "Vacuum",
+"categoryKey": "home",
+"subcategoryKey": "cleaning",
+"description": "Vacuuming floors, carpets, rugs, or living areas.",
+"aliases": [
+"hoover",
+"vacuum floor",
+"vacuum room",
+"clean floors",
+"use vacuum"
+],
+"status": "active"
+},
+{
+"key": "tidy-room",
+"label": "Tidy Room",
+"categoryKey": "home",
+"subcategoryKey": "tidying",
+"description": "Putting items away and reducing clutter in a room.",
+"aliases": [
+"tidy bedroom",
+"pick up room",
+"declutter room",
+"room reset",
+"put things away"
+],
+"status": "active"
+},
+{
+"key": "make-bed",
+"label": "Make Bed",
+"categoryKey": "home",
+"subcategoryKey": "tidying",
+"description": "Making the bed after waking up or before the day starts.",
+"aliases": [
+"bed making",
+"make my bed",
+"tidy bed",
+"fix bed",
+"morning bed"
+],
+"status": "active"
+},
+{
+"key": "declutter",
+"label": "Declutter",
+"categoryKey": "home",
+"subcategoryKey": "tidying",
+"description": "Removing or sorting unnecessary items from a space.",
+"aliases": [
+"get rid of clutter",
+"decluttering",
+"sort stuff",
+"minimalism task",
+"clear clutter"
+],
+"status": "active"
+},
+{
+"key": "reset-living-space",
+"label": "Reset Living Space",
+"categoryKey": "home",
+"subcategoryKey": "tidying",
+"description": "Returning a shared living area to a tidy usable state.",
+"aliases": [
+"living room reset",
+"tidy living room",
+"reset apartment",
+"evening reset home",
+"clear living area"
+],
+"status": "active"
+},
+{
+"key": "wash-dishes",
+"label": "Wash Dishes",
+"categoryKey": "home",
+"subcategoryKey": "chores",
+"description": "Cleaning dishes, cookware, or loading and unloading the dishwasher.",
+"aliases": [
+"do dishes",
+"wash plates",
+"clean dishes",
+"load dishwasher",
+"empty dishwasher"
+],
+"status": "active"
+},
+{
+"key": "take-out-trash",
+"label": "Take Out Trash",
+"categoryKey": "home",
+"subcategoryKey": "chores",
+"description": "Emptying bins and taking trash or recycling out.",
+"aliases": [
+"take trash out",
+"empty bin",
+"garbage out",
+"take out recycling",
+"trash duty"
+],
+"status": "active"
+},
+{
+"key": "grocery-shopping",
+"label": "Grocery Shopping",
+"categoryKey": "home",
+"subcategoryKey": "chores",
+"description": "Buying groceries or household food supplies.",
+"aliases": [
+"buy groceries",
+"food shopping",
+"go supermarket",
+"shop groceries",
+"weekly groceries"
+],
+"status": "active"
+},
+{
+"key": "water-plants",
+"label": "Water Plants",
+"categoryKey": "home",
+"subcategoryKey": "chores",
+"description": "Watering houseplants, balcony plants, or garden plants.",
+"aliases": [
+"plant care",
+"water houseplants",
+"water flowers",
+"care for plants",
+"watering plants"
+],
+"status": "active"
+},
+{
+"key": "check-mail",
+"label": "Check Mail",
+"categoryKey": "home",
+"subcategoryKey": "maintenance",
+"description": "Checking physical mail, packages, or household notices.",
+"aliases": [
+"check mailbox",
+"get mail",
+"open mail",
+"check post",
+"collect packages"
+],
+"status": "active"
+},
+{
+"key": "home-repair-task",
+"label": "Home Repair Task",
+"categoryKey": "home",
+"subcategoryKey": "maintenance",
+"description": "Doing a small home repair or fixing something around the house.",
+"aliases": [
+"fix something",
+"small repair",
+"home fix",
+"repair task",
+"house repair"
+],
+"status": "active"
+},
+{
+"key": "replace-household-supplies",
+"label": "Replace Household Supplies",
+"categoryKey": "home",
+"subcategoryKey": "maintenance",
+"description": "Restocking or replacing common supplies like soap, paper, bulbs, or filters.",
+"aliases": [
+"restock supplies",
+"replace supplies",
+"buy household items",
+"refill soap",
+"replace filter"
+],
+"status": "active"
+},
+{
+"key": "organize-storage",
+"label": "Organize Storage",
+"categoryKey": "home",
+"subcategoryKey": "maintenance",
+"description": "Sorting drawers, cabinets, shelves, closets, or storage areas.",
+"aliases": [
+"organize closet",
+"sort cabinet",
+"storage cleanup",
+"organize drawers",
+"tidy shelves"
+],
+"status": "active"
+},
+{
+"key": "review-budget",
+"label": "Review Budget",
+"categoryKey": "finance",
+"subcategoryKey": "budgeting",
+"description": "Checking budget categories, limits, or planned spending.",
+"aliases": [
+"budget review",
+"check budget",
+"monthly budget",
+"look at budget",
+"budget check"
+],
+"status": "active"
+},
+{
+"key": "make-budget",
+"label": "Make Budget",
+"categoryKey": "finance",
+"subcategoryKey": "budgeting",
+"description": "Creating or updating a budget for a time period.",
+"aliases": [
+"create budget",
+"plan budget",
+"set budget",
+"budget planning",
+"monthly budget plan"
+],
+"status": "active"
+},
+{
+"key": "review-spending-plan",
+"label": "Review Spending Plan",
+"categoryKey": "finance",
+"subcategoryKey": "budgeting",
+"description": "Looking over upcoming expenses and planned purchases.",
+"aliases": [
+"spending plan",
+"plan spending",
+"money plan",
+"check planned expenses",
+"spending review"
+],
+"status": "active"
+},
+{
+"key": "set-money-intention",
+"label": "Set Money Intention",
+"categoryKey": "finance",
+"subcategoryKey": "budgeting",
+"description": "Choosing a simple intention for spending or saving behavior.",
+"aliases": [
+"money intention",
+"financial intention",
+"spending intention",
+"money goal for day",
+"spending focus"
+],
+"status": "active"
+},
+{
+"key": "save-money",
+"label": "Save Money",
+"categoryKey": "finance",
+"subcategoryKey": "saving",
+"description": "Putting money aside or avoiding unnecessary spending to build savings.",
+"aliases": [
+"put money aside",
+"transfer to savings",
+"save cash",
+"savings habit",
+"set aside money"
+],
+"status": "active"
+},
+{
+"key": "no-spend-day",
+"label": "No-Spend Day",
+"categoryKey": "finance",
+"subcategoryKey": "saving",
+"description": "Going a day without discretionary spending.",
+"aliases": [
+"no spending",
+"spend nothing",
+"no buy day",
+"zero spend day",
+"avoid spending"
+],
+"status": "active"
+},
+{
+"key": "build-emergency-fund",
+"label": "Build Emergency Fund",
+"categoryKey": "finance",
+"subcategoryKey": "saving",
+"description": "Contributing to or maintaining a general emergency savings buffer.",
+"aliases": [
+"emergency savings",
+"save emergency money",
+"rainy day fund",
+"build savings buffer",
+"emergency fund"
+],
+"status": "active"
+},
+{
+"key": "save-for-goal",
+"label": "Save for Goal",
+"categoryKey": "finance",
+"subcategoryKey": "saving",
+"description": "Saving toward a specific personal purchase, trip, or financial goal.",
+"aliases": [
+"goal savings",
+"save for trip",
+"save for purchase",
+"sinking fund",
+"saving target"
+],
+"status": "active"
+},
+{
+"key": "track-expenses",
+"label": "Track Expenses",
+"categoryKey": "finance",
+"subcategoryKey": "expense-tracking",
+"description": "Recording purchases, bills, or outgoing money.",
+"aliases": [
+"expense tracking",
+"log expenses",
+"record spending",
+"track purchases",
+"write down spending"
+],
+"status": "active"
+},
+{
+"key": "review-bank-account",
+"label": "Review Bank Account",
+"categoryKey": "finance",
+"subcategoryKey": "expense-tracking",
+"description": "Checking account balance and recent transactions.",
+"aliases": [
+"check bank account",
+"bank review",
+"look at balance",
+"review transactions",
+"account check"
+],
+"status": "active"
+},
+{
+"key": "categorize-transactions",
+"label": "Categorize Transactions",
+"categoryKey": "finance",
+"subcategoryKey": "expense-tracking",
+"description": "Assigning transactions to spending categories for visibility.",
+"aliases": [
+"sort transactions",
+"label expenses",
+"categorize spending",
+"expense categories",
+"transaction cleanup"
+],
+"status": "active"
+},
+{
+"key": "keep-receipts",
+"label": "Keep Receipts",
+"categoryKey": "finance",
+"subcategoryKey": "expense-tracking",
+"description": "Saving, scanning, or organizing receipts.",
+"aliases": [
+"save receipts",
+"receipt tracking",
+"scan receipts",
+"organize receipts",
+"collect receipts"
+],
+"status": "active"
+},
+{
+"key": "pay-bills",
+"label": "Pay Bills",
+"categoryKey": "finance",
+"subcategoryKey": "financial-admin",
+"description": "Paying recurring or one-off bills on time.",
+"aliases": [
+"pay invoice",
+"pay rent",
+"pay utilities",
+"bill payment",
+"settle bills"
+],
+"status": "active"
+},
+{
+"key": "cancel-unused-subscription",
+"label": "Cancel Unused Subscription",
+"categoryKey": "finance",
+"subcategoryKey": "financial-admin",
+"description": "Reviewing and canceling subscriptions that are no longer useful.",
+"aliases": [
+"cancel subscription",
+"unused subscription",
+"subscription cleanup",
+"stop subscription",
+"cancel membership"
+],
+"status": "active"
+},
+{
+"key": "review-subscriptions",
+"label": "Review Subscriptions",
+"categoryKey": "finance",
+"subcategoryKey": "financial-admin",
+"description": "Checking active subscriptions and recurring payments.",
+"aliases": [
+"subscription review",
+"check subscriptions",
+"recurring payments",
+"membership review",
+"monthly subscriptions"
+],
+"status": "active"
+},
+{
+"key": "organize-financial-documents",
+"label": "Organize Financial Documents",
+"categoryKey": "finance",
+"subcategoryKey": "financial-admin",
+"description": "Sorting receipts, statements, tax papers, or other financial documents.",
+"aliases": [
+"money paperwork",
+"financial paperwork",
+"organize statements",
+"tax documents",
+"finance folder"
+],
+"status": "active"
+},
+{
+"key": "creative-writing",
+"label": "Creative Writing",
+"categoryKey": "creativity",
+"subcategoryKey": "writing",
+"description": "Writing fiction, poetry, essays, scripts, or other creative text.",
+"aliases": [
+"write story",
+"write poem",
+"fiction writing",
+"write creatively",
+"writing practice"
+],
+"status": "active"
+},
+{
+"key": "write-ideas",
+"label": "Write Ideas",
+"categoryKey": "creativity",
+"subcategoryKey": "writing",
+"description": "Capturing creative ideas, prompts, concepts, or observations.",
+"aliases": [
+"idea list",
+"capture ideas",
+"write down ideas",
+"creative notes",
+"idea journal"
+],
+"status": "active"
+},
+{
+"key": "blog",
+"label": "Blog",
+"categoryKey": "creativity",
+"subcategoryKey": "writing",
+"description": "Writing or drafting a blog post, article, or public note.",
+"aliases": [
+"write blog",
+"blog post",
+"publish article",
+"draft post",
+"write online"
+],
+"status": "active"
+},
+{
+"key": "edit-writing",
+"label": "Edit Writing",
+"categoryKey": "creativity",
+"subcategoryKey": "writing",
+"description": "Revising, polishing, or improving written work.",
+"aliases": [
+"revise writing",
+"proofread",
+"edit draft",
+"rewrite text",
+"polish writing"
+],
+"status": "active"
+},
+{
+"key": "practice-instrument",
+"label": "Practice Instrument",
+"categoryKey": "creativity",
+"subcategoryKey": "music",
+"description": "Practicing a musical instrument without specifying the instrument or duration.",
+"aliases": [
+"play guitar",
+"piano practice",
+"practice piano",
+"play instrument",
+"music practice"
+],
+"status": "active"
+},
+{
+"key": "sing",
+"label": "Sing",
+"categoryKey": "creativity",
+"subcategoryKey": "music",
+"description": "Singing for practice, enjoyment, or vocal expression.",
+"aliases": [
+"singing practice",
+"vocal practice",
+"sing a song",
+"practice vocals",
+"voice practice"
+],
+"status": "active"
+},
+{
+"key": "compose-music",
+"label": "Compose Music",
+"categoryKey": "creativity",
+"subcategoryKey": "music",
+"description": "Creating melodies, beats, songs, or musical ideas.",
+"aliases": [
+"make music",
+"write song",
+"produce beat",
+"compose song",
+"music creation"
+],
+"status": "active"
+},
+{
+"key": "listen-actively-to-music",
+"label": "Listen Actively to Music",
+"categoryKey": "creativity",
+"subcategoryKey": "music",
+"description": "Listening to music with attention, study, or appreciation.",
+"aliases": [
+"active listening",
+"listen to album",
+"music appreciation",
+"study music",
+"listen carefully"
+],
+"status": "active"
+},
+{
+"key": "draw",
+"label": "Draw",
+"categoryKey": "creativity",
+"subcategoryKey": "visual-art",
+"description": "Drawing sketches, figures, doodles, or visual studies.",
+"aliases": [
+"sketch",
+"drawing practice",
+"doodle",
+"draw picture",
+"make sketch"
+],
+"status": "active"
+},
+{
+"key": "paint",
+"label": "Paint",
+"categoryKey": "creativity",
+"subcategoryKey": "visual-art",
+"description": "Painting with physical or digital tools.",
+"aliases": [
+"painting",
+"watercolor",
+"acrylic painting",
+"digital painting",
+"paint picture"
+],
+"status": "active"
+},
+{
+"key": "design",
+"label": "Design",
+"categoryKey": "creativity",
+"subcategoryKey": "visual-art",
+"description": "Creating visual layouts, graphics, interfaces, or design concepts.",
+"aliases": [
+"graphic design",
+"make design",
+"ui design",
+"design practice",
+"visual design"
+],
+"status": "active"
+},
+{
+"key": "take-photos",
+"label": "Take Photos",
+"categoryKey": "creativity",
+"subcategoryKey": "visual-art",
+"description": "Taking photographs for creativity, memory, or practice.",
+"aliases": [
+"photography",
+"photo walk",
+"take pictures",
+"shoot photos",
+"camera practice"
+],
+"status": "active"
+},
+{
+"key": "craft",
+"label": "Craft",
+"categoryKey": "creativity",
+"subcategoryKey": "making",
+"description": "Doing a hands-on craft such as paper, textile, clay, or DIY work.",
+"aliases": [
+"crafting",
+"make crafts",
+"handmade project",
+"diy craft",
+"craft project"
+],
+"status": "active"
+},
+{
+"key": "cook-creatively",
+"label": "Cook Creatively",
+"categoryKey": "creativity",
+"subcategoryKey": "making",
+"description": "Trying a recipe, experimenting in the kitchen, or making food creatively.",
+"aliases": [
+"try recipe",
+"creative cooking",
+"new recipe",
+"cook something new",
+"recipe practice"
+],
+"status": "active"
+},
+{
+"key": "build-project",
+"label": "Build Project",
+"categoryKey": "creativity",
+"subcategoryKey": "making",
+"description": "Working on a personal creative, technical, or physical project.",
+"aliases": [
+"make project",
+"side project",
+"project work",
+"build something",
+"work on project"
+],
+"status": "active"
+},
+{
+"key": "decorate-space",
+"label": "Decorate Space",
+"categoryKey": "creativity",
+"subcategoryKey": "making",
+"description": "Improving or personalizing a room, desk, or living area.",
+"aliases": [
+"decorate room",
+"home decor",
+"style space",
+"decorate desk",
+"make space nice"
+],
+"status": "active"
+},
+{
+"key": "limit-screen-time",
+"label": "Limit Screen Time",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "screen-time",
+"description": "Reducing total time spent on phone, computer, TV, or other screens.",
+"aliases": [
+"less screen time",
+"reduce screens",
+"screen limit",
+"limit computer time",
+"cut screen use"
+],
+"status": "active"
+},
+{
+"key": "screen-free-break",
+"label": "Screen-Free Break",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "screen-time",
+"description": "Taking a break from screens for a period of time.",
+"aliases": [
+"no screen break",
+"offline break",
+"screenless break",
+"digital break",
+"away from screens"
+],
+"status": "active"
+},
+{
+"key": "no-screens-during-meals",
+"label": "No Screens During Meals",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "screen-time",
+"description": "Eating without phone, TV, or computer distractions.",
+"aliases": [
+"phone free meal",
+"no phone while eating",
+"screenless meal",
+"eat without screens",
+"no tv dinner"
+],
+"status": "active"
+},
+{
+"key": "offline-evening",
+"label": "Offline Evening",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "screen-time",
+"description": "Spending part of the evening without digital devices or online activity.",
+"aliases": [
+"digital sunset",
+"no screens evening",
+"offline night",
+"phone free evening",
+"disconnect at night"
+],
+"status": "active"
+},
+{
+"key": "avoid-phone-after-waking",
+"label": "Avoid Phone After Waking",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "phone-habits",
+"description": "Delaying phone use after waking up.",
+"aliases": [
+"no phone morning",
+"dont check phone in bed",
+"phone free morning",
+"avoid morning scrolling",
+"no phone after waking"
+],
+"status": "active"
+},
+{
+"key": "put-phone-away",
+"label": "Put Phone Away",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "phone-habits",
+"description": "Placing the phone out of reach during focus, sleep, meals, or social time.",
+"aliases": [
+"phone away",
+"keep phone away",
+"put phone in drawer",
+"hide phone",
+"phone out of reach"
+],
+"status": "active"
+},
+{
+"key": "disable-notifications",
+"label": "Disable Notifications",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "phone-habits",
+"description": "Turning off or reducing nonessential notifications.",
+"aliases": [
+"turn off notifications",
+"mute notifications",
+"notification cleanup",
+"silence alerts",
+"reduce notifications"
+],
+"status": "active"
+},
+{
+"key": "check-phone-intentionally",
+"label": "Check Phone Intentionally",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "phone-habits",
+"description": "Using the phone deliberately instead of reflexively checking it.",
+"aliases": [
+"intentional phone use",
+"stop phone checking",
+"mindful phone use",
+"check phone less",
+"avoid random checking"
+],
+"status": "active"
+},
+{
+"key": "limit-social-media",
+"label": "Limit Social Media",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "social-media",
+"description": "Reducing time spent on social media platforms and feeds.",
+"aliases": [
+"less instagram",
+"reduce social media",
+"limit tiktok",
+"cut social apps",
+"less scrolling"
+],
+"status": "active"
+},
+{
+"key": "avoid-doomscrolling",
+"label": "Avoid Doomscrolling",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "social-media",
+"description": "Stopping long, negative, or compulsive scrolling sessions.",
+"aliases": [
+"stop doomscrolling",
+"no endless scrolling",
+"avoid scrolling",
+"scroll less",
+"quit doomscroll"
+],
+"status": "active"
+},
+{
+"key": "post-intentionally",
+"label": "Post Intentionally",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "social-media",
+"description": "Sharing online with purpose rather than impulse.",
+"aliases": [
+"intentional posting",
+"post mindfully",
+"share online",
+"planned post",
+"thoughtful post"
+],
+"status": "active"
+},
+{
+"key": "unfollow-cleanup",
+"label": "Unfollow Cleanup",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "social-media",
+"description": "Unfollowing, muting, or cleaning up accounts that add little value.",
+"aliases": [
+"unfollow accounts",
+"clean feed",
+"mute accounts",
+"social media cleanup",
+"feed cleanup"
+],
+"status": "active"
+},
+{
+"key": "clean-email-inbox",
+"label": "Clean Email Inbox",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "digital-organization",
+"description": "Deleting, archiving, or sorting email clutter.",
+"aliases": [
+"clear email",
+"email cleanup",
+"inbox cleanup",
+"archive emails",
+"delete emails"
+],
+"status": "active"
+},
+{
+"key": "organize-files",
+"label": "Organize Files",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "digital-organization",
+"description": "Sorting digital files, folders, downloads, or cloud storage.",
+"aliases": [
+"file cleanup",
+"clean downloads",
+"organize folders",
+"sort files",
+"digital files"
+],
+"status": "active"
+},
+{
+"key": "delete-unused-apps",
+"label": "Delete Unused Apps",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "digital-organization",
+"description": "Removing apps that are unused, distracting, or unnecessary.",
+"aliases": [
+"uninstall apps",
+"app cleanup",
+"delete apps",
+"remove unused apps",
+"clean phone apps"
+],
+"status": "active"
+},
+{
+"key": "backup-files",
+"label": "Backup Files",
+"categoryKey": "digital-wellbeing",
+"subcategoryKey": "digital-organization",
+"description": "Creating or checking backups of important files or photos.",
+"aliases": [
+"backup data",
+"cloud backup",
+"backup photos",
+"save files",
+"file backup"
+],
+"status": "active"
+},
+{
+"key": "spend-time-in-nature",
+"label": "Spend Time in Nature",
+"categoryKey": "outdoors",
+"subcategoryKey": "nature-time",
+"description": "Being in natural surroundings such as parks, forests, lakes, or gardens.",
+"aliases": [
+"go into nature",
+"nature time",
+"be in nature",
+"visit nature",
+"forest time"
+],
+"status": "active"
+},
+{
+"key": "visit-park",
+"label": "Visit Park",
+"categoryKey": "outdoors",
+"subcategoryKey": "nature-time",
+"description": "Going to a park or green space for rest, movement, or fresh air.",
+"aliases": [
+"go to park",
+"park walk",
+"sit in park",
+"green space",
+"park time"
+],
+"status": "active"
+},
+{
+"key": "notice-nature",
+"label": "Notice Nature",
+"categoryKey": "outdoors",
+"subcategoryKey": "nature-time",
+"description": "Paying attention to trees, birds, weather, plants, or natural surroundings.",
+"aliases": [
+"observe nature",
+"look at trees",
+"notice birds",
+"nature observation",
+"mindful nature"
+],
+"status": "active"
+},
+{
+"key": "sit-outside",
+"label": "Sit Outside",
+"categoryKey": "outdoors",
+"subcategoryKey": "nature-time",
+"description": "Sitting outdoors on a balcony, bench, garden, or other open-air spot.",
+"aliases": [
+"sit outdoors",
+"outside break",
+"balcony time",
+"fresh air sit",
+"sit in garden"
+],
+"status": "active"
+},
+{
+"key": "get-sunlight",
+"label": "Get Sunlight",
+"categoryKey": "outdoors",
+"subcategoryKey": "sunlight",
+"description": "Spending safe time in daylight to get natural light exposure.",
+"aliases": [
+"get daylight",
+"morning sunlight",
+"go in the sun",
+"sun exposure",
+"natural light"
+],
+"status": "active"
+},
+{
+"key": "open-curtains",
+"label": "Open Curtains",
+"categoryKey": "outdoors",
+"subcategoryKey": "sunlight",
+"description": "Letting natural daylight into the room.",
+"aliases": [
+"open blinds",
+"let light in",
+"morning light",
+"open window blinds",
+"daylight room"
+],
+"status": "active"
+},
+{
+"key": "step-outside",
+"label": "Step Outside",
+"categoryKey": "outdoors",
+"subcategoryKey": "sunlight",
+"description": "Briefly going outside for fresh air or daylight.",
+"aliases": [
+"go outside",
+"fresh air break",
+"outside for a minute",
+"step outdoors",
+"get fresh air"
+],
+"status": "active"
+},
+{
+"key": "watch-sunrise-or-sunset",
+"label": "Watch Sunrise or Sunset",
+"categoryKey": "outdoors",
+"subcategoryKey": "sunlight",
+"description": "Taking time to notice sunrise, sunset, or changing natural light.",
+"aliases": [
+"watch sunset",
+"watch sunrise",
+"sunset break",
+"see sunrise",
+"golden hour"
+],
+"status": "active"
+},
+{
+"key": "garden",
+"label": "Garden",
+"categoryKey": "outdoors",
+"subcategoryKey": "outdoor-activity",
+"description": "Caring for plants, soil, balcony gardens, or outdoor growing spaces.",
+"aliases": [
+"gardening",
+"work in garden",
+"balcony gardening",
+"plant care outside",
+"tend garden"
+],
+"status": "active"
+},
+{
+"key": "hike",
+"label": "Hike",
+"categoryKey": "outdoors",
+"subcategoryKey": "outdoor-activity",
+"description": "Going for a hike or longer walk in natural terrain.",
+"aliases": [
+"go hiking",
+"trail walk",
+"mountain walk",
+"hiking trip",
+"walk trail"
+],
+"status": "active"
+},
+{
+"key": "outdoor-sport",
+"label": "Outdoor Sport",
+"categoryKey": "outdoors",
+"subcategoryKey": "outdoor-activity",
+"description": "Playing a sport or active game outside.",
+"aliases": [
+"play football",
+"play basketball outside",
+"outdoor game",
+"sports outside",
+"play tennis"
+],
+"status": "active"
+},
+{
+"key": "picnic-outside",
+"label": "Picnic Outside",
+"categoryKey": "outdoors",
+"subcategoryKey": "outdoor-activity",
+"description": "Eating or relaxing outdoors in a picnic-like setting.",
+"aliases": [
+"have picnic",
+"eat outside",
+"outdoor meal",
+"park picnic",
+"picnic"
+],
+"status": "active"
+},
+{
+"key": "recycle",
+"label": "Recycle",
+"categoryKey": "outdoors",
+"subcategoryKey": "sustainability",
+"description": "Sorting and disposing recyclable items properly.",
+"aliases": [
+"sort recycling",
+"recycle waste",
+"separate trash",
+"recycling",
+"put recycling out"
+],
+"status": "active"
+},
+{
+"key": "use-reusable-bottle",
+"label": "Use Reusable Bottle",
+"categoryKey": "outdoors",
+"subcategoryKey": "sustainability",
+"description": "Using a refillable bottle instead of single-use drink containers.",
+"aliases": [
+"bring water bottle",
+"reusable water bottle",
+"avoid plastic bottle",
+"carry bottle",
+"refillable bottle"
+],
+"status": "active"
+},
+{
+"key": "use-reusable-bag",
+"label": "Use Reusable Bag",
+"categoryKey": "outdoors",
+"subcategoryKey": "sustainability",
+"description": "Bringing or using a reusable bag for shopping or errands.",
+"aliases": [
+"bring shopping bag",
+"reusable shopping bag",
+"cloth bag",
+"avoid plastic bag",
+"carry tote"
+],
+"status": "active"
+},
+{
+"key": "reduce-food-waste",
+"label": "Reduce Food Waste",
+"categoryKey": "outdoors",
+"subcategoryKey": "sustainability",
+"description": "Using leftovers, planning food, or avoiding throwing away edible food.",
+"aliases": [
+"use leftovers",
+"eat leftovers",
+"avoid food waste",
+"finish food",
+"save food"
+],
+"status": "active"
+}
+]
+}
+

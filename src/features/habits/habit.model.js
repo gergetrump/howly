@@ -90,6 +90,11 @@ const habitSchema = new Schema(
             type: Date,
             default: null,
         },
+        deletedAt: {
+            type: Date,
+            default: null,
+            index: true,
+        },
     },
     {
         timestamps: true,
@@ -97,6 +102,7 @@ const habitSchema = new Schema(
 );
 
 habitSchema.index({ ownerId: 1, createdAt: -1 });
+habitSchema.index({ ownerId: 1, deletedAt: 1 });
 
 export { FREQUENCIES, CATEGORIES };
 export default mongoose.model('Habit', habitSchema);
