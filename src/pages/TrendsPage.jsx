@@ -244,7 +244,7 @@ function SummaryCard({ icon: Icon, label, labelAction, value, helper, valueClass
         <Card className={appCardClassName}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-12 items-center justify-center rounded-xl', appCardInsetClassName)}>
-                    <Icon className="size-6 text-theme-accent-soft" aria-hidden="true" />
+                    <Icon className="size-6 text-howly-primary" aria-hidden="true" />
                 </div>
                 <div>
                     <div className="flex items-center gap-1.5">
@@ -283,7 +283,7 @@ function CategoryBreakdown({ categories, showTrends }) {
                     </div>
                     <div className="h-3 overflow-hidden rounded-full bg-theme-text/10">
                         <div
-                            className="h-full rounded-full bg-gradient-to-r from-theme-accent to-theme-accent shadow-[0_0_12px_rgba(168,85,247,0.25)] transition-all"
+                            className="h-full rounded-full bg-howly-primary shadow-[0_0_12px] shadow-howly-primary/25 transition-all"
                             style={{ width: `${Math.max((item.checkIns / maxCheckIns) * 100, item.checkIns ? 4 : 0)}%` }}
                         />
                     </div>
@@ -421,7 +421,7 @@ export function TrendsPage() {
                 <Card className={appCardClassName}>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-theme-text">
-                            <BarChart3 className="size-5 text-theme-accent-soft" aria-hidden="true" />
+                            <BarChart3 className="size-5 text-howly-primary" aria-hidden="true" />
                             <span>What Howly is working on</span>
                             <CategoryBreakdownHelpPopover comparisonPeriod={comparisonPeriod} />
                         </CardTitle>
@@ -447,7 +447,7 @@ export function TrendsPage() {
                 <Card className={appCardClassName}>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-theme-text">
-                            <Sparkles className="size-5 text-theme-accent-soft" aria-hidden="true" />
+                            <Sparkles className="size-5 text-howly-primary" aria-hidden="true" />
                             <span>Trending on Howly</span>
                             <TrendingHabitsHelpPopover comparisonPeriod={comparisonPeriod} />
                         </CardTitle>
