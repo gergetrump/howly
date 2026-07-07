@@ -152,6 +152,52 @@ test('GET /api/analytics/habits returns yearly monthly habit completion totals',
     assert.equal(response.body.data.summary.completed, 2);
 });
 
+test('GET /api/analytics/habits can return a selected past year', async () => {
+    const user = await buildUser();
+    const token = authHeader(user);
+    const currentYear = new Date().getFullYear();
+    const pastYear = currentYear - 1;
+    const createdAt = new Date(pastYear, 0, 1, 8, 0, 0, 0);
+    const januaryCompletion = new Date(pastYear, 0, 15, 9, 30, 0, 0);
+    const decemberCompletion = new Date(pastYear, 11, 20, 10, 0, 0, 0);
+    const habit = await Habit.create({
+        ownerId: user._id,
+        title: 'Past Reading',
+        type: 'boolean',
+        frequency: 'Daily',
+        createdAt,
+        updatedAt: createdAt,
+    });
+
+    await Habit.updateOne({ _id: habit._id }, { $set: { createdAt } });
+    await HabitCheckIn.create([
+        {
+            user: user._id,
+            habit: habit._id,
+            completedAt: januaryCompletion,
+            periodKey: januaryCompletion.toISOString().slice(0, 10),
+        },
+        {
+            user: user._id,
+            habit: habit._id,
+            completedAt: decemberCompletion,
+            periodKey: decemberCompletion.toISOString().slice(0, 10),
+        },
+    ]);
+
+    const response = await request(app)
+        .get(`/api/analytics/habits?period=year&year=${pastYear}`)
+        .set('Authorization', token)
+        .expect(200);
+
+    assert.equal(response.body.data.period.key, 'year');
+    assert.equal(response.body.data.period.year, pastYear);
+    assert.equal(response.body.data.monthlyTotals[0].completed, 1);
+    assert.equal(response.body.data.monthlyTotals[11].completed, 1);
+    assert.ok(response.body.data.availableYears.includes(currentYear));
+    assert.ok(response.body.data.availableYears.includes(pastYear));
+});
+
 test('GET /api/analytics/habits compares average completion time with other users', async () => {
     const user = await buildUser();
     const earlierPeer = await buildUser();
@@ -365,6 +411,69 @@ test('GET /api/analytics/challenges returns yearly monthly challenge totals', as
     assert.equal(response.body.data.monthlyTotals[0].completed, 1);
     assert.equal(response.body.data.challenges[0].monthly.length, 12);
     assert.equal(response.body.data.challenges[0].monthly[0].completed, 1);
+});
+
+test('GET /api/analytics/challenges can return a selected past year', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const token = authHeader(owner);
+    const currentYear = new Date().getFullYear();
+    const pastYear = currentYear - 1;
+    const startedAt = new Date(pastYear, 0, 1, 8, 0, 0, 0);
+
+    const challengeResponse = await request(app)
+        .post('/api/challenges')
+        .set('Authorization', token)
+        .send({
+            title: 'Past Sprint',
+            description: 'Keep showing up',
+            durationDays: 30,
+            visibility: 'public',
+            startsAt: startedAt.toISOString(),
+            habitTemplate: {
+                title: 'Show up',
+                icon: 'Y',
+                type: 'boolean',
+                frequency: 'Daily',
+                category: 'Productivity',
+            },
+        })
+        .expect(201);
+    const participant = await ChallengeParticipant.findOne({
+        challenge: challengeResponse.body.challenge.id,
+        user: owner._id,
+    }).lean();
+    const completedAt = new Date(pastYear, 0, 10, 10, 0, 0, 0);
+
+    await Promise.all([
+        ChallengeParticipant.updateOne(
+            { _id: participant._id },
+            {
+                $set: {
+                    joinedAt: startedAt,
+                    daysCompleted: 1,
+                    lastCompletedAt: completedAt,
+                },
+            },
+        ),
+        HabitCheckIn.create({
+            user: owner._id,
+            habit: participant.habit,
+            completedAt,
+            periodKey: completedAt.toISOString().slice(0, 10),
+        }),
+    ]);
+
+    const response = await request(app)
+        .get(`/api/analytics/challenges?period=year&year=${pastYear}`)
+        .set('Authorization', token)
+        .expect(200);
+
+    assert.equal(response.body.data.period.key, 'year');
+    assert.equal(response.body.data.period.year, pastYear);
+    assert.equal(response.body.data.monthlyTotals[0].completed, 1);
+    assert.equal(response.body.data.challenges[0].monthly[0].completed, 1);
+    assert.ok(response.body.data.availableYears.includes(currentYear));
+    assert.ok(response.body.data.availableYears.includes(pastYear));
 });
 
 test('GET /api/analytics/challenges compares average completion time with other users', async () => {
