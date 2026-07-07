@@ -118,7 +118,7 @@ export function ChangeCompanionDialog({ open, onOpenChange, currentType, current
                 <DialogHeader className="space-y-2 pt-2 text-left">
                     <DialogTitle className="text-2xl font-bold tracking-tight">Change your companion</DialogTitle>
                     <DialogDescription className="text-base text-theme-text-soft">
-                        Pick a new buddy and name it — your equipped items stay.
+                        Pick a new buddy and name it. Your equipped items stay.
                     </DialogDescription>
                 </DialogHeader>
 

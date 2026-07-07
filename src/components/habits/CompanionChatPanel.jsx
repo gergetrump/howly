@@ -149,7 +149,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                         </div>
                     ))}
                     {habits.length === 0 ? (
-                        <p className="py-2 text-center text-xs text-theme-accent-soft">All set — ask for more ideas below.</p>
+                        <p className="py-2 text-center text-xs text-theme-accent-soft">All set. Ask for more ideas below.</p>
                     ) : null}
                 </div>
             ) : null}

@@ -95,7 +95,7 @@ export function HabitSelectionPage() {
                                 Pick your first habits
                             </h1>
                             <p className="mt-2 text-sm leading-relaxed text-theme-text-muted">
-                                Choose up to {FREE_TIER_HABIT_LIMIT} to get started — that is the
+                                Choose up to {FREE_TIER_HABIT_LIMIT} to get started. That is the
                                 free plan limit. You can always add more later.
                             </p>
                             <p className="mt-2 text-xs font-medium text-howly-primary">

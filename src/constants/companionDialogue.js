@@ -5,8 +5,8 @@ export function getCompanionLines(name = 'Howly') {
         greeting: `Hi, I'm ${name}! 🐾 What do you want to achieve?`,
         thinking: 'Hmm, let me think for a sec…',
         results: 'Here are a few ideas for you! 👇',
-        fallback: "I couldn't reach my brain just now — here are some classics! 👇",
+        fallback: "I couldn't reach my brain just now. Here are some classics! 👇",
         limit: "You've hit your habit limit for now.",
-        error: 'Oops, my head is foggy — give it another try.',
+        error: 'Oops, my head is foggy. Give it another try.',
     };
 }

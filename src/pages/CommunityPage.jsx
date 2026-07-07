@@ -28,7 +28,7 @@ function formatCategory(value) {
 
 function formatStandingValue(standing) {
     if (!standing) {
-        return '—';
+        return 'N/A';
     }
 
     if (standing.display === 'percent' && standing.aheadPercent !== null) {
@@ -43,7 +43,7 @@ function formatStandingValue(standing) {
         return 'No habits due yet';
     }
 
-    return '—';
+    return 'N/A';
 }
 
 function standingHelperText(standing, periodInRange) {
@@ -74,7 +74,7 @@ function standingValueClassName(standing) {
 
 function formatTrendValue(trend) {
     if (!trend) {
-        return '—';
+        return 'N/A';
     }
 
     if (trend.display === 'new') {
@@ -108,7 +108,7 @@ function TrendDelta({ trend, className, size = 'sm' }) {
 
     const value = formatTrendValue(trend);
 
-    if (value === '—') {
+    if (value === 'N/A') {
         return null;
     }
 
@@ -369,7 +369,7 @@ export function CommunityPage() {
                 </Card>
 
                 <p className="text-center text-xs text-theme-text-muted">
-                    Anonymous patterns only — shares and trends, never individual habit names or usernames. Your consistency rank is a private benchmark against the community.
+                    Anonymous patterns only: shares and trends, never individual habit names or usernames. Your consistency rank is a private benchmark against the community.
                 </p>
             </div>
         </Page>

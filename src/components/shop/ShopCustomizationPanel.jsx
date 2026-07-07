@@ -141,7 +141,7 @@ export function ShopCustomizationPanel({
                 {item ? (
                     <>
                         <p className="mt-1 truncate text-sm font-medium text-theme-text">{getItemDisplayName(item)}</p>
-                        <p className="mt-2 text-sm">This item comes in a fixed design — no customization options.</p>
+                        <p className="mt-2 text-sm">This item comes in a fixed design. No customization options.</p>
                     </>
                 ) : (
                     <p className="mt-2 text-sm">Select an item to customize!</p>
