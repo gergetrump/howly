@@ -97,7 +97,7 @@ export function StreakFreezeCard({
                         align="end"
                         side="bottom"
                         sideOffset={8}
-                        className="z-[120] w-56 rounded-xl border border-violet-200/20 bg-theme-bg/95 p-3 text-left text-[11px] font-semibold leading-snug text-theme-text shadow-xl shadow-slate-950/30"
+                        className="z-[120] w-56 rounded-xl border border-theme-text/10 bg-theme-bg/95 p-3 text-left text-[11px] font-semibold leading-snug text-theme-text shadow-xl shadow-slate-950/30"
                     >
                         Save one habit streak or your overall streak before the repair time runs out. You can hold up to 3 shields.
                     </PopoverContent>

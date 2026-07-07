@@ -136,7 +136,7 @@ export function ShopCustomizationPanel({
 
     if (!item || !customizationConfig) {
         return (
-            <aside className="min-w-0 overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-text/5 p-5 text-theme-text-soft shadow-xl shadow-slate-950/20 lg:sticky lg:top-24">
+            <aside className="min-w-0 overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-surface p-5 text-theme-text-soft shadow-xl shadow-slate-950/20 lg:sticky lg:top-24">
                 <h2 className="text-lg font-semibold text-theme-text">Customize</h2>
                 {item ? (
                     <>
@@ -205,7 +205,7 @@ export function ShopCustomizationPanel({
     }
 
     return (
-        <aside className="min-w-0 overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-text/5 p-4 text-theme-text shadow-xl shadow-slate-950/20 lg:sticky lg:top-24">
+        <aside className="min-w-0 overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-surface p-4 text-theme-text shadow-xl shadow-slate-950/20 lg:sticky lg:top-24">
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                     <h2 className="text-lg font-semibold">Customize</h2>
@@ -321,7 +321,7 @@ export function ShopCustomizationPanel({
                         {textConfig.label}
                         <input
                             value={customization[textConfig.key] ?? ''}
-                            className="min-w-0 rounded-xl border border-theme-text/20 bg-theme-text/10 px-3 py-2 text-sm font-bold uppercase tracking-wide text-theme-text outline-none focus:border-violet-200"
+                            className="min-w-0 rounded-xl border border-theme-text/20 bg-theme-text/10 px-3 py-2 text-sm font-bold uppercase tracking-wide text-theme-text outline-none focus:border-theme-accent"
                             maxLength={MAX_CUSTOM_TEXT_LENGTH}
                             placeholder={textConfig.placeholder}
                             onChange={handleTextChange}
@@ -431,7 +431,8 @@ export function ShopCustomizationPanel({
                 <ActionButton
                     type="button"
                     fullWidth
-                    className="h-10 bg-violet-500 text-white hover:bg-violet-400 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
+                    variant="primary"
+                    className="h-10 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                     disabled={isAddToCartDisabled}
                     onClick={onAddToCart}
                 >

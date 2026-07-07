@@ -119,7 +119,8 @@ export function UserPreviewDialog({
             <Button
                 type="button"
                 size="sm"
-                className="bg-violet-500 text-white hover:bg-violet-400 w-auto px-6 h-8 text-xs font-semibold rounded-full mx-auto"
+                variant="primary"
+                className="w-auto px-6 h-8 text-xs rounded-full mx-auto"
                 disabled={busy}
                 onClick={() => onAddFriend(user)}
             >

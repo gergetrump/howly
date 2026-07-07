@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { getItemDisplayName } from '@/components/brand/items/itemRegistry';
+import { MoonCoinIcon } from '@/components/brand/MoonCoin.jsx';
 import {
     ConfirmationDialog,
     ConfirmationDialogAction,
@@ -24,12 +25,12 @@ export function PurchaseConfirmationDialog({
 
     return (
         <ConfirmationDialog open={itemsToBuy.length > 0} onOpenChange={onOpenChange}>
-            <ConfirmationDialogContent className="overflow-hidden rounded-3xl border border-violet-300/20 bg-theme-surface p-0 text-theme-text shadow-2xl shadow-violet-950/40 sm:max-w-md">
-                <div className="relative bg-gradient-to-br from-violet-500/25 via-transparent to-fuchsia-500/15 px-8 pb-8 pt-18">
+            <ConfirmationDialogContent className="overflow-hidden p-0">
+                <div className="relative px-8 pb-8 pt-18">
                     <ConfirmationDialogCancel
                         size="icon"
                         variant="ghost"
-                        className="absolute left-5 top-5 h-10 w-10 rounded-full bg-theme-text/10 text-theme-text hover:bg-theme-text/20 hover:text-theme-text"
+                        className="absolute right-5 top-5 h-10 w-10 rounded-full bg-theme-text/10 text-theme-text hover:bg-theme-text/20 hover:text-theme-text"
                         aria-label="Close purchase confirmation"
                     >
                         <X className="h-5 w-5" aria-hidden="true" />
@@ -46,11 +47,16 @@ export function PurchaseConfirmationDialog({
 
                     <ConfirmationDialogFooter className="mt-5 block">
                         <ConfirmationDialogAction
-                            className="h-10 w-full rounded-xl bg-violet-500 text-sm font-semibold text-white shadow-lg shadow-violet-950/30 hover:bg-violet-400 disabled:bg-violet-500/60"
+                            className="h-10 w-full rounded-xl bg-theme-accent text-sm font-semibold text-theme-on-accent shadow-lg shadow-black/30 hover:bg-theme-accent-strong disabled:bg-theme-accent/60"
                             disabled={itemsToBuy.length === 0 || buyingItemId === 'cart'}
                             onClick={() => onBuyItems(itemsToBuy)}
                         >
-                            {buyingItemId === 'cart' ? 'Buying...' : `Buy ${confirmationTotalPrice} 🌙`}
+                            {buyingItemId === 'cart' ? 'Buying...' : (
+                                <span className="inline-flex items-center justify-center gap-1.5">
+                                    Buy {confirmationTotalPrice}
+                                    <MoonCoinIcon className="size-5" />
+                                </span>
+                            )}
                         </ConfirmationDialogAction>
                     </ConfirmationDialogFooter>
                 </div>

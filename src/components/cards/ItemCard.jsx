@@ -50,8 +50,8 @@ export function ItemCard({
             className={cn(
                 appCardClassName,
                 'relative gap-0 py-0',
-                interactive && 'cursor-pointer transition hover:border-violet-300/40 hover:ring-violet-300/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/70',
-                equipped && 'border-violet-300/90 ring-2 ring-inset ring-violet-300/45 shadow-lg shadow-violet-950/25',
+                interactive && 'cursor-pointer transition hover:border-theme-accent/40 hover:ring-theme-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent/70',
+                equipped && 'border-theme-accent/90 ring-2 ring-inset ring-theme-accent/45 shadow-lg shadow-black/25',
                 disabled && 'cursor-wait opacity-80',
                 className,
             )}

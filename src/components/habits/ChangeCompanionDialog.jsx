@@ -20,7 +20,6 @@ function ChangeCompanionForm({ currentType, currentName, onSaved, onCancel }) {
 
     function handleSelectType(type) {
         setSelectedType(type);
-        setName(getDefaultCompanionName(type));
     }
 
     async function handleSave() {
@@ -115,7 +114,7 @@ function ChangeCompanionForm({ currentType, currentName, onSaved, onCancel }) {
 export function ChangeCompanionDialog({ open, onOpenChange, currentType, currentName, onSaved }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="rounded-3xl border-0 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-lg">
+            <DialogContent className="p-8 sm:max-w-lg">
                 <DialogHeader className="space-y-2 pt-2 text-left">
                     <DialogTitle className="text-2xl font-bold tracking-tight">Change your companion</DialogTitle>
                     <DialogDescription className="text-base text-theme-text-soft">

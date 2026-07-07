@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils';
 
-function MoonCoinIcon({ compact = false }) {
+export function MoonCoinIcon({ compact = false, className }) {
     return (
         <svg
             aria-hidden="true"
             viewBox="0 0 24 24"
-            className={cn('shrink-0 drop-shadow-sm', compact ? 'size-7' : 'size-8')}
+            className={cn('shrink-0 drop-shadow-sm', compact ? 'size-7' : 'size-8', className)}
         >
             <circle cx="12" cy="12" r="11" fill="#92400e" />
             <circle cx="12" cy="12" r="10" fill="#f59e0b" stroke="#fde68a" strokeWidth="1.3" />

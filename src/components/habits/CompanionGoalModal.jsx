@@ -176,7 +176,7 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                             <Button
                                 type="submit"
                                 disabled={!goal.trim()}
-                                className="h-12 w-full rounded-2xl bg-gradient-to-r from-purple-600 to-purple-500 text-base font-semibold text-white shadow-lg shadow-purple-600/25 transition-all hover:from-purple-700 hover:to-purple-600 disabled:opacity-50"
+                                className="h-12 w-full rounded-2xl bg-gradient-to-r from-theme-accent to-theme-accent text-base font-semibold text-theme-on-accent shadow-lg shadow-black/25 transition-all hover:from-theme-accent-strong hover:to-theme-accent-strong disabled:opacity-50"
                             >
                                 <Sparkles size={18} className="mr-2" />
                                 Ask {companionName}
@@ -194,7 +194,7 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                                         <Button
                                             type="button"
                                             onClick={() => setPremiumPrompt('Upgrade to Premium for up to 6 habits.')}
-                                            className="rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-sm font-semibold text-white"
+                                            className="rounded-xl bg-gradient-to-r from-theme-accent to-theme-accent text-sm font-semibold text-theme-on-accent"
                                         >
                                             Upgrade to Premium
                                         </Button>
@@ -221,8 +221,8 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                                             className={cn(
                                                 'flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-all animate-in fade-in-0 slide-in-from-bottom-3',
                                                 isSelected
-                                                    ? 'border-purple-400 bg-theme-accent/15 ring-2 ring-purple-400/40'
-                                                    : 'border-theme-accent/20 bg-theme-surface-2/50 hover:border-purple-500/50',
+                                                    ? 'border-theme-accent bg-theme-accent/15 ring-2 ring-theme-accent/40'
+                                                    : 'border-theme-accent/20 bg-theme-surface-2/50 hover:border-theme-accent/50',
                                                 isDisabled && 'cursor-not-allowed opacity-40 hover:border-theme-accent/20',
                                             )}
                                         >
@@ -253,7 +253,7 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                                     type="button"
                                     onClick={handleCreate}
                                     disabled={isSaving || !selected.length}
-                                    className="h-12 flex-1 rounded-2xl bg-gradient-to-r from-purple-600 to-purple-500 text-base font-semibold text-white shadow-lg shadow-purple-600/25 transition-all hover:from-purple-700 hover:to-purple-600 disabled:opacity-50"
+                                    className="h-12 flex-1 rounded-2xl bg-gradient-to-r from-theme-accent to-theme-accent text-base font-semibold text-theme-on-accent shadow-lg shadow-black/25 transition-all hover:from-theme-accent-strong hover:to-theme-accent-strong disabled:opacity-50"
                                 >
                                     {isSaving
                                         ? 'Adding…'
@@ -281,9 +281,9 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
 function ThinkingDots() {
     return (
         <span className="ml-1 inline-flex items-center gap-1 align-middle">
-            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-purple-300 [animation-delay:-0.3s]" />
-            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-purple-300 [animation-delay:-0.15s]" />
-            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-purple-300" />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-theme-accent [animation-delay:-0.3s]" />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-theme-accent [animation-delay:-0.15s]" />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-theme-accent" />
         </span>
     );
 }

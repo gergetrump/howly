@@ -39,7 +39,7 @@ const FREQUENCIES = ['Daily', 'Weekly', 'Monthly'];
 const UNIT_LABELS = {
     L: 'l',
     ml: 'ml',
-    min: 'Min',
+    min: 'min',
     hours: 'Hours',
     km: 'km',
     steps: 'Steps',
@@ -260,10 +260,10 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                     <PopoverTrigger asChild>
                                         <button
                                             type="button"
-                                            className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-theme-accent/20 bg-theme-surface-2/60 text-2xl transition-colors hover:border-purple-500/40"
+                                            className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-theme-accent/20 bg-theme-surface-2/60 text-2xl transition-colors hover:border-theme-accent/40"
                                         >
                                             {form.habitIcon}
-                                            <div className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-theme-surface bg-purple-500 text-white">
+                                            <div className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-theme-surface bg-theme-accent text-theme-on-accent">
                                                 <Plus size={12} strokeWidth={4} />
                                             </div>
                                         </button>
@@ -286,7 +286,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                                     }}
                                                     className={`flex h-9 w-9 items-center justify-center rounded-lg text-lg transition-all ${
                                                         form.habitIcon === emoji
-                                                            ? 'bg-purple-600 ring-2 ring-purple-400'
+                                                            ? 'bg-theme-accent ring-2 ring-theme-accent'
                                                             : 'hover:bg-theme-surface-2'
                                                     }`}
                                                 >
@@ -303,7 +303,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                                 onChange={(event) => updateField('habitIcon', event.target.value)}
                                                 placeholder="\u2728"
                                                 maxLength={5}
-                                                className="h-8 w-14 rounded-lg border-purple-500/40 bg-theme-surface-2/60 px-0 text-center text-lg text-theme-text focus:border-theme-accent"
+                                                className="h-8 w-14 rounded-lg border-theme-accent/40 bg-theme-surface-2/60 px-0 text-center text-lg text-theme-text focus:border-theme-accent"
                                             />
                                         </div>
                                     </PopoverContent>
@@ -461,7 +461,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                         <ActionButton
                             type="submit"
                             disabled={!canSubmit || isSubmitting}
-                            className="h-12 rounded-2xl bg-gradient-to-r from-purple-600 to-purple-500 text-base font-semibold text-white shadow-lg shadow-purple-600/25 transition-all hover:from-purple-700 hover:to-purple-600 hover:shadow-purple-600/40"
+                            className="h-12 rounded-2xl bg-gradient-to-r from-theme-accent to-theme-accent text-base font-semibold text-theme-on-accent shadow-lg shadow-black/25 transition-all hover:from-theme-accent-strong hover:to-theme-accent-strong hover:shadow-black/40"
                         >
                             {isSubmitting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Plus className="size-4" aria-hidden="true" />}
                             {isEditing ? 'Save' : 'Create'}

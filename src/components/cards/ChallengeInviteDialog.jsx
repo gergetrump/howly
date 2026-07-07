@@ -74,7 +74,7 @@ export function ChallengeInviteDialog({
                                         <span className="block truncate text-xs text-theme-text-muted">@{friend.username}</span>
                                     ) : null}
                                 </span>
-                                {selected ? <span className="text-xs font-semibold text-emerald-200">Selected</span> : null}
+                                {selected ? <span className="text-xs font-semibold text-theme-success">Selected</span> : null}
                             </button>
                         );
                     }) : null}

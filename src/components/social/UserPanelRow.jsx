@@ -38,7 +38,7 @@ export function UserPanelRow({
                     type="button"
                     size="icon"
                     className={canAddFriend
-                        ? 'size-9 shrink-0 rounded-full bg-violet-500 text-white hover:bg-violet-400'
+                        ? 'size-9 shrink-0 rounded-full bg-theme-accent text-theme-on-accent hover:bg-theme-accent-strong'
                         : 'size-9 shrink-0 rounded-full bg-theme-text/10 text-theme-text-muted hover:bg-theme-text/10'}
                     aria-label={`Add ${getDisplayName(user)} as friend`}
                     disabled={!canAddFriend || busy}

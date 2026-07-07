@@ -44,42 +44,40 @@ export function HabitCard({
 
     return (
         <Card className={cn(appCardClassName, completed && 'bg-theme-success-surface ring-theme-success/25', atRisk && !completed && 'bg-theme-warn-surface ring-theme-gold/30')}>
-            <CardContent className="flex items-center gap-4">
+            <CardContent className="flex items-center gap-3 sm:gap-4">
                 <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl text-xl', appCardInsetClassName)}>
                     <span aria-hidden="true">{emoji}</span>
                 </div>
 
                 <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate font-semibold">{title}</h3>
-                        <div className="flex items-center gap-1.5">
-                            {frequency ? <Badge variant="secondary">{frequency}</Badge> : null}
-                            {category ? (
-                                <Badge className="border border-theme-accent/30 bg-theme-accent/15 text-theme-accent-soft hover:bg-theme-accent/15">
-                                    {category}
-                                </Badge>
-                            ) : null}
-                            {activeBoost ? (
-                                <Badge className="bg-theme-surface-2 hover:bg-theme-surface-2 text-theme-text border-0 font-medium capitalize text-[10px] py-0 h-5 px-1.5 flex gap-1 items-center">
-                                    {renderShopItemVisual(activeBoost, 'h-3 w-3')}
-                                    {activeBoost.assetKey.replace('-', ' ')} &bull; {activeBoost.remainingCompletions} left
-                                </Badge>
-                            ) : null}
-                        </div>
+                    <h3 className="truncate font-semibold leading-tight">{title}</h3>
+                    <div className="mt-1 flex items-center gap-1.5 overflow-hidden">
+                        <StreakBadge days={streakDays} icon="🔥" showLabel={false} className="shrink-0" />
+                        {frequency ? <Badge variant="secondary" className="shrink-0">{frequency}</Badge> : null}
+                        {category ? (
+                            <Badge className="shrink-0 border border-theme-accent/30 bg-theme-accent/15 text-theme-accent-soft hover:bg-theme-accent/15">
+                                {category}
+                            </Badge>
+                        ) : null}
+                        {activeBoost ? (
+                            <Badge className="shrink-0 bg-theme-surface-2 hover:bg-theme-surface-2 text-theme-text border-0 font-medium capitalize text-[10px] py-0 h-5 px-1.5 flex gap-1 items-center">
+                                {renderShopItemVisual(activeBoost, 'h-3 w-3')}
+                                {activeBoost.assetKey.replace('-', ' ')} &bull; {activeBoost.remainingCompletions} left
+                            </Badge>
+                        ) : null}
                     </div>
-                    <StreakBadge days={streakDays} icon="🔥" className="mt-1" />
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex shrink-0 items-center gap-1">
                     {atRisk && onUseFreeze ? (
                         <button
                             type="button"
                             onClick={onUseFreeze}
-                            className="flex items-center gap-1 rounded-full bg-theme-gold/15 px-3 py-1.5 text-xs font-semibold text-theme-gold ring-1 ring-theme-gold/30 transition-colors hover:bg-theme-gold/25"
+                            className="flex shrink-0 items-center gap-1 rounded-full bg-theme-gold/15 px-2.5 py-1.5 text-xs font-semibold text-theme-gold ring-1 ring-theme-gold/30 transition-colors hover:bg-theme-gold/25 sm:px-3"
                             title="Use a streak shield to save this streak"
                         >
                             <StreakShieldIcon className="h-3.5 w-auto" />
-                            Save streak
+                            <span className="hidden sm:inline">Save streak</span>
                         </button>
                     ) : null}
                     {children}
@@ -119,7 +117,7 @@ export function HabitCard({
 
                     {onDelete ? (
                     <ConfirmationDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                        <ConfirmationDialogContent className="bg-theme-surface border-0 text-theme-text rounded-3xl p-8 sm:max-w-md flex flex-col items-center text-center shadow-2xl">
+                        <ConfirmationDialogContent className="p-8 flex flex-col items-center text-center">
                             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-theme-danger/10 mb-2 border border-theme-danger/20">
                                 <Trash2 className="h-8 w-8 text-theme-danger" />
                             </div>

@@ -39,7 +39,7 @@ function SettingsRow({ icon: Icon, iconColor = 'text-theme-text-muted', title, s
             type="button"
             onClick={onClick}
             disabled={disabled}
-            className="flex min-h-20 w-full items-center justify-between border-b border-theme-text/10 bg-theme-surface/80 px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-theme-surface-2/70 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex min-h-20 w-full items-center justify-between border-b border-theme-text/10 bg-theme-surface px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-theme-surface-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
             <div className="flex items-center gap-4">
                 <Icon className={`size-5 ${iconColor}`} />
@@ -60,7 +60,7 @@ function SettingsRow({ icon: Icon, iconColor = 'text-theme-text-muted', title, s
 function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSubmitting, error, success }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border border-theme-text/10 bg-theme-bg p-6 text-theme-text sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-theme-text">Help & Feedback</DialogTitle>
                     <DialogDescription className="text-theme-text-muted">
@@ -69,7 +69,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                 </DialogHeader>
 
                 <form onSubmit={onSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-theme-surface p-1">
+                    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-theme-surface-2 p-1">
                         {[
                             { value: 'problem', label: 'Problem' },
                             { value: 'suggestion', label: 'Suggestion' },
@@ -92,7 +92,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                             value={form.subject}
                             onChange={(event) => onFormChange({ ...form, subject: event.target.value })}
                             maxLength={120}
-                            className="w-full rounded-2xl border border-theme-text/10 bg-theme-surface px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
+                            className="w-full rounded-2xl border border-theme-text/10 bg-theme-surface-2 px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
                             placeholder="Briefly summarize the topic."
                         />
                     </label>
@@ -104,7 +104,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                             onChange={(event) => onFormChange({ ...form, message: event.target.value })}
                             rows={6}
                             maxLength={2000}
-                            className="w-full resize-none rounded-2xl border border-theme-text/10 bg-theme-surface px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
+                            className="w-full resize-none rounded-2xl border border-theme-text/10 bg-theme-surface-2 px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
                             placeholder="Tell us what happened or what would make Howly better."
                         />
                     </label>
@@ -128,7 +128,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
 function AboutDialog({ open, onOpenChange }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border border-theme-text/10 bg-theme-bg p-6 text-theme-text sm:max-w-md">
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-theme-text">About Howly</DialogTitle>
                     <DialogDescription className="text-theme-text-muted">
@@ -163,7 +163,7 @@ function GhostModeRow() {
     }
 
     return (
-        <div className="flex items-center justify-between rounded-2xl bg-theme-surface/80 px-5 py-4">
+        <div className="flex items-center justify-between rounded-2xl bg-theme-surface px-5 py-4">
             <div className="flex items-center gap-4">
                 <EyeOff className="size-5 text-theme-text-muted" />
                 <div>
@@ -225,6 +225,7 @@ export function ProfilePage() {
             console.error('Logout failed:', error);
         } finally {
             localStorage.removeItem('howly_token');
+            setUser(null);
             navigate('/login');
         }
     }
@@ -345,7 +346,7 @@ export function ProfilePage() {
                 streakDays={streak}
             />
 
-            <section className="rounded-2xl bg-theme-surface/80 px-6 py-8 text-center shadow-lg">
+            <section className="rounded-2xl bg-theme-surface px-6 py-8 text-center shadow-lg">
                 <div className="mx-auto flex flex-col items-center gap-3">
                     <div className="relative">
 
@@ -431,7 +432,7 @@ export function ProfilePage() {
                 <button
                     type="button"
                     onClick={() => navigate('/stories')}
-                    className="flex w-full items-center justify-between gap-4 rounded-2xl bg-theme-surface/80 px-5 py-4 text-left transition-colors hover:bg-theme-surface"
+                    className="flex w-full items-center justify-between gap-4 rounded-2xl bg-theme-surface px-5 py-4 text-left transition-colors hover:bg-theme-surface"
                 >
                     <div className="flex min-w-0 items-center gap-3">
                         <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-howly-primary/15 text-xl">

@@ -102,7 +102,7 @@ function NotificationToggleRow({ option, checked, disabled, onToggle }) {
                 role="switch"
                 aria-checked={checked}
                 className={`flex h-7 w-12 shrink-0 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${
-                    checked ? 'justify-end bg-violet-500' : 'justify-start bg-theme-surface-2'
+                    checked ? 'justify-end bg-theme-accent' : 'justify-start bg-theme-surface-2'
                 }`}
             >
                 <span className="size-5 rounded-full bg-white shadow-sm" />

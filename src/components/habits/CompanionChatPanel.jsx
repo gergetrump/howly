@@ -142,7 +142,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                                 onClick={() => handleAdd(habit)}
                                 disabled={addingKey === habit.key}
                                 aria-label="Add habit"
-                                className="rounded-lg bg-purple-600 p-1.5 text-white transition-colors hover:bg-purple-500 disabled:opacity-50"
+                                className="rounded-lg bg-theme-accent p-1.5 text-theme-on-accent transition-colors hover:bg-theme-accent-strong disabled:opacity-50"
                             >
                                 <Plus size={15} />
                             </button>
@@ -166,7 +166,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                     type="submit"
                     disabled={!input.trim() || phase === 'thinking'}
                     aria-label="Ask"
-                    className="rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 px-3 text-white transition-all hover:from-purple-700 hover:to-purple-600 disabled:opacity-50"
+                    className="rounded-xl bg-gradient-to-r from-theme-accent to-theme-accent px-3 text-theme-on-accent transition-all hover:from-theme-accent-strong hover:to-theme-accent-strong disabled:opacity-50"
                 >
                     <ArrowUp size={16} />
                 </button>

@@ -200,7 +200,8 @@ export function FriendsPanel({
                 </div>
                 <Button
                     type="button"
-                    className="h-11 w-28 bg-violet-500 text-white hover:bg-violet-400"
+                    variant="primary"
+                    className="h-11 w-28"
                     onClick={() => onActivePanelChange('add')}
                 >
                     <Plus aria-hidden="true" />

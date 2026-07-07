@@ -249,6 +249,7 @@ body {
     --howly-sky-top: #161623;
     --howly-sky-bottom: #202033;
     --howly-moon: #f5ecd8;
+    --howly-moon-opacity: 0.5;
     --howly-forest-back: #282842;
     --howly-forest-front: #3b3b62;
     --howly-trunk: #6b5c4d;
@@ -285,6 +286,7 @@ body {
     --howly-sky-top: #ffe3ee;
     --howly-sky-bottom: #fff8f0;
     --howly-moon: #ffd36b; /* the sun */
+    --howly-moon-opacity: 1;
     --howly-forest-back: #f3b9cf;
     --howly-forest-front: #f48fb8;
     --howly-trunk: #8d6e63;
@@ -321,6 +323,7 @@ body {
     --howly-sky-top: #2a1a30;
     --howly-sky-bottom: #5a2c3c;
     --howly-moon: #ffce8a;
+    --howly-moon-opacity: 1;
     --howly-forest-back: #4a2b40;
     --howly-forest-front: #67384e;
     --howly-trunk: #7a4a3a;
@@ -357,6 +360,7 @@ body {
     --howly-sky-top: #0a1628;
     --howly-sky-bottom: #11263e;
     --howly-moon: #e8f4ff;
+    --howly-moon-opacity: 1;
     --howly-forest-back: #16324a;
     --howly-forest-front: #1f4866;
     --howly-trunk: #4a5a6b;
@@ -393,6 +397,7 @@ body {
     --howly-sky-top: #0d1424;
     --howly-sky-bottom: #2b3a5c;
     --howly-moon: #f2e8c9;
+    --howly-moon-opacity: 1;
     --howly-forest-back: #131b2e;
     --howly-forest-front: #1c2740;
     --howly-trunk: #3f4a63;

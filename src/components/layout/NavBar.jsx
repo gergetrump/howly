@@ -24,11 +24,11 @@ import { setNotificationMenuOpen } from '@/components/layout/notificationMenuSta
 const defaultItems = [
     { label: 'Home', to: '/dashboard', icon: Home },
     { label: 'Friends', to: '/social', icon: UsersRound },
-    { label: 'Community', to: '/community', icon: Globe },
+    { label: 'Challenges', to: '/challenges', icon: Trophy },
     { label: 'Shop', to: '/shop', icon: ShoppingBag },
     { label: 'Inventory', to: '/inventory', icon: PackageOpen },
-    { label: 'Challenges', to: '/challenges', icon: Trophy },
     { label: 'Analytics', to: '/analytics', icon: BarChart3 },
+    { label: 'Trends', to: '/community', icon: Globe },
     { label: 'Profile', to: '/profile', icon: UserRound },
 ];
 
@@ -483,7 +483,7 @@ export function NavBar({
                         </span>
                     </Link>
 
-                    <div className="hidden items-center gap-1 lg:flex lg:gap-3">
+                    <div className="hidden items-center gap-1 lg:flex 2xl:gap-1.5">
                         {navigationItems.map((item) => {
                             const Icon = item.icon ?? Dumbbell;
 
@@ -491,9 +491,11 @@ export function NavBar({
                                 <NavLink
                                     key={item.to}
                                     to={item.to}
+                                    aria-label={item.label}
+                                    title={item.label}
                                     className={({ isActive }) =>
                                         cn(
-                                    'flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm font-medium text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text lg:px-4 lg:text-base',
+                                    'flex min-h-11 items-center justify-center gap-2 rounded-lg px-2.5 text-sm font-medium text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text 2xl:px-4 2xl:text-base',
                                             isActive && 'bg-theme-accent/15 text-theme-accent-soft ring-1 ring-theme-accent/25',
                                         )
                                     }
@@ -501,7 +503,7 @@ export function NavBar({
                                     <span className="relative">
                                         <Icon className="size-5" aria-hidden="true" />
                                     </span>
-                                    <span className="hidden truncate lg:inline">{item.label}</span>
+                                    <span className="hidden truncate 2xl:inline">{item.label}</span>
                                 </NavLink>
                             );
                         })}
@@ -534,7 +536,7 @@ export function NavBar({
                             </button>
 
                             {isNotificationMenuOpen ? (
-                                <div className="absolute right-0 top-14 z-50 w-80 overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-bg/95 text-left shadow-2xl shadow-black/40 backdrop-blur">
+                                <div className="absolute right-0 top-14 z-50 w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-bg/95 text-left shadow-2xl shadow-black/40 backdrop-blur">
                                     <div className="border-b border-theme-text/10 px-4 py-3">
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
@@ -544,7 +546,7 @@ export function NavBar({
                                             {notifications.length ? (
                                                 <button
                                                     type="button"
-                                                    className="rounded-full px-2 py-1 text-xs font-semibold text-theme-accent-soft transition hover:bg-violet-400/15"
+                                                    className="rounded-full px-2 py-1 text-xs font-semibold text-theme-accent-soft transition hover:bg-theme-accent/15"
                                                     onClick={handleClearNotifications}
                                                 >
                                                     Clear all
@@ -573,7 +575,7 @@ export function NavBar({
                                                     className={cn(
                                                         'group notification-row flex gap-3 rounded-xl px-3 py-3 transition duration-200',
                                                         isVisuallyUnread
-                                                            ? 'bg-violet-500/10 text-theme-accent-soft hover:bg-violet-500/20'
+                                                            ? 'bg-theme-accent/10 text-theme-accent-soft hover:bg-theme-accent/20'
                                                             : 'bg-theme-surface-2/30 text-theme-text-soft hover:bg-theme-surface-2/45',
                                                         isRemoving && 'translate-x-8 opacity-0',
                                                     )}
@@ -582,7 +584,7 @@ export function NavBar({
                                                     <span
                                                         className={cn(
                                                             'mt-1 flex size-8 shrink-0 items-center justify-center rounded-full text-sm',
-                                                            isVisuallyUnread ? 'bg-violet-400/20' : 'bg-theme-surface-2/50',
+                                                            isVisuallyUnread ? 'bg-theme-accent/20' : 'bg-theme-surface-2/50',
                                                         )}
                                                     >
                                                         <Bell

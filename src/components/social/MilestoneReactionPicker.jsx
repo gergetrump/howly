@@ -106,7 +106,7 @@ export function MilestoneReactionPicker({ post, busy, onReact, onOpenReactions }
                         <button
                             key={emoji}
                             type="button"
-                            className={`flex size-9 items-center justify-center rounded-full text-lg transition hover:bg-theme-text/10 ${isSelected ? 'bg-violet-400/25 ring-1 ring-violet-200/60' : ''}`}
+                            className={`flex size-9 items-center justify-center rounded-full text-lg transition hover:bg-theme-text/10 ${isSelected ? 'bg-theme-accent/25 ring-1 ring-theme-accent/60' : ''}`}
                             aria-label={`React with ${emoji}`}
                             aria-pressed={isSelected}
                             disabled={busy}

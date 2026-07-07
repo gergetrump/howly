@@ -66,7 +66,6 @@ export function InventoryPage() {
     const [companionMessage, setCompanionMessage] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
     const { theme: activeTheme, setTheme } = useTheme();
-    const [pendingThemeId, setPendingThemeId] = useState(null);
     const [isChangeCompanionOpen, setIsChangeCompanionOpen] = useState(false);
     const [isCompanionPremiumPromptOpen, setIsCompanionPremiumPromptOpen] = useState(false);
     const isPremiumUser = user?.isPremium === true || user?.role === 'admin';
@@ -332,23 +331,10 @@ export function InventoryPage() {
     }
 
     const isThemesTab = activeCategory === 'theme';
-    const isAllTab = activeCategory === 'all';
-    const selectedThemeId = pendingThemeId ?? activeTheme;
-    const hasPendingTheme = Boolean(pendingThemeId) && pendingThemeId !== activeTheme;
+    const selectedThemeId = activeTheme;
 
-    function handleSaveTheme() {
-        if (hasPendingTheme) {
-            setTheme(pendingThemeId);
-        }
-    }
-
-    async function handleSaveAll() {
-        if (hasPendingTheme) {
-            setTheme(pendingThemeId);
-        }
-        if (hasUnsavedOutfitChanges && !isSavingOutfit) {
-            await handleSaveOutfit();
-        }
+    function handleThemeItemClick(item) {
+        setTheme(item.assetKey?.replace(/^theme-/, ''));
     }
 
     function handleSideChange(userItemId, side) {
@@ -427,7 +413,8 @@ export function InventoryPage() {
                 <p className="text-sm font-medium text-theme-text">Try on some items at the Shop!</p>
                 <ActionButton
                     type="button"
-                    className="bg-violet-500 px-5 text-white hover:bg-violet-400"
+                    variant="primary"
+                    className="px-5"
                     onClick={() => navigate('/shop')}
                 >
                     Visit shop
@@ -569,18 +556,17 @@ export function InventoryPage() {
                             </TabsList>
                         </Tabs>
 
-                        <ActionButton
-                            type="button"
-                            className="bg-violet-500 px-5 text-white hover:bg-violet-400 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
-                            disabled={isThemesTab
-                                ? !hasPendingTheme
-                                : isAllTab
-                                    ? (isSavingOutfit || (!hasPendingTheme && !hasUnsavedOutfitChanges))
-                                    : (!hasUnsavedOutfitChanges || isSavingOutfit)}
-                            onClick={isThemesTab ? handleSaveTheme : isAllTab ? handleSaveAll : handleSaveOutfit}
-                        >
-                            {isThemesTab ? 'Save Theme' : isSavingOutfit ? 'Saving...' : isAllTab ? 'Save Theme' : 'Save Outfit'}
-                        </ActionButton>
+                        {isThemesTab ? null : (
+                            <ActionButton
+                                type="button"
+                                variant="primary"
+                                className="px-5 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
+                                disabled={!hasUnsavedOutfitChanges || isSavingOutfit}
+                                onClick={handleSaveOutfit}
+                            >
+                                {isSavingOutfit ? 'Saving...' : 'Save Outfit'}
+                            </ActionButton>
+                        )}
                     </div>
                 </div>
             </div>
@@ -623,7 +609,7 @@ export function InventoryPage() {
                                         ? <ThemeItemVisual item={item} />
                                         : renderShopItemVisual(item, 'max-h-[78%] max-w-[78%]', item.customization)}
                                     onClick={item.type === 'theme'
-                                        ? () => setPendingThemeId(item.assetKey?.replace(/^theme-/, ''))
+                                        ? () => handleThemeItemClick(item)
                                         : () => handleToggleEquipped(item)}
                                 >
                                     {item.type === 'powerUp' ? (
@@ -716,7 +702,7 @@ export function InventoryPage() {
                 <ActionButton
                     type="button"
                     fullWidth
-                    className="mt-6 h-12 rounded-2xl bg-gradient-to-r from-purple-600 to-purple-500 text-base font-semibold text-white shadow-lg shadow-purple-600/25 hover:from-purple-700 hover:to-purple-600"
+                    className="mt-6 h-12 rounded-2xl bg-gradient-to-r from-theme-accent to-theme-accent text-base font-semibold text-theme-on-accent shadow-lg shadow-black/25 hover:from-theme-accent-strong hover:to-theme-accent-strong"
                     disabled={!boostDialogHabitId || usingBoostItemId === boostDialogItem?.userItemId}
                     onClick={() => {
                         if (boostDialogItem) {

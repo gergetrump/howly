@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { updateUserPreferences } from '@/services/userApi';
 import { useAuth } from '@/context/authContext';
 
@@ -86,6 +86,16 @@ export function ThemeProvider({ children }) {
             setThemeState(serverTheme);
         }
     }, [user?.preferences?.theme]);
+
+    const hadUserRef = useRef(false);
+    useEffect(() => {
+        if (user) {
+            hadUserRef.current = true;
+        } else if (hadUserRef.current) {
+            hadUserRef.current = false;
+            setThemeState(DEFAULT_THEME);
+        }
+    }, [user]);
 
     async function setTheme(nextTheme) {
         if (!isValidTheme(nextTheme) || nextTheme === theme) {
