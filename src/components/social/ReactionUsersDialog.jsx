@@ -11,6 +11,14 @@ import { UserPanelRow } from '@/components/social/UserPanelRow.jsx';
 import { sameId } from '@/components/social/socialHelpers.js';
 
 const REACTION_USER_PAGE_SIZE = 20;
+const REACTION_REMOVE_ANIMATION_MS = 220;
+
+function getReactionUserKey(reactionUser) {
+    const emoji = reactionUser.emoji || '💜';
+    const userId = reactionUser.user?.id ?? reactionUser.user?._id ?? 'unknown';
+
+    return `${emoji}-${userId}`;
+}
 
 function normalizeReactionUserPage(response) {
     if (Array.isArray(response)) {
@@ -46,6 +54,7 @@ export function ReactionUsersDialog({
     const [nextUsersOffset, setNextUsersOffset] = useState(0);
     const [isLoadingUsers, setIsLoadingUsers] = useState(false);
     const [isLoadingMoreUsers, setIsLoadingMoreUsers] = useState(false);
+    const [removingReactionKeys, setRemovingReactionKeys] = useState(new Set());
     const isStory = reaction?.post?.type === 'story';
     const sortedUsers = [...users].sort((firstReaction, secondReaction) => {
         const firstIsCurrentUser = sameId(firstReaction.user?.id, currentUserId);
@@ -63,6 +72,7 @@ export function ReactionUsersDialog({
             setUsers([]);
             setHasMoreUsers(false);
             setNextUsersOffset(0);
+            setRemovingReactionKeys(new Set());
             return undefined;
         }
 
@@ -85,11 +95,13 @@ export function ReactionUsersDialog({
                 setUsers(page.items);
                 setHasMoreUsers(page.hasMore);
                 setNextUsersOffset(Math.max(page.nextOffset, page.items.length));
+                setRemovingReactionKeys(new Set());
             } catch {
                 if (!isCurrent) return;
                 setUsers([]);
                 setHasMoreUsers(false);
                 setNextUsersOffset(0);
+                setRemovingReactionKeys(new Set());
             } finally {
                 if (isCurrent) {
                     setIsLoadingUsers(false);
@@ -119,9 +131,9 @@ export function ReactionUsersDialog({
             const page = normalizeReactionUserPage(response);
 
             setUsers((currentUsers) => {
-                const seenKeys = new Set(currentUsers.map((reactionUser) => `${reactionUser.emoji}-${reactionUser.user?.id}`));
+                const seenKeys = new Set(currentUsers.map(getReactionUserKey));
                 const nextItems = page.items.filter((reactionUser) => {
-                    const key = `${reactionUser.emoji}-${reactionUser.user?.id}`;
+                    const key = getReactionUserKey(reactionUser);
 
                     if (seenKeys.has(key)) {
                         return false;
@@ -142,6 +154,45 @@ export function ReactionUsersDialog({
         }
     }
 
+    async function handleRemoveOwnReaction(reactionUser, emoji) {
+        const reactionKey = getReactionUserKey(reactionUser);
+
+        if (removingReactionKeys.has(reactionKey)) {
+            return;
+        }
+
+        setRemovingReactionKeys((currentKeys) => {
+            const nextKeys = new Set(currentKeys);
+            nextKeys.add(reactionKey);
+            return nextKeys;
+        });
+
+        const result = await onReact(reaction.post, emoji);
+
+        if (!result) {
+            setRemovingReactionKeys((currentKeys) => {
+                const nextKeys = new Set(currentKeys);
+                nextKeys.delete(reactionKey);
+                return nextKeys;
+            });
+            return;
+        }
+
+        window.setTimeout(() => {
+            setUsers((currentUsers) =>
+                currentUsers.filter((currentReactionUser) =>
+                    getReactionUserKey(currentReactionUser) !== reactionKey
+                )
+            );
+            setRemovingReactionKeys((currentKeys) => {
+                const nextKeys = new Set(currentKeys);
+                nextKeys.delete(reactionKey);
+                return nextKeys;
+            });
+            setNextUsersOffset((currentOffset) => Math.max(0, currentOffset - 1));
+        }, REACTION_REMOVE_ANIMATION_MS);
+    }
+
     return (
         <Dialog open={Boolean(reaction)} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="border-theme-text/10 bg-theme-surface text-theme-text shadow-2xl sm:max-w-md">
@@ -154,7 +205,7 @@ export function ReactionUsersDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="grid max-h-[23rem] gap-2 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
+                <div className="flex max-h-[23rem] flex-col overflow-x-hidden overflow-y-auto pr-1 [scrollbar-gutter:stable]">
                     {isLoadingUsers ? (
                         <p className="text-sm text-theme-text-soft">Loading...</p>
                     ) : sortedUsers.length ? (
@@ -163,31 +214,42 @@ export function ReactionUsersDialog({
                         const relationship = getRelationship(reactionUser.user);
                         const isCurrentUserReaction = sameId(reactionUser.user?.id, currentUserId);
                         const emoji = reactionUser.emoji || '💜';
+                        const reactionKey = getReactionUserKey(reactionUser);
+                        const isRemoving = removingReactionKeys.has(reactionKey);
 
                         return (
-                            <UserPanelRow
-                                key={`${reactionUser.emoji}-${reactionUser.user?.id}`}
-                                user={reactionUser.user}
-                                busy={busy}
-                                relationship={relationship}
-                                onOpenProfile={onSelectUser}
-                                onAddFriend={onAddFriend}
-                                trailingContent={isCurrentUserReaction ? (
-                                    <button
-                                        type="button"
-                                        className="rounded-full px-2 py-1 text-xl transition hover:bg-theme-text/10 disabled:opacity-60"
-                                        aria-label={`Remove your ${emoji} reaction`}
-                                        disabled={busy}
-                                        onClick={() => onReact(reaction.post, emoji)}
-                                    >
-                                        {emoji}
-                                    </button>
-                                ) : (
-                                    <span className="px-2 py-1 text-xl" aria-hidden="true">
-                                        {emoji}
-                                    </span>
-                                )}
-                            />
+                            <div
+                                key={reactionKey}
+                                className={`grid transition-[grid-template-rows,opacity,margin] duration-200 ${
+                                    isRemoving ? 'mb-0 grid-rows-[0fr] opacity-0' : 'mb-2 grid-rows-[1fr] opacity-100'
+                                }`}
+                            >
+                                <div className="min-h-0 overflow-hidden">
+                                    <UserPanelRow
+                                        user={reactionUser.user}
+                                        busy={busy}
+                                        relationship={relationship}
+                                        className={`transition-transform duration-200 ${isRemoving ? 'translate-x-8' : ''}`}
+                                        onOpenProfile={onSelectUser}
+                                        onAddFriend={onAddFriend}
+                                        trailingContent={isCurrentUserReaction ? (
+                                            <button
+                                                type="button"
+                                                className="rounded-full px-2 py-1 text-xl transition hover:bg-theme-text/10 disabled:opacity-60"
+                                                aria-label={`Remove your ${emoji} reaction`}
+                                                disabled={busy || isRemoving}
+                                                onClick={() => handleRemoveOwnReaction(reactionUser, emoji)}
+                                            >
+                                                {emoji}
+                                            </button>
+                                        ) : (
+                                            <span className="px-2 py-1 text-xl" aria-hidden="true">
+                                                {emoji}
+                                            </span>
+                                        )}
+                                    />
+                                </div>
+                            </div>
                         );
                     })}
                     {hasMoreUsers ? (

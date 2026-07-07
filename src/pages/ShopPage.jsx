@@ -737,7 +737,7 @@ export function ShopPage() {
                 );
             } else {
                 openPremiumPageAfterPurchaseDialog(
-                    `You do not have enough moon coins for the whole cart — you need ${totalCost} but have ${availableCoins}. Remove some items first.`,
+                    `You do not have enough moon coins for the whole cart. You need ${totalCost} but have ${availableCoins}. Remove some items first.`,
                     '',
                     'Not enough moon coins',
                     false,

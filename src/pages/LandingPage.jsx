@@ -132,7 +132,7 @@ export function LandingPage() {
                         </span>
                     </h1>
                     <p className="max-w-md text-sm xs:text-base leading-relaxed text-theme-text-muted md:text-lg">
-                        Howly is a gamified, social habit tracker — right in your browser. Open a
+                        Howly is a gamified, social habit tracker, right in your browser. Open a
                         tab, log your day with one click, run challenges with friends, and your
                         cosmic wolf companion motivates you.
                     </p>
