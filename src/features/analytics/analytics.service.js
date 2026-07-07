@@ -39,6 +39,27 @@ function toMonthKey(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
+function addYearToSet(years, date) {
+    if (!date) {
+        return;
+    }
+
+    const parsedDate = new Date(date);
+
+    if (!Number.isNaN(parsedDate.getTime())) {
+        years.add(parsedDate.getFullYear());
+    }
+}
+
+function serializeAvailableYears(years) {
+    const currentYear = new Date().getFullYear();
+    years.add(currentYear);
+
+    return [...years]
+        .filter((year) => Number.isInteger(year) && year <= currentYear)
+        .sort((left, right) => right - left);
+}
+
 function getIsoWeekYear(date) {
     const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNumber = utcDate.getUTCDay() || 7;
@@ -66,18 +87,22 @@ function getPeriodKeyForHabit(habit, date = new Date()) {
     return toDateKey(date);
 }
 
-function buildPeriod(periodKey) {
+function buildPeriod(periodKey, year = new Date().getFullYear()) {
     const today = startOfDay(new Date());
     const normalizedPeriodKey = ['week', 'month', 'year'].includes(periodKey) ? periodKey : 'week';
+    const currentYear = today.getFullYear();
+    const selectedYear = Number.isInteger(year) && year <= currentYear ? year : currentYear;
     const start = normalizedPeriodKey === 'year'
-        ? new Date(today.getFullYear(), 0, 1)
+        ? new Date(selectedYear, 0, 1)
         : addDays(today, -((normalizedPeriodKey === 'month' ? 30 : 7) - 1));
-    const end = endOfDay(today);
+    const end = normalizedPeriodKey === 'year' && selectedYear < currentYear
+        ? endOfDay(new Date(selectedYear, 11, 31))
+        : endOfDay(today);
     const days = normalizedPeriodKey === 'year'
         ? daysBetweenInclusive(start, end)
         : normalizedPeriodKey === 'month' ? 30 : 7;
     const months = Array.from({ length: 12 }, (_, index) => {
-        const date = new Date(today.getFullYear(), index, 1);
+        const date = new Date(selectedYear, index, 1);
 
         return {
             key: toMonthKey(date),
@@ -90,6 +115,7 @@ function buildPeriod(periodKey) {
 
     return {
         key: normalizedPeriodKey,
+        year: selectedYear,
         days,
         start,
         end,
@@ -410,6 +436,75 @@ async function getPeerAverageCompletionTimeComparison({
     return buildEarlierThanComparison(currentAverageCompletionTime, peerAverageCompletionTimes);
 }
 
+async function getHabitAnalyticsAvailableYears(userId) {
+    const years = new Set();
+    const habits = await Habit.find({
+        ownerId: userId,
+        source: { $ne: 'challenge' },
+    })
+        .select('_id createdAt deletedAt lastCompletedAt')
+        .lean();
+
+    for (const habit of habits) {
+        addYearToSet(years, habit.createdAt);
+        addYearToSet(years, habit.deletedAt);
+        addYearToSet(years, habit.lastCompletedAt);
+    }
+
+    const habitIds = habits.map((habit) => habit._id);
+    const checkIns = habitIds.length
+        ? await HabitCheckIn.find({
+            user: userId,
+            habit: { $in: habitIds },
+        })
+            .select('completedAt')
+            .lean()
+        : [];
+
+    for (const checkIn of checkIns) {
+        addYearToSet(years, checkIn.completedAt);
+    }
+
+    return serializeAvailableYears(years);
+}
+
+async function getChallengeAnalyticsAvailableYears(userId) {
+    const years = new Set();
+    const participants = await ChallengeParticipant.find({
+        user: userId,
+        status: { $ne: 'left' },
+    })
+        .populate('challenge')
+        .select('challenge habit joinedAt lastCompletedAt rewardClaimedAt')
+        .lean();
+
+    for (const participant of participants) {
+        addYearToSet(years, participant.joinedAt);
+        addYearToSet(years, participant.lastCompletedAt);
+        addYearToSet(years, participant.rewardClaimedAt);
+        addYearToSet(years, participant.challenge?.startsAt);
+        addYearToSet(years, participant.challenge?.endsAt);
+    }
+
+    const habitIds = participants
+        .map((participant) => participant.habit)
+        .filter(Boolean);
+    const checkIns = habitIds.length
+        ? await HabitCheckIn.find({
+            user: userId,
+            habit: { $in: habitIds },
+        })
+            .select('completedAt')
+            .lean()
+        : [];
+
+    for (const checkIn of checkIns) {
+        addYearToSet(years, checkIn.completedAt);
+    }
+
+    return serializeAvailableYears(years);
+}
+
 export async function removeHabitCheckInForCurrentPeriod({ userId, habit }) {
     await HabitCheckIn.findOneAndDelete({
         user: userId,
@@ -418,8 +513,8 @@ export async function removeHabitCheckInForCurrentPeriod({ userId, habit }) {
     });
 }
 
-export async function getHabitAnalytics(userId, { period = 'week' } = {}) {
-    const selectedPeriod = buildPeriod(period);
+export async function getHabitAnalytics(userId, { period = 'week', year } = {}) {
+    const selectedPeriod = buildPeriod(period, year);
     const habits = await Habit.find({
         ownerId: userId,
         source: { $ne: 'challenge' },
@@ -553,10 +648,12 @@ export async function getHabitAnalytics(userId, { period = 'week' } = {}) {
     return {
         period: {
             key: selectedPeriod.key,
+            year: selectedPeriod.year,
             days: selectedPeriod.days,
             start: selectedPeriod.start.toISOString(),
             end: selectedPeriod.end.toISOString(),
         },
+        availableYears: await getHabitAnalyticsAvailableYears(userId),
         summary: {
             expected: totalExpected,
             completed: totalCompleted,
@@ -574,8 +671,8 @@ export async function getHabitAnalytics(userId, { period = 'week' } = {}) {
     };
 }
 
-export async function getChallengeAnalytics(userId, { period = 'week' } = {}) {
-    const selectedPeriod = buildPeriod(period);
+export async function getChallengeAnalytics(userId, { period = 'week', year } = {}) {
+    const selectedPeriod = buildPeriod(period, year);
     const participants = await ChallengeParticipant.find({
         user: userId,
         status: { $ne: 'left' },
@@ -741,10 +838,12 @@ export async function getChallengeAnalytics(userId, { period = 'week' } = {}) {
     return {
         period: {
             key: selectedPeriod.key,
+            year: selectedPeriod.year,
             days: selectedPeriod.days,
             start: selectedPeriod.start.toISOString(),
             end: selectedPeriod.end.toISOString(),
         },
+        availableYears: await getChallengeAnalyticsAvailableYears(userId),
         summary: {
             activeChallengeCount: challengeAnalytics
                 .filter((item) => item.participant.status === 'active')
