@@ -5,7 +5,13 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { getChallengeAnalytics, getHabitAnalytics } from '@/services/analyticsService';
 import { useAuth } from '@/context/authContext';
-import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
+import {
+    analyticsCompletionBarClassName,
+    analyticsCompletionBarShadowClassName,
+    analyticsYearSelectClassName,
+    appCardClassName,
+    appCardInsetClassName,
+} from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
 
 const PERIOD_LABELS = {
@@ -14,36 +20,40 @@ const PERIOD_LABELS = {
     year: 'Year',
 };
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 function percent(value) {
     return value === null || value === undefined ? 'No data' : `${value}%`;
+}
+
+function formatStatusLabel(status) {
+    const normalizedStatus = String(status ?? '').trim().replaceAll('_', ' ');
+
+    if (!normalizedStatus) {
+        return '';
+    }
+
+    return normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1);
 }
 
 function clampPercent(value) {
     return Math.min(Math.max(value ?? 0, 0), 100);
 }
 
-function timePosition(minutes) {
-    if (!Number.isFinite(minutes)) {
-        return 0;
-    }
-
-    return Math.min(Math.max((minutes / 1440) * 100, 0), 100);
-}
-
 function getCompletionTone(rate) {
     if (rate === null || rate === undefined) {
-        return 'bg-slate-500';
+        return 'bg-theme-text/20';
     }
 
     if (rate >= 80) {
-        return 'bg-emerald-400';
+        return analyticsCompletionBarClassName;
     }
 
     if (rate >= 50) {
-        return 'bg-amber-300';
+        return 'bg-theme-gold';
     }
 
-    return 'bg-red-400';
+    return 'bg-theme-danger';
 }
 
 function averageTimePeerHelper(summary, fallback) {
@@ -66,7 +76,7 @@ function SummaryCard({ icon: Icon, label, value, helper }) {
         <Card className={appCardClassName}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-12 items-center justify-center rounded-xl', appCardInsetClassName)}>
-                    <Icon className="size-6 text-theme-success" aria-hidden="true" />
+                    <Icon className="size-6 text-theme-accent" aria-hidden="true" />
                 </div>
                 <div>
                     <p className="text-sm text-theme-text-soft">{label}</p>
@@ -86,16 +96,18 @@ function TimelineChart({ dailyTotals }) {
         <Card className={appCardClassName}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-theme-text">
-                    <TrendingUp className="size-5 text-theme-success" aria-hidden="true" />
+                    <TrendingUp className="size-5 text-theme-accent" aria-hidden="true" />
                     Daily completion trend
                 </CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="flex h-48 items-end gap-2">
                     {dailyTotals.map((day, index) => {
+                        const completionRate = day.expected ? Math.round((day.completed / day.expected) * 100) : null;
                         const expectedHeight = Math.max((day.expected / maxExpected) * 100, 4);
+                        const rawCompletedHeight = day.expected ? (day.completed / maxExpected) * 100 : 0;
                         const completedHeight = day.expected
-                            ? Math.max((day.completed / maxExpected) * 100, day.completed ? 4 : 0)
+                            ? Math.min(expectedHeight, Math.max(rawCompletedHeight, day.completed ? 4 : 0))
                             : 0;
                         const showLabel = dailyTotals.length <= 14
                             || index === 0
@@ -104,16 +116,20 @@ function TimelineChart({ dailyTotals }) {
 
                         return (
                             <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center gap-2">
-                                <div className="relative flex h-36 w-full items-end justify-center rounded-t-lg bg-theme-bg/30">
+                                <div className="relative flex h-36 w-full items-end justify-center overflow-hidden rounded-t-lg bg-theme-bg/30">
                                     <div
                                         className="absolute bottom-0 w-3/5 rounded-t-lg border border-theme-text/10 bg-theme-text/10"
                                         style={{ height: `${expectedHeight}%` }}
                                         title={`${day.expected} scheduled`}
                                     />
                                     <div
-                                        className="absolute bottom-0 w-3/5 rounded-t-lg bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.35)]"
+                                        className={cn(
+                                            'absolute bottom-0 w-3/5 rounded-t-lg shadow-lg',
+                                            getCompletionTone(completionRate),
+                                            analyticsCompletionBarShadowClassName,
+                                        )}
                                         style={{ height: `${completedHeight}%` }}
-                                        title={`${day.completed} completed`}
+                                        title={`${day.completed}/${day.expected} completed`}
                                     />
                                 </div>
                                 <span
@@ -138,7 +154,7 @@ function MonthlyCompletionChart({ monthlyTotals }) {
         <Card className={appCardClassName}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-theme-text">
-                    <TrendingUp className="size-5 text-theme-success" aria-hidden="true" />
+                    <TrendingUp className="size-5 text-theme-accent" aria-hidden="true" />
                     Monthly completion overview
                 </CardTitle>
             </CardHeader>
@@ -150,11 +166,12 @@ function MonthlyCompletionChart({ monthlyTotals }) {
 
                         return (
                             <div key={month.key} className="flex min-w-0 flex-1 flex-col items-center gap-2">
-                                <div className="relative flex h-40 w-full items-end justify-center rounded-t-lg bg-theme-text/5">
+                                <div className="relative flex h-40 w-full items-end justify-center overflow-hidden rounded-t-lg bg-theme-text/5">
                                     <div className="absolute bottom-0 h-full w-3/5 rounded-t-lg border border-theme-text/10 bg-theme-text/10" />
                                     <div
                                         className={cn(
-                                            'absolute bottom-0 w-3/5 rounded-t-lg shadow-[0_0_14px_rgba(110,231,183,0.28)]',
+                                            'absolute bottom-0 w-3/5 rounded-t-lg shadow-lg',
+                                            analyticsCompletionBarShadowClassName,
                                             hasData ? getCompletionTone(month.completionRate) : 'bg-theme-text/15',
                                         )}
                                         style={{ height: `${height}%` }}
@@ -169,10 +186,6 @@ function MonthlyCompletionChart({ monthlyTotals }) {
                             </div>
                         );
                     })}
-                </div>
-                <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-theme-text/5 px-4 py-3 text-xs text-theme-text-soft">
-                    <span>Each bar shows the average habit completion for that month.</span>
-                    <span className="shrink-0 text-theme-text-muted">No data = no scheduled habits</span>
                 </div>
             </CardContent>
         </Card>
@@ -190,19 +203,26 @@ function MiniCompletionTrend({ daily }) {
         <div className="space-y-2">
             <div className="flex h-16 items-end gap-1.5">
                 {visibleDays.map((day) => {
+                    const completionRate = day.expected ? Math.round((day.completed / day.expected) * 100) : null;
                     const expectedHeight = day.expected ? 100 : 8;
-                    const completedHeight = day.completed ? expectedHeight : 0;
+                    const completedHeight = day.expected
+                        ? Math.min(expectedHeight, Math.max(completionRate, day.completed ? 8 : 0))
+                        : 0;
 
                     return (
                         <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                            <div className="relative flex h-12 w-full items-end justify-center rounded-t-md bg-theme-bg/30">
+                            <div className="relative flex h-12 w-full items-end justify-center overflow-hidden rounded-t-md bg-theme-bg/30">
                                 <div
                                     className="absolute bottom-0 w-3/5 rounded-t-md border border-theme-text/10 bg-theme-text/10"
                                     style={{ height: `${expectedHeight}%` }}
                                     title={`${day.label}: ${day.expected ? 'scheduled' : 'not scheduled'}`}
                                 />
                                 <div
-                                    className="absolute bottom-0 w-3/5 rounded-t-md bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.25)]"
+                                    className={cn(
+                                        'absolute bottom-0 w-3/5 rounded-t-md shadow-md',
+                                        getCompletionTone(completionRate),
+                                        analyticsCompletionBarShadowClassName,
+                                    )}
                                     style={{ height: `${completedHeight}%` }}
                                     title={`${day.label}: ${day.completed ? 'completed' : 'not completed'}`}
                                 />
@@ -235,11 +255,12 @@ function MiniMonthlyCompletionTrend({ monthly }) {
 
                     return (
                         <div key={month.key} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                            <div className="relative flex h-14 w-full items-end justify-center rounded-t-md bg-theme-text/5">
+                            <div className="relative flex h-14 w-full items-end justify-center overflow-hidden rounded-t-md bg-theme-text/5">
                                 <div className="absolute bottom-0 h-full w-3/5 rounded-t-md border border-theme-text/10 bg-theme-text/10" />
                                 <div
                                     className={cn(
-                                        'absolute bottom-0 w-3/5 rounded-t-md shadow-[0_0_10px_rgba(110,231,183,0.22)]',
+                                        'absolute bottom-0 w-3/5 rounded-t-md shadow-md',
+                                        analyticsCompletionBarShadowClassName,
                                         hasData ? getCompletionTone(month.completionRate) : 'bg-theme-text/15',
                                     )}
                                     style={{ height: `${completedHeight}%` }}
@@ -269,38 +290,29 @@ function MiniMonthlyCompletionTrend({ monthly }) {
         </div>
     );
 }
-function TimeMarker({ minutes, label }) {
-    if (!label) {
-        return (
-            <p className="rounded-xl bg-theme-text/5 p-4 text-center text-sm text-theme-text-soft">
-                No completion time data yet.
-            </p>
-        );
-    }
+function YearSelector({ years, value, onChange }) {
+    const visibleYears = years.length ? years : [CURRENT_YEAR];
 
     return (
-        <div className="space-y-2">
-            <div
-                className="relative h-4 rounded-full"
-                style={{
-                    background: 'linear-gradient(90deg, #818cf8 0%, #a5b4fc 20%, #fef3c7 34%, #facc15 50%, #fef3c7 66%, #c7d2fe 82%, #818cf8 100%)',
-                }}
+        <label className="flex items-center gap-2 text-sm text-theme-text-soft">
+            <span>Year</span>
+            <select
+                value={value}
+                onChange={(event) => onChange(Number(event.target.value))}
+                disabled={visibleYears.length <= 1}
+                className={analyticsYearSelectClassName}
             >
-                <div
-                    className="absolute top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-theme-text/40 bg-theme-bg shadow-lg"
-                    style={{ left: `${timePosition(minutes)}%` }}
-                />
-            </div>
-            <div className="flex justify-between text-xs text-theme-text-muted">
-                <span>00:00</span>
-                <span>12:00</span>
-                <span>24:00</span>
-            </div>
-        </div>
+                {visibleYears.map((year) => (
+                    <option key={year} value={year}>
+                        {year}
+                    </option>
+                ))}
+            </select>
+        </label>
     );
 }
 
-function HabitPerformance({ summary, habits }) {
+function HabitPerformance({ habits }) {
     const visibleHabits = habits.filter((item) => (
         item.expected > 0
         || item.completed > 0
@@ -311,24 +323,11 @@ function HabitPerformance({ summary, habits }) {
         <Card className={appCardClassName}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-theme-text">
-                    <BarChart3 className="size-5 text-theme-success" aria-hidden="true" />
+                    <BarChart3 className="size-5 text-theme-accent" aria-hidden="true" />
                     Habit performance
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid gap-4 rounded-xl bg-theme-text/5 p-4 md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)] md:items-center">
-                    <div>
-                        <p className="text-sm text-theme-text-soft">Overall average completion time</p>
-                        <p className="text-xl font-bold text-theme-success">
-                            {summary.averageCompletionTime?.label ?? 'No data'}
-                        </p>
-                    </div>
-                    <TimeMarker
-                        minutes={summary.averageCompletionTime?.minutes}
-                        label={summary.averageCompletionTime?.label}
-                    />
-                </div>
-
                 {visibleHabits.length ? (
                     <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-3">
                         {visibleHabits.map((item) => {
@@ -354,7 +353,7 @@ function HabitPerformance({ summary, habits }) {
                                             <p className="text-[11px] font-medium uppercase tracking-wide text-theme-text-muted">
                                                 Ø Time
                                             </p>
-                                            <p className="text-lg font-bold text-theme-success">
+                                            <p className="text-lg font-bold text-theme-text">
                                                 {averageTime?.label ?? 'No data'}
                                             </p>
                                         </div>
@@ -388,7 +387,7 @@ function HabitPerformance({ summary, habits }) {
     );
 }
 
-function ChallengePerformance({ summary, challenges, period }) {
+function ChallengePerformance({ challenges, period }) {
     const visibleChallenges = challenges.filter((item) => (
         item.expected > 0
         || item.completed > 0
@@ -400,24 +399,11 @@ function ChallengePerformance({ summary, challenges, period }) {
         <Card className={appCardClassName}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-theme-text">
-                    <Trophy className="size-5 text-theme-success" aria-hidden="true" />
+                    <Trophy className="size-5 text-theme-accent" aria-hidden="true" />
                     Challenge performance
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid gap-4 rounded-xl bg-theme-text/5 p-4 md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)] md:items-center">
-                    <div>
-                        <p className="text-sm text-theme-text-soft">Overall average completion time</p>
-                        <p className="text-xl font-bold text-theme-success">
-                            {summary.averageCompletionTime?.label ?? 'No data'}
-                        </p>
-                    </div>
-                    <TimeMarker
-                        minutes={summary.averageCompletionTime?.minutes}
-                        label={summary.averageCompletionTime?.label}
-                    />
-                </div>
-
                 {visibleChallenges.length ? (
                     <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] gap-4">
                         {visibleChallenges.map((item) => {
@@ -433,13 +419,13 @@ function ChallengePerformance({ summary, challenges, period }) {
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="min-w-0">
                                             <p className="truncate font-semibold text-theme-text">{item.challenge.title}</p>
-                                            <p className="truncate text-sm text-theme-success">{item.habit.title}</p>
+                                            <p className="truncate text-sm text-theme-text-soft">{item.habit.title}</p>
                                         </div>
                                         <div className="shrink-0 text-right">
                                             <p className="text-[11px] font-medium uppercase tracking-wide text-theme-text-muted">
                                                 Ø Time
                                             </p>
-                                            <p className="text-lg font-bold text-theme-success">
+                                            <p className="text-lg font-bold text-theme-text">
                                                 {averageTime?.label ?? 'No data'}
                                             </p>
                                         </div>
@@ -447,7 +433,7 @@ function ChallengePerformance({ summary, challenges, period }) {
 
                                     <div className="flex">
                                         <span className="rounded-full bg-theme-text/10 px-2.5 py-1 text-xs font-semibold text-theme-text">
-                                            {item.participant.status}
+                                            {formatStatusLabel(item.participant.status)}
                                         </span>
                                     </div>
 
@@ -473,7 +459,7 @@ function ChallengePerformance({ summary, challenges, period }) {
                                         </div>
                                         <div className="h-2 overflow-hidden rounded-full bg-theme-text/10">
                                             <div
-                                                className="h-full rounded-full bg-emerald-300"
+                                                className={cn('h-full rounded-full', analyticsCompletionBarClassName)}
                                                 style={{ width: `${clampPercent(totalRate)}%` }}
                                             />
                                         </div>
@@ -502,6 +488,7 @@ function ChallengePerformance({ summary, challenges, period }) {
 export function AnalyticsPage() {
     const { user } = useAuth();
     const [period, setPeriod] = useState('week');
+    const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
     const [habitAnalytics, setHabitAnalytics] = useState(null);
     const [challengeAnalytics, setChallengeAnalytics] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -530,6 +517,22 @@ export function AnalyticsPage() {
         };
     }, []);
 
+    const availableYears = useMemo(() => {
+        const years = new Set([
+            CURRENT_YEAR,
+            ...(habitAnalytics?.availableYears ?? []),
+            ...(challengeAnalytics?.availableYears ?? []),
+        ]);
+
+        return [...years]
+            .filter((year) => Number.isInteger(year) && year <= CURRENT_YEAR)
+            .sort((left, right) => right - left);
+    }, [challengeAnalytics?.availableYears, habitAnalytics?.availableYears]);
+
+    const activeYear = period === 'year' && availableYears.includes(selectedYear)
+        ? selectedYear
+        : availableYears[0] ?? CURRENT_YEAR;
+
     useEffect(() => {
         let isMounted = true;
 
@@ -538,9 +541,10 @@ export function AnalyticsPage() {
             setError('');
 
             try {
+                const requestedYear = period === 'year' ? activeYear : undefined;
                 const [habitResponse, challengeResponse] = await Promise.all([
-                    getHabitAnalytics(period),
-                    getChallengeAnalytics(period),
+                    getHabitAnalytics(period, requestedYear),
+                    getChallengeAnalytics(period, requestedYear),
                 ]);
 
                 if (isMounted) {
@@ -565,7 +569,7 @@ export function AnalyticsPage() {
         return () => {
             isMounted = false;
         };
-    }, [period, refreshKey]);
+    }, [activeYear, period, refreshKey]);
 
     const bestHabit = useMemo(() => (
         habitAnalytics?.habits?.find((item) => item.completionRate !== null) ?? null
@@ -607,6 +611,16 @@ export function AnalyticsPage() {
                     </TabsList>
                 </Tabs>
 
+                {period === 'year' ? (
+                    <div className="flex justify-end">
+                        <YearSelector
+                            years={availableYears}
+                            value={activeYear}
+                            onChange={setSelectedYear}
+                        />
+                    </div>
+                ) : null}
+
                 {isLoading ? (
                     <div className="flex items-center gap-2 rounded-xl border border-theme-text/10 bg-theme-text/5 p-4 text-sm text-theme-text">
                         <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -647,7 +661,7 @@ export function AnalyticsPage() {
                         ) : (
                             <TimelineChart dailyTotals={habitAnalytics.dailyTotals ?? []} />
                         )}
-                        <HabitPerformance summary={habitAnalytics.summary} habits={habitAnalytics.habits ?? []} />
+                        <HabitPerformance habits={habitAnalytics.habits ?? []} />
                     </>
                 ) : null}
             </PageSection>
@@ -679,7 +693,6 @@ export function AnalyticsPage() {
                             />
                         </div>
                         <ChallengePerformance
-                            summary={challengeAnalytics.summary}
                             challenges={challengeAnalytics.challenges ?? []}
                             period={period}
                         />
