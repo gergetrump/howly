@@ -26,13 +26,21 @@ function formatUserLine(user) {
 }
 
 
-function baseEmailShell({ title, eyebrow, heading, body, actionUrl, actionText, icon = 'H', note }) {
+function baseEmailShell({ title, eyebrow, heading, bodyHtml, actionUrl, actionText, icon = 'H', note }) {
+    const safeTitle = escapeHtml(title);
+    const safeEyebrow = escapeHtml(eyebrow);
+    const safeHeading = escapeHtml(heading);
+    const safeActionUrl = escapeHtml(actionUrl);
+    const safeActionText = escapeHtml(actionText);
+    const safeIcon = escapeHtml(icon);
+    const safeNote = note ? escapeHtml(note) : '';
+
     return `
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8" />
-    <title>${title}</title>
+    <title>${safeTitle}</title>
 </head>
 <body style="margin:0; padding:0; background:#0f172a; font-family:Arial, Helvetica, sans-serif;">
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a; padding:40px 16px;">
@@ -62,21 +70,27 @@ function baseEmailShell({ title, eyebrow, heading, body, actionUrl, actionText, 
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td style="padding:36px 34px 32px;">
-                                        <div style="width:56px; height:56px; border-radius:18px; background:rgba(139, 92, 246, 0.14); color:#a78bfa; font-size:28px; line-height:56px; text-align:center; margin-bottom:22px;">${icon}</div>
-                                        <div style="font-size:12px; font-weight:700; color:#a78bfa; text-transform:uppercase; letter-spacing:0.22em; margin-bottom:10px;">${eyebrow}</div>
-                                        <h1 style="margin:0; color:#ffffff; font-size:30px; line-height:1.2; letter-spacing:-0.04em;">${heading}</h1>
-                                        <p style="margin:16px 0 0; color:#cbd5e1; font-size:16px; line-height:1.65;">${body}</p>
+                                        <div style="width:56px; height:56px; border-radius:18px; background:rgba(139, 92, 246, 0.14); color:#a78bfa; font-size:28px; line-height:56px; text-align:center; margin-bottom:22px;">${safeIcon}</div>
+                                        <div style="font-size:12px; font-weight:700; color:#a78bfa; text-transform:uppercase; letter-spacing:0.22em; margin-bottom:10px;">${safeEyebrow}</div>
+                                        <h1 style="margin:0; color:#ffffff; font-size:30px; line-height:1.2; letter-spacing:-0.04em;">${safeHeading}</h1>
+                                        <p style="margin:16px 0 0; color:#cbd5e1; font-size:16px; line-height:1.65;">${bodyHtml}</p>
                                         <div style="text-align:center; margin:34px 0 30px;">
-                                            <a href="${actionUrl}" style="display:inline-block; background:linear-gradient(135deg, #8b5cf6, #ec4899); color:#ffffff; text-decoration:none; padding:15px 30px; border-radius:999px; font-size:16px; font-weight:700; box-shadow:0 12px 28px rgba(236, 72, 153, 0.28);">${actionText}</a>
+                                            <a href="${safeActionUrl}" style="display:inline-block; background:linear-gradient(135deg, #8b5cf6, #ec4899); color:#ffffff; text-decoration:none; padding:15px 30px; border-radius:999px; font-size:16px; font-weight:700; box-shadow:0 12px 28px rgba(236, 72, 153, 0.28);">${safeActionText}</a>
                                         </div>
-                                        ${note ? `<div style="background:rgba(15, 23, 42, 0.8); border:1px solid rgba(148, 163, 184, 0.18); border-radius:16px; padding:16px 18px; color:#94a3b8; font-size:14px; line-height:1.6;">${note}</div>` : ''}
+                                        ${safeNote ? `<div style="background:rgba(15, 23, 42, 0.8); border:1px solid rgba(148, 163, 184, 0.18); border-radius:16px; padding:16px 18px; color:#94a3b8; font-size:14px; line-height:1.6;">${safeNote}</div>` : ''}
+                                        <p style="margin:26px 0 8px; color:#64748b; font-size:12px; line-height:1.6;">
+                                            If the button does not work, copy and paste this link into your browser:
+                                        </p>
+                                        <p style="margin:0; font-size:12px; line-height:1.6; word-break:break-all;">
+                                            <a href="${safeActionUrl}" style="color:#a78bfa; text-decoration:underline;">${safeActionUrl}</a>
+                                        </p>
                                     </td>
                                 </tr>
                             </table>
                         </td>
                     </tr>
                     <tr>
-                        <td align="center" style="padding:22px 12px 0; color:#64748b; font-size:12px; line-height:1.6;">� ${new Date().getFullYear()} Howly. Keep your habits growing.</td>
+                        <td align="center" style="padding:22px 12px 0; color:#64748b; font-size:12px; line-height:1.6;">&copy; ${new Date().getFullYear()} Howly. Keep your habits growing.</td>
                     </tr>
                 </table>
             </td>
@@ -87,29 +101,60 @@ function baseEmailShell({ title, eyebrow, heading, body, actionUrl, actionText, 
 }
 
 export function challengeInvitationEmailTemplate({ inviterName, challengeTitle, challengeUrl }) {
+    const safeChallengeTitle = escapeHtml(challengeTitle);
+
     return baseEmailShell({
         title: 'You have a Howly challenge invitation',
         eyebrow: 'Challenge invitation',
         heading: `${inviterName} invited you to a challenge`,
-        body: `You have a new invitation for <strong style="color:#ffffff;">${challengeTitle}</strong>. Open Howly to accept or decline it.`,
+        bodyHtml: `You have a new invitation for <strong style="color:#ffffff;">${safeChallengeTitle}</strong>. Open Howly to accept or decline it.`,
         actionUrl: challengeUrl,
         actionText: 'View invitation',
-        icon: '??',
+        icon: 'C',
         note: 'You can turn challenge invitation emails off in Profile > Notifications.',
     });
 }
 
+export function challengeInvitationEmailText({ inviterName, challengeTitle, challengeUrl }) {
+    return [
+        'Howly challenge invitation',
+        '',
+        `${inviterName} invited you to a challenge.`,
+        `Challenge: ${challengeTitle}`,
+        '',
+        `View invitation: ${challengeUrl}`,
+        '',
+        'You can turn challenge invitation emails off in Profile > Notifications.',
+    ].join('\n');
+}
+
 export function streakReminderEmailTemplate({ streak, deadline, appUrl }) {
+    const safeStreak = escapeHtml(streak);
+    const safeDeadline = escapeHtml(deadline);
+
     return baseEmailShell({
         title: 'Your Howly streak needs attention',
         eyebrow: 'Streak reminder',
         heading: 'Your streak is almost at risk',
-        body: `Your ${streak}-day streak repair window ends soon. Complete a habit or use a streak freeze before <strong style="color:#ffffff;">${deadline}</strong>.`,
+        bodyHtml: `Your ${safeStreak}-day streak repair window ends soon. Complete a habit or use a streak freeze before <strong style="color:#ffffff;">${safeDeadline}</strong>.`,
         actionUrl: appUrl,
         actionText: 'Open Howly',
-        icon: '??',
+        icon: 'S',
         note: 'This reminder is sent around two hours before your streak repair window expires.',
     });
+}
+
+export function streakReminderEmailText({ streak, deadline, appUrl }) {
+    return [
+        'Your Howly streak needs attention',
+        '',
+        `Your ${streak}-day streak repair window ends soon.`,
+        `Complete a habit or use a streak freeze before ${deadline}.`,
+        '',
+        `Open Howly: ${appUrl}`,
+        '',
+        'This reminder is sent around two hours before your streak repair window expires.',
+    ].join('\n');
 }
 
 export function passwordResetEmailTemplate(resetUrl) {
@@ -336,12 +381,24 @@ export function friendRequestEmailTemplate({ requesterName, socialUrl }) {
         title: 'You have a new Howly friend request',
         eyebrow: 'Friend request',
         heading: `${requesterName} sent you a friend request`,
-        body: 'Open Howly to accept or decline the request.',
+        bodyHtml: 'Open Howly to accept or decline the request.',
         actionUrl: socialUrl,
         actionText: 'View request',
-        icon: '??',
+        icon: 'F',
         note: 'You can turn friend request emails off in Profile > Notifications.',
     });
+}
+
+export function friendRequestEmailText({ requesterName, socialUrl }) {
+    return [
+        'New Howly friend request',
+        '',
+        `${requesterName} sent you a friend request.`,
+        '',
+        `View request: ${socialUrl}`,
+        '',
+        'You can turn friend request emails off in Profile > Notifications.',
+    ].join('\n');
 }
 
 export function feedbackEmailTemplate({ user, type, subject, message }) {
@@ -403,6 +460,7 @@ export async function sendChallengeInvitationEmail(email, invitationDetails) {
         to: email,
         subject: 'You have a Howly challenge invitation',
         html: challengeInvitationEmailTemplate(invitationDetails),
+        text: challengeInvitationEmailText(invitationDetails),
     });
 }
 
@@ -416,6 +474,7 @@ export async function sendStreakReminderEmail(email, reminderDetails) {
         to: email,
         subject: 'Your Howly streak needs attention',
         html: streakReminderEmailTemplate(reminderDetails),
+        text: streakReminderEmailText(reminderDetails),
     });
 }
 export async function sendFriendRequestEmail(email, requestDetails) {
@@ -428,6 +487,7 @@ export async function sendFriendRequestEmail(email, requestDetails) {
         to: email,
         subject: 'You have a new Howly friend request',
         html: friendRequestEmailTemplate(requestDetails),
+        text: friendRequestEmailText(requestDetails),
     });
 }
 

@@ -139,6 +139,7 @@ async function syncMilestoneReactionNotification({
       emojis: currentEmojis,
     },
     deduplicate: true,
+    renotifyExisting: true,
   });
 }
 
