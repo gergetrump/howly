@@ -3,9 +3,6 @@ export const appCardClassName =
 
 export const appCardInsetClassName = 'bg-theme-text/10';
 
-export const analyticsTimeTrackClassName =
-    'bg-gradient-to-r from-blue-800 via-theme-gold to-blue-800';
-
 export const analyticsCompletionBarClassName = 'bg-emerald-500';
 export const analyticsCompletionBarShadowClassName = 'shadow-emerald-800/25';
 export const analyticsYearSelectClassName =

@@ -8,7 +8,6 @@ import { useAuth } from '@/context/authContext';
 import {
     analyticsCompletionBarClassName,
     analyticsCompletionBarShadowClassName,
-    analyticsTimeTrackClassName,
     analyticsYearSelectClassName,
     appCardClassName,
     appCardInsetClassName,
@@ -39,14 +38,6 @@ function formatStatusLabel(status) {
 
 function clampPercent(value) {
     return Math.min(Math.max(value ?? 0, 0), 100);
-}
-
-function timePosition(minutes) {
-    if (!Number.isFinite(minutes)) {
-        return 0;
-    }
-
-    return Math.min(Math.max((minutes / 1440) * 100, 0), 100);
 }
 
 function getCompletionTone(rate) {
@@ -299,32 +290,6 @@ function MiniMonthlyCompletionTrend({ monthly }) {
         </div>
     );
 }
-function TimeMarker({ minutes, label }) {
-    if (!label) {
-        return (
-            <p className="rounded-xl bg-theme-text/5 p-4 text-center text-sm text-theme-text-soft">
-                No completion time data yet.
-            </p>
-        );
-    }
-
-    return (
-        <div className="space-y-2">
-            <div className={cn('relative h-4 rounded-full', analyticsTimeTrackClassName)}>
-                <div
-                    className="absolute top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-theme-text/40 bg-theme-bg shadow-lg"
-                    style={{ left: `${timePosition(minutes)}%` }}
-                />
-            </div>
-            <div className="flex justify-between text-xs text-theme-text-muted">
-                <span>00:00</span>
-                <span>12:00</span>
-                <span>24:00</span>
-            </div>
-        </div>
-    );
-}
-
 function YearSelector({ years, value, onChange }) {
     const visibleYears = years.length ? years : [CURRENT_YEAR];
 
@@ -347,7 +312,7 @@ function YearSelector({ years, value, onChange }) {
     );
 }
 
-function HabitPerformance({ summary, habits }) {
+function HabitPerformance({ habits }) {
     const visibleHabits = habits.filter((item) => (
         item.expected > 0
         || item.completed > 0
@@ -363,19 +328,6 @@ function HabitPerformance({ summary, habits }) {
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid gap-4 rounded-xl bg-theme-text/5 p-4 md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)] md:items-center">
-                    <div>
-                        <p className="text-sm text-theme-text-soft">Overall average completion time</p>
-                        <p className="text-xl font-bold text-theme-text">
-                            {summary.averageCompletionTime?.label ?? 'No data'}
-                        </p>
-                    </div>
-                    <TimeMarker
-                        minutes={summary.averageCompletionTime?.minutes}
-                        label={summary.averageCompletionTime?.label}
-                    />
-                </div>
-
                 {visibleHabits.length ? (
                     <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-3">
                         {visibleHabits.map((item) => {
@@ -435,7 +387,7 @@ function HabitPerformance({ summary, habits }) {
     );
 }
 
-function ChallengePerformance({ summary, challenges, period }) {
+function ChallengePerformance({ challenges, period }) {
     const visibleChallenges = challenges.filter((item) => (
         item.expected > 0
         || item.completed > 0
@@ -452,19 +404,6 @@ function ChallengePerformance({ summary, challenges, period }) {
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid gap-4 rounded-xl bg-theme-text/5 p-4 md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)] md:items-center">
-                    <div>
-                        <p className="text-sm text-theme-text-soft">Overall average completion time</p>
-                        <p className="text-xl font-bold text-theme-text">
-                            {summary.averageCompletionTime?.label ?? 'No data'}
-                        </p>
-                    </div>
-                    <TimeMarker
-                        minutes={summary.averageCompletionTime?.minutes}
-                        label={summary.averageCompletionTime?.label}
-                    />
-                </div>
-
                 {visibleChallenges.length ? (
                     <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] gap-4">
                         {visibleChallenges.map((item) => {
@@ -722,7 +661,7 @@ export function AnalyticsPage() {
                         ) : (
                             <TimelineChart dailyTotals={habitAnalytics.dailyTotals ?? []} />
                         )}
-                        <HabitPerformance summary={habitAnalytics.summary} habits={habitAnalytics.habits ?? []} />
+                        <HabitPerformance habits={habitAnalytics.habits ?? []} />
                     </>
                 ) : null}
             </PageSection>
@@ -754,7 +693,6 @@ export function AnalyticsPage() {
                             />
                         </div>
                         <ChallengePerformance
-                            summary={challengeAnalytics.summary}
                             challenges={challengeAnalytics.challenges ?? []}
                             period={period}
                         />
