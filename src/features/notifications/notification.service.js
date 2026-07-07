@@ -149,6 +149,7 @@ export async function createNotification({
   entityId,
   metadata = {},
   deduplicate = false,
+  renotifyExisting = false,
 }) {
   if (!recipientId || !actorId || sameId(recipientId, actorId)) {
     return null;
@@ -166,20 +167,31 @@ export async function createNotification({
     // Upsert: at most one notification per (recipient, actor, type, entityId).
     // Matches the compound index on the Notification collection.
     const filter = { recipient: recipientId, actor: actorId, type, entityId };
+    const setFields = { entityType, metadata };
+
+    if (renotifyExisting) {
+      // Some deduped notifications represent a fresh user action each time.
+      // Resetting readAt makes the bell counter behave like a new notification
+      // while still keeping only one notification row for this actor and entity.
+      setFields.readAt = null;
+    }
+
     const result = await Notification.updateOne(
       filter,
       {
         // Always keep entityType and metadata current.
-        $set: { entityType, metadata },
+        $set: setFields,
         // createdAt is only written on insert (ignored on update).
-        $setOnInsert: { createdAt: new Date(), readAt: null },
+        $setOnInsert: renotifyExisting
+          ? { createdAt: new Date() }
+          : { createdAt: new Date(), readAt: null },
       },
       { upsert: true },
     );
 
-    // Only push an SSE event when the document is brand-new.
-    // If the actor spam-likes, the owner won't receive repeated pings.
-    if (result.upsertedCount > 0) {
+    // Usually only brand-new deduped notifications are pushed. Callers can opt
+    // into re-pushing when an existing row still represents a fresh action.
+    if (result.upsertedCount > 0 || renotifyExisting) {
       try {
         const notification = await Notification.findOne(filter).populate('actor');
         if (notification) {

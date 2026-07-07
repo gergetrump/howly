@@ -352,6 +352,136 @@ test('social feed shows friends milestones and toggles emoji reactions', async (
   );
 });
 
+test('milestone reaction updates make read notifications unread again', async () => {
+  const author = await buildUser({ username: 'reaction_notify_author', email: 'reaction-notify-author@example.com' });
+  const friend = await buildUser({ username: 'reaction_notify_friend', email: 'reaction-notify-friend@example.com' });
+  const premiumFriend = await buildUser({
+    username: 'reaction_notify_premium',
+    email: 'reaction-notify-premium@example.com',
+    isPremium: true,
+  });
+  const habit = await buildHabit(author, { title: 'Reading', streakCount: 10 });
+
+  await Friendship.create([
+    { userA: author._id, userB: friend._id },
+    { userA: author._id, userB: premiumFriend._id },
+  ]);
+
+  const freeMilestonePost = await MilestonePost.create({
+    user: author._id,
+    habit: habit._id,
+    habitTitle: habit.title,
+    streakDays: habit.streakCount,
+  });
+
+  await request(app)
+    .post(`/api/milestones/${freeMilestonePost._id}/like`)
+    .set('Authorization', authHeader(friend))
+    .send({ emoji: '🎉' })
+    .expect(200);
+
+  const firstNotification = await Notification.findOne({
+    recipient: author._id,
+    actor: friend._id,
+    type: 'milestone_reacted',
+    entityId: freeMilestonePost._id,
+  });
+
+  assert.ok(firstNotification);
+  firstNotification.readAt = new Date();
+  await firstNotification.save();
+
+  await request(app)
+    .post(`/api/milestones/${freeMilestonePost._id}/like`)
+    .set('Authorization', authHeader(friend))
+    .send({ emoji: '🔥' })
+    .expect(200);
+
+  const changedReactionNotification = await Notification.findOne({
+    recipient: author._id,
+    actor: friend._id,
+    type: 'milestone_reacted',
+    entityId: freeMilestonePost._id,
+  }).lean();
+
+  assert.equal(
+    await Notification.countDocuments({
+      recipient: author._id,
+      actor: friend._id,
+      type: 'milestone_reacted',
+      entityId: freeMilestonePost._id,
+    }),
+    1,
+  );
+  assert.equal(changedReactionNotification.readAt, null);
+  assert.equal(changedReactionNotification.metadata.emoji, '🔥');
+  assert.deepEqual(changedReactionNotification.metadata.emojis, ['🔥']);
+
+  const unreadAfterChangedReaction = await request(app)
+    .get('/api/notifications/unread-count')
+    .set('Authorization', authHeader(author))
+    .expect(200);
+
+  assert.equal(unreadAfterChangedReaction.body.unreadCount, 1);
+
+  const premiumMilestonePost = await MilestonePost.create({
+    user: author._id,
+    habit: habit._id,
+    habitTitle: habit.title,
+    streakDays: habit.streakCount,
+  });
+
+  await request(app)
+    .post(`/api/milestones/${premiumMilestonePost._id}/like`)
+    .set('Authorization', authHeader(premiumFriend))
+    .send({ emoji: '🎉' })
+    .expect(200);
+
+  const premiumNotification = await Notification.findOne({
+    recipient: author._id,
+    actor: premiumFriend._id,
+    type: 'milestone_reacted',
+    entityId: premiumMilestonePost._id,
+  });
+
+  assert.ok(premiumNotification);
+  premiumNotification.readAt = new Date();
+  await premiumNotification.save();
+
+  await request(app)
+    .post(`/api/milestones/${premiumMilestonePost._id}/like`)
+    .set('Authorization', authHeader(premiumFriend))
+    .send({ emoji: '🔥' })
+    .expect(200);
+
+  const addedReactionNotification = await Notification.findOne({
+    recipient: author._id,
+    actor: premiumFriend._id,
+    type: 'milestone_reacted',
+    entityId: premiumMilestonePost._id,
+  }).lean();
+
+  assert.equal(
+    await Notification.countDocuments({
+      recipient: author._id,
+      actor: premiumFriend._id,
+      type: 'milestone_reacted',
+      entityId: premiumMilestonePost._id,
+    }),
+    1,
+  );
+  assert.equal(addedReactionNotification.readAt, null);
+  assert.equal(addedReactionNotification.metadata.emoji, '🔥');
+  assert.deepEqual(addedReactionNotification.metadata.emojis, ['🎉', '🔥']);
+
+  const unreadAfterAddedReaction = await request(app)
+    .get('/api/notifications/unread-count')
+    .set('Authorization', authHeader(author))
+    .expect(200);
+
+  assert.equal(unreadAfterAddedReaction.body.unreadCount, 2);
+});
+
 test('milestone feed preserves equipped text-customizable items with no text', async () => {
   const author = await buildUser({ username: 'blank_text_author', email: 'blank-text-author@example.com' });
   const friend = await buildUser({ username: 'blank_text_friend', email: 'blank-text-friend@example.com' });
