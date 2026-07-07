@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { BarChart3, Globe, Loader2, Sparkles, Trophy } from 'lucide-react';
+import { BarChart3, CircleHelp, Globe, Loader2, Sparkles, Trophy } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
-import { getCommunityAnalytics } from '@/services/communityService';
+import { getTrendsAnalytics } from '@/services/trendsService';
 import { useAuth } from '@/context/authContext';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
@@ -20,7 +21,101 @@ const PERIOD_IN_RANGE_LABELS = {
     month: 'in the last 30 days',
 };
 
+const PERIOD_COMPARISON_LABELS = {
+    '24h': 'the previous 24 hours',
+    week: 'the previous 7 days',
+    month: 'the previous 30 days',
+};
+
 const periodTabTriggerClassName = 'px-3 py-1 text-xs text-theme-text-soft data-active:!bg-theme-invert data-active:!text-theme-invert-text sm:text-sm';
+
+const helpButtonClassName = 'grid h-6 w-6 shrink-0 place-items-center rounded-full border border-theme-text/10 bg-theme-text/10 text-theme-text transition hover:bg-theme-text/20 hover:text-theme-text';
+
+const helpPopoverContentClassName = 'z-[120] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-theme-text/10 bg-theme-bg/95 p-4 text-left text-xs leading-snug text-theme-text shadow-xl shadow-theme-bg/30';
+
+function InfoPopover({ ariaLabel, title, children }) {
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                <button
+                    type="button"
+                    className={helpButtonClassName}
+                    aria-label={ariaLabel}
+                >
+                    <CircleHelp className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+            </PopoverTrigger>
+            <PopoverContent
+                align="start"
+                side="bottom"
+                sideOffset={8}
+                className={helpPopoverContentClassName}
+            >
+                <p className="text-sm font-bold text-theme-text">{title}</p>
+                <div className="mt-3 space-y-3">{children}</div>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+function HelpSection({ heading, children }) {
+    return (
+        <div>
+            <p className="font-semibold text-theme-accent-soft">{heading}</p>
+            <p className="mt-1">{children}</p>
+        </div>
+    );
+}
+
+function ConsistencyHelpPopover() {
+    return (
+        <InfoPopover ariaLabel="What does your consistency mean?" title="Your consistency">
+            <HelpSection heading="Ahead of X%">
+                Compares your personal habit completion rate to other Howly users for this period.
+                &ldquo;Ahead of X%&rdquo; means you completed a higher share of your scheduled habits
+                than X% of eligible users. Ties do not count.
+            </HelpSection>
+            <HelpSection heading="Completion rate">
+                Your own rate: completed habit days divided by expected days. Challenge habits are
+                excluded. Only habits that existed at the start of the period count.
+            </HelpSection>
+        </InfoPopover>
+    );
+}
+
+function CategoryBreakdownHelpPopover({ comparisonPeriod }) {
+    return (
+        <InfoPopover ariaLabel="What do these category percentages mean?" title="What Howly is working on">
+            <HelpSection heading="Share %">
+                The share of all classified habit check-ins on Howly in this period that belong to
+                this life area. For example, 28% means about 28% of platform check-ins were in
+                Movement.
+            </HelpSection>
+            <HelpSection heading="Trend arrows">
+                How much check-ins changed compared to {comparisonPeriod}. For example, &uarr; 17%
+                means 17% more check-ins and &darr; 8% means 8% fewer. &ldquo;New&rdquo; means there
+                were no check-ins in the previous window.
+            </HelpSection>
+        </InfoPopover>
+    );
+}
+
+function TrendingHabitsHelpPopover({ comparisonPeriod }) {
+    return (
+        <InfoPopover ariaLabel="What do these trend percentages mean?" title="Trending on Howly">
+            <HelpSection heading="Trend arrows">
+                How much check-ins for each standard habit type changed compared to{' '}
+                {comparisonPeriod}. For example, &uarr; 17% means 17% more check-ins and &darr; 8%
+                means 8% fewer. &ldquo;New&rdquo; means there were no check-ins in the previous
+                window.
+            </HelpSection>
+            <HelpSection heading="Habit labels">
+                Shows standard habit types from Howly&apos;s taxonomy, not individual user habit
+                titles.
+            </HelpSection>
+        </InfoPopover>
+    );
+}
 
 function formatCategory(value) {
     return value?.categoryLabel ?? 'No data';
@@ -144,7 +239,7 @@ function PeriodToggle({ period, onPeriodChange }) {
     );
 }
 
-function SummaryCard({ icon: Icon, label, value, helper, valueClassName }) {
+function SummaryCard({ icon: Icon, label, labelAction, value, helper, valueClassName }) {
     return (
         <Card className={appCardClassName}>
             <CardContent className="flex items-center gap-4">
@@ -152,7 +247,10 @@ function SummaryCard({ icon: Icon, label, value, helper, valueClassName }) {
                     <Icon className="size-6 text-theme-accent-soft" aria-hidden="true" />
                 </div>
                 <div>
-                    <p className="text-sm text-theme-text-soft">{label}</p>
+                    <div className="flex items-center gap-1.5">
+                        <p className="text-sm text-theme-text-soft">{label}</p>
+                        {labelAction}
+                    </div>
                     <p className={cn('text-2xl font-bold tabular-nums', valueClassName ?? 'text-theme-text')}>{value}</p>
                     {helper ? <p className="text-xs text-theme-text-muted">{helper}</p> : null}
                 </div>
@@ -228,30 +326,30 @@ function TrendingHabits({ habits, showTrends }) {
     );
 }
 
-export function CommunityPage() {
+export function TrendsPage() {
     const { user } = useAuth();
     const [period, setPeriod] = useState('24h');
-    const [communityAnalytics, setCommunityAnalytics] = useState(null);
+    const [trendsAnalytics, setTrendsAnalytics] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
     useEffect(() => {
         let isMounted = true;
 
-        async function loadCommunityAnalytics() {
+        async function loadTrendsAnalytics() {
             setIsLoading(true);
             setError('');
 
             try {
-                const response = await getCommunityAnalytics(period);
+                const response = await getTrendsAnalytics(period);
 
                 if (isMounted) {
-                    setCommunityAnalytics(response?.data ?? null);
+                    setTrendsAnalytics(response?.data ?? null);
                 }
             } catch (loadError) {
                 if (isMounted) {
-                    setError(loadError.message || 'Could not load community analytics.');
-                    setCommunityAnalytics(null);
+                    setError(loadError.message || 'Could not load trends analytics.');
+                    setTrendsAnalytics(null);
                 }
             } finally {
                 if (isMounted) {
@@ -260,21 +358,22 @@ export function CommunityPage() {
             }
         }
 
-        loadCommunityAnalytics();
+        loadTrendsAnalytics();
 
         return () => {
             isMounted = false;
         };
     }, [period]);
 
-    const summary = communityAnalytics?.summary;
+    const summary = trendsAnalytics?.summary;
     const periodInRange = PERIOD_IN_RANGE_LABELS[period] ?? PERIOD_IN_RANGE_LABELS.week;
+    const comparisonPeriod = PERIOD_COMPARISON_LABELS[period] ?? PERIOD_COMPARISON_LABELS.week;
     const standing = summary?.standing;
 
     return (
         <Page theme="forest" contentClassName="max-w-[1400px]">
             <Heading
-                title="Community"
+                title="Trends"
                 subtitle="See how Howly is doing together."
                 streakDays={user?.streak ?? 0}
             />
@@ -297,13 +396,14 @@ export function CommunityPage() {
                     {isLoading ? (
                         <div className="flex items-center gap-2 rounded-xl border border-theme-text/10 bg-theme-text/5 p-4 text-sm text-theme-text-soft">
                             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                            Loading community analytics
+                            Loading trends analytics
                         </div>
                     ) : (
                         <div className="grid gap-4 md:grid-cols-2">
                             <SummaryCard
                                 icon={Trophy}
                                 label="Your consistency"
+                                labelAction={<ConsistencyHelpPopover />}
                                 value={formatStandingValue(standing)}
                                 valueClassName={standingValueClassName(standing)}
                                 helper={standingHelperText(standing, periodInRange)}
@@ -322,7 +422,8 @@ export function CommunityPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-theme-text">
                             <BarChart3 className="size-5 text-theme-accent-soft" aria-hidden="true" />
-                            What Howly is working on
+                            <span>What Howly is working on</span>
+                            <CategoryBreakdownHelpPopover comparisonPeriod={comparisonPeriod} />
                         </CardTitle>
                         <CardDescription className="text-theme-text-soft">
                             Share of habit completions across life areas {periodInRange}.
@@ -336,7 +437,7 @@ export function CommunityPage() {
                             </div>
                         ) : (
                             <CategoryBreakdown
-                                categories={communityAnalytics?.byCategory ?? []}
+                                categories={trendsAnalytics?.byCategory ?? []}
                                 showTrends
                             />
                         )}
@@ -347,7 +448,8 @@ export function CommunityPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-theme-text">
                             <Sparkles className="size-5 text-theme-accent-soft" aria-hidden="true" />
-                            Trending on Howly
+                            <span>Trending on Howly</span>
+                            <TrendingHabitsHelpPopover comparisonPeriod={comparisonPeriod} />
                         </CardTitle>
                         <CardDescription className="text-theme-text-soft">
                             The standard habit types rising or falling {periodInRange}.
@@ -361,7 +463,7 @@ export function CommunityPage() {
                             </div>
                         ) : (
                             <TrendingHabits
-                                habits={communityAnalytics?.trendingHabits ?? []}
+                                habits={trendsAnalytics?.trendingHabits ?? []}
                                 showTrends
                             />
                         )}
@@ -369,7 +471,7 @@ export function CommunityPage() {
                 </Card>
 
                 <p className="text-center text-xs text-theme-text-muted">
-                    Anonymous patterns only: shares and trends, never individual habit names or usernames. Your consistency rank is a private benchmark against the community.
+                    Anonymous patterns only: shares and trends, never individual habit names or usernames. Your consistency rank is a private benchmark against other Howly users.
                 </p>
             </div>
         </Page>
