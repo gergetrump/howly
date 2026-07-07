@@ -443,7 +443,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                         </span>
                     </div>
                     {durationDays > MAX_CHALLENGE_DURATION_DAYS ? (
-                        <p className="rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-red-200">
+                        <p className="rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
                             Challenges can run for a maximum of 3 months.
                         </p>
                     ) : null}
@@ -461,7 +461,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                         <ActionButton
                             type="submit"
                             disabled={!canSubmit || isSubmitting}
-                            className="h-12 rounded-2xl bg-gradient-to-r from-theme-accent to-theme-accent text-base font-semibold text-theme-on-accent shadow-lg shadow-black/25 transition-all hover:from-theme-accent-strong hover:to-theme-accent-strong hover:shadow-black/40"
+                            className="h-12 rounded-2xl bg-gradient-to-r from-theme-accent to-theme-accent text-base font-semibold text-theme-on-accent shadow-lg shadow-theme-bg/25 transition-all hover:from-theme-accent-strong hover:to-theme-accent-strong hover:shadow-theme-bg/40"
                         >
                             {isSubmitting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Plus className="size-4" aria-hidden="true" />}
                             {isEditing ? 'Save' : 'Create'}

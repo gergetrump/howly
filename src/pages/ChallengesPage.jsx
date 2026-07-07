@@ -161,7 +161,7 @@ function ChallengeInfoPopover() {
                 align="start"
                 side="bottom"
                 sideOffset={8}
-                className="z-[120] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-theme-text/10 bg-theme-bg/95 p-4 text-left text-xs leading-snug text-theme-text shadow-xl shadow-black/30"
+                className="z-[120] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-theme-text/10 bg-theme-bg/95 p-4 text-left text-xs leading-snug text-theme-text shadow-xl shadow-theme-bg/30"
             >
                 <p className="text-sm font-bold text-theme-text">How Challenges Work</p>
                 <div className="mt-3 space-y-3">
@@ -760,7 +760,7 @@ export function ChallengesPage() {
                                             variant="outline"
                                             onClick={() => handleLeaveChallenge(challenge.id)}
                                             disabled={busyAction === `leave-${challenge.id}`}
-                                            className="border-theme-danger/30 bg-theme-danger/10 text-theme-danger hover:bg-red-500/20"
+                                            className="border-theme-danger/30 bg-theme-danger/10 text-theme-danger hover:bg-theme-danger/20"
                                         >
                                             Leave
                                         </Button>
@@ -790,7 +790,7 @@ export function ChallengesPage() {
                                             type="button"
                                             variant="outline"
                                             disabled
-                                            className="border-theme-success/30 bg-emerald-500/10 text-theme-success"
+                                            className="border-theme-success/30 bg-theme-success/10 text-theme-success"
                                         >
                                             Claimed {challenge.viewerParticipantRewardCoins ?? 0} coins
                                         </Button>
