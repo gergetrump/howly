@@ -50,18 +50,18 @@ function standingHelperText(standing, periodInRange) {
     if (standing?.display === 'percent') {
         const rate = standing.userCompletionRate;
         const rateLabel = Number.isFinite(rate) ? `${rate}% completion rate` : 'Personal habit completion rate';
-        return `${rateLabel} · ${periodInRange}`;
+        return `${rateLabel} ${periodInRange}`;
     }
 
     if (standing?.display === 'no_habits') {
-        return `Personal habits only · ${periodInRange}`;
+        return `Personal habits only ${periodInRange}`;
     }
 
     if (standing?.display === 'not_eligible') {
-        return `Nothing was due in this window · ${periodInRange}`;
+        return `Nothing was due ${periodInRange}`;
     }
 
-    return `Personal habit completion rate · ${periodInRange}`;
+    return `Personal habit completion rate ${periodInRange}`;
 }
 
 function standingValueClassName(standing) {
