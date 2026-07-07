@@ -875,8 +875,10 @@ export function SocialPage() {
                     },
                 };
             });
+            return response;
         } catch (err) {
             setError(getSocialErrorMessage(err));
+            return null;
         } finally {
             setBusyPostId(null);
         }
@@ -942,8 +944,10 @@ export function SocialPage() {
                     ? { post: response.milestonePost }
                     : currentReaction,
             );
+            return response;
         } catch (err) {
             setError(getSocialErrorMessage(err));
+            return null;
         } finally {
             setBusyPostId(null);
         }
@@ -951,11 +955,10 @@ export function SocialPage() {
 
     async function handleReactFromDialog(post, emoji) {
         if (post.type === 'story') {
-            await handleToggleStoryLike(post);
-            return;
+            return handleToggleStoryLike(post);
         }
 
-        await handleReactToMilestone(post, emoji);
+        return handleReactToMilestone(post, emoji);
     }
 
     async function handleBlockUser(targetUserId) {
