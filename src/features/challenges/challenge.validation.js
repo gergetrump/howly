@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { isValidTaxonomyCategoryKey } from '../taxonomy/taxonomyCategories.js';
 import {
     CHALLENGE_FREQUENCIES,
     CHALLENGE_STATUS,
@@ -351,6 +352,16 @@ export function validateListChallengesInput(query = {}) {
             errors.push(`sort must be one of: ${CHALLENGE_SORTS.join(', ')}`);
         } else {
             value.sort = query.sort;
+        }
+    }
+
+    if (query.categoryKey !== undefined) {
+        if (typeof query.categoryKey !== 'string' || !query.categoryKey.trim()) {
+            errors.push('categoryKey must be a non-empty string');
+        } else if (!isValidTaxonomyCategoryKey(query.categoryKey.trim())) {
+            errors.push('categoryKey must be a valid taxonomy category');
+        } else {
+            value.categoryKey = query.categoryKey.trim();
         }
     }
 

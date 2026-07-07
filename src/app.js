@@ -15,6 +15,7 @@ import challengeRoutes from './features/challenges/challenge.routes.js';
 import storyRoutes from './features/stories/story.routes.js';
 import analyticsRoutes from './features/analytics/analytics.routes.js';
 import communityRoutes from './features/community/community.routes.js';
+import taxonomyRoutes from './features/taxonomy/taxonomy.routes.js';
 import feedbackRoutes from './features/feedback/feedback.routes.js';
 import reportRoutes from './features/reports/report.routes.js';
 import notificationRoutes from './features/notifications/notification.routes.js';
@@ -76,6 +77,7 @@ export default function createApp() {
     app.use('/api/companions', companionRoutes);
     app.use('/api/analytics', analyticsRoutes);
     app.use('/api/community', communityRoutes);
+    app.use('/api/taxonomy', taxonomyRoutes);
     app.use('/api/feedback', feedbackRoutes);
     app.use('/api/reports', reportRoutes);
     app.use('/api/notifications', notificationRoutes);
