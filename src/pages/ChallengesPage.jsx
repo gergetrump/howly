@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { CircleHelp, Loader2, Pencil, Trophy, UserPlus } from 'lucide-react';
 import { ActionButton, CardGrid, PlanLimitDialog } from '@/components/common';
+import { ChallengeCategoryChips } from '@/components/challenges/ChallengeCategoryChips.jsx';
 import { ChallengeCard } from '@/components/cards/ChallengeCard.jsx';
 import { ChallengeFormDialog } from '@/components/cards/ChallengeFormDialog.jsx';
 import { ChallengeInviteDialog } from '@/components/cards/ChallengeInviteDialog.jsx';
@@ -26,6 +27,7 @@ import {
 } from '@/services/challengeService';
 import { getFriends } from '@/services/socialApi';
 import { getCurrentUserPlan } from '@/services/userService';
+import { getTaxonomyCategories } from '@/services/taxonomyService';
 
 const CHALLENGE_TABS = [
     { value: 'active', label: 'Active Challenges' },
@@ -190,6 +192,7 @@ function ChallengeInfoPopover() {
 export function ChallengesPage() {
     const navigate = useNavigate();
     const location = useLocation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('active');
     const [challenges, setChallenges] = useState([]);
@@ -213,6 +216,9 @@ export function ChallengesPage() {
     const [isLoadingFriends, setIsLoadingFriends] = useState(false);
     const [inviteError, setInviteError] = useState('');
     const [planInfo, setPlanInfo] = useState(null);
+    const [taxonomyCategories, setTaxonomyCategories] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState('all');
+    const hasInitializedCategoryFromUrl = useRef(false);
 
     const userId = getUserId(user);
     const incomingInvitations = invitations.incoming ?? [];
@@ -220,9 +226,29 @@ export function ChallengesPage() {
     const isFreeUser = !canCreateChallenges;
     const currentTabLabel = CHALLENGE_TABS.find((tab) => tab.value === activeTab)?.label ?? 'Challenges';
 
+    const categoryOptions = useMemo(() => ([
+        { label: 'All', value: 'all' },
+        ...taxonomyCategories.map((category) => ({
+            label: category.label,
+            value: category.key,
+        })),
+    ]), [taxonomyCategories]);
+
+    const categoryLabelByKey = useMemo(
+        () => new Map(taxonomyCategories.map((category) => [category.key, category.label])),
+        [taxonomyCategories],
+    );
+
+    const selectedCategoryLabel = selectedCategory === 'all'
+        ? 'All'
+        : (categoryLabelByKey.get(selectedCategory) ?? selectedCategory);
+
     const visibleChallenges = useMemo(() => challenges.filter(Boolean), [challenges]);
 
-    const loadChallengeData = useCallback(async (scope, { showLoading = true, showError = true } = {}) => {
+    const loadChallengeData = useCallback(async (
+        scope,
+        { categoryKey = 'all', showLoading = true, showError = true } = {},
+    ) => {
         if (showLoading) {
             setIsLoading(true);
         }
@@ -231,8 +257,14 @@ export function ChallengesPage() {
         }
 
         try {
+            const challengeParams = { scope };
+
+            if (scope === 'public' && categoryKey !== 'all') {
+                challengeParams.categoryKey = categoryKey;
+            }
+
             const [challengeData, invitationData] = await Promise.all([
-                getChallenges({ scope }),
+                getChallenges(challengeParams),
                 getChallengeInvitations(),
             ]);
 
@@ -255,13 +287,75 @@ export function ChallengesPage() {
         }
     }, []);
 
+    const refreshCurrentChallenges = useCallback((options = {}) => (
+        loadChallengeData(activeTab, {
+            categoryKey: activeTab === 'public' ? selectedCategory : 'all',
+            ...options,
+        })
+    ), [activeTab, loadChallengeData, selectedCategory]);
+
+    useEffect(() => {
+        let isCancelled = false;
+
+        async function loadTaxonomyCategories() {
+            try {
+                const categories = await getTaxonomyCategories();
+                if (!isCancelled) {
+                    setTaxonomyCategories(Array.isArray(categories) ? categories : []);
+                }
+            } catch {
+                if (!isCancelled) {
+                    setTaxonomyCategories([]);
+                }
+            }
+        }
+
+        loadTaxonomyCategories();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!taxonomyCategories.length || hasInitializedCategoryFromUrl.current) {
+            return;
+        }
+
+        const requestedCategory = searchParams.get('category');
+
+        if (requestedCategory && taxonomyCategories.some((category) => category.key === requestedCategory)) {
+            setSelectedCategory(requestedCategory);
+        }
+
+        hasInitializedCategoryFromUrl.current = true;
+    }, [searchParams, taxonomyCategories]);
+
+    function handleCategoryChange(nextCategory) {
+        setSelectedCategory(nextCategory);
+
+        setSearchParams((currentParams) => {
+            const nextParams = new URLSearchParams(currentParams);
+
+            if (nextCategory === 'all') {
+                nextParams.delete('category');
+            } else {
+                nextParams.set('category', nextCategory);
+            }
+
+            return nextParams;
+        }, { replace: true });
+    }
+
     useEffect(() => {
         const timerId = window.setTimeout(() => {
-            loadChallengeData(activeTab);
+            loadChallengeData(activeTab, {
+                categoryKey: activeTab === 'public' ? selectedCategory : 'all',
+            });
         }, 0);
 
         return () => window.clearTimeout(timerId);
-    }, [activeTab, loadChallengeData]);
+    }, [activeTab, selectedCategory, loadChallengeData]);
 
     useEffect(() => {
         const nextJump = location.state?.notificationJump;
@@ -318,7 +412,7 @@ export function ChallengesPage() {
 
     useEffect(() => {
         function refreshChallengeData() {
-            loadChallengeData(activeTab, { showLoading: false, showError: false });
+            refreshCurrentChallenges({ showLoading: false, showError: false });
         }
 
         window.addEventListener('howly:notifications-updated', refreshChallengeData);
@@ -326,7 +420,7 @@ export function ChallengesPage() {
         return () => {
             window.removeEventListener('howly:notifications-updated', refreshChallengeData);
         };
-    }, [activeTab, loadChallengeData]);
+    }, [refreshCurrentChallenges]);
 
     function showActionError(actionError, fallbackMessage) {
         if (isFreeUser && isUpgradeError(actionError.code)) {
@@ -474,7 +568,7 @@ export function ChallengesPage() {
             }
 
             closeFormDialog(false);
-            await loadChallengeData(activeTab);
+            await refreshCurrentChallenges();
         } catch (submitError) {
             showActionError(submitError, challenge ? 'Failed to update challenge.' : 'Failed to create challenge.');
         } finally {
@@ -490,7 +584,7 @@ export function ChallengesPage() {
         try {
             await joinChallenge(challengeId);
             setNotice('Challenge joined.');
-            await loadChallengeData(activeTab);
+            await refreshCurrentChallenges();
         } catch (actionError) {
             showActionError(actionError, 'Failed to join challenge.');
         } finally {
@@ -506,7 +600,7 @@ export function ChallengesPage() {
         try {
             await leaveChallenge(challengeId);
             setNotice('Challenge left.');
-            await loadChallengeData(activeTab);
+            await refreshCurrentChallenges();
         } catch (actionError) {
             showActionError(actionError, 'Failed to leave challenge.');
         } finally {
@@ -522,7 +616,7 @@ export function ChallengesPage() {
         try {
             const result = await claimChallengeReward(challengeId);
             setNotice(`Reward claimed: ${result.rewardCoins ?? 0} coins.`);
-            await loadChallengeData(activeTab);
+            await refreshCurrentChallenges();
         } catch (actionError) {
             showActionError(actionError, actionError.message || 'Failed to claim reward.');
         } finally {
@@ -538,7 +632,7 @@ export function ChallengesPage() {
         try {
             await acceptChallengeInvitation(invitationId);
             setNotice('Invitation accepted.');
-            await loadChallengeData(activeTab);
+            await refreshCurrentChallenges();
         } catch (actionError) {
             showActionError(actionError, 'Failed to accept invitation.');
         } finally {
@@ -554,7 +648,7 @@ export function ChallengesPage() {
         try {
             await rejectChallengeInvitation(invitationId);
             setNotice('Invitation rejected.');
-            await loadChallengeData(activeTab);
+            await refreshCurrentChallenges();
         } catch (rejectError) {
             showActionError(rejectError, 'Failed to reject invitation.');
         } finally {
@@ -581,7 +675,7 @@ export function ChallengesPage() {
 
             if (sentCount > 0) {
                 setNotice(sentCount === 1 ? 'Challenge invitation sent.' : `${sentCount} challenge invitations sent.`);
-                await loadChallengeData(activeTab);
+                await refreshCurrentChallenges();
             }
 
             if (failedResults.length > 0) {
@@ -641,6 +735,15 @@ export function ChallengesPage() {
                     </TabsList>
                 </Tabs>
 
+                {activeTab === 'public' && categoryOptions.length > 1 ? (
+                    <ChallengeCategoryChips
+                        options={categoryOptions}
+                        value={selectedCategory}
+                        onChange={handleCategoryChange}
+                        disabled={isLoading}
+                    />
+                ) : null}
+
                 <ChallengeAlert error={error} notice={notice} onUpgrade={handleUpgradeClick} />
 
                 {isLoading ? (
@@ -673,13 +776,16 @@ export function ChallengesPage() {
                             const completedDays = challenge.viewerParticipantDaysCompleted ?? 0;
                             const editLocked = !canEditChallenge(challenge);
 
+                            const categoryLabel = categoryLabelByKey.get(challenge.taxonomy?.categoryKey)
+                                ?? challenge.habitTemplate?.category;
+
                             return (
                                 <ChallengeCard
                                     key={challenge.id}
                                     title={challenge.title}
                                     description={challenge.description}
                                     habitTitle={challenge.habitTitle}
-                                    category={challenge.habitTemplate?.category}
+                                    category={categoryLabel}
                                     recommendationReason={challenge.recommendationReason}
                                     status={challenge.status}
                                     visibility={challenge.visibility}
@@ -803,7 +909,9 @@ export function ChallengesPage() {
 
                 {!isLoading && visibleChallenges.length === 0 && (activeTab !== 'active' || incomingInvitations.length === 0) ? (
                     <div className="rounded-xl border border-theme-text/10 bg-theme-text/5 p-6 text-center text-sm text-theme-text-soft">
-                        No challenges available.
+                        {activeTab === 'public' && selectedCategory !== 'all'
+                            ? `No public ${selectedCategoryLabel} challenges yet.`
+                            : 'No challenges available.'}
                     </div>
                 ) : null}
             </PageSection>
