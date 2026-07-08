@@ -39,6 +39,7 @@ export function HabitCard({
 }) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const hasMenuActions = Boolean(onEdit || onDelete || onShareStory);
+    const truncatedTitle = title && title.length > 40 ? `${title.slice(0, 40)}…` : title;
 
     return (
         <Card className={cn(appCardClassName, completed && 'bg-theme-success-surface ring-theme-success/25', atRisk && !completed && 'bg-theme-warn-surface ring-theme-gold/30')}>
@@ -111,14 +112,11 @@ export function HabitCard({
                     {onDelete ? (
                     <ConfirmationDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                         <ConfirmationDialogContent className="p-8 flex flex-col items-center text-center">
-                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-theme-danger/10 mb-2 border border-theme-danger/20">
-                                <Trash2 className="h-8 w-8 text-theme-danger" />
-                            </div>
-                            <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-4 text-center">
-                                <ConfirmationDialogTitle className="text-2xl font-bold tracking-tight text-center">Delete this habit?</ConfirmationDialogTitle>
+                            <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-4 text-center w-full">
+                                <ConfirmationDialogTitle className="text-2xl font-bold tracking-tight text-center w-full">Delete this habit?</ConfirmationDialogTitle>
                                 <ConfirmationDialogDescription className="text-base text-theme-text-soft text-center flex flex-col gap-2">
-                                    <span>
-                                        Your streak and all progress for <strong className="text-theme-text font-semibold">{title}</strong> will be lost forever. This can't be undone.
+                                    <span className="break-words [overflow-wrap:anywhere]">
+                                        Your streak and all progress for <strong className="text-theme-text font-semibold">{truncatedTitle}</strong> will be lost forever. This can't be undone.
                                     </span>
                                     {activeBoost && (
                                         <span className="text-theme-danger font-medium bg-theme-danger/10 p-2 rounded-lg mt-1 border border-theme-danger/20 text-sm">
@@ -131,7 +129,7 @@ export function HabitCard({
                                 <AlertDialogPrimitive.Cancel asChild>
                                     <Button 
                                         variant="outline"
-                                        className="w-full h-14 rounded-full bg-theme-surface-2 border border-theme-text/10 text-theme-text hover:bg-theme-surface-2/80 hover:text-theme-text mt-0 text-lg font-semibold"
+                                        className="w-full h-14 rounded-xl bg-theme-surface-2 border border-theme-text/10 text-theme-text hover:bg-theme-surface-2/80 hover:text-theme-text mt-0 text-lg font-semibold"
                                     >
                                         Keep it
                                     </Button>
@@ -139,7 +137,7 @@ export function HabitCard({
                                 <AlertDialogPrimitive.Action asChild>
                                     <Button 
                                         onClick={onDelete}
-                                        className="w-full h-14 rounded-full bg-theme-danger hover:bg-theme-danger/85 text-white text-lg font-semibold shadow-lg shadow-red-900/20"
+                                        className="w-full h-14 rounded-xl bg-theme-danger hover:bg-theme-danger/85 text-white text-lg font-semibold shadow-lg shadow-red-900/20"
                                     >
                                         <Trash2 className="mr-2 h-5 w-5" /> Yes, delete habit
                                     </Button>

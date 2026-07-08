@@ -624,6 +624,7 @@ export function SocialPage() {
 
     function handleActivePanelChange(nextPanel) {
         setActivePanel(nextPanel);
+        setError('');
 
         if (nextPanel === 'requests') {
             void refreshSocialData({ silent: true });

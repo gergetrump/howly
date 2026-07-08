@@ -633,7 +633,7 @@ export function DashboardPage() {
                     <button
                         type="button"
                         onClick={() => setIsChatOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-theme-accent to-theme-accent px-5 py-2.5 text-sm font-semibold text-theme-on-accent shadow-lg shadow-black/25 transition-all hover:-translate-y-0.5 hover:from-theme-accent-strong hover:to-theme-accent-strong"
+                        className="inline-flex items-center gap-2 rounded-xl bg-theme-accent px-5 py-2.5 text-sm font-semibold text-theme-on-accent shadow-sm transition-colors hover:bg-theme-accent-strong"
                     >
                         <Sparkles size={16} />
                         Ask {companion?.name || 'Howly'} for habit ideas

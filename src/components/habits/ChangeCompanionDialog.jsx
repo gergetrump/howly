@@ -96,7 +96,7 @@ function ChangeCompanionForm({ currentType, currentName, onSaved, onCancel }) {
                 <Button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="h-12 w-full rounded-full bg-howly-primary text-base font-semibold text-white shadow-lg shadow-howly-primary/25 hover:opacity-90 disabled:opacity-60"
+                    className="h-12 w-full rounded-full bg-howly-primary text-base font-semibold text-white shadow-lg hover:opacity-90 disabled:opacity-60"
                 >
                     {isSaving ? 'Saving...' : 'Save companion'}
                 </Button>

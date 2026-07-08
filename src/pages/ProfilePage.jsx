@@ -61,7 +61,7 @@ function SettingsRow({ icon: Icon, iconColor = 'text-theme-text-muted', title, s
 function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSubmitting, error, success }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="p-8 sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-theme-text">Help & Feedback</DialogTitle>
                     <DialogDescription className="text-theme-text-muted">
