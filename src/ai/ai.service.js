@@ -17,7 +17,7 @@ const FATAL_STATUS = new Set([401, 402]);
  * @param {number}  [options.temperature=0.7]
  * @returns {Promise<string>}              The model's text response.
  */
-export async function generateText(prompt, { json = false, temperature = 0.7 } = {}) {
+export async function generateText(prompt, { json = false, temperature = 0.7, system } = {}) {
     const { apiKey, model, fallbackModels = [] } = config.ai?.openrouter ?? {};
 
     if (!apiKey) {
@@ -36,7 +36,10 @@ export async function generateText(prompt, { json = false, temperature = 0.7 } =
         const activeModel = models[i];
         const requestBody = {
             model: activeModel,
-            messages: [{ role: 'user', content: prompt }],
+            messages: [
+                ...(system ? [{ role: 'system', content: system }] : []),
+                { role: 'user', content: prompt },
+            ],
             temperature,
             // if a chosen free model rejects it, drop it or swap the model. Callers should still parse defensively.
             ...(json ? { response_format: { type: 'json_object' } } : {}),
