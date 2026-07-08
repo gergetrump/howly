@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
+import { Eye, EyeOff, LogIn } from 'lucide-react';
 
 import howlyIcon from '@/assets/howly.png';
 import { Background } from '@/components/brand/background';
@@ -24,6 +24,7 @@ export function LoginPage() {
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         if (!location.state) {
@@ -217,17 +218,31 @@ export function LoginPage() {
                                     </Link>
                                 </div>
 
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    aria-required="true"
-                                    autoComplete="current-password"
-                                    placeholder="Enter your password"
-                                    className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
-                                />
+                                <div className="relative">
+                                    <input
+                                        id="password"
+                                        name="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        aria-required="true"
+                                        autoComplete="current-password"
+                                        placeholder="Enter your password"
+                                        className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 pr-12 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword((isVisible) => !isVisible)}
+                                        className="absolute right-3 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text focus:outline-none focus:ring-2 focus:ring-howly-primary/40"
+                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="size-4" aria-hidden="true" />
+                                        ) : (
+                                            <Eye className="size-4" aria-hidden="true" />
+                                        )}
+                                    </button>
+                                </div>
                             </div>
 
                             {error && (
