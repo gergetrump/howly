@@ -5,6 +5,7 @@ import { CardGrid, CompletionCircle, PlanLimitDialog } from '@/components/common
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
+import { appTabsListFullWidthClassName, appTabsTriggerClassName } from '@/components/cards/cardStyles';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
 import { CompanionStage } from '@/components/brand';
 import { StreakCelebrationModal } from '@/components/brand/StreakCelebrationModal';
@@ -501,6 +502,13 @@ export function DashboardPage() {
         });
     }
 
+    function handleNewHabitAdded(habit) {
+        setHabits((prev) => [habit, ...prev]);
+        if (!habit.category) {
+            refreshHabitTaxonomyInBackground(habit.id);
+        }
+    }
+
     function renderHabitCard(habit, withCompletion) {
         return (
             <HabitCard
@@ -617,7 +625,7 @@ export function DashboardPage() {
                             className="max-w-2xl"
                             companionName={companion?.name}
                             onClose={() => setIsChatOpen(false)}
-                            onHabitAdded={(habit) => setHabits((prev) => [habit, ...prev])}
+                            onHabitAdded={handleNewHabitAdded}
                             onEditSuggestion={(suggestion, removeFromPanel) => {
                                 setHabitToEdit(null);
                                 setPrefillHabit(suggestion);
@@ -648,16 +656,16 @@ export function DashboardPage() {
                 onAction={openAddHabitDialog}
             >
                 <Tabs value={habitsTab} onValueChange={setHabitsTab}>
-                    <TabsList className="w-full border border-theme-text/10 bg-theme-surface text-theme-text">
+                    <TabsList className={appTabsListFullWidthClassName}>
                         <TabsTrigger
                             value="today"
-                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                            className={appTabsTriggerClassName}
                         >
                             Today ({todaysHabits.length})
                         </TabsTrigger>
                         <TabsTrigger
                             value="all"
-                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                            className={appTabsTriggerClassName}
                         >
                             All Habits ({habits.length})
                         </TabsTrigger>
@@ -706,15 +714,15 @@ export function DashboardPage() {
                 onHabitAdded={(savedHabit, isEdit) => {
                     if (isEdit) {
                         setHabits(prev => prev.map(h => h.id === savedHabit.id ? savedHabit : h));
+                        if (!savedHabit.category) {
+                            refreshHabitTaxonomyInBackground(savedHabit.id);
+                        }
                     } else {
-                        setHabits(prev => [savedHabit, ...prev]);
+                        handleNewHabitAdded(savedHabit);
                         if (consumeSuggestion) {
                             consumeSuggestion();
                             setConsumeSuggestion(null);
                         }
-                    }
-                    if (!savedHabit.category) {
-                        refreshHabitTaxonomyInBackground(savedHabit.id);
                     }
                 }}
             />
