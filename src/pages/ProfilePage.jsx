@@ -86,7 +86,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                         ))}
                     </div>
 
-                    <label className="block space-y-2">
+                    <label className="block space-y-3">
                         <span className="text-sm font-semibold text-theme-text">Subject</span>
                         <input
                             type="text"
@@ -98,7 +98,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                         />
                     </label>
 
-                    <label className="block space-y-2">
+                    <label className="block space-y-3">
                         <span className="text-sm font-semibold text-theme-text">Message</span>
                         <textarea
                             value={form.message}
