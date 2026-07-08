@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
+import { PremiumFeaturePreview } from '@/components/common';
 import { getTrendsAnalytics } from '@/services/trendsService';
 import { useAuth } from '@/context/authContext';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
@@ -32,6 +33,75 @@ const periodTabTriggerClassName = 'px-3 py-1 text-xs text-theme-text-soft data-a
 const helpButtonClassName = 'grid h-6 w-6 shrink-0 place-items-center rounded-full border border-theme-text/10 bg-theme-text/10 text-theme-text transition hover:bg-theme-text/20 hover:text-theme-text';
 
 const helpPopoverContentClassName = 'z-[120] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-theme-text/10 bg-theme-bg/95 p-4 text-left text-xs leading-snug text-theme-text shadow-xl shadow-theme-bg/30';
+
+const MOCK_TRENDS_ANALYTICS = {
+    summary: {
+        standing: {
+            display: 'percent',
+            aheadPercent: 72,
+            userCompletionRate: 86,
+        },
+        topCategory: {
+            categoryLabel: 'Movement',
+        },
+    },
+    byCategory: [
+        {
+            categoryKey: 'movement',
+            categoryLabel: 'Movement',
+            share: 34,
+            checkIns: 340,
+            trend: { direction: 'up', changePercent: 18 },
+        },
+        {
+            categoryKey: 'mindfulness',
+            categoryLabel: 'Mindfulness',
+            share: 27,
+            checkIns: 270,
+            trend: { direction: 'up', changePercent: 9 },
+        },
+        {
+            categoryKey: 'learning',
+            categoryLabel: 'Learning',
+            share: 21,
+            checkIns: 210,
+            trend: { direction: 'flat', changePercent: 0 },
+        },
+        {
+            categoryKey: 'sleep',
+            categoryLabel: 'Sleep',
+            share: 18,
+            checkIns: 180,
+            trend: { direction: 'down', changePercent: 6 },
+        },
+    ],
+    trendingHabits: [
+        {
+            canonicalHabitKey: 'morning-run',
+            label: 'Morning run',
+            categoryLabel: 'Movement',
+            trend: { direction: 'up', changePercent: 24 },
+        },
+        {
+            canonicalHabitKey: 'drink-water',
+            label: 'Drink water',
+            categoryLabel: 'Health',
+            trend: { direction: 'up', changePercent: 17 },
+        },
+        {
+            canonicalHabitKey: 'read',
+            label: 'Read before bed',
+            categoryLabel: 'Learning',
+            trend: { direction: 'flat', changePercent: 0 },
+        },
+        {
+            canonicalHabitKey: 'meditate',
+            label: 'Meditate',
+            categoryLabel: 'Mindfulness',
+            trend: { display: 'new', direction: 'up', changePercent: 100 },
+        },
+    ],
+};
 
 function InfoPopover({ ariaLabel, title, children }) {
     return (
@@ -328,12 +398,17 @@ function TrendingHabits({ habits, showTrends }) {
 
 export function TrendsPage() {
     const { user } = useAuth();
+    const isPremiumUser = user?.isPremium === true || user?.role === 'admin';
     const [period, setPeriod] = useState('24h');
     const [trendsAnalytics, setTrendsAnalytics] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
     useEffect(() => {
+        if (!isPremiumUser) {
+            return undefined;
+        }
+
         let isMounted = true;
 
         async function loadTrendsAnalytics() {
@@ -363,25 +438,21 @@ export function TrendsPage() {
         return () => {
             isMounted = false;
         };
-    }, [period]);
+    }, [isPremiumUser, period]);
 
-    const summary = trendsAnalytics?.summary;
+    const displayTrendsAnalytics = isPremiumUser ? trendsAnalytics : MOCK_TRENDS_ANALYTICS;
+    const displayIsLoading = isPremiumUser ? isLoading : false;
+    const displayError = isPremiumUser ? error : '';
+    const summary = displayTrendsAnalytics?.summary;
     const periodInRange = PERIOD_IN_RANGE_LABELS[period] ?? PERIOD_IN_RANGE_LABELS.week;
     const comparisonPeriod = PERIOD_COMPARISON_LABELS[period] ?? PERIOD_COMPARISON_LABELS.week;
     const standing = summary?.standing;
 
-    return (
-        <Page theme="forest" contentClassName="max-w-[1400px]">
-            <Heading
-                title="Trends"
-                subtitle="See how Howly is doing together."
-                streakDays={user?.streak ?? 0}
-            />
-
+    const trendsContent = (
             <div className="space-y-8">
-                {error ? (
+                {displayError ? (
                     <div className="rounded-xl border border-theme-danger/30 bg-theme-danger/10 p-4 text-sm text-theme-danger">
-                        {error}
+                        {displayError}
                     </div>
                 ) : null}
 
@@ -393,7 +464,7 @@ export function TrendsPage() {
                         <PeriodToggle period={period} onPeriodChange={setPeriod} />
                     </div>
 
-                    {isLoading ? (
+                    {displayIsLoading ? (
                         <div className="flex items-center gap-2 rounded-xl border border-theme-text/10 bg-theme-text/5 p-4 text-sm text-theme-text-soft">
                             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                             Loading trends analytics
@@ -430,14 +501,14 @@ export function TrendsPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {isLoading ? (
+                        {displayIsLoading ? (
                             <div className="flex items-center gap-2 rounded-xl bg-theme-text/5 p-4 text-sm text-theme-text-soft">
                                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                                 Loading categories
                             </div>
                         ) : (
                             <CategoryBreakdown
-                                categories={trendsAnalytics?.byCategory ?? []}
+                                categories={displayTrendsAnalytics?.byCategory ?? []}
                                 showTrends
                             />
                         )}
@@ -456,14 +527,14 @@ export function TrendsPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {isLoading ? (
+                        {displayIsLoading ? (
                             <div className="flex items-center gap-2 rounded-xl bg-theme-text/5 p-4 text-sm text-theme-text-soft">
                                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                                 Loading trending habits
                             </div>
                         ) : (
                             <TrendingHabits
-                                habits={trendsAnalytics?.trendingHabits ?? []}
+                                habits={displayTrendsAnalytics?.trendingHabits ?? []}
                                 showTrends
                             />
                         )}
@@ -474,6 +545,27 @@ export function TrendsPage() {
                     Anonymous patterns only: shares and trends, never individual habit names or usernames. Your consistency rank is a private benchmark against other Howly users.
                 </p>
             </div>
+    );
+
+    return (
+        <Page theme="forest" contentClassName="max-w-[1400px]">
+            <Heading
+                title="Trends"
+                subtitle="See how Howly is doing together."
+                streakDays={user?.streak ?? 0}
+            />
+
+            {isPremiumUser ? (
+                trendsContent
+            ) : (
+                <PremiumFeaturePreview
+                    title="Unlock Trends"
+                    description="Trends shows community habit patterns, focus areas, and your private consistency benchmark. Upgrade to Premium to explore these insights."
+                    returnTo="/trends"
+                >
+                    {trendsContent}
+                </PremiumFeaturePreview>
+            )}
         </Page>
     );
 }

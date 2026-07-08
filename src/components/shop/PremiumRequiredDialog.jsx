@@ -8,6 +8,7 @@ export function PremiumRequiredDialog({
     description = "This item is exclusive to premium members. Upgrade to unlock premium shop items and enjoy monthly bonus coins.",
     showIcon = true,
     showActions = true,
+    returnTo = '/shop',
 }) {
     const navigate = useNavigate();
 
@@ -19,7 +20,7 @@ export function PremiumRequiredDialog({
         onClose();
         navigate('/premium', {
             state: {
-                returnTo: '/shop',
+                returnTo,
             },
         });
     }
