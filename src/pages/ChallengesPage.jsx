@@ -306,6 +306,8 @@ function ChallengeParticipantsBadge({
                 align="start"
                 side="bottom"
                 sideOffset={8}
+                onOpenAutoFocus={(event) => event.preventDefault()}
+                onCloseAutoFocus={(event) => event.preventDefault()}
                 onMouseEnter={openParticipants}
                 onMouseLeave={scheduleClose}
                 className="z-[130] w-64 rounded-xl border border-theme-text/10 bg-theme-surface p-2 text-theme-text shadow-xl shadow-theme-bg/30"
@@ -448,9 +450,10 @@ export function ChallengesPage() {
             setParticipantErrorsByChallengeId({});
 
             return { challenges: nextChallenges, invitations: nextInvitations };
-        } catch (loadError) {
+        } catch {
             if (showError) {
-                setError({ message: loadError.message || 'Failed to load challenges.', code: loadError.code });
+                setError(null);
+                setChallenges([]);
             }
             return null;
         } finally {
