@@ -596,6 +596,11 @@ export function ChallengesPage() {
         try {
             await joinChallenge(challengeId);
             toast.success("You've joined the challenge.");
+            setChallenges((current) => current.map((challenge) => (
+                challenge && challenge.id === challengeId
+                    ? { ...challenge, viewerParticipantStatus: 'active' }
+                    : challenge
+            )));
             await refreshCurrentChallenges();
         } catch (actionError) {
             showActionError(actionError, "We couldn't join the challenge. Please try again.");

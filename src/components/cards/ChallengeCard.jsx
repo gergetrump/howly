@@ -65,7 +65,7 @@ export function ChallengeCard({
                         </span>
                     </div>
                 ) : null}
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex min-h-12 flex-wrap content-start items-center gap-2">
                     {recommendationReason ? (
                         <Badge className="border border-theme-accent/30 bg-theme-accent/15 text-theme-accent-soft hover:bg-theme-accent/15">
                             {recommendationReason}
@@ -106,10 +106,10 @@ export function ChallengeCard({
                     <Progress value={progressValue} className="h-2" indicatorClassName="bg-theme-success" />
                 </div>
                 <div className="flex items-center justify-between gap-3 pt-1">
-                    <div className="flex min-w-0 flex-1 flex-nowrap gap-2 overflow-x-auto pb-1">{children}</div>
-                    <div className="ml-auto shrink-0">
+                    <div className="shrink-0">
                         <MoonCoin amount={reward ?? 0} compact />
                     </div>
+                    <div className="flex min-w-0 flex-1 flex-nowrap justify-end gap-2 overflow-x-auto pb-1">{children}</div>
                 </div>
             </CardContent>
         </Card>
