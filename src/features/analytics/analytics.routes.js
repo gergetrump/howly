@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../../middleware/auth.middleware.js';
+import { requireAuth, requirePremiumAccess } from '../../middleware/auth.middleware.js';
 import {
     getChallengeAnalyticsSummary,
     getHabitAnalyticsSummary,
@@ -7,7 +7,7 @@ import {
 
 const router = Router();
 
-router.use(requireAuth);
+router.use(requireAuth, requirePremiumAccess);
 
 router.get('/habits', getHabitAnalyticsSummary);
 router.get('/challenges', getChallengeAnalyticsSummary);

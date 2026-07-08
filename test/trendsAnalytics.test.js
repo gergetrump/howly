@@ -24,6 +24,7 @@ async function buildUser(overrides = {}) {
         lastName: overrides.lastName || 'User',
         passwordHash: overrides.passwordHash || 'hashed',
         authProvider: overrides.authProvider || 'local',
+        isPremium: overrides.isPremium ?? true,
         ...overrides,
     });
 }
@@ -190,6 +191,17 @@ test('GET /api/trends/analytics returns anonymous trends aggregates', async () =
         .expect(200);
 
     assert.equal(legacyTodayResponse.body.data.period.key, '24h');
+});
+
+test('GET /api/trends/analytics requires premium access', async () => {
+    const user = await buildUser({ isPremium: false });
+
+    const response = await request(app)
+        .get('/api/trends/analytics?period=week')
+        .set('Authorization', authHeader(user))
+        .expect(403);
+
+    assert.equal(response.body.code, 'PREMIUM_REQUIRED');
 });
 
 test('GET /api/trends/analytics excludes deleted users from standing pool', async () => {
