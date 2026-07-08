@@ -155,7 +155,7 @@ export function CompanionSelectionPage() {
                                 <Button
                                     onClick={handleSubmit}
                                     disabled={isSubmitting}
-                                    className="mt-6 h-12 w-full rounded-full bg-howly-primary text-base font-semibold text-white shadow-lg shadow-howly-primary/25 transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="mt-6 h-12 w-full rounded-full bg-howly-primary text-base font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {isSubmitting ? 'Saving...' : 'Continue'}
                                 </Button>

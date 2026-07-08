@@ -528,11 +528,8 @@ export function StoryCommentSection({
                 return (
                     <ConfirmationDialog open={commentIdToDelete !== null} onOpenChange={(open) => !open && setCommentIdToDelete(null)}>
                         <ConfirmationDialogContent className="p-8 flex flex-col items-center text-center z-[100]">
-                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-theme-danger/10 mb-2 border border-theme-danger/20">
-                                <Trash2 className="h-8 w-8 text-theme-danger" />
-                            </div>
-                            <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-4 text-center">
-                                <ConfirmationDialogTitle className="text-2xl font-bold tracking-tight text-center">Delete comment?</ConfirmationDialogTitle>
+                            <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-4 text-center w-full">
+                                <ConfirmationDialogTitle className="text-2xl font-bold tracking-tight text-center w-full">Delete comment?</ConfirmationDialogTitle>
                                 <ConfirmationDialogDescription className="text-base text-theme-text-soft text-center">
                                     {commentToDeleteHasReplies
                                         ? "Are you sure you want to delete this comment? All replies will also be deleted. This can't be undone."
@@ -544,7 +541,7 @@ export function StoryCommentSection({
                                 <AlertDialogPrimitive.Cancel asChild>
                                     <Button 
                                         variant="outline"
-                                        className="w-full h-14 rounded-full bg-theme-surface-2 border border-theme-text/10 text-theme-text hover:bg-theme-surface-2/80 hover:text-theme-text mt-0 text-lg font-semibold"
+                                        className="w-full h-14 rounded-xl bg-theme-surface-2 border border-theme-text/10 text-theme-text hover:bg-theme-surface-2/80 hover:text-theme-text mt-0 text-lg font-semibold"
                                     >
                                         Keep it
                                     </Button>
@@ -552,7 +549,7 @@ export function StoryCommentSection({
                                 <AlertDialogPrimitive.Action asChild>
                                     <Button 
                                         onClick={confirmDelete}
-                                        className="w-full h-14 rounded-full bg-[#d65d53] hover:bg-[#c2534a] text-white text-lg font-semibold shadow-lg shadow-red-900/20"
+                                        className="w-full h-14 rounded-xl bg-[#d65d53] hover:bg-[#c2534a] text-white text-lg font-semibold shadow-lg shadow-red-900/20"
                                     >
                                         <Trash2 className="mr-2 h-5 w-5" /> Yes, delete comment
                                     </Button>

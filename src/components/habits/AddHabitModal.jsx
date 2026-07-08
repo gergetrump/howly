@@ -35,7 +35,7 @@ const UNIT_LABELS = {
     L: 'l',
     ml: 'ml',
     min: 'min',
-    hours: 'Hours',
+    hours: 'hours',
     km: 'km',
     steps: 'Steps',
     times: 'Times',

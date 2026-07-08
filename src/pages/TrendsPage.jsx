@@ -7,7 +7,7 @@ import { Page, PageSection, Heading } from '@/components/layout';
 import { PremiumFeaturePreview } from '@/components/common';
 import { getTrendsAnalytics } from '@/services/trendsService';
 import { useAuth } from '@/context/authContext';
-import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
+import { appCardClassName, appCardInsetClassName, appTabsListCompactClassName, appTabsTriggerCompactClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
 
 const PERIOD_HEADINGS = {
@@ -27,8 +27,6 @@ const PERIOD_COMPARISON_LABELS = {
     week: 'the previous 7 days',
     month: 'the previous 30 days',
 };
-
-const periodTabTriggerClassName = 'px-3 py-1 text-xs text-theme-text-soft data-active:!bg-theme-invert data-active:!text-theme-invert-text sm:text-sm';
 
 const helpButtonClassName = 'grid h-6 w-6 shrink-0 place-items-center rounded-full border border-theme-text/10 bg-theme-text/10 text-theme-text transition hover:bg-theme-text/20 hover:text-theme-text';
 
@@ -294,14 +292,14 @@ function TrendDelta({ trend, className, size = 'sm' }) {
 function PeriodToggle({ period, onPeriodChange }) {
     return (
         <Tabs value={period} onValueChange={onPeriodChange}>
-            <TabsList className="h-9 w-auto shrink-0 border border-theme-text/10 bg-theme-text/5 p-1 text-theme-text">
-                <TabsTrigger value="24h" className={periodTabTriggerClassName}>
+            <TabsList className={appTabsListCompactClassName}>
+                <TabsTrigger value="24h" className={appTabsTriggerCompactClassName}>
                     24 hours
                 </TabsTrigger>
-                <TabsTrigger value="week" className={periodTabTriggerClassName}>
+                <TabsTrigger value="week" className={appTabsTriggerCompactClassName}>
                     7 days
                 </TabsTrigger>
-                <TabsTrigger value="month" className={periodTabTriggerClassName}>
+                <TabsTrigger value="month" className={appTabsTriggerCompactClassName}>
                     30 days
                 </TabsTrigger>
             </TabsList>

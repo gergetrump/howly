@@ -157,7 +157,7 @@ export function HabitSelectionPage() {
                             <Button
                                 onClick={handleAddHabits}
                                 disabled={isSubmitting || selected.length === 0}
-                                className="h-12 flex-1 rounded-full bg-howly-primary text-base font-semibold text-white shadow-lg shadow-howly-primary/25 transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="h-12 flex-1 rounded-full bg-howly-primary text-base font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {isSubmitting
                                     ? 'Saving...'

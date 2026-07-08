@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, AlertTriangle, Crown } from 'lucide-react';
+import { toast } from 'sonner';
 import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
@@ -20,6 +21,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { appTabsListWrapClassName, appTabsTriggerWrapClassName } from '@/components/cards/cardStyles';
 import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import {
@@ -323,8 +325,9 @@ export function InventoryPage() {
             ));
             setDraftItemSides(getInventorySides(savedInventory));
             window.dispatchEvent(new Event('howly:outfit-updated'));
+            toast.success('Your outfit has been saved.');
         } catch {
-            setError('Saving this outfit did not work');
+            toast.error("We couldn't save your outfit. Please try again.");
         } finally {
             setIsSavingOutfit(false);
         }
@@ -414,7 +417,7 @@ export function InventoryPage() {
                 <ActionButton
                     type="button"
                     variant="primary"
-                    className="px-5"
+                    className="h-10 px-5"
                     onClick={() => navigate('/shop')}
                 >
                     Visit shop
@@ -528,7 +531,7 @@ export function InventoryPage() {
                         </ActionButton>
                         <ActionButton
                             type="button"
-                            className="h-9 bg-howly-primary/20 px-4 text-sm font-semibold text-howly-primary hover:bg-howly-primary/30"
+                            className="h-9 bg-howly-primary px-4 text-sm font-semibold text-white hover:bg-howly-primary/90"
                             onClick={handleChangeCompanionClick}
                         >
                             <span className="flex items-center gap-1.5">
@@ -543,12 +546,12 @@ export function InventoryPage() {
                     <h2 className="text-xl font-semibold text-theme-text">Owned Items</h2>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-                            <TabsList className="h-auto flex-wrap border border-theme-text/10 bg-theme-surface p-1 text-theme-text-soft">
+                            <TabsList className={appTabsListWrapClassName}>
                                 {ITEM_CATEGORIES.map((category) => (
                                     <TabsTrigger
                                         key={category.value}
                                         value={category.value}
-                                        className="px-3 py-1.5 !text-theme-text-soft data-active:!bg-theme-invert data-active:!text-theme-invert-text"
+                                        className={appTabsTriggerWrapClassName}
                                     >
                                         {category.label}
                                     </TabsTrigger>
@@ -560,7 +563,7 @@ export function InventoryPage() {
                             <ActionButton
                                 type="button"
                                 variant="primary"
-                                className="px-5 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
+                                className="h-10 px-5 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                                 disabled={!hasUnsavedOutfitChanges || isSavingOutfit}
                                 onClick={handleSaveOutfit}
                             >

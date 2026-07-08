@@ -138,7 +138,7 @@ export function LandingPage() {
                     </p>
                     <div className="flex items-center gap-4">
                         <Button
-                            className="h-12 rounded-full bg-howly-primary px-8 text-base font-semibold text-theme-text shadow-lg shadow-howly-primary/25 transition-all hover:opacity-90 hover:shadow-xl hover:-translate-y-0.5"
+                            className="h-12 rounded-full bg-howly-primary px-8 text-base font-semibold text-theme-text shadow-lg transition-all hover:opacity-90 hover:shadow-xl hover:-translate-y-0.5"
                             asChild
                         >
                             <Link to="/register">Let&apos;s get started</Link>

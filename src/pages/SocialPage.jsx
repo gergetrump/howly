@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LockKeyhole } from 'lucide-react';
+import { toast } from 'sonner';
 import { Page, Heading } from '@/components/layout';
 import { FriendsPanel } from '@/components/social/FriendsPanel.jsx';
 import { ReactionUsersDialog } from '@/components/social/ReactionUsersDialog.jsx';
@@ -223,7 +224,7 @@ export function SocialPage() {
             friendsLoadedCountRef.current = Math.max(nextPage.nextOffset, currentOffset + nextPage.items.length);
             setHasMoreFriends(nextPage.hasMore);
         } catch (err) {
-            setError(getSocialErrorMessage(err));
+            toast.error(getSocialErrorMessage(err));
         } finally {
             setIsLoadingMoreFriends(false);
         }
@@ -271,7 +272,7 @@ export function SocialPage() {
             );
             setHasMoreIncomingRequests(nextRequests.incoming.hasMore);
         } catch (err) {
-            setError(getSocialErrorMessage(err));
+            toast.error(getSocialErrorMessage(err));
         } finally {
             setIsLoadingMoreIncomingRequests(false);
         }
@@ -623,6 +624,7 @@ export function SocialPage() {
 
     function handleActivePanelChange(nextPanel) {
         setActivePanel(nextPanel);
+        setError('');
 
         if (nextPanel === 'requests') {
             void refreshSocialData({ silent: true });
@@ -667,6 +669,7 @@ export function SocialPage() {
             const request = await sendFriendRequest(targetUser.id);
 
             addOutgoingRequest(request);
+            toast.success('Your friend request has been sent.');
             window.dispatchEvent(new Event('howly:social-requests-updated'));
             void refreshSocialData({ silent: true });
 
@@ -674,7 +677,7 @@ export function SocialPage() {
                 setSelectedProfileUser(null);
             }
         } catch (err) {
-            setError(getSocialErrorMessage(err, targetUser));
+            toast.error(getSocialErrorMessage(err, targetUser));
         } finally {
             setIsSubmitting(false);
         }
@@ -778,9 +781,10 @@ export function SocialPage() {
             const response = await acceptFriendRequest(requestId);
 
             acceptRequestLocally(requestId, response.friendship);
+            toast.success("You're now friends!");
             setSelectedProfileUser(null);
         } catch (err) {
-            setError(getSocialErrorMessage(err));
+            toast.error(getSocialErrorMessage(err));
         } finally {
             setBusyRequestId(null);
         }
@@ -794,8 +798,9 @@ export function SocialPage() {
             const response = await acceptFriendRequest(requestId);
 
             acceptRequestLocally(requestId, response.friendship);
+            toast.success("You're now friends!");
         } catch (err) {
-            setError(getSocialErrorMessage(err));
+            toast.error(getSocialErrorMessage(err));
         } finally {
             setBusyRequestId(null);
         }
@@ -807,6 +812,7 @@ export function SocialPage() {
 
         try {
             await rejectFriendRequest(requestId);
+            toast.success("You've declined the friend request.");
             incomingRequestsLoadedCountRef.current = Math.max(0, incomingRequestsLoadedCountRef.current - 1);
             setRequests((currentRequests) => ({
                 incoming: (currentRequests.incoming ?? []).filter((request) => request.id !== requestId),
@@ -816,7 +822,7 @@ export function SocialPage() {
             window.dispatchEvent(new Event('howly:notifications-updated'));
             void refreshSocialData({ silent: true });
         } catch (err) {
-            setError(getSocialErrorMessage(err));
+            toast.error(getSocialErrorMessage(err));
         } finally {
             setBusyRequestId(null);
         }
@@ -828,12 +834,13 @@ export function SocialPage() {
 
         try {
             await deleteFriend(friendshipId);
+            toast.success("You've removed this friend.");
             friendsLoadedCountRef.current = Math.max(0, friendsLoadedCountRef.current - 1);
             setFriends((currentFriends) => currentFriends.filter((friendship) => friendship.id !== friendshipId));
             setFeed((currentFeed) => currentFeed.filter((post) => !sameId(post.user?.id, friend?.id)));
             void refreshSocialData({ silent: true });
         } catch (err) {
-            setError(getSocialErrorMessage(err));
+            toast.error(getSocialErrorMessage(err));
         } finally {
             setBusyFriendId(null);
         }
@@ -877,7 +884,7 @@ export function SocialPage() {
             });
             return response;
         } catch (err) {
-            setError(getSocialErrorMessage(err));
+            toast.error(getSocialErrorMessage(err));
             return null;
         } finally {
             setBusyPostId(null);
@@ -946,7 +953,7 @@ export function SocialPage() {
             );
             return response;
         } catch (err) {
-            setError(getSocialErrorMessage(err));
+            toast.error(getSocialErrorMessage(err));
             return null;
         } finally {
             setBusyPostId(null);
@@ -966,12 +973,13 @@ export function SocialPage() {
             setIsSubmitting(true);
             setError('');
             await blockUser(targetUserId);
+            toast.success("You've blocked this user.");
             const blockedData = await getBlockedUsers();
             setBlockedUsers(blockedData ?? []);
             void refreshSocialData({ silent: true });
             setSelectedProfileUser(null);
         } catch (err) {
-            setError(getSocialErrorMessage(err));
+            toast.error(getSocialErrorMessage(err));
         } finally {
             setIsSubmitting(false);
         }
@@ -982,10 +990,11 @@ export function SocialPage() {
             setIsSubmitting(true);
             setError('');
             await unblockUser(targetUserId);
+            toast.success("You've unblocked this user.");
             const blockedData = await getBlockedUsers();
             setBlockedUsers(blockedData ?? []);
         } catch (err) {
-            setError(getSocialErrorMessage(err));
+            toast.error(getSocialErrorMessage(err));
         } finally {
             setIsSubmitting(false);
         }

@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
+import { toast } from 'sonner';
+import { applyOverallStreakFreeze } from '@/services/streakFreezeApi';
 import { ActionButton } from '@/components/common';
 import { CompanionAvatar } from '@/components/brand';
 import { getItemDisplayName, getItemEquipSlot, hasItemSideOptions } from '@/components/brand/items/itemRegistry';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { appTabsListWrapClassName, appTabsTriggerWrapClassName } from '@/components/cards/cardStyles';
 import {
     CartDialog,
     BoostPowerUpCards,
@@ -719,6 +722,16 @@ export function ShopPage() {
         });
     }
 
+    async function rescueStreakNow() {
+        try {
+            await applyOverallStreakFreeze();
+            await refreshCurrentUser();
+            toast.success('Your streak has been saved!');
+        } catch {
+            toast.error("We couldn't save your streak. Please try again.");
+        }
+    }
+
     async function handleBuyItems(entriesForPurchase) {
         setError('');
 
@@ -747,6 +760,7 @@ export function ShopPage() {
         }
 
         setBuyingItemId('cart');
+        const streakShieldsBefore = user?.streakShields ?? 0;
         const purchasedEntries = [];
         const purchasedQuantitiesByCartKey = {};
         let failedEntry = null;
@@ -787,11 +801,26 @@ export function ShopPage() {
                 const remainingQuantity = getPurchaseEntryQuantity(entry) - purchasedQuantity;
                 return remainingQuantity > 0 ? [{ ...entry, quantity: remainingQuantity }] : [];
             }));
-            await Promise.all([
+            const [refreshedUser] = await Promise.all([
                 refreshCurrentUser(),
                 refreshBoostPurchaseLimits(),
             ]);
             setItemsToBuy([]);
+            toast.success('Your purchase was successful!');
+
+            const streakDeadline = refreshedUser?.streakRepairDeadline
+                ? new Date(refreshedUser.streakRepairDeadline).getTime()
+                : 0;
+            if (streakDeadline > Date.now() && (refreshedUser?.streakShields ?? 0) > streakShieldsBefore) {
+                toast('Your streak is still at risk', {
+                    description: 'Use a shield now to save it.',
+                    duration: 12000,
+                    action: {
+                        label: 'Save streak',
+                        onClick: () => { void rescueStreakNow(); },
+                    },
+                });
+            }
         } catch (buyError) {
             if (Object.keys(purchasedQuantitiesByCartKey).length > 0) {
                 setOwnedItemSignatures((currentOwnedItemSignatures) => {
@@ -826,13 +855,15 @@ export function ShopPage() {
             let shouldCloseConfirmation = true;
 
             if (buyError.code === 'ITEM_ALREADY_OWNED') {
-                setError('One of these items is already in your inventory');
+                toast.error('You already own one of these items.');
             } else if (buyError.code === 'BOOST_QUANTITY_LIMIT_REACHED') {
+                toast.error('You already own the maximum number of this boost.');
                 await refreshCurrentUser();
             } else if (buyError.code === 'BOOST_MONTHLY_LIMIT_REACHED') {
-                setError('Monthly boost purchase limit reached for this boost.');
+                toast.error("You've reached this month's purchase limit for this boost.");
                 await refreshBoostPurchaseLimits();
             } else if (buyError.code === 'SHIELDS_AT_MAX') {
+                toast.error('You already have the maximum number of shields.');
                 await refreshCurrentUser();
             } else if (buyError.code === 'PREMIUM_REQUIRED') {
                 if (isFreeUser) {
@@ -842,7 +873,7 @@ export function ShopPage() {
                         failedItem?._id ?? '',
                     );
                 } else {
-                    setError(`${failedItem ? getItemDisplayName(failedItem) : 'This item'} is premium only`);
+                    toast.error(`${failedItem ? getItemDisplayName(failedItem) : 'This item'} is available to premium members only.`);
                 }
             } else if (buyError.code === 'NOT_ENOUGH_COINS') {
                 shouldCloseConfirmation = false;
@@ -861,7 +892,7 @@ export function ShopPage() {
                     );
                 }
             } else {
-                setError('Buying these items did not work');
+                toast.error("We couldn't complete your purchase. Please try again.");
             }
 
             if (shouldCloseConfirmation) {
@@ -898,12 +929,12 @@ export function ShopPage() {
                 <PageSection title="Shop Items" className="min-w-0">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <Tabs value={selectedCategory} onValueChange={handleCategoryChange}>
-                            <TabsList className="h-auto flex-wrap border border-theme-text/10 bg-theme-surface p-1 text-theme-text-soft">
+                            <TabsList className={appTabsListWrapClassName}>
                                 {ITEM_CATEGORIES.map((category) => (
                                     <TabsTrigger
                                         key={category.value}
                                         value={category.value}
-                                        className="px-3 py-1.5 !text-theme-text-soft data-active:!bg-theme-invert data-active:!text-theme-invert-text"
+                                        className={appTabsTriggerWrapClassName}
                                     >
                                         {category.label}
                                     </TabsTrigger>

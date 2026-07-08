@@ -20,7 +20,7 @@ import {
 import { UserAvatar } from '@/components/social/UserProfileTrigger.jsx';
 import { ReportUserDialog } from '@/components/social/ReportUserDialog.jsx';
 import { getDisplayName, getUsername } from '@/components/social/socialHelpers.js';
-import { getFriendHabits } from '@/services/socialApi';
+import { getFriendHabits, getFriendChallenges } from '@/services/socialApi';
 
 export function UserPreviewDialog({
     user,
@@ -43,6 +43,7 @@ export function UserPreviewDialog({
     const isFriend = relationship?.status === 'friends';
     const isProfileRestricted = isBlockedByMe || hasBlockedCurrentUser;
     const [loadedHabits, setLoadedHabits] = useState({ userId: null, habits: [] });
+    const [loadedChallenges, setLoadedChallenges] = useState({ userId: null, challenges: [] });
     const previewUser = isProfileRestricted && user
         ? { ...user, profilePictureUrl: null, isPremium: false, role: undefined }
         : user;
@@ -70,8 +71,33 @@ export function UserPreviewDialog({
         };
     }, [friendId, isFriend, isProfileRestricted]);
 
+    useEffect(() => {
+        if (!friendId || !isFriend || isProfileRestricted) {
+            return undefined;
+        }
+
+        let active = true;
+        getFriendChallenges(friendId)
+            .then((response) => {
+                if (active) {
+                    setLoadedChallenges({ userId: friendId, challenges: Array.isArray(response?.challenges) ? response.challenges : [] });
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setLoadedChallenges({ userId: friendId, challenges: [] });
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [friendId, isFriend, isProfileRestricted]);
+
     const habitsLoaded = loadedHabits.userId === friendId;
     const friendHabits = habitsLoaded ? loadedHabits.habits : [];
+    const challengesLoaded = loadedChallenges.userId === friendId;
+    const friendChallenges = challengesLoaded ? loadedChallenges.challenges : [];
     const isGhostFriend = isFriend && user?.ghostMode === true;
 
     const blockTitle = relationship?.status === 'friends' ? 'Block this friend?' : 'Block this user?';
@@ -170,6 +196,26 @@ export function UserPreviewDialog({
                                         </div>
                                     ) : (
                                         <p className="text-sm text-theme-text-muted">No habits yet.</p>
+                                    )}
+                                </div>
+                            ) : null}
+                            {isFriend && !isGhostFriend && !isProfileRestricted ? (
+                                <div className="w-full">
+                                    <p className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-theme-text-muted">Active Challenges</p>
+                                    {!challengesLoaded ? (
+                                        <p className="text-sm text-theme-text-muted">Loading challenges…</p>
+                                    ) : friendChallenges.length > 0 ? (
+                                        <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                                            {friendChallenges.map((challenge) => (
+                                                <div key={challenge.id} className="flex items-center gap-3 rounded-xl bg-theme-text/5 px-3 py-2 text-left">
+                                                    <span className="text-lg" aria-hidden="true">🏆</span>
+                                                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-theme-text">{challenge.title}</span>
+                                                    <span className="shrink-0 text-xs font-semibold text-theme-text-soft">{challenge.daysCompleted}/{challenge.totalDays} days</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-theme-text-muted">No active challenges.</p>
                                     )}
                                 </div>
                             ) : null}

@@ -12,6 +12,8 @@ import {
     analyticsYearSelectClassName,
     appCardClassName,
     appCardInsetClassName,
+    appTabsListFullWidthClassName,
+    appTabsTriggerClassName,
 } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
 
@@ -699,22 +701,22 @@ export function AnalyticsPage() {
         <>
             <PageSection width="full" title={`${PERIOD_LABELS[period]} overview`}>
                 <Tabs value={period} onValueChange={setPeriod}>
-                    <TabsList className="w-full border border-theme-text/10 bg-theme-surface text-theme-text">
+                    <TabsList className={appTabsListFullWidthClassName}>
                         <TabsTrigger
                             value="week"
-                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                            className={appTabsTriggerClassName}
                         >
                             Week
                         </TabsTrigger>
                         <TabsTrigger
                             value="month"
-                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                            className={appTabsTriggerClassName}
                         >
                             Month
                         </TabsTrigger>
                         <TabsTrigger
                             value="year"
-                            className="text-theme-text-soft data-active:!bg-theme-invert data-active:!text-theme-invert-text"
+                            className={appTabsTriggerClassName}
                         >
                             Year
                         </TabsTrigger>

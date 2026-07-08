@@ -5,6 +5,7 @@ import { CardGrid, CompletionCircle, PlanLimitDialog } from '@/components/common
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
+import { appTabsListFullWidthClassName, appTabsTriggerClassName } from '@/components/cards/cardStyles';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
 import { CompanionStage } from '@/components/brand';
 import { StreakCelebrationModal } from '@/components/brand/StreakCelebrationModal';
@@ -501,6 +502,13 @@ export function DashboardPage() {
         });
     }
 
+    function handleNewHabitAdded(habit) {
+        setHabits((prev) => [habit, ...prev]);
+        if (!habit.category) {
+            refreshHabitTaxonomyInBackground(habit.id);
+        }
+    }
+
     function renderHabitCard(habit, withCompletion) {
         return (
             <HabitCard
@@ -512,7 +520,6 @@ export function DashboardPage() {
                 streakDays={habit.streakCount}
                 completed={habit.isCompletedToday}
                 atRisk={Boolean(habit.streakRepairDeadline)}
-                onUseFreeze={() => handleUseHabitFreeze(habit)}
                 onEdit={() => handleEdit(habit)}
                 onDelete={() => handleDelete(habit.id)}
                 activeBoost={habit.activeBoost}
@@ -617,7 +624,7 @@ export function DashboardPage() {
                             className="max-w-2xl"
                             companionName={companion?.name}
                             onClose={() => setIsChatOpen(false)}
-                            onHabitAdded={(habit) => setHabits((prev) => [habit, ...prev])}
+                            onHabitAdded={(habit) => { handleNewHabitAdded(habit); refreshUserStreak(); }}
                             onEditSuggestion={(suggestion, removeFromPanel) => {
                                 setHabitToEdit(null);
                                 setPrefillHabit(suggestion);
@@ -634,7 +641,7 @@ export function DashboardPage() {
                     <button
                         type="button"
                         onClick={() => setIsChatOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-theme-accent to-theme-accent px-5 py-2.5 text-sm font-semibold text-theme-on-accent shadow-lg shadow-black/25 transition-all hover:-translate-y-0.5 hover:from-theme-accent-strong hover:to-theme-accent-strong"
+                        className="inline-flex items-center gap-2 rounded-xl bg-theme-accent px-5 py-2.5 text-sm font-semibold text-theme-on-accent shadow-sm transition-colors hover:bg-theme-accent-strong"
                     >
                         <Sparkles size={16} />
                         Ask {companion?.name || 'Howly'} for habit ideas
@@ -648,16 +655,16 @@ export function DashboardPage() {
                 onAction={openAddHabitDialog}
             >
                 <Tabs value={habitsTab} onValueChange={setHabitsTab}>
-                    <TabsList className="w-full border border-theme-text/10 bg-theme-surface text-theme-text">
+                    <TabsList className={appTabsListFullWidthClassName}>
                         <TabsTrigger
                             value="today"
-                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                            className={appTabsTriggerClassName}
                         >
                             Today ({todaysHabits.length})
                         </TabsTrigger>
                         <TabsTrigger
                             value="all"
-                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                            className={appTabsTriggerClassName}
                         >
                             All Habits ({habits.length})
                         </TabsTrigger>
@@ -706,15 +713,16 @@ export function DashboardPage() {
                 onHabitAdded={(savedHabit, isEdit) => {
                     if (isEdit) {
                         setHabits(prev => prev.map(h => h.id === savedHabit.id ? savedHabit : h));
+                        if (!savedHabit.category) {
+                            refreshHabitTaxonomyInBackground(savedHabit.id);
+                        }
                     } else {
-                        setHabits(prev => [savedHabit, ...prev]);
+                        handleNewHabitAdded(savedHabit);
                         if (consumeSuggestion) {
                             consumeSuggestion();
                             setConsumeSuggestion(null);
                         }
-                    }
-                    if (!savedHabit.category) {
-                        refreshHabitTaxonomyInBackground(savedHabit.id);
+                        refreshUserStreak();
                     }
                 }}
             />
@@ -788,13 +796,6 @@ export function DashboardPage() {
                             onClick={() => { const target = riskConfirmHabit; setRiskConfirmHabit(null); handleHabitCompletion(target); }}
                         >
                             Complete & restart
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            className="h-12 w-full rounded-full text-theme-text-soft hover:bg-theme-text/5 hover:text-theme-text"
-                            onClick={() => setRiskConfirmHabit(null)}
-                        >
-                            Cancel
                         </Button>
                     </div>
                 </DialogContent>

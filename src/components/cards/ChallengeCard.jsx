@@ -69,7 +69,7 @@ export function ChallengeCard({
                         </span>
                     </div>
                 ) : null}
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex min-h-12 flex-wrap content-start items-center gap-2">
                     {recommendationReason ? (
                         <Badge className="border border-theme-accent/30 bg-theme-accent/15 text-theme-accent-soft hover:bg-theme-accent/15">
                             {recommendationReason}
