@@ -5,6 +5,7 @@ import { CardGrid, CompletionCircle, PlanLimitDialog } from '@/components/common
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { HabitCard } from '@/components/cards';
+import { appTabsListFullWidthClassName, appTabsTriggerClassName } from '@/components/cards/cardStyles';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
 import { CompanionStage } from '@/components/brand';
 import { StreakCelebrationModal } from '@/components/brand/StreakCelebrationModal';
@@ -655,16 +656,16 @@ export function DashboardPage() {
                 onAction={openAddHabitDialog}
             >
                 <Tabs value={habitsTab} onValueChange={setHabitsTab}>
-                    <TabsList className="w-full border border-theme-text/10 bg-theme-surface text-theme-text">
+                    <TabsList className={appTabsListFullWidthClassName}>
                         <TabsTrigger
                             value="today"
-                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                            className={appTabsTriggerClassName}
                         >
                             Today ({todaysHabits.length})
                         </TabsTrigger>
                         <TabsTrigger
                             value="all"
-                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                            className={appTabsTriggerClassName}
                         >
                             All Habits ({habits.length})
                         </TabsTrigger>

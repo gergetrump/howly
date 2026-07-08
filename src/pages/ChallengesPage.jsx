@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { CircleHelp, Loader2, Pencil, Trophy, TriangleAlert, UserPlus, UsersRound } from 'lucide-react';
 import { ActionButton, CardGrid, PlanLimitDialog } from '@/components/common';
 import { ChallengeCategoryChips } from '@/components/challenges/ChallengeCategoryChips.jsx';
+import { appTabsListFullWidthClassName, appTabsTriggerClassName } from '@/components/cards/cardStyles';
 import { ChallengeCard } from '@/components/cards/ChallengeCard.jsx';
 import { ChallengeFormDialog } from '@/components/cards/ChallengeFormDialog.jsx';
 import { ChallengeInviteDialog } from '@/components/cards/ChallengeInviteDialog.jsx';
@@ -1140,12 +1141,12 @@ export function ChallengesPage() {
                 titleAction={<ChallengeInfoPopover />}
             >
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="w-full border border-theme-text/10 bg-theme-surface text-theme-text">
+                    <TabsList className={appTabsListFullWidthClassName}>
                         {CHALLENGE_TABS.map((tab) => (
                             <TabsTrigger
                                 key={tab.value}
                                 value={tab.value}
-                                className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                                className={appTabsTriggerClassName}
                             >
                                 {tab.label}
                             </TabsTrigger>

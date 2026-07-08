@@ -8,6 +8,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { appTabsListFullWidthClassName, appTabsTriggerClassName } from '@/components/cards/cardStyles';
 import { useAuth } from '@/context/authContext';
 import { updateCurrentUser } from '@/services/userService';
 
@@ -154,16 +155,16 @@ export function NotificationMuteDialog({ open, onOpenChange }) {
                 {error && <p className="text-sm text-theme-danger mt-2">{error}</p>}
 
                 <Tabs defaultValue="inapp" className="mt-4 gap-4">
-                    <TabsList className="h-10 w-full border border-theme-text/10 bg-theme-text/10 p-1 text-theme-text">
+                    <TabsList className={`h-10 p-1 ${appTabsListFullWidthClassName}`}>
                         <TabsTrigger
                             value="inapp"
-                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                            className={appTabsTriggerClassName}
                         >
                             In-app
                         </TabsTrigger>
                         <TabsTrigger
                             value="email"
-                            className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                            className={appTabsTriggerClassName}
                         >
                             Email
                         </TabsTrigger>
