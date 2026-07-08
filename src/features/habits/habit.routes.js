@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../../middleware/auth.middleware.js';
+import { requireAuth, requirePremiumAccess } from '../../middleware/auth.middleware.js';
 import {
     getHabits,
     getHabitById,
@@ -21,7 +21,7 @@ router.use(requireAuth);
 router.get('/', getHabits);
 router.post('/', createHabit);
 router.post('/templates', createFromTemplates);
-router.post('/suggest', suggestHabits);
+router.post('/suggest', requirePremiumAccess, suggestHabits);
 
 // ── Single-resource routes ──────────────────────────────────────────
 router.get('/:habitId', getHabitById);

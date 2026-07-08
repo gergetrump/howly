@@ -6,6 +6,7 @@ import {
   listFriendRequests,
   listFriends,
   getFriendHabits,
+  getFriendChallenges,
   rejectFriendRequest,
   sendFriendRequest,
   blockUser,
@@ -20,6 +21,7 @@ router.use(requireAuth);
 
 router.get('/friends', listFriends);
 router.get('/friends/:userId/habits', getFriendHabits);
+router.get('/friends/:userId/challenges', getFriendChallenges);
 router.delete('/friends/:friendshipId', deleteFriend);
 router.get('/friends/requests', listFriendRequests);
 router.post('/friends/requests', sendFriendRequest);
