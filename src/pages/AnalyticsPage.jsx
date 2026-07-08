@@ -825,7 +825,7 @@ export function AnalyticsPage() {
             ) : (
                 <PremiumFeaturePreview
                     title="Unlock Analytics"
-                    description="Analytics shows habit completion, timing patterns, and challenge progress. Upgrade to Premium to use these insights."
+                    description="Analytics shows your habit completion, completion times, and challenge progress. Upgrade to Premium to use these insights."
                     returnTo="/analytics"
                 >
                     {analyticsContent}

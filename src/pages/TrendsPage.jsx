@@ -560,7 +560,7 @@ export function TrendsPage() {
             ) : (
                 <PremiumFeaturePreview
                     title="Unlock Trends"
-                    description="Trends shows community habit patterns, focus areas, and your private consistency benchmark. Upgrade to Premium to explore these insights."
+                    description="Trends shows anonymous community habit patterns, focus areas, and your private consistency benchmark. Upgrade to Premium to explore these insights."
                     returnTo="/trends"
                 >
                     {trendsContent}
