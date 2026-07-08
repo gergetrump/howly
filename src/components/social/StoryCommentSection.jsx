@@ -29,6 +29,14 @@ function getUniqueUsers(users) {
     });
 }
 
+function getCommentSubmitErrorMessage(error) {
+    if (error?.code === 'COMMENT_MODERATION_BLOCKED') {
+        return 'Please keep comments respectful.';
+    }
+
+    return error?.message || 'Failed to post comment';
+}
+
 export function StoryCommentSection({
     story,
     currentUserId,
@@ -262,7 +270,7 @@ export function StoryCommentSection({
                 }, 80);
             }
         } catch (err) {
-            setError(err.message || 'Failed to post comment');
+            setError(getCommentSubmitErrorMessage(err));
         } finally {
             setIsSubmitting(false);
         }
