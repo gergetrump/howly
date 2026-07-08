@@ -22,6 +22,30 @@ export async function updateChallenge(challengeId, data) {
     });
 }
 
+export async function getChallengeById(challengeId) {
+    return apiRequest(`/challenges/${challengeId}`);
+}
+
+/**
+ * Poll until background taxonomy assignment sets a category on the challenge.
+ */
+export async function waitForChallengeTaxonomy(challengeId, { maxAttempts = 10, intervalMs = 1500 } = {}) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        if (attempt > 0) {
+            await new Promise((resolve) => {
+                setTimeout(resolve, intervalMs);
+            });
+        }
+
+        const response = await getChallengeById(challengeId);
+        if (response?.challenge?.taxonomy?.categoryKey) {
+            return response.challenge;
+        }
+    }
+
+    return null;
+}
+
 export async function joinChallenge(challengeId) {
     return apiRequest(`/challenges/${challengeId}/join`, {
         method: 'POST',
