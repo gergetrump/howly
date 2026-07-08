@@ -10,7 +10,7 @@ import {
 const CHALLENGE_FREQUENCY_SET = new Set(CHALLENGE_FREQUENCIES);
 const CHALLENGE_STATUS_SET = new Set(CHALLENGE_STATUS);
 const CHALLENGE_VISIBILITY_SET = new Set(CHALLENGE_VISIBILITIES);
-const CHALLENGE_SCOPES = ['active', 'friends', 'public'];
+const CHALLENGE_SCOPES = ['active', 'friends', 'public', 'past'];
 const CHALLENGE_SCOPE_SET = new Set(CHALLENGE_SCOPES);
 const CHALLENGE_SORTS = ['recommended', 'createdAt', 'endsAt'];
 const CHALLENGE_SORT_SET = new Set(CHALLENGE_SORTS);

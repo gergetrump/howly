@@ -25,6 +25,7 @@ async function buildUser(overrides = {}) {
         lastName: overrides.lastName || 'User',
         passwordHash: overrides.passwordHash || 'hashed',
         authProvider: overrides.authProvider || 'local',
+        isPremium: overrides.isPremium ?? true,
         ...overrides,
     });
 }
@@ -150,6 +151,17 @@ test('GET /api/analytics/habits returns yearly monthly habit completion totals',
     assert.equal(response.body.data.monthlyTotals[0].completed, 1);
     assert.equal(response.body.data.monthlyTotals[1].completed, 1);
     assert.equal(response.body.data.summary.completed, 2);
+});
+
+test('GET /api/analytics/habits requires premium access', async () => {
+    const user = await buildUser({ isPremium: false });
+
+    const response = await request(app)
+        .get('/api/analytics/habits?period=week')
+        .set('Authorization', authHeader(user))
+        .expect(403);
+
+    assert.equal(response.body.code, 'PREMIUM_REQUIRED');
 });
 
 test('GET /api/analytics/habits can return a selected past year', async () => {

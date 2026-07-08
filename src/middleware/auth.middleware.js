@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken';
 import config from '../../config.js';
+import { hasPremiumAccess } from '../config/plans.js';
+import User from '../features/users/user.model.js';
 
 // Read the signing secret once per request path.
 function getJwtSecret() {
@@ -30,5 +32,24 @@ export function requireAuth(req, res, next) {
         return next();
     } catch (err) {
         return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+}
+
+export async function requirePremiumAccess(req, res, next) {
+    try {
+        const currentUser = await User.findById(req.user?.id)
+            .select('role isPremium')
+            .lean();
+
+        if (!hasPremiumAccess(currentUser)) {
+            return res.status(403).json({
+                message: 'Premium is required for this feature.',
+                code: 'PREMIUM_REQUIRED',
+            });
+        }
+
+        return next();
+    } catch (err) {
+        return next(err);
     }
 }

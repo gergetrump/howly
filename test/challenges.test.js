@@ -255,6 +255,63 @@ test('GET /api/challenges supports active, friends, and public scopes', async ()
     );
 });
 
+test('GET /api/challenges?scope=past returns recent ended participations only', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const ownerToken = signAccessToken(owner);
+    const recentStart = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+    const oldStart = new Date(Date.now() - 70 * 24 * 60 * 60 * 1000);
+    const failedStart = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+
+    const recentPastChallenge = await createChallenge(ownerToken, {
+        ownerId: owner._id,
+        habit: await buildHabit(owner._id, { title: 'Recent Past' }),
+        title: 'Recent Past',
+        startsAt: recentStart.toISOString(),
+        durationDays: 7,
+    });
+    const oldPastChallenge = await createChallenge(ownerToken, {
+        ownerId: owner._id,
+        habit: await buildHabit(owner._id, { title: 'Old Past' }),
+        title: 'Old Past',
+        startsAt: oldStart.toISOString(),
+        durationDays: 7,
+    });
+    const leftPastChallenge = await createChallenge(ownerToken, {
+        ownerId: owner._id,
+        habit: await buildHabit(owner._id, { title: 'Left Past' }),
+        title: 'Left Past',
+        startsAt: recentStart.toISOString(),
+        durationDays: 7,
+    });
+    const failedChallenge = await createChallenge(ownerToken, {
+        ownerId: owner._id,
+        habit: await buildHabit(owner._id, { title: 'Failed Past' }),
+        title: 'Failed Past',
+        startsAt: failedStart.toISOString(),
+        durationDays: 30,
+    });
+
+    await Promise.all([
+        Challenge.updateOne({ _id: failedChallenge.id }, { $set: { status: 'failed' } }),
+        ChallengeParticipant.updateOne(
+            { challenge: leftPastChallenge.id, user: owner._id },
+            { $set: { status: 'left' } },
+        ),
+    ]);
+
+    const response = await request(app)
+        .get('/api/challenges?scope=past')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .expect(200);
+
+    const listedIds = response.body.map((challenge) => challenge.id);
+
+    assert.equal(listedIds.includes(recentPastChallenge.id), true);
+    assert.equal(listedIds.includes(failedChallenge.id), true);
+    assert.equal(listedIds.includes(oldPastChallenge.id), false);
+    assert.equal(listedIds.includes(leftPastChallenge.id), false);
+});
+
 test('joining an already joined challenge returns a friendly error', async () => {
     const owner = await buildUser({ isPremium: true });
     const participant = await buildUser();

@@ -25,6 +25,7 @@ import {
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const COINS_PER_CHALLENGE_DAY = 5;
 const CHALLENGE_INVITATIONS_PATH = '/challenges';
+const PAST_CHALLENGE_STATUSES = ['completed', 'failed'];
 
 function canSendNotificationEmail(user, preferenceKey) {
     const preferences = user?.notificationPreferences ?? {};
@@ -231,6 +232,18 @@ function getActiveChallengeConditions(now = new Date()) {
     return {
         status: { $nin: ['completed', 'failed'] },
         endsAt: { $gt: now },
+    };
+}
+
+function getPastChallengeConditions(now = new Date()) {
+    const pastWindowStart = new Date(now.getTime() - 30 * DAY_IN_MS);
+
+    return {
+        endsAt: { $gte: pastWindowStart },
+        $or: [
+            { status: { $in: PAST_CHALLENGE_STATUSES } },
+            { endsAt: { $lte: now } },
+        ],
     };
 }
 
@@ -481,10 +494,14 @@ function serializeParticipant(participant, challenge) {
         return null;
     }
 
+    const user = isPopulatedParticipantUser(participant.user)
+        ? serializeParticipantUser(participant.user)
+        : participant.user.toString();
+
     return {
         id: participant._id.toString(),
         challenge: participant.challenge.toString(),
-        user: participant.user.toString(),
+        user,
         habit: participant.habit ? participant.habit.toString() : null,
         status: participant.status,
         joinedAt: participant.joinedAt,
@@ -496,6 +513,36 @@ function serializeParticipant(participant, challenge) {
         pendingRewardCoins: challenge ? getRewardCoins(challenge, participant) : undefined,
         createdAt: participant.createdAt,
         updatedAt: participant.updatedAt,
+    };
+}
+
+function isPopulatedParticipantUser(user) {
+    return Boolean(
+        user
+        && typeof user === 'object'
+        && typeof user.toHexString !== 'function'
+        && (
+            user.constructor?.modelName === 'User'
+            || user.username !== undefined
+            || user.firstName !== undefined
+            || user.lastName !== undefined
+            || user.profilePictureUrl !== undefined
+        )
+    );
+}
+
+function serializeParticipantUser(user) {
+    return {
+        id: user._id.toString(),
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profilePictureUrl: user.profilePictureUrl ?? null,
+        streak: user.streak ?? 0,
+        streakCount: user.streakCount ?? user.streak ?? 0,
+        isPremium: user.isPremium ?? false,
+        role: user.role,
+        ghostMode: user.ghostMode ?? false,
     };
 }
 
@@ -557,15 +604,33 @@ export async function createChallenge(input, user) {
 
 export async function listChallenges(filters = {}, user) {
     const conditions = [];
+    const now = new Date();
 
     if (filters.scope === 'active') {
-        const activeChallengeIds = await getActiveChallengeIdsForUser(user.id);
+        const activeChallengeIds = await getActiveChallengeIdsForUser(user.id, now);
 
         if (activeChallengeIds.size === 0) {
             return [];
         }
 
         conditions.push({ _id: { $in: [...activeChallengeIds] } });
+    }
+
+    if (filters.scope === 'past') {
+        const pastParticipations = await ChallengeParticipant.find({
+            user: user.id,
+            status: { $ne: 'left' },
+        }).select('challenge').lean();
+        const pastChallengeIds = pastParticipations.map((participant) => participant.challenge);
+
+        if (pastChallengeIds.length === 0) {
+            return [];
+        }
+
+        conditions.push({
+            _id: { $in: pastChallengeIds },
+            ...getPastChallengeConditions(now),
+        });
     }
 
     if (filters.scope === 'friends') {
@@ -578,11 +643,15 @@ export async function listChallenges(filters = {}, user) {
         conditions.push({
             visibility: 'friends',
             createdBy: { $in: friendIds },
+            ...getActiveChallengeConditions(now),
         });
     }
 
     if (filters.scope === 'public') {
-        conditions.push({ visibility: 'public' });
+        conditions.push({
+            visibility: 'public',
+            ...getActiveChallengeConditions(now),
+        });
     }
 
     if (filters.categoryKey) {
@@ -617,7 +686,10 @@ export async function listChallenges(filters = {}, user) {
 
     const query = conditions.length ? { $and: conditions } : {};
     const sortMode = resolveDefaultChallengeSort(filters);
-    const challenges = await Challenge.find(query).sort({ createdAt: -1 });
+    const challengeSort = sortMode === 'endsAt' || filters.scope === 'past'
+        ? { endsAt: -1, createdAt: -1 }
+        : { createdAt: -1 };
+    const challenges = await Challenge.find(query).sort(challengeSort);
     const challengeIds = challenges.map((challenge) => challenge._id);
     const [participantCounts, viewerParticipations, visibilityFriendIds, blockedRelationshipIds] = await Promise.all([
         getParticipantCounts(challengeIds),
@@ -1196,7 +1268,12 @@ export async function listParticipants(challengeId, user) {
         return { forbidden: true };
     }
 
-    const participants = await ChallengeParticipant.find({ challenge: challengeId }).sort({ joinedAt: 1 });
+    const participants = await ChallengeParticipant.find({
+        challenge: challengeId,
+        status: { $ne: 'left' },
+    })
+        .populate('user', 'username firstName lastName profilePictureUrl streak streakCount isPremium role ghostMode')
+        .sort({ joinedAt: 1 });
 
     return {
         challenge: serializeChallenge(challenge),
