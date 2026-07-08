@@ -501,6 +501,13 @@ export function DashboardPage() {
         });
     }
 
+    function handleNewHabitAdded(habit) {
+        setHabits((prev) => [habit, ...prev]);
+        if (!habit.category) {
+            refreshHabitTaxonomyInBackground(habit.id);
+        }
+    }
+
     function renderHabitCard(habit, withCompletion) {
         return (
             <HabitCard
@@ -617,7 +624,7 @@ export function DashboardPage() {
                             className="max-w-2xl"
                             companionName={companion?.name}
                             onClose={() => setIsChatOpen(false)}
-                            onHabitAdded={(habit) => setHabits((prev) => [habit, ...prev])}
+                            onHabitAdded={handleNewHabitAdded}
                             onEditSuggestion={(suggestion, removeFromPanel) => {
                                 setHabitToEdit(null);
                                 setPrefillHabit(suggestion);
@@ -706,15 +713,15 @@ export function DashboardPage() {
                 onHabitAdded={(savedHabit, isEdit) => {
                     if (isEdit) {
                         setHabits(prev => prev.map(h => h.id === savedHabit.id ? savedHabit : h));
+                        if (!savedHabit.category) {
+                            refreshHabitTaxonomyInBackground(savedHabit.id);
+                        }
                     } else {
-                        setHabits(prev => [savedHabit, ...prev]);
+                        handleNewHabitAdded(savedHabit);
                         if (consumeSuggestion) {
                             consumeSuggestion();
                             setConsumeSuggestion(null);
                         }
-                    }
-                    if (!savedHabit.category) {
-                        refreshHabitTaxonomyInBackground(savedHabit.id);
                     }
                 }}
             />
