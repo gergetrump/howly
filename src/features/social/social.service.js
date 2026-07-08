@@ -19,6 +19,7 @@ import Habit from '../habits/habit.model.js';
 import { createNotification, deleteNotificationsByFilter, pushToUser } from '../notifications/notification.service.js';
 import { Notification } from '../notifications/notification.model.js';
 import ChallengeInvitation from '../challenges/challengeInvitation.model.js';
+import ChallengeParticipant from '../challenges/challengeParticipant.model.js';
 import { toOffsetPage } from '../../utils/pagination.js';
 
 function sameId(firstId, secondId) {
@@ -234,6 +235,42 @@ export async function getFriendHabits({ userId, targetUserId }) {
       streakCount: habit.streakCount ?? 0,
     })),
   };
+}
+
+export async function getFriendActiveChallenges({ userId, targetUserId }) {
+  if (!(await areFriends(userId, targetUserId))) {
+    return { errorCode: 'NOT_FRIENDS' };
+  }
+
+  const target = await User.findById(targetUserId).select('ghostMode').lean();
+  if (target?.ghostMode) {
+    return { ghostMode: true, challenges: [] };
+  }
+
+  const now = Date.now();
+  const participations = await ChallengeParticipant.find({
+    user: targetUserId,
+    status: 'active',
+  })
+    .populate('challenge')
+    .lean();
+
+  const challenges = participations
+    .filter((participation) => {
+      const challenge = participation.challenge;
+      return challenge
+        && challenge.status !== 'completed'
+        && challenge.status !== 'failed'
+        && new Date(challenge.endsAt ?? 0).getTime() > now;
+    })
+    .map((participation) => ({
+      id: participation.challenge._id.toString(),
+      title: participation.challenge.title,
+      totalDays: participation.challenge.durationDays,
+      daysCompleted: participation.daysCompleted ?? 0,
+    }));
+
+  return { ghostMode: false, challenges };
 }
 
 export async function sendFriendRequest({ requesterId, recipientId }) {
