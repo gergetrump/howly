@@ -32,6 +32,7 @@ import { NotificationMuteDialog } from '@/components/social/NotificationMuteDial
 import { useAuth } from '@/context/authContext';
 import { createManagePremiumSession } from '@/services/paymentService';
 import { sendFeedback } from '@/services/feedbackService';
+import { toast } from 'sonner';
 
 function SettingsRow({ icon: Icon, iconColor = 'text-theme-text-muted', title, subtitle, onClick, disabled }) {
     return (
@@ -274,10 +275,11 @@ export function ProfilePage() {
             setFeedbackSuccess('');
             setIsSendingFeedback(true);
             await sendFeedback(feedbackForm);
-            setFeedbackSuccess('Thanks, your feedback was sent.');
             setFeedbackForm({ type: 'problem', subject: '', message: '' });
+            setIsFeedbackDialogOpen(false);
+            toast.success('Thanks! Your feedback has been sent.');
         } catch (error) {
-            setFeedbackError(error.message || 'Could not send feedback right now.');
+            toast.error(error.message || "We couldn't send your feedback right now. Please try again.");
         } finally {
             setIsSendingFeedback(false);
         }

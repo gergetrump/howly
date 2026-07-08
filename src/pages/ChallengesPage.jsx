@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { CircleHelp, Loader2, Pencil, Trophy, UserPlus } from 'lucide-react';
+import { toast } from 'sonner';
 import { ActionButton, CardGrid, PlanLimitDialog } from '@/components/common';
 import { ChallengeCategoryChips } from '@/components/challenges/ChallengeCategoryChips.jsx';
 import { ChallengeCard } from '@/components/cards/ChallengeCard.jsx';
@@ -9,6 +10,16 @@ import { ChallengeInviteDialog } from '@/components/cards/ChallengeInviteDialog.
 import { ChallengeInvitationList } from '@/components/cards/ChallengeInvitationList.jsx';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
+import {
+    ConfirmationDialog,
+    ConfirmationDialogAction,
+    ConfirmationDialogCancel,
+    ConfirmationDialogContent,
+    ConfirmationDialogDescription,
+    ConfirmationDialogFooter,
+    ConfirmationDialogHeader,
+    ConfirmationDialogTitle,
+} from '@/components/ui/confirmation-dialog';
 import { NotificationBanner } from '@/components/ui/notification-banner.jsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -210,6 +221,7 @@ export function ChallengesPage() {
     const [error, setError] = useState(null);
     const [notice, setNotice] = useState('');
     const [limitPrompt, setLimitPrompt] = useState(null);
+    const [leaveConfirmChallenge, setLeaveConfirmChallenge] = useState(null);
     const [inviteChallenge, setInviteChallenge] = useState(null);
     const [friends, setFriends] = useState([]);
     const [selectedFriendIds, setSelectedFriendIds] = useState([]);
@@ -439,11 +451,11 @@ export function ChallengesPage() {
         }
 
         if (isAlreadyJoinedError(actionError.code)) {
-            setNotice(actionError.message || 'You are already participating in this challenge.');
+            toast(actionError.message || 'You are already participating in this challenge.');
             return;
         }
 
-        setError({ message: actionError.message || fallbackMessage, code: actionError.code });
+        toast.error(actionError.message || fallbackMessage);
     }
 
     function handleUpgradeClick() {
@@ -561,16 +573,16 @@ export function ChallengesPage() {
         try {
             if (challenge) {
                 await updateChallenge(challenge.id, formData);
-                setNotice('Challenge updated.');
+                toast.success('Your challenge has been updated.');
             } else {
                 await createChallenge(formData);
-                setNotice('Challenge created.');
+                toast.success('Your challenge has been created.');
             }
 
             closeFormDialog(false);
             await refreshCurrentChallenges();
         } catch (submitError) {
-            showActionError(submitError, challenge ? 'Failed to update challenge.' : 'Failed to create challenge.');
+            showActionError(submitError, challenge ? "We couldn't update your challenge. Please try again." : "We couldn't create your challenge. Please try again.");
         } finally {
             setBusyAction('');
         }
@@ -583,10 +595,10 @@ export function ChallengesPage() {
 
         try {
             await joinChallenge(challengeId);
-            setNotice('Challenge joined.');
+            toast.success("You've joined the challenge.");
             await refreshCurrentChallenges();
         } catch (actionError) {
-            showActionError(actionError, 'Failed to join challenge.');
+            showActionError(actionError, "We couldn't join the challenge. Please try again.");
         } finally {
             setBusyAction('');
         }
@@ -599,10 +611,10 @@ export function ChallengesPage() {
 
         try {
             await leaveChallenge(challengeId);
-            setNotice('Challenge left.');
+            toast.success("You've left the challenge.");
             await refreshCurrentChallenges();
         } catch (actionError) {
-            showActionError(actionError, 'Failed to leave challenge.');
+            showActionError(actionError, "We couldn't leave the challenge. Please try again.");
         } finally {
             setBusyAction('');
         }
@@ -615,10 +627,10 @@ export function ChallengesPage() {
 
         try {
             const result = await claimChallengeReward(challengeId);
-            setNotice(`Reward claimed: ${result.rewardCoins ?? 0} coins.`);
+            toast.success(`You claimed your reward of ${result.rewardCoins ?? 0} coins.`);
             await refreshCurrentChallenges();
         } catch (actionError) {
-            showActionError(actionError, actionError.message || 'Failed to claim reward.');
+            showActionError(actionError, actionError.message || "We couldn't claim your reward. Please try again.");
         } finally {
             setBusyAction('');
         }
@@ -631,10 +643,10 @@ export function ChallengesPage() {
 
         try {
             await acceptChallengeInvitation(invitationId);
-            setNotice('Invitation accepted.');
+            toast.success("You've accepted the invitation.");
             await refreshCurrentChallenges();
         } catch (actionError) {
-            showActionError(actionError, 'Failed to accept invitation.');
+            showActionError(actionError, "We couldn't accept the invitation. Please try again.");
         } finally {
             setBusyAction('');
         }
@@ -647,10 +659,10 @@ export function ChallengesPage() {
 
         try {
             await rejectChallengeInvitation(invitationId);
-            setNotice('Invitation rejected.');
+            toast.success("You've declined the invitation.");
             await refreshCurrentChallenges();
         } catch (rejectError) {
-            showActionError(rejectError, 'Failed to reject invitation.');
+            showActionError(rejectError, "We couldn't decline the invitation. Please try again.");
         } finally {
             setBusyAction('');
         }
@@ -674,7 +686,7 @@ export function ChallengesPage() {
             const failedResults = results.filter((result) => result.status === 'rejected');
 
             if (sentCount > 0) {
-                setNotice(sentCount === 1 ? 'Challenge invitation sent.' : `${sentCount} challenge invitations sent.`);
+                toast.success(sentCount === 1 ? 'Your invitation has been sent.' : `All ${sentCount} invitations have been sent.`);
                 await refreshCurrentChallenges();
             }
 
@@ -864,7 +876,7 @@ export function ChallengesPage() {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            onClick={() => handleLeaveChallenge(challenge.id)}
+                                            onClick={() => setLeaveConfirmChallenge(challenge)}
                                             disabled={busyAction === `leave-${challenge.id}`}
                                             className="border-theme-danger/30 bg-theme-danger/10 text-theme-danger hover:bg-theme-danger/20"
                                         >
@@ -948,6 +960,33 @@ export function ChallengesPage() {
                 title={limitPrompt?.title}
                 message={limitPrompt?.message}
             />
+
+            <ConfirmationDialog
+                open={Boolean(leaveConfirmChallenge)}
+                onOpenChange={(open) => { if (!open) setLeaveConfirmChallenge(null); }}
+            >
+                <ConfirmationDialogContent>
+                    <ConfirmationDialogHeader className="space-y-3 text-center">
+                        <ConfirmationDialogTitle className="text-xl font-bold">
+                            Leave this challenge?
+                        </ConfirmationDialogTitle>
+                        <ConfirmationDialogDescription className="text-sm text-theme-text-soft">
+                            Are you sure you want to leave “{leaveConfirmChallenge?.title}”?
+                        </ConfirmationDialogDescription>
+                    </ConfirmationDialogHeader>
+                    <ConfirmationDialogFooter className="mt-4 gap-3">
+                        <ConfirmationDialogCancel className="border-theme-text/15 bg-theme-text/10 text-theme-text hover:bg-theme-text/20 hover:text-theme-text">
+                            Cancel
+                        </ConfirmationDialogCancel>
+                        <ConfirmationDialogAction
+                            className="bg-theme-danger text-white hover:bg-theme-danger/90"
+                            onClick={() => { if (leaveConfirmChallenge) handleLeaveChallenge(leaveConfirmChallenge.id); }}
+                        >
+                            Leave challenge
+                        </ConfirmationDialogAction>
+                    </ConfirmationDialogFooter>
+                </ConfirmationDialogContent>
+            </ConfirmationDialog>
         </Page>
     );
 }

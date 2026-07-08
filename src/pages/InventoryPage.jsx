@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, AlertTriangle, Crown } from 'lucide-react';
+import { toast } from 'sonner';
 import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
@@ -323,8 +324,9 @@ export function InventoryPage() {
             ));
             setDraftItemSides(getInventorySides(savedInventory));
             window.dispatchEvent(new Event('howly:outfit-updated'));
+            toast.success('Your outfit has been saved.');
         } catch {
-            setError('Saving this outfit did not work');
+            toast.error("We couldn't save your outfit. Please try again.");
         } finally {
             setIsSavingOutfit(false);
         }

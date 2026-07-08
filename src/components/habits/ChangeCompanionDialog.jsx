@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
 import { COMPANIONS, DEFAULT_COMPANION_TYPE, getDefaultCompanionName } from '@/constants/companions';
 import { selectCompanion } from '@/services/companionService';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 function ChangeCompanionForm({ currentType, currentName, onSaved, onCancel }) {
@@ -36,8 +37,9 @@ function ChangeCompanionForm({ currentType, currentName, onSaved, onCancel }) {
         try {
             const response = await selectCompanion({ type: selectedType, name: trimmedName });
             onSaved?.(response?.data ?? null);
+            toast.success('Your companion has been updated.');
         } catch (err) {
-            setError(err.message || 'Could not change your companion. Please try again.');
+            toast.error(err.message || "We couldn't update your companion. Please try again.");
         } finally {
             setIsSaving(false);
         }

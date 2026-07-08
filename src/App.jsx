@@ -6,17 +6,16 @@ function App() {
         <>
             <AppRoutes />
             <Toaster
-                theme="dark"
                 position="top-right"
                 closeButton
                 toastOptions={{
                     style: {
-                        background: '#1e1b3a',
-                        border: '1px solid rgba(192, 132, 252, 0.4)',
-                        color: '#ffffff',
+                        background: 'var(--t-surface)',
+                        border: '1px solid color-mix(in srgb, var(--t-accent) 35%, transparent)',
+                        color: 'var(--t-text)',
                     },
                     classNames: {
-                        actionButton: 'bg-howly-primary! text-white!',
+                        actionButton: 'bg-theme-accent! text-theme-on-accent!',
                         closeButton: 'bg-theme-surface! border-theme-text/25! text-theme-text! hover:bg-theme-surface-2!',
                     },
                 }}

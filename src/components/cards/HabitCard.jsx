@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, Edit2, Trash2, Camera } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Camera, ShieldAlert } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -18,7 +18,6 @@ import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
-import { StreakShieldIcon } from '@/components/brand/StreakShieldIcon.jsx';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
@@ -32,7 +31,6 @@ export function HabitCard({
     streakDays = 0,
     completed = false,
     atRisk = false,
-    onUseFreeze,
     onEdit,
     onDelete,
     onShareStory,
@@ -53,6 +51,12 @@ export function HabitCard({
                     <h3 className="truncate font-semibold leading-tight">{title}</h3>
                     <div className="mt-1 flex items-center gap-1.5 overflow-hidden">
                         <StreakBadge days={streakDays} icon="🔥" showLabel={false} className="shrink-0" />
+                        {atRisk && !completed ? (
+                            <Badge className="shrink-0 gap-1 border border-theme-gold/30 bg-theme-gold/15 text-theme-gold hover:bg-theme-gold/15">
+                                <ShieldAlert className="h-3 w-3" aria-hidden="true" />
+                                At risk
+                            </Badge>
+                        ) : null}
                         {frequency ? <Badge variant="secondary" className="shrink-0">{frequency}</Badge> : null}
                         {category ? (
                             <Badge className="shrink-0 border border-theme-accent/30 bg-theme-accent/15 text-theme-accent-soft hover:bg-theme-accent/15">
@@ -69,17 +73,6 @@ export function HabitCard({
                 </div>
 
                 <div className="flex shrink-0 items-center gap-1">
-                    {atRisk && onUseFreeze ? (
-                        <button
-                            type="button"
-                            onClick={onUseFreeze}
-                            className="flex shrink-0 items-center gap-1 rounded-full bg-theme-gold/15 px-2.5 py-1.5 text-xs font-semibold text-theme-gold ring-1 ring-theme-gold/30 transition-colors hover:bg-theme-gold/25 sm:px-3"
-                            title="Use a streak shield to save this streak"
-                        >
-                            <StreakShieldIcon className="h-3.5 w-auto" />
-                            <span className="hidden sm:inline">Save streak</span>
-                        </button>
-                    ) : null}
                     {children}
                     {hasMenuActions ? (
                     <DropdownMenu>

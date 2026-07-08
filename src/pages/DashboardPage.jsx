@@ -512,7 +512,6 @@ export function DashboardPage() {
                 streakDays={habit.streakCount}
                 completed={habit.isCompletedToday}
                 atRisk={Boolean(habit.streakRepairDeadline)}
-                onUseFreeze={() => handleUseHabitFreeze(habit)}
                 onEdit={() => handleEdit(habit)}
                 onDelete={() => handleDelete(habit.id)}
                 activeBoost={habit.activeBoost}
@@ -788,13 +787,6 @@ export function DashboardPage() {
                             onClick={() => { const target = riskConfirmHabit; setRiskConfirmHabit(null); handleHabitCompletion(target); }}
                         >
                             Complete & restart
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            className="h-12 w-full rounded-full text-theme-text-soft hover:bg-theme-text/5 hover:text-theme-text"
-                            onClick={() => setRiskConfirmHabit(null)}
-                        >
-                            Cancel
                         </Button>
                     </div>
                 </DialogContent>
