@@ -309,6 +309,7 @@ export async function createHabit(userId, data) {
     await assertCanCreateHabits(userId);
 
     const habit = await Habit.create({ ...stripClientCategory(data), ownerId: userId });
+    await revokeOverallStreakIfIncomplete(userId);
     scheduleTaxonomyForHabit(habit._id);
 
     const dto = toHabitDto(habit);
@@ -333,6 +334,7 @@ export async function createHabitsFromTemplates(userId, templates) {
     }));
 
     const habits = await Habit.insertMany(docs);
+    await revokeOverallStreakIfIncomplete(userId);
 
     for (const habit of habits) {
         scheduleTaxonomyForHabit(habit._id);

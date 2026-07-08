@@ -164,6 +164,19 @@ export async function getFriendHabits(req, res) {
   return res.status(200).json({ habits, ghostMode: Boolean(ghostMode) });
 }
 
+export async function getFriendChallenges(req, res) {
+  const { challenges, ghostMode, errorCode } = await socialService.getFriendActiveChallenges({
+    userId: req.user.id,
+    targetUserId: req.params.userId,
+  });
+
+  if (errorCode === 'NOT_FRIENDS') {
+    return res.status(403).json({ message: 'You are not friends with this user', code: errorCode });
+  }
+
+  return res.status(200).json({ challenges, ghostMode: Boolean(ghostMode) });
+}
+
 export async function deleteFriend(req, res) {
   const { error } = validateFriendshipId(req.params.friendshipId);
 

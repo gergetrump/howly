@@ -9,6 +9,7 @@ import config from '../../../config.js';
 import { getPlanForUser, hasPremiumAccess } from '../../config/plans.js';
 import { toTaxonomyDto } from '../taxonomy/taxonomy.schema.js';
 import {
+    clearTaxonomyFields,
     copyTaxonomyToHabit,
     scheduleTaxonomyForChallenge,
     scheduleTaxonomyForHabit,
@@ -191,6 +192,63 @@ function getHabitFieldsFromTemplate(template) {
         customDays: habitTemplate.customDays,
         category: habitTemplate.category,
     };
+}
+
+const EMPTY_TAXONOMY_FIELDS = {
+    categoryKey: null,
+    subcategoryKey: null,
+    canonicalHabitKey: null,
+    score: null,
+    assignedAt: null,
+};
+
+function getHabitFieldsFromTemplateForParticipantSync(template) {
+    const fields = getHabitFieldsFromTemplate(template);
+    delete fields.category;
+    return fields;
+}
+
+function shouldReassignChallengeTaxonomy(challenge, updates, nextHabitTemplate) {
+    if (updates.title !== undefined && updates.title !== challenge.title) {
+        return true;
+    }
+
+    if (updates.description !== undefined && updates.description !== challenge.description) {
+        return true;
+    }
+
+    if (updates.habitTemplate) {
+        const currentTemplate = challenge.habitTemplate;
+
+        if (nextHabitTemplate.title !== currentTemplate?.title) {
+            return true;
+        }
+
+        if ((nextHabitTemplate.description ?? '') !== (currentTemplate?.description ?? '')) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function shouldReassignParticipantHabitTaxonomy(challenge, updates, nextHabitTemplate) {
+    if (!updates.habitTemplate) {
+        return false;
+    }
+
+    const currentTemplate = challenge.habitTemplate;
+
+    return nextHabitTemplate.title !== currentTemplate?.title
+        || (nextHabitTemplate.description ?? '') !== (currentTemplate?.description ?? '');
+}
+
+function clearChallengeTaxonomyFields(challenge) {
+    clearTaxonomyFields(challenge);
+
+    if (challenge.habitTemplate) {
+        challenge.habitTemplate.category = null;
+    }
 }
 
 async function createChallengeHabitForUser({ challenge, userId }) {
@@ -789,23 +847,46 @@ export async function updateChallenge(challengeId, updates, user) {
     const nextHabitTemplate = updates.habitTemplate
         ? toHabitTemplate(updates.habitTemplate)
         : challenge.habitTemplate;
+    const shouldReassignTaxonomy = shouldReassignChallengeTaxonomy(
+        challenge,
+        updates,
+        nextHabitTemplate,
+    );
+    const resolvedHabitTemplate = updates.habitTemplate && !shouldReassignTaxonomy
+        && updates.habitTemplate.category === undefined
+        ? {
+            ...nextHabitTemplate,
+            category: challenge.habitTemplate?.category ?? null,
+        }
+        : nextHabitTemplate;
     const nextHabitTitle = updates.habitTemplate
-        ? nextHabitTemplate.title
+        ? resolvedHabitTemplate.title
         : updates.habitTitle;
 
     const nextStartsAt = updates.startsAt || challenge.startsAt;
     const nextDurationDays = updates.durationDays || challenge.durationDays;
     const { habitTemplate, ...challengeUpdates } = updates;
+    const shouldReassignParticipantHabits = shouldReassignParticipantHabitTaxonomy(
+        challenge,
+        updates,
+        resolvedHabitTemplate,
+    );
 
     Object.assign(challenge, challengeUpdates, {
-        ...(habitTemplate ? { habitTemplate: nextHabitTemplate } : {}),
+        ...(habitTemplate ? { habitTemplate: resolvedHabitTemplate } : {}),
         ...(nextHabitTitle ? { habitTitle: nextHabitTitle } : {}),
-        frequency: updates.frequency || habitFrequencyToChallengeFrequency(nextHabitTemplate.frequency),
+        frequency: updates.frequency || habitFrequencyToChallengeFrequency(resolvedHabitTemplate.frequency),
         coinReward: getCoinReward(nextDurationDays),
         endsAt: calculateEndDate(nextStartsAt, nextDurationDays),
     });
 
+    if (shouldReassignTaxonomy) {
+        clearChallengeTaxonomyFields(challenge);
+    }
+
     await challenge.save();
+
+    let participantHabitIds = [];
 
     if (habitTemplate) {
         const participants = await ChallengeParticipant.find({
@@ -814,10 +895,45 @@ export async function updateChallenge(challengeId, updates, user) {
             habit: { $ne: null },
         }).select('habit').lean();
 
-        await Habit.updateMany(
-            { _id: { $in: participants.map((participant) => participant.habit) }, source: 'challenge' },
-            { $set: getHabitFieldsFromTemplate(nextHabitTemplate) }
-        );
+        participantHabitIds = participants
+            .map((participant) => participant.habit)
+            .filter(Boolean);
+
+        const habitUpdates = getHabitFieldsFromTemplateForParticipantSync(resolvedHabitTemplate);
+
+        if (shouldReassignParticipantHabits) {
+            await Habit.updateMany(
+                {
+                    _id: { $in: participantHabitIds },
+                    source: 'challenge',
+                },
+                {
+                    $set: {
+                        ...habitUpdates,
+                        category: null,
+                        taxonomy: EMPTY_TAXONOMY_FIELDS,
+                    },
+                },
+            );
+        } else {
+            await Habit.updateMany(
+                {
+                    _id: { $in: participantHabitIds },
+                    source: 'challenge',
+                },
+                { $set: habitUpdates },
+            );
+        }
+    }
+
+    if (shouldReassignTaxonomy) {
+        scheduleTaxonomyForChallenge(challenge._id);
+    }
+
+    if (shouldReassignParticipantHabits) {
+        for (const habitId of participantHabitIds) {
+            scheduleTaxonomyForHabit(habitId);
+        }
     }
 
     const participantCount = await ChallengeParticipant.countDocuments({
