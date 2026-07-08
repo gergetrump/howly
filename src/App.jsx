@@ -15,6 +15,8 @@ function App() {
                         color: 'var(--t-text)',
                     },
                     classNames: {
+                        title: 'text-theme-text!',
+                        description: 'text-theme-text-soft! opacity-100!',
                         actionButton: 'bg-theme-accent! text-theme-on-accent!',
                         closeButton: 'bg-theme-surface! border-theme-text/25! text-theme-text! hover:bg-theme-surface-2!',
                     },

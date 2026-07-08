@@ -616,7 +616,7 @@ export function DashboardPage() {
                             className="max-w-2xl"
                             companionName={companion?.name}
                             onClose={() => setIsChatOpen(false)}
-                            onHabitAdded={(habit) => setHabits((prev) => [habit, ...prev])}
+                            onHabitAdded={(habit) => { setHabits((prev) => [habit, ...prev]); refreshUserStreak(); }}
                             onEditSuggestion={(suggestion, removeFromPanel) => {
                                 setHabitToEdit(null);
                                 setPrefillHabit(suggestion);
@@ -711,6 +711,7 @@ export function DashboardPage() {
                             consumeSuggestion();
                             setConsumeSuggestion(null);
                         }
+                        refreshUserStreak();
                     }
                     if (!savedHabit.category) {
                         refreshHabitTaxonomyInBackground(savedHabit.id);
