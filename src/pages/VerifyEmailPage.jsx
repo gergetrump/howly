@@ -139,7 +139,7 @@ export function VerifyEmailPage() {
                         <div className="mt-6 flex justify-center">
                             <Button
                                 asChild
-                                className="h-12 rounded-full bg-howly-primary text-base font-semibold text-theme-text shadow-lg shadow-howly-primary/25 transition-all hover:-translate-y-0.5 hover:opacity-90"
+                                className="h-12 rounded-full bg-howly-primary text-base font-semibold text-theme-text shadow-lg transition-all hover:-translate-y-0.5 hover:opacity-90"
                             >
                                 <Link to="/login">Go to login</Link>
                             </Button>

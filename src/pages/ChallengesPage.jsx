@@ -308,6 +308,8 @@ function ChallengeParticipantsBadge({
                 align="start"
                 side="bottom"
                 sideOffset={8}
+                onOpenAutoFocus={(event) => event.preventDefault()}
+                onCloseAutoFocus={(event) => event.preventDefault()}
                 onMouseEnter={openParticipants}
                 onMouseLeave={scheduleClose}
                 className="z-[130] w-64 rounded-xl border border-theme-text/10 bg-theme-surface p-2 text-theme-text shadow-xl shadow-theme-bg/30"
@@ -450,9 +452,10 @@ export function ChallengesPage() {
             setParticipantErrorsByChallengeId({});
 
             return { challenges: nextChallenges, invitations: nextInvitations };
-        } catch (loadError) {
+        } catch {
             if (showError) {
-                setError({ message: loadError.message || 'Failed to load challenges.', code: loadError.code });
+                setError(null);
+                setChallenges([]);
             }
             return null;
         } finally {
@@ -733,10 +736,10 @@ export function ChallengesPage() {
                 outgoing: [request, ...(currentRequests.outgoing ?? [])],
             }));
             setSelectedProfileUser(null);
-            showChallengeToast('Friend request sent');
+            showChallengeToast('Your friend request has been sent.');
             void refreshProfileContext();
         } catch (profileError) {
-            setError({ message: getSocialErrorMessage(profileError, profileUser), code: profileError.code });
+            toast.error(getSocialErrorMessage(profileError, profileUser));
         } finally {
             setIsProfileActionBusy(false);
         }
@@ -759,10 +762,10 @@ export function ChallengesPage() {
             }));
             setFriends((currentFriends) => [response.friendship, ...currentFriends]);
             setSelectedProfileUser(null);
-            showChallengeToast('Friend request accepted');
+            showChallengeToast("You've accepted the friend request.");
             void refreshProfileContext();
         } catch (profileError) {
-            setError({ message: getSocialErrorMessage(profileError), code: profileError.code });
+            toast.error(getSocialErrorMessage(profileError));
         } finally {
             setIsProfileActionBusy(false);
         }
@@ -779,10 +782,10 @@ export function ChallengesPage() {
         try {
             await blockUser(profileUserId);
             setSelectedProfileUser(null);
-            showChallengeToast('User blocked');
+            showChallengeToast("You've blocked this user.");
             await refreshProfileContext();
         } catch (profileError) {
-            setError({ message: getSocialErrorMessage(profileError), code: profileError.code });
+            toast.error(getSocialErrorMessage(profileError));
         } finally {
             setIsProfileActionBusy(false);
         }
@@ -798,10 +801,10 @@ export function ChallengesPage() {
 
         try {
             await unblockUser(profileUserId);
-            showChallengeToast('User unblocked');
+            showChallengeToast("You've unblocked this user.");
             await refreshProfileContext();
         } catch (profileError) {
-            setError({ message: getSocialErrorMessage(profileError), code: profileError.code });
+            toast.error(getSocialErrorMessage(profileError));
         } finally {
             setIsProfileActionBusy(false);
         }
@@ -824,11 +827,11 @@ export function ChallengesPage() {
         }
 
         if (isAlreadyJoinedError(actionError.code)) {
-            showChallengeToast(actionError.message || 'Already participating');
+            toast(actionError.message || "You're already participating in this challenge.");
             return;
         }
 
-        setError({ message: actionError.message || fallbackMessage, code: actionError.code });
+        toast.error(actionError.message || fallbackMessage);
     }
 
     function refreshChallengeNotifications() {
@@ -836,7 +839,7 @@ export function ChallengesPage() {
     }
 
     function showChallengeToast(message) {
-        toast(message);
+        toast.success(message);
         refreshChallengeNotifications();
     }
 
@@ -960,11 +963,11 @@ export function ChallengesPage() {
             if (challenge) {
                 const response = await updateChallenge(challenge.id, formData);
                 savedChallenge = response?.challenge;
-                showChallengeToast('Challenge updated');
+                showChallengeToast('Your challenge has been updated.');
             } else {
                 const response = await createChallenge(formData);
                 savedChallenge = response?.challenge;
-                showChallengeToast('Challenge created');
+                showChallengeToast('Your challenge has been created.');
             }
 
             closeFormDialog(false);
@@ -974,7 +977,7 @@ export function ChallengesPage() {
                 refreshChallengeTaxonomyInBackground(savedChallenge.id);
             }
         } catch (submitError) {
-            showActionError(submitError, challenge ? 'Failed to update challenge.' : 'Failed to create challenge.');
+            showActionError(submitError, challenge ? "We couldn't update your challenge. Please try again." : "We couldn't create your challenge. Please try again.");
         } finally {
             setBusyAction('');
         }
@@ -986,10 +989,10 @@ export function ChallengesPage() {
 
         try {
             await joinChallenge(challengeId);
-            showChallengeToast('Challenge joined');
+            showChallengeToast("You've joined the challenge.");
             await refreshCurrentChallenges();
         } catch (actionError) {
-            showActionError(actionError, 'Failed to join challenge.');
+            showActionError(actionError, "We couldn't join the challenge. Please try again.");
         } finally {
             setBusyAction('');
         }
@@ -1001,10 +1004,10 @@ export function ChallengesPage() {
 
         try {
             await leaveChallenge(challengeId);
-            showChallengeToast('Challenge left');
+            showChallengeToast("You've left the challenge.");
             await refreshCurrentChallenges();
         } catch (actionError) {
-            showActionError(actionError, 'Failed to leave challenge.');
+            showActionError(actionError, "We couldn't leave the challenge. Please try again.");
         } finally {
             setBusyAction('');
         }
@@ -1027,10 +1030,10 @@ export function ChallengesPage() {
 
         try {
             await claimChallengeReward(challengeId);
-            showChallengeToast('Reward claimed');
+            showChallengeToast("You've claimed your reward.");
             await refreshCurrentChallenges();
         } catch (actionError) {
-            showActionError(actionError, actionError.message || 'Failed to claim reward.');
+            showActionError(actionError, actionError.message || "We couldn't claim your reward. Please try again.");
         } finally {
             setBusyAction('');
         }
@@ -1042,10 +1045,10 @@ export function ChallengesPage() {
 
         try {
             await acceptChallengeInvitation(invitationId);
-            showChallengeToast('Invitation accepted');
+            showChallengeToast("You've accepted the invitation.");
             await refreshCurrentChallenges();
         } catch (actionError) {
-            showActionError(actionError, 'Failed to accept invitation.');
+            showActionError(actionError, "We couldn't accept the invitation. Please try again.");
         } finally {
             setBusyAction('');
         }
@@ -1057,10 +1060,10 @@ export function ChallengesPage() {
 
         try {
             await rejectChallengeInvitation(invitationId);
-            showChallengeToast('Invitation rejected');
+            showChallengeToast("You've declined the invitation.");
             await refreshCurrentChallenges();
         } catch (rejectError) {
-            showActionError(rejectError, 'Failed to reject invitation.');
+            showActionError(rejectError, "We couldn't decline the invitation. Please try again.");
         } finally {
             setBusyAction('');
         }
@@ -1083,7 +1086,7 @@ export function ChallengesPage() {
             const failedResults = results.filter((result) => result.status === 'rejected');
 
             if (sentCount > 0) {
-                showChallengeToast(sentCount === 1 ? 'Challenge invitation sent' : 'Challenge invitations sent');
+                showChallengeToast(sentCount === 1 ? 'Your invitation has been sent.' : 'Your invitations have been sent.');
                 await refreshCurrentChallenges();
             }
 

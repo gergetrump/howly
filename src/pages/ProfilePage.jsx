@@ -32,6 +32,7 @@ import { NotificationMuteDialog } from '@/components/social/NotificationMuteDial
 import { useAuth } from '@/context/authContext';
 import { createManagePremiumSession } from '@/services/paymentService';
 import { sendFeedback } from '@/services/feedbackService';
+import { toast } from 'sonner';
 
 function SettingsRow({ icon: Icon, iconColor = 'text-theme-text-muted', title, subtitle, onClick, disabled }) {
     return (
@@ -60,7 +61,7 @@ function SettingsRow({ icon: Icon, iconColor = 'text-theme-text-muted', title, s
 function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSubmitting, error, success }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="p-8 sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-theme-text">Help & Feedback</DialogTitle>
                     <DialogDescription className="text-theme-text-muted">
@@ -85,7 +86,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                         ))}
                     </div>
 
-                    <label className="block space-y-2">
+                    <label className="block space-y-3">
                         <span className="text-sm font-semibold text-theme-text">Subject</span>
                         <input
                             type="text"
@@ -97,7 +98,7 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                         />
                     </label>
 
-                    <label className="block space-y-2">
+                    <label className="block space-y-3">
                         <span className="text-sm font-semibold text-theme-text">Message</span>
                         <textarea
                             value={form.message}
@@ -274,10 +275,11 @@ export function ProfilePage() {
             setFeedbackSuccess('');
             setIsSendingFeedback(true);
             await sendFeedback(feedbackForm);
-            setFeedbackSuccess('Thanks, your feedback was sent.');
             setFeedbackForm({ type: 'problem', subject: '', message: '' });
+            setIsFeedbackDialogOpen(false);
+            toast.success('Thanks! Your feedback has been sent.');
         } catch (error) {
-            setFeedbackError(error.message || 'Could not send feedback right now.');
+            toast.error(error.message || "We couldn't send your feedback right now. Please try again.");
         } finally {
             setIsSendingFeedback(false);
         }

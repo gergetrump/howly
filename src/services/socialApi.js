@@ -22,6 +22,10 @@ export function getFriendHabits(userId) {
     return apiRequest(`/social/friends/${userId}/habits`);
 }
 
+export function getFriendChallenges(userId) {
+    return apiRequest(`/social/friends/${userId}/challenges`);
+}
+
 export function deleteFriend(friendshipId) {
     return apiRequest(`/social/friends/${friendshipId}`, {
         method: 'DELETE',

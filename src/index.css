@@ -513,3 +513,17 @@ body {
         transition: none;
     }
 }
+
+[data-sonner-toaster] {
+    --toast-close-button-start: unset !important;
+    --toast-close-button-end: 0 !important;
+    --toast-close-button-transform: translate(35%, -35%) !important;
+}
+
+[data-sonner-toast][data-y-position='top']:not([data-mounted='true']) {
+    --y: translateX(110%);
+}
+
+[data-sonner-toast][data-y-position='top'][data-removed='true'][data-front='true'][data-swipe-out='false'] {
+    --y: translateX(110%);
+}

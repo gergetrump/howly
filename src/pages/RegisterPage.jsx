@@ -226,7 +226,7 @@ export function RegisterPage() {
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="h-12 w-full rounded-full bg-howly-primary text-base font-semibold text-theme-text shadow-lg shadow-howly-primary/25 transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="h-12 w-full rounded-full bg-howly-primary text-base font-semibold text-theme-text shadow-lg transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {isSubmitting ? 'Creating account...' : 'Create account'}
                             </Button>

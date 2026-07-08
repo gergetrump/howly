@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, AlertTriangle, Crown } from 'lucide-react';
+import { toast } from 'sonner';
 import { ActionButton, CardGrid } from '@/components/common';
 import { ItemCard } from '@/components/cards';
 import { CompanionAvatar } from '@/components/brand';
@@ -324,8 +325,9 @@ export function InventoryPage() {
             ));
             setDraftItemSides(getInventorySides(savedInventory));
             window.dispatchEvent(new Event('howly:outfit-updated'));
+            toast.success('Your outfit has been saved.');
         } catch {
-            setError('Saving this outfit did not work');
+            toast.error("We couldn't save your outfit. Please try again.");
         } finally {
             setIsSavingOutfit(false);
         }
@@ -415,7 +417,7 @@ export function InventoryPage() {
                 <ActionButton
                     type="button"
                     variant="primary"
-                    className="px-5"
+                    className="h-10 px-5"
                     onClick={() => navigate('/shop')}
                 >
                     Visit shop
@@ -529,7 +531,7 @@ export function InventoryPage() {
                         </ActionButton>
                         <ActionButton
                             type="button"
-                            className="h-9 bg-howly-primary/20 px-4 text-sm font-semibold text-howly-primary hover:bg-howly-primary/30"
+                            className="h-9 bg-howly-primary px-4 text-sm font-semibold text-white hover:bg-howly-primary/90"
                             onClick={handleChangeCompanionClick}
                         >
                             <span className="flex items-center gap-1.5">
@@ -561,7 +563,7 @@ export function InventoryPage() {
                             <ActionButton
                                 type="button"
                                 variant="primary"
-                                className="px-5 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
+                                className="h-10 px-5 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
                                 disabled={!hasUnsavedOutfitChanges || isSavingOutfit}
                                 onClick={handleSaveOutfit}
                             >
