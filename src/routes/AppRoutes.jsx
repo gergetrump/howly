@@ -23,7 +23,7 @@ import { ShopPage } from '@/pages/shopPage';
 import { InventoryPage } from '@/pages/InventoryPage.jsx';
 import { ChallengesPage } from '@/pages/ChallengesPage.jsx';
 import { AnalyticsPage } from '@/pages/AnalyticsPage.jsx';
-import { CommunityPage } from '@/pages/CommunityPage.jsx';
+import { TrendsPage } from '@/pages/TrendsPage.jsx';
 import { ProfilePage } from '@/pages/profilePage';
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
@@ -53,7 +53,8 @@ export function AppRoutes() {
 
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/social" element={<SocialPage />} />
-                    <Route path="/community" element={<CommunityPage />} />
+                    <Route path="/trends" element={<TrendsPage />} />
+                    <Route path="/community" element={<Navigate to="/trends" replace />} />
                     <Route path="/shop" element={<ShopPage />} />
                     <Route path="/inventory" element={<InventoryPage />} />
                     <Route path="/challenges" element={<ChallengesPage />} />
