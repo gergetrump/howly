@@ -400,6 +400,132 @@ test('challenge details can be edited before start but not after start', async (
     assert.equal(lockedResponse.body.code, 'CHALLENGE_EDIT_LOCKED');
 });
 
+test('PATCH /api/challenges clears taxonomy when title or habit template text changes', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const ownerToken = signAccessToken(owner);
+    const startsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    const challenge = await createChallenge(ownerToken, {
+        ownerId: owner._id,
+        habit: await buildHabit(owner._id, { title: 'Reading' }),
+        startsAt,
+        durationDays: 10,
+    });
+
+    await Challenge.findByIdAndUpdate(challenge.id, {
+        $set: {
+            taxonomy: {
+                categoryKey: 'learning',
+                subcategoryKey: 'reading',
+                canonicalHabitKey: 'read',
+                score: 0.9,
+                assignedAt: new Date(),
+            },
+            'habitTemplate.category': 'Learning',
+        },
+    });
+
+    const participant = await ChallengeParticipant.findOne({ challenge: challenge.id }).lean();
+    await Habit.findByIdAndUpdate(participant.habit, {
+        $set: {
+            category: 'Learning',
+            taxonomy: {
+                categoryKey: 'learning',
+                subcategoryKey: 'reading',
+                canonicalHabitKey: 'read',
+                score: 0.9,
+                assignedAt: new Date(),
+            },
+        },
+    });
+
+    const updateResponse = await request(app)
+        .patch(`/api/challenges/${challenge.id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+            title: 'Reading Sprint',
+            habitTemplate: {
+                title: 'Read 10 pages',
+                type: 'boolean',
+                frequency: 'Daily',
+            },
+        })
+        .expect(200);
+
+    assert.equal(updateResponse.body.challenge.taxonomy, null);
+    assert.equal(updateResponse.body.challenge.habitTemplate.category, null);
+
+    const storedChallenge = await Challenge.findById(challenge.id).lean();
+    assert.equal(storedChallenge.taxonomy?.canonicalHabitKey, null);
+    assert.equal(storedChallenge.habitTemplate.category, null);
+
+    const storedHabit = await Habit.findById(participant.habit).lean();
+    assert.equal(storedHabit.title, 'Read 10 pages');
+    assert.equal(storedHabit.category, null);
+    assert.equal(storedHabit.taxonomy?.canonicalHabitKey, null);
+});
+
+test('PATCH /api/challenges keeps taxonomy when only non-text habit template fields change', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const ownerToken = signAccessToken(owner);
+    const startsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    const challenge = await createChallenge(ownerToken, {
+        ownerId: owner._id,
+        habit: await buildHabit(owner._id, { title: 'Reading' }),
+        startsAt,
+        durationDays: 10,
+    });
+
+    await Challenge.findByIdAndUpdate(challenge.id, {
+        $set: {
+            taxonomy: {
+                categoryKey: 'learning',
+                subcategoryKey: 'reading',
+                canonicalHabitKey: 'read',
+                score: 0.9,
+                assignedAt: new Date(),
+            },
+            'habitTemplate.category': 'Learning',
+        },
+    });
+
+    const participant = await ChallengeParticipant.findOne({ challenge: challenge.id }).lean();
+    await Habit.findByIdAndUpdate(participant.habit, {
+        $set: {
+            category: 'Learning',
+            taxonomy: {
+                categoryKey: 'learning',
+                subcategoryKey: 'reading',
+                canonicalHabitKey: 'read',
+                score: 0.9,
+                assignedAt: new Date(),
+            },
+        },
+    });
+
+    const updateResponse = await request(app)
+        .patch(`/api/challenges/${challenge.id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+            habitTemplate: {
+                title: 'Reading',
+                description: '',
+                icon: '📚',
+                type: 'boolean',
+                frequency: 'Daily',
+            },
+        })
+        .expect(200);
+
+    assert.equal(updateResponse.body.challenge.taxonomy?.canonicalHabitKey, 'read');
+    assert.equal(updateResponse.body.challenge.habitTemplate.category, 'Learning');
+    assert.equal(updateResponse.body.challenge.habitTemplate.icon, '📚');
+
+    const storedHabit = await Habit.findById(participant.habit).lean();
+    assert.equal(storedHabit.icon, '📚');
+    assert.equal(storedHabit.taxonomy?.canonicalHabitKey, 'read');
+    assert.equal(storedHabit.category, 'Learning');
+});
+
 test('free users can only join two active challenges at a time', async () => {
     const firstOwner = await buildUser({ isPremium: true });
     const secondOwner = await buildUser({ isPremium: true });
