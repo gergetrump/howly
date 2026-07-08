@@ -14,8 +14,8 @@ const defaultItems = [
     { label: 'Challenges', to: '/challenges', icon: Trophy },
     { label: 'Shop', to: '/shop', icon: ShoppingBag },
     { label: 'Inventory', to: '/inventory', icon: PackageOpen },
-    { label: 'Analytics', to: '/analytics', icon: BarChart3 },
-    { label: 'Trends', to: '/trends', icon: Globe },
+    { label: 'Analytics', to: '/analytics', icon: BarChart3, premiumOnly: true },
+    { label: 'Trends', to: '/trends', icon: Globe, premiumOnly: true },
     { label: 'Profile', to: '/profile', icon: UserRound },
 ];
 
@@ -51,6 +51,7 @@ export function NavBar({
     const streakShields = user?.streakShields ?? 0;
     const navProfilePictureUrl = user?.profilePictureUrl;
     const isPremium = user?.isPremium === true || user?.role === 'admin';
+    const visibleNavigationItems = navigationItems.filter((item) => !item.premiumOnly || isPremium);
 
     return (
         <>
@@ -75,7 +76,7 @@ export function NavBar({
                     </Link>
 
                     <div className="hidden items-center gap-1 lg:flex 2xl:gap-1.5">
-                        {navigationItems.map((item) => {
+                        {visibleNavigationItems.map((item) => {
                             const Icon = item.icon ?? Dumbbell;
 
                             return (
@@ -141,7 +142,7 @@ export function NavBar({
             aria-label="Primary navigation"
         >
             <div className="flex items-stretch justify-around gap-0.5 px-1 pt-1">
-                {navigationItems.map((item) => {
+                {visibleNavigationItems.map((item) => {
                     const Icon = item.icon ?? Dumbbell;
 
                     return (

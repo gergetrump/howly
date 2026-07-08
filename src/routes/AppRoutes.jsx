@@ -13,6 +13,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthLayout } from '@/components/layout/AuthLayout.jsx';
 import { PageLayout } from '@/components/layout/PageLayout.jsx';
 import { ProtectedRoute } from '@/routes/ProtectedRoute.jsx';
+import { PremiumRoute } from '@/routes/PremiumRoute.jsx';
 import { LandingPage } from '@/pages/landingPage';
 import { LoginPage } from '@/pages/loginPage';
 import { RegisterPage } from '@/pages/registerPage';
@@ -53,15 +54,17 @@ export function AppRoutes() {
 
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/social" element={<SocialPage />} />
-                    <Route path="/trends" element={<TrendsPage />} />
-                    <Route path="/community" element={<Navigate to="/trends" replace />} />
                     <Route path="/shop" element={<ShopPage />} />
                     <Route path="/inventory" element={<InventoryPage />} />
                     <Route path="/challenges" element={<ChallengesPage />} />
-                    <Route path="/analytics" element={<AnalyticsPage />} />
                     <Route path="/premium" element={<PremiumPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/stories" element={<StoryArchivePage />} />
+                    <Route element={<PremiumRoute />}>
+                        <Route path="/trends" element={<TrendsPage />} />
+                        <Route path="/community" element={<Navigate to="/trends" replace />} />
+                        <Route path="/analytics" element={<AnalyticsPage />} />
+                    </Route>
                 </Route>
             </Route>
 

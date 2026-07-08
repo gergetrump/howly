@@ -44,6 +44,10 @@ export async function getMyChallengeHabits() {
     return apiRequest('/challenges/my-habits');
 }
 
+export async function getChallengeParticipants(challengeId) {
+    return apiRequest(`/challenges/${challengeId}/participants`);
+}
+
 export async function getChallengeInvitations() {
     return apiRequest('/challenges/invitations');
 }
