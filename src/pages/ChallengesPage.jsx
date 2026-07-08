@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { CircleHelp, Loader2, Pencil, Trophy, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { CircleHelp, Loader2, Pencil, Trophy, TriangleAlert, UserPlus, UsersRound } from 'lucide-react';
 import { ActionButton, CardGrid, PlanLimitDialog } from '@/components/common';
 import { ChallengeCategoryChips } from '@/components/challenges/ChallengeCategoryChips.jsx';
 import { ChallengeCard } from '@/components/cards/ChallengeCard.jsx';
@@ -9,7 +9,21 @@ import { ChallengeFormDialog } from '@/components/cards/ChallengeFormDialog.jsx'
 import { ChallengeInviteDialog } from '@/components/cards/ChallengeInviteDialog.jsx';
 import { ChallengeInvitationList } from '@/components/cards/ChallengeInvitationList.jsx';
 import { Page, PageSection, Heading } from '@/components/layout';
+import { UserAvatar } from '@/components/social/UserProfileTrigger.jsx';
+import { UserPreviewDialog } from '@/components/social/UserPreviewDialog.jsx';
+import {
+    getDisplayName,
+    getSocialErrorMessage,
+    getUsername,
+    hasUserBlockedMe,
+    isBlockedByRelationship,
+    isUserBlockedByMe,
+    sameId,
+} from '@/components/social/socialHelpers.js';
 import { Button } from '@/components/ui/button';
+import { NotificationBanner } from '@/components/ui/notification-banner.jsx';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     ConfirmationDialog,
     ConfirmationDialogAction,
@@ -20,15 +34,13 @@ import {
     ConfirmationDialogHeader,
     ConfirmationDialogTitle,
 } from '@/components/ui/confirmation-dialog';
-import { NotificationBanner } from '@/components/ui/notification-banner.jsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/authContext';
 import {
     acceptChallengeInvitation,
     claimChallengeReward,
     createChallenge,
     createChallengeInvitation,
+    getChallengeParticipants,
     getChallengeInvitations,
     getChallenges,
     joinChallenge,
@@ -36,7 +48,16 @@ import {
     rejectChallengeInvitation,
     updateChallenge,
 } from '@/services/challengeService';
-import { getFriends } from '@/services/socialApi';
+import {
+    acceptFriendRequest,
+    blockUser,
+    getBlockedUsers,
+    getBlockers,
+    getFriendRequests,
+    getFriends,
+    sendFriendRequest,
+    unblockUser,
+} from '@/services/socialApi';
 import { getCurrentUserPlan } from '@/services/userService';
 import { getTaxonomyCategories } from '@/services/taxonomyService';
 
@@ -44,10 +65,33 @@ const CHALLENGE_TABS = [
     { value: 'active', label: 'Active Challenges' },
     { value: 'friends', label: 'Friend Challenges' },
     { value: 'public', label: 'Public Challenges' },
+    { value: 'past', label: 'Past Challenges' },
 ];
+const PAST_CHALLENGE_STATUSES = new Set(['completed', 'failed']);
 
 function getUserId(user) {
     return user?.id ?? user?._id;
+}
+
+function getParticipantUser(participant) {
+    return typeof participant?.user === 'object' && participant.user
+        ? participant.user
+        : null;
+}
+
+function normalizeListPage(response) {
+    if (Array.isArray(response)) {
+        return response;
+    }
+
+    return response?.items ?? [];
+}
+
+function normalizeFriendRequestsResponse(requestsResponse) {
+    return {
+        incoming: normalizeListPage(requestsResponse?.incoming ?? []),
+        outgoing: normalizeListPage(requestsResponse?.outgoing ?? []),
+    };
 }
 
 function getChallengeReward(challenge) {
@@ -66,10 +110,13 @@ function isRewardAvailable(challenge) {
     return challenge?.status === 'completed' || new Date(challenge?.endsAt ?? 0).getTime() <= Date.now();
 }
 
+function isPastChallengeStatus(status) {
+    return PAST_CHALLENGE_STATUSES.has(status);
+}
+
 function isActiveChallenge(challenge) {
     return challenge
-        && challenge.status !== 'completed'
-        && challenge.status !== 'failed'
+        && !isPastChallengeStatus(challenge.status)
         && challenge.endsAt
         && new Date(challenge.endsAt).getTime() > Date.now();
 }
@@ -129,7 +176,7 @@ function getChallengeLimitPrompt(code, backendMessage) {
     };
 }
 
-function ChallengeAlert({ error, notice, onUpgrade }) {
+function ChallengeAlert({ error, onUpgrade }) {
     if (error) {
         return (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-theme-danger/30 bg-theme-danger/10 p-4 text-sm text-theme-danger">
@@ -143,14 +190,6 @@ function ChallengeAlert({ error, notice, onUpgrade }) {
                         Upgrade
                     </Button>
                 ) : null}
-            </div>
-        );
-    }
-
-    if (notice) {
-        return (
-            <div className="rounded-xl border border-theme-success/30 bg-theme-success/10 p-4 text-sm text-theme-success">
-                {notice}
             </div>
         );
     }
@@ -200,6 +239,119 @@ function ChallengeInfoPopover() {
     );
 }
 
+function ChallengeParticipantsBadge({
+    challenge,
+    participants = [],
+    isLoading = false,
+    error = '',
+    onLoad,
+    onOpenProfile,
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const closeTimerRef = useRef(null);
+    const participantCount = challenge?.participantCount ?? 0;
+    const participantUsers = participants.map(getParticipantUser).filter(Boolean);
+
+    function clearCloseTimer() {
+        if (closeTimerRef.current) {
+            window.clearTimeout(closeTimerRef.current);
+            closeTimerRef.current = null;
+        }
+    }
+
+    function openParticipants() {
+        clearCloseTimer();
+        setIsOpen(true);
+        onLoad?.(challenge?.id);
+    }
+
+    function scheduleClose() {
+        clearCloseTimer();
+        closeTimerRef.current = window.setTimeout(() => {
+            setIsOpen(false);
+        }, 120);
+    }
+
+    useEffect(() => () => {
+        if (closeTimerRef.current) {
+            window.clearTimeout(closeTimerRef.current);
+        }
+    }, []);
+
+    return (
+        <Popover
+            open={isOpen}
+            onOpenChange={(nextOpen) => {
+                setIsOpen(nextOpen);
+
+                if (nextOpen) {
+                    onLoad?.(challenge?.id);
+                }
+            }}
+        >
+            <PopoverTrigger asChild>
+                <button
+                    type="button"
+                    className="inline-flex h-6 items-center gap-1 rounded-full border border-theme-text/15 bg-theme-text/10 px-2.5 py-0.5 text-xs font-semibold text-theme-text transition hover:bg-theme-text/15"
+                    onMouseEnter={openParticipants}
+                    onMouseLeave={scheduleClose}
+                    onFocus={openParticipants}
+                    onBlur={scheduleClose}
+                >
+                    <UsersRound className="size-3" aria-hidden="true" />
+                    {participantCount} joined
+                </button>
+            </PopoverTrigger>
+            <PopoverContent
+                align="start"
+                side="bottom"
+                sideOffset={8}
+                onMouseEnter={openParticipants}
+                onMouseLeave={scheduleClose}
+                className="z-[130] w-64 rounded-xl border border-theme-text/10 bg-theme-surface p-2 text-theme-text shadow-xl shadow-theme-bg/30"
+            >
+                <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-theme-text-muted">
+                    Joined users
+                </p>
+                {isLoading ? (
+                    <div className="flex items-center gap-2 px-2 py-3 text-sm text-theme-text-soft">
+                        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                        Loading users
+                    </div>
+                ) : error ? (
+                    <p className="px-2 py-3 text-sm text-theme-danger">{error}</p>
+                ) : participantUsers.length > 0 ? (
+                    <div className="max-h-64 space-y-1 overflow-y-auto pr-1">
+                        {participantUsers.map((participantUser) => (
+                            <button
+                                key={participantUser.id ?? participantUser._id}
+                                type="button"
+                                className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-theme-text/10"
+                                onClick={() => {
+                                    setIsOpen(false);
+                                    onOpenProfile?.(participantUser);
+                                }}
+                            >
+                                <UserAvatar user={participantUser} className="size-9" />
+                                <span className="min-w-0">
+                                    <span className="block truncate text-sm font-semibold text-theme-text">
+                                        {getDisplayName(participantUser)}
+                                    </span>
+                                    <span className="block truncate text-xs text-theme-text-soft">
+                                        @{getUsername(participantUser)}
+                                    </span>
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="px-2 py-3 text-sm text-theme-text-soft">No joined users yet.</p>
+                )}
+            </PopoverContent>
+        </Popover>
+    );
+}
+
 export function ChallengesPage() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -219,11 +371,18 @@ export function ChallengesPage() {
     const [editingChallenge, setEditingChallenge] = useState(null);
     const [busyAction, setBusyAction] = useState('');
     const [error, setError] = useState(null);
-    const [notice, setNotice] = useState('');
     const [limitPrompt, setLimitPrompt] = useState(null);
-    const [leaveConfirmChallenge, setLeaveConfirmChallenge] = useState(null);
     const [inviteChallenge, setInviteChallenge] = useState(null);
+    const [pendingLeaveChallenge, setPendingLeaveChallenge] = useState(null);
     const [friends, setFriends] = useState([]);
+    const [friendRequests, setFriendRequests] = useState({ incoming: [], outgoing: [] });
+    const [blockedUsers, setBlockedUsers] = useState([]);
+    const [blockers, setBlockers] = useState([]);
+    const [selectedProfileUser, setSelectedProfileUser] = useState(null);
+    const [isProfileActionBusy, setIsProfileActionBusy] = useState(false);
+    const [participantsByChallengeId, setParticipantsByChallengeId] = useState({});
+    const [participantLoadingByChallengeId, setParticipantLoadingByChallengeId] = useState({});
+    const [participantErrorsByChallengeId, setParticipantErrorsByChallengeId] = useState({});
     const [selectedFriendIds, setSelectedFriendIds] = useState([]);
     const [isLoadingFriends, setIsLoadingFriends] = useState(false);
     const [inviteError, setInviteError] = useState('');
@@ -285,6 +444,8 @@ export function ChallengesPage() {
 
             setChallenges(nextChallenges);
             setInvitations(nextInvitations);
+            setParticipantsByChallengeId({});
+            setParticipantErrorsByChallengeId({});
 
             return { challenges: nextChallenges, invitations: nextInvitations };
         } catch (loadError) {
@@ -331,16 +492,25 @@ export function ChallengesPage() {
 
     useEffect(() => {
         if (!taxonomyCategories.length || hasInitializedCategoryFromUrl.current) {
-            return;
+            return undefined;
         }
 
         const requestedCategory = searchParams.get('category');
+        let timerId;
 
         if (requestedCategory && taxonomyCategories.some((category) => category.key === requestedCategory)) {
-            setSelectedCategory(requestedCategory);
+            timerId = window.setTimeout(() => {
+                setSelectedCategory(requestedCategory);
+            }, 0);
         }
 
         hasInitializedCategoryFromUrl.current = true;
+
+        return () => {
+            if (timerId) {
+                window.clearTimeout(timerId);
+            }
+        };
     }, [searchParams, taxonomyCategories]);
 
     function handleCategoryChange(nextCategory) {
@@ -434,6 +604,195 @@ export function ChallengesPage() {
         };
     }, [refreshCurrentChallenges]);
 
+    const refreshProfileContext = useCallback(async () => {
+        try {
+            const [friendData, requestData, blockedData, blockerData] = await Promise.all([
+                getFriends(),
+                getFriendRequests(),
+                getBlockedUsers(),
+                getBlockers(),
+            ]);
+
+            setFriends(friendData ?? []);
+            setFriendRequests(normalizeFriendRequestsResponse(requestData));
+            setBlockedUsers(blockedData ?? []);
+            setBlockers(blockerData ?? []);
+        } catch {
+            setFriendRequests({ incoming: [], outgoing: [] });
+            setBlockedUsers([]);
+            setBlockers([]);
+        }
+    }, []);
+
+    useEffect(() => {
+        void refreshProfileContext();
+    }, [refreshProfileContext]);
+
+    async function loadChallengeParticipants(challengeId) {
+        if (
+            !challengeId
+            || participantsByChallengeId[challengeId]
+            || participantLoadingByChallengeId[challengeId]
+        ) {
+            return;
+        }
+
+        setParticipantLoadingByChallengeId((currentLoading) => ({
+            ...currentLoading,
+            [challengeId]: true,
+        }));
+        setParticipantErrorsByChallengeId((currentErrors) => ({
+            ...currentErrors,
+            [challengeId]: '',
+        }));
+
+        try {
+            const response = await getChallengeParticipants(challengeId);
+            setParticipantsByChallengeId((currentParticipants) => ({
+                ...currentParticipants,
+                [challengeId]: response?.participants ?? [],
+            }));
+        } catch (participantError) {
+            setParticipantErrorsByChallengeId((currentErrors) => ({
+                ...currentErrors,
+                [challengeId]: participantError.message || 'Failed to load users.',
+            }));
+        } finally {
+            setParticipantLoadingByChallengeId((currentLoading) => ({
+                ...currentLoading,
+                [challengeId]: false,
+            }));
+        }
+    }
+
+    function getProfileRelationship(profileUser) {
+        const profileUserId = profileUser?.id ?? profileUser?._id;
+
+        if (!profileUserId) {
+            return { status: 'unknown' };
+        }
+
+        if (sameId(profileUserId, user?.id) || sameId(profileUserId, user?._id)) {
+            return { status: 'self' };
+        }
+
+        const friendship = friends.find(({ friend }) => sameId(friend?.id ?? friend?._id, profileUserId));
+
+        if (friendship) {
+            return { status: 'friends', friendshipId: friendship.id };
+        }
+
+        const incomingRequest = friendRequests.incoming?.find((request) => (
+            sameId(request.requester?.id ?? request.requester?._id, profileUserId)
+        ));
+
+        if (incomingRequest) {
+            return { status: 'incoming', requestId: incomingRequest.id };
+        }
+
+        const outgoingRequest = friendRequests.outgoing?.find((request) => (
+            sameId(request.recipient?.id ?? request.recipient?._id, profileUserId)
+        ));
+
+        if (outgoingRequest) {
+            return { status: 'outgoing', requestId: outgoingRequest.id };
+        }
+
+        return { status: 'none' };
+    }
+
+    async function handleSendProfileFriendRequest(profileUser) {
+        const profileUserId = profileUser?.id ?? profileUser?._id;
+
+        if (!profileUserId) {
+            return;
+        }
+
+        setIsProfileActionBusy(true);
+        clearChallengeFeedback();
+
+        try {
+            const request = await sendFriendRequest(profileUserId);
+
+            setFriendRequests((currentRequests) => ({
+                incoming: currentRequests.incoming ?? [],
+                outgoing: [request, ...(currentRequests.outgoing ?? [])],
+            }));
+            setSelectedProfileUser(null);
+            showChallengeToast('Friend request sent');
+            void refreshProfileContext();
+        } catch (profileError) {
+            setError({ message: getSocialErrorMessage(profileError, profileUser), code: profileError.code });
+        } finally {
+            setIsProfileActionBusy(false);
+        }
+    }
+
+    async function handleAcceptProfileFriendRequest(requestId) {
+        if (!requestId) {
+            return;
+        }
+
+        setIsProfileActionBusy(true);
+        clearChallengeFeedback();
+
+        try {
+            const response = await acceptFriendRequest(requestId);
+
+            setFriendRequests((currentRequests) => ({
+                incoming: (currentRequests.incoming ?? []).filter((request) => request.id !== requestId),
+                outgoing: currentRequests.outgoing ?? [],
+            }));
+            setFriends((currentFriends) => [response.friendship, ...currentFriends]);
+            setSelectedProfileUser(null);
+            showChallengeToast('Friend request accepted');
+            void refreshProfileContext();
+        } catch (profileError) {
+            setError({ message: getSocialErrorMessage(profileError), code: profileError.code });
+        } finally {
+            setIsProfileActionBusy(false);
+        }
+    }
+
+    async function handleBlockProfileUser(profileUserId) {
+        if (!profileUserId) {
+            return;
+        }
+
+        setIsProfileActionBusy(true);
+        clearChallengeFeedback();
+
+        try {
+            await blockUser(profileUserId);
+            setSelectedProfileUser(null);
+            showChallengeToast('User blocked');
+            await refreshProfileContext();
+        } catch (profileError) {
+            setError({ message: getSocialErrorMessage(profileError), code: profileError.code });
+        } finally {
+            setIsProfileActionBusy(false);
+        }
+    }
+
+    async function handleUnblockProfileUser(profileUserId) {
+        if (!profileUserId) {
+            return;
+        }
+
+        setIsProfileActionBusy(true);
+        clearChallengeFeedback();
+
+        try {
+            await unblockUser(profileUserId);
+            showChallengeToast('User unblocked');
+            await refreshProfileContext();
+        } catch (profileError) {
+            setError({ message: getSocialErrorMessage(profileError), code: profileError.code });
+        } finally {
+            setIsProfileActionBusy(false);
+        }
+    }
+
     function showActionError(actionError, fallbackMessage) {
         if (isFreeUser && isUpgradeError(actionError.code)) {
             navigate('/premium', {
@@ -451,16 +810,29 @@ export function ChallengesPage() {
         }
 
         if (isAlreadyJoinedError(actionError.code)) {
-            toast(actionError.message || 'You are already participating in this challenge.');
+            showChallengeToast(actionError.message || 'Already participating');
             return;
         }
 
-        toast.error(actionError.message || fallbackMessage);
+        setError({ message: actionError.message || fallbackMessage, code: actionError.code });
+    }
+
+    function refreshChallengeNotifications() {
+        window.dispatchEvent(new Event('howly:notifications-updated'));
+    }
+
+    function showChallengeToast(message) {
+        toast(message);
+        refreshChallengeNotifications();
+    }
+
+    function clearChallengeFeedback() {
+        setError(null);
+        setBanner(null);
     }
 
     function handleUpgradeClick() {
         setError(null);
-        setNotice('');
         navigate('/premium', {
             state: {
                 message: getChallengePremiumPrompt(error?.code),
@@ -480,8 +852,7 @@ export function ChallengesPage() {
             return;
         }
 
-        setError(null);
-        setNotice('');
+        clearChallengeFeedback();
         setBusyAction('create-precheck');
 
         try {
@@ -567,22 +938,21 @@ export function ChallengesPage() {
 
     async function handleSubmitChallenge(formData, challenge) {
         setBusyAction(challenge ? 'edit' : 'create');
-        setError(null);
-        setNotice('');
+        clearChallengeFeedback();
 
         try {
             if (challenge) {
                 await updateChallenge(challenge.id, formData);
-                toast.success('Your challenge has been updated.');
+                showChallengeToast('Challenge updated');
             } else {
                 await createChallenge(formData);
-                toast.success('Your challenge has been created.');
+                showChallengeToast('Challenge created');
             }
 
             closeFormDialog(false);
             await refreshCurrentChallenges();
         } catch (submitError) {
-            showActionError(submitError, challenge ? "We couldn't update your challenge. Please try again." : "We couldn't create your challenge. Please try again.");
+            showActionError(submitError, challenge ? 'Failed to update challenge.' : 'Failed to create challenge.');
         } finally {
             setBusyAction('');
         }
@@ -590,20 +960,14 @@ export function ChallengesPage() {
 
     async function handleJoinChallenge(challengeId) {
         setBusyAction('join');
-        setError(null);
-        setNotice('');
+        clearChallengeFeedback();
 
         try {
             await joinChallenge(challengeId);
-            toast.success("You've joined the challenge.");
-            setChallenges((current) => current.map((challenge) => (
-                challenge && challenge.id === challengeId
-                    ? { ...challenge, viewerParticipantStatus: 'active' }
-                    : challenge
-            )));
+            showChallengeToast('Challenge joined');
             await refreshCurrentChallenges();
         } catch (actionError) {
-            showActionError(actionError, "We couldn't join the challenge. Please try again.");
+            showActionError(actionError, 'Failed to join challenge.');
         } finally {
             setBusyAction('');
         }
@@ -611,31 +975,40 @@ export function ChallengesPage() {
 
     async function handleLeaveChallenge(challengeId) {
         setBusyAction(`leave-${challengeId}`);
-        setError(null);
-        setNotice('');
+        clearChallengeFeedback();
 
         try {
             await leaveChallenge(challengeId);
-            toast.success("You've left the challenge.");
+            showChallengeToast('Challenge left');
             await refreshCurrentChallenges();
         } catch (actionError) {
-            showActionError(actionError, "We couldn't leave the challenge. Please try again.");
+            showActionError(actionError, 'Failed to leave challenge.');
         } finally {
             setBusyAction('');
         }
     }
 
+    async function confirmLeaveChallenge() {
+        const challenge = pendingLeaveChallenge;
+
+        if (!challenge) {
+            return;
+        }
+
+        setPendingLeaveChallenge(null);
+        await handleLeaveChallenge(challenge.id);
+    }
+
     async function handleClaimReward(challengeId) {
         setBusyAction(`reward-${challengeId}`);
-        setError(null);
-        setNotice('');
+        clearChallengeFeedback();
 
         try {
-            const result = await claimChallengeReward(challengeId);
-            toast.success(`You claimed your reward of ${result.rewardCoins ?? 0} coins.`);
+            await claimChallengeReward(challengeId);
+            showChallengeToast('Reward claimed');
             await refreshCurrentChallenges();
         } catch (actionError) {
-            showActionError(actionError, actionError.message || "We couldn't claim your reward. Please try again.");
+            showActionError(actionError, actionError.message || 'Failed to claim reward.');
         } finally {
             setBusyAction('');
         }
@@ -643,15 +1016,14 @@ export function ChallengesPage() {
 
     async function handleAcceptInvitation(invitationId) {
         setBusyAction(`accept-${invitationId}`);
-        setError(null);
-        setNotice('');
+        clearChallengeFeedback();
 
         try {
             await acceptChallengeInvitation(invitationId);
-            toast.success("You've accepted the invitation.");
+            showChallengeToast('Invitation accepted');
             await refreshCurrentChallenges();
         } catch (actionError) {
-            showActionError(actionError, "We couldn't accept the invitation. Please try again.");
+            showActionError(actionError, 'Failed to accept invitation.');
         } finally {
             setBusyAction('');
         }
@@ -659,15 +1031,14 @@ export function ChallengesPage() {
 
     async function handleRejectInvitation(invitationId) {
         setBusyAction(`reject-${invitationId}`);
-        setError(null);
-        setNotice('');
+        clearChallengeFeedback();
 
         try {
             await rejectChallengeInvitation(invitationId);
-            toast.success("You've declined the invitation.");
+            showChallengeToast('Invitation rejected');
             await refreshCurrentChallenges();
         } catch (rejectError) {
-            showActionError(rejectError, "We couldn't decline the invitation. Please try again.");
+            showActionError(rejectError, 'Failed to reject invitation.');
         } finally {
             setBusyAction('');
         }
@@ -680,8 +1051,7 @@ export function ChallengesPage() {
 
         setBusyAction('invite');
         setInviteError('');
-        setNotice('');
-        setError(null);
+        clearChallengeFeedback();
 
         try {
             const results = await Promise.allSettled(
@@ -691,7 +1061,7 @@ export function ChallengesPage() {
             const failedResults = results.filter((result) => result.status === 'rejected');
 
             if (sentCount > 0) {
-                toast.success(sentCount === 1 ? 'Your invitation has been sent.' : `All ${sentCount} invitations have been sent.`);
+                showChallengeToast(sentCount === 1 ? 'Challenge invitation sent' : 'Challenge invitations sent');
                 await refreshCurrentChallenges();
             }
 
@@ -711,6 +1081,16 @@ export function ChallengesPage() {
             setBusyAction('');
         }
     }
+
+    const isSelectedUserBlocked = selectedProfileUser
+        ? isBlockedByRelationship(selectedProfileUser, blockedUsers, blockers)
+        : false;
+    const isSelectedUserBlockedByMe = selectedProfileUser
+        ? isUserBlockedByMe(selectedProfileUser, blockedUsers)
+        : false;
+    const hasSelectedUserBlockedMe = selectedProfileUser
+        ? hasUserBlockedMe(selectedProfileUser, blockers)
+        : false;
 
     return (
         <Page theme="forest">
@@ -761,7 +1141,7 @@ export function ChallengesPage() {
                     />
                 ) : null}
 
-                <ChallengeAlert error={error} notice={notice} onUpgrade={handleUpgradeClick} />
+                <ChallengeAlert error={error} onUpgrade={handleUpgradeClick} />
 
                 {isLoading ? (
                     <div className="flex items-center gap-2 rounded-xl border border-theme-text/10 bg-theme-text/5 p-4 text-sm text-theme-text">
@@ -784,8 +1164,9 @@ export function ChallengesPage() {
                         {visibleChallenges.map((challenge) => {
                             const isOwnChallenge = userId && challenge.createdBy === userId;
                             const hasJoined = Boolean(challenge.viewerParticipantStatus && challenge.viewerParticipantStatus !== 'left');
-                            const isJoinable = challenge.status !== 'completed' && challenge.status !== 'failed';
-                            const shouldShowJoin = !isOwnChallenge && !hasJoined && activeTab !== 'active';
+                            const isJoinable = !isPastChallengeStatus(challenge.status);
+                            const isPastTab = activeTab === 'past';
+                            const shouldShowJoin = !isPastTab && !isOwnChallenge && !hasJoined && activeTab !== 'active';
                             const shouldShowJoined = !isOwnChallenge && hasJoined && activeTab !== 'active';
                             const shouldShowLeave = hasJoined && isJoinable;
                             const rewardAvailable = hasJoined && isRewardAvailable(challenge);
@@ -801,12 +1182,23 @@ export function ChallengesPage() {
                                     key={challenge.id}
                                     title={challenge.title}
                                     description={challenge.description}
+                                    habitIcon={challenge.habitTemplate?.icon}
                                     habitTitle={challenge.habitTitle}
                                     category={categoryLabel}
                                     recommendationReason={challenge.recommendationReason}
                                     status={challenge.status}
                                     visibility={challenge.visibility}
                                     participants={challenge.participantCount ?? 0}
+                                    participantsSlot={(
+                                        <ChallengeParticipantsBadge
+                                            challenge={challenge}
+                                            participants={participantsByChallengeId[challenge.id] ?? []}
+                                            isLoading={participantLoadingByChallengeId[challenge.id] === true}
+                                            error={participantErrorsByChallengeId[challenge.id]}
+                                            onLoad={loadChallengeParticipants}
+                                            onOpenProfile={setSelectedProfileUser}
+                                        />
+                                    )}
                                     totalDays={challenge.durationDays}
                                     reward={getChallengeReward(challenge)}
                                     startsAt={challenge.startsAt}
@@ -821,31 +1213,35 @@ export function ChallengesPage() {
                                             >
                                                 Your challenge
                                             </Button>
-                                            <span
-                                                className="inline-flex"
-                                                title={editLocked ? 'Challenge already started' : undefined}
-                                            >
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    onClick={() => openEditDialog(challenge)}
-                                                    disabled={editLocked}
-                                                    className="border-theme-text/20 bg-theme-text/10 text-theme-text hover:bg-theme-text/20"
-                                                >
-                                                    <Pencil className="size-4" aria-hidden="true" />
-                                                    Edit
-                                                </Button>
-                                            </span>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => openInviteDialog(challenge)}
-                                                disabled={busyAction === 'invite'}
-                                                className="border-theme-text/20 bg-theme-text/10 text-theme-text hover:bg-theme-text/20"
-                                            >
-                                                <UserPlus className="size-4" aria-hidden="true" />
-                                                Invite
-                                            </Button>
+                                            {!isPastTab ? (
+                                                <>
+                                                    <span
+                                                        className="inline-flex"
+                                                        title={editLocked ? 'Challenge already started' : undefined}
+                                                    >
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            onClick={() => openEditDialog(challenge)}
+                                                            disabled={editLocked}
+                                                            className="border-theme-text/20 bg-theme-text/10 text-theme-text hover:bg-theme-text/20"
+                                                        >
+                                                            <Pencil className="size-4" aria-hidden="true" />
+                                                            Edit
+                                                        </Button>
+                                                    </span>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        onClick={() => openInviteDialog(challenge)}
+                                                        disabled={busyAction === 'invite'}
+                                                        className="border-theme-text/20 bg-theme-text/10 text-theme-text hover:bg-theme-text/20"
+                                                    >
+                                                        <UserPlus className="size-4" aria-hidden="true" />
+                                                        Invite
+                                                    </Button>
+                                                </>
+                                            ) : null}
                                         </>
                                     ) : null}
                                     {!isOwnChallenge && activeTab === 'active' ? (
@@ -881,7 +1277,7 @@ export function ChallengesPage() {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            onClick={() => setLeaveConfirmChallenge(challenge)}
+                                            onClick={() => setPendingLeaveChallenge(challenge)}
                                             disabled={busyAction === `leave-${challenge.id}`}
                                             className="border-theme-danger/30 bg-theme-danger/10 text-theme-danger hover:bg-theme-danger/20"
                                         >
@@ -926,9 +1322,11 @@ export function ChallengesPage() {
 
                 {!isLoading && visibleChallenges.length === 0 && (activeTab !== 'active' || incomingInvitations.length === 0) ? (
                     <div className="rounded-xl border border-theme-text/10 bg-theme-text/5 p-6 text-center text-sm text-theme-text-soft">
-                        {activeTab === 'public' && selectedCategory !== 'all'
-                            ? `No public ${selectedCategoryLabel} challenges yet.`
-                            : 'No challenges available.'}
+                        {activeTab === 'past'
+                            ? 'No past challenges available.'
+                            : activeTab === 'public' && selectedCategory !== 'all'
+                                ? `No public ${selectedCategoryLabel} challenges yet.`
+                                : 'No challenges available.'}
                     </div>
                 ) : null}
             </PageSection>
@@ -966,26 +1364,51 @@ export function ChallengesPage() {
                 message={limitPrompt?.message}
             />
 
+            <UserPreviewDialog
+                user={selectedProfileUser}
+                relationship={getProfileRelationship(selectedProfileUser)}
+                busy={isProfileActionBusy}
+                isBlocked={isSelectedUserBlocked}
+                isBlockedByMe={isSelectedUserBlockedByMe}
+                hasBlockedCurrentUser={hasSelectedUserBlockedMe}
+                onClose={() => setSelectedProfileUser(null)}
+                onAddFriend={handleSendProfileFriendRequest}
+                onAcceptRequest={handleAcceptProfileFriendRequest}
+                onBlock={handleBlockProfileUser}
+                onUnblock={handleUnblockProfileUser}
+            />
+
             <ConfirmationDialog
-                open={Boolean(leaveConfirmChallenge)}
-                onOpenChange={(open) => { if (!open) setLeaveConfirmChallenge(null); }}
+                open={Boolean(pendingLeaveChallenge)}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setPendingLeaveChallenge(null);
+                    }
+                }}
             >
-                <ConfirmationDialogContent>
-                    <ConfirmationDialogHeader className="space-y-3 text-center">
-                        <ConfirmationDialogTitle className="text-xl font-bold">
-                            Leave this challenge?
+                <ConfirmationDialogContent className="border-theme-text/10 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
+                    <ConfirmationDialogHeader className="space-y-4 text-center">
+                        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-theme-danger/20 bg-theme-danger/10">
+                            <TriangleAlert className="size-7 text-theme-danger" aria-hidden="true" />
+                        </div>
+                        <ConfirmationDialogTitle className="text-center text-2xl font-bold tracking-tight">
+                            Leave challenge?
                         </ConfirmationDialogTitle>
-                        <ConfirmationDialogDescription className="text-sm text-theme-text-soft">
-                            Are you sure you want to leave “{leaveConfirmChallenge?.title}”?
+                        <ConfirmationDialogDescription className="text-base text-theme-text-soft">
+                            Are you sure you want to leave{' '}
+                            <strong className="font-semibold text-theme-text">
+                                {pendingLeaveChallenge?.title}
+                            </strong>
+                            ? You will lose all of your rewards for this challenge.
                         </ConfirmationDialogDescription>
                     </ConfirmationDialogHeader>
-                    <ConfirmationDialogFooter className="mt-4 gap-3">
-                        <ConfirmationDialogCancel className="border-theme-text/15 bg-theme-text/10 text-theme-text hover:bg-theme-text/20 hover:text-theme-text">
-                            Cancel
+                    <ConfirmationDialogFooter className="mt-4 gap-3 sm:justify-center">
+                        <ConfirmationDialogCancel className="h-12 rounded-xl border-theme-text/20 bg-theme-text/10 px-6 text-theme-text hover:bg-theme-text/20 hover:text-theme-text">
+                            Keep challenge
                         </ConfirmationDialogCancel>
                         <ConfirmationDialogAction
-                            className="bg-theme-danger text-white hover:bg-theme-danger/90"
-                            onClick={() => { if (leaveConfirmChallenge) handleLeaveChallenge(leaveConfirmChallenge.id); }}
+                            className="h-12 rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-6 font-semibold text-theme-danger hover:bg-theme-danger/20"
+                            onClick={confirmLeaveChallenge}
                         >
                             Leave challenge
                         </ConfirmationDialogAction>
