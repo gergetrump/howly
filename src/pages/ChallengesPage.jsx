@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { CircleHelp, Loader2, Pencil, Trophy, TriangleAlert, UserPlus, UsersRound } from 'lucide-react';
 import { ActionButton, CardGrid, PlanLimitDialog } from '@/components/common';
 import { ChallengeCategoryChips } from '@/components/challenges/ChallengeCategoryChips.jsx';
+import { appTabsListFullWidthClassName, appTabsTriggerClassName } from '@/components/cards/cardStyles';
 import { ChallengeCard } from '@/components/cards/ChallengeCard.jsx';
 import { ChallengeFormDialog } from '@/components/cards/ChallengeFormDialog.jsx';
 import { ChallengeInviteDialog } from '@/components/cards/ChallengeInviteDialog.jsx';
@@ -47,6 +48,7 @@ import {
     leaveChallenge,
     rejectChallengeInvitation,
     updateChallenge,
+    waitForChallengeTaxonomy,
 } from '@/services/challengeService';
 import {
     acceptFriendRequest,
@@ -469,6 +471,18 @@ export function ChallengesPage() {
             ...options,
         })
     ), [activeTab, loadChallengeData, selectedCategory]);
+
+    const refreshChallengeTaxonomyInBackground = useCallback((challengeId) => {
+        void waitForChallengeTaxonomy(challengeId).then((updatedChallenge) => {
+            if (!updatedChallenge) {
+                return;
+            }
+
+            setChallenges((previous) => previous.map((entry) => (
+                entry?.id === challengeId ? { ...entry, ...updatedChallenge } : entry
+            )));
+        });
+    }, []);
 
     useEffect(() => {
         let isCancelled = false;
@@ -944,16 +958,24 @@ export function ChallengesPage() {
         clearChallengeFeedback();
 
         try {
+            let savedChallenge;
+
             if (challenge) {
-                await updateChallenge(challenge.id, formData);
+                const response = await updateChallenge(challenge.id, formData);
+                savedChallenge = response?.challenge;
                 showChallengeToast('Your challenge has been updated.');
             } else {
-                await createChallenge(formData);
+                const response = await createChallenge(formData);
+                savedChallenge = response?.challenge;
                 showChallengeToast('Your challenge has been created.');
             }
 
             closeFormDialog(false);
             await refreshCurrentChallenges();
+
+            if (savedChallenge && !savedChallenge.taxonomy?.categoryKey) {
+                refreshChallengeTaxonomyInBackground(savedChallenge.id);
+            }
         } catch (submitError) {
             showActionError(submitError, challenge ? "We couldn't update your challenge. Please try again." : "We couldn't create your challenge. Please try again.");
         } finally {
@@ -1122,12 +1144,12 @@ export function ChallengesPage() {
                 titleAction={<ChallengeInfoPopover />}
             >
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="w-full border border-theme-text/10 bg-theme-surface text-theme-text">
+                    <TabsList className={appTabsListFullWidthClassName}>
                         {CHALLENGE_TABS.map((tab) => (
                             <TabsTrigger
                                 key={tab.value}
                                 value={tab.value}
-                                className="!text-theme-text-soft data-active:!bg-theme-text/20 data-active:!text-theme-text"
+                                className={appTabsTriggerClassName}
                             >
                                 {tab.label}
                             </TabsTrigger>

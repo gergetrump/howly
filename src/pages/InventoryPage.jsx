@@ -21,6 +21,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { appTabsListWrapClassName, appTabsTriggerWrapClassName } from '@/components/cards/cardStyles';
 import { useAuth } from '@/context/authContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import {
@@ -545,12 +546,12 @@ export function InventoryPage() {
                     <h2 className="text-xl font-semibold text-theme-text">Owned Items</h2>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-                            <TabsList className="h-auto flex-wrap border border-theme-text/10 bg-theme-surface p-1 text-theme-text-soft">
+                            <TabsList className={appTabsListWrapClassName}>
                                 {ITEM_CATEGORIES.map((category) => (
                                     <TabsTrigger
                                         key={category.value}
                                         value={category.value}
-                                        className="px-3 py-1.5 !text-theme-text-soft data-active:!bg-theme-invert data-active:!text-theme-invert-text"
+                                        className={appTabsTriggerWrapClassName}
                                     >
                                         {category.label}
                                     </TabsTrigger>
