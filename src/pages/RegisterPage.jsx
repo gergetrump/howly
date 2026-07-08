@@ -1,7 +1,7 @@
 // src/pages/RegisterPage.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserPlus } from 'lucide-react';
+import { CircleAlert, UserPlus } from 'lucide-react';
 
 import howlyIcon from '@/assets/howly.png';
 import { Background } from '@/components/brand/background';
@@ -13,6 +13,7 @@ import { registerUser } from '@/services/authService';
 
 const USERNAME_PATTERN = /^[A-Za-z0-9_-]+$/;
 const DISPLAY_NAME_PATTERN = /^[\p{L}\p{M}][\p{L}\p{M} .'-]*$/u;
+const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
 const RESERVED_USERNAMES = new Set([
     'admin',
     'administrator',
@@ -30,8 +31,14 @@ function normalizeInputText(value) {
 
 function validateAccountFields(data) {
     const username = normalizeInputText(data.username);
+    const email = normalizeInputText(data.email).toLowerCase();
     const firstName = normalizeInputText(data.firstName);
     const lastName = normalizeInputText(data.lastName);
+    const password = typeof data.password === 'string' ? data.password : '';
+
+    if (!username) {
+        return 'Username is required.';
+    }
 
     if (username.length < 3 || username.length > 30) {
         return 'Username must be between 3 and 30 characters.';
@@ -45,12 +52,36 @@ function validateAccountFields(data) {
         return 'Username is reserved.';
     }
 
+    if (!firstName) {
+        return 'First name is required.';
+    }
+
     if (!DISPLAY_NAME_PATTERN.test(firstName)) {
         return 'First name may only contain letters, spaces, apostrophes, periods, or hyphens.';
     }
 
+    if (!lastName) {
+        return 'Last name is required.';
+    }
+
     if (!DISPLAY_NAME_PATTERN.test(lastName)) {
         return 'Last name may only contain letters, spaces, apostrophes, periods, or hyphens.';
+    }
+
+    if (!email) {
+        return 'Email is required.';
+    }
+
+    if (!EMAIL_PATTERN.test(email)) {
+        return 'Enter a valid email address.';
+    }
+
+    if (!password) {
+        return 'Password is required.';
+    }
+
+    if (password.length < 8) {
+        return 'Password must be at least 8 characters.';
     }
 
     return '';
@@ -166,7 +197,12 @@ export function RegisterPage() {
                             </p>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
+                        <form
+                            onSubmit={handleSubmit}
+                            onInvalid={(event) => event.preventDefault()}
+                            className="space-y-5"
+                            noValidate
+                        >
                             <div className="space-y-2">
                                 <label
                                     htmlFor="username"
@@ -181,8 +217,7 @@ export function RegisterPage() {
                                     type="text"
                                     value={formData.username}
                                     onChange={handleChange}
-                                    required
-                                    minLength={3}
+                                    aria-required="true"
                                     maxLength={30}
                                     autoComplete="username"
                                     placeholder="howlyuser"
@@ -205,7 +240,7 @@ export function RegisterPage() {
                                         type="text"
                                         value={formData.firstName}
                                         onChange={handleChange}
-                                        required
+                                        aria-required="true"
                                         maxLength={50}
                                         autoComplete="given-name"
                                         placeholder="Alex"
@@ -227,7 +262,7 @@ export function RegisterPage() {
                                         type="text"
                                         value={formData.lastName}
                                         onChange={handleChange}
-                                        required
+                                        aria-required="true"
                                         maxLength={50}
                                         autoComplete="family-name"
                                         placeholder="Wolf"
@@ -247,10 +282,11 @@ export function RegisterPage() {
                                 <input
                                     id="email"
                                     name="email"
-                                    type="email"
+                                    type="text"
+                                    inputMode="email"
                                     value={formData.email}
                                     onChange={handleChange}
-                                    required
+                                    aria-required="true"
                                     autoComplete="email"
                                     placeholder="you@example.com"
                                     className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
@@ -271,8 +307,7 @@ export function RegisterPage() {
                                     type="password"
                                     value={formData.password}
                                     onChange={handleChange}
-                                    required
-                                    minLength={8}
+                                    aria-required="true"
                                     autoComplete="new-password"
                                     placeholder="At least 8 characters"
                                     className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
@@ -280,9 +315,13 @@ export function RegisterPage() {
                             </div>
 
                             {error && (
-                                <p className="rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
-                                    {error}
-                                </p>
+                                <div
+                                    role="alert"
+                                    className="flex items-start gap-3 rounded-xl border border-theme-danger/35 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger shadow-sm shadow-black/10"
+                                >
+                                    <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                                    <p>{error}</p>
+                                </div>
                             )}
 
                             <Button

@@ -115,7 +115,12 @@ export function ResetPasswordPage() {
                             </p>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
+                        <form
+                            onSubmit={handleSubmit}
+                            onInvalid={(event) => event.preventDefault()}
+                            className="space-y-5"
+                            noValidate
+                        >
                             <div className="space-y-2">
                                 <label
                                     htmlFor="password"
@@ -130,8 +135,7 @@ export function ResetPasswordPage() {
                                     type="password"
                                     value={password}
                                     onChange={(event) => setPassword(event.target.value)}
-                                    required
-                                    minLength={8}
+                                    aria-required="true"
                                     autoComplete="new-password"
                                     placeholder="At least 8 characters"
                                     className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
@@ -154,8 +158,7 @@ export function ResetPasswordPage() {
                                     onChange={(event) =>
                                         setConfirmPassword(event.target.value)
                                     }
-                                    required
-                                    minLength={8}
+                                    aria-required="true"
                                     autoComplete="new-password"
                                     placeholder="Repeat password"
                                     className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"

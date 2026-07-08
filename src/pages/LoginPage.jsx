@@ -60,6 +60,17 @@ export function LoginPage() {
 
         setError('');
         setMessage('');
+
+        if (!formData.identifier.trim()) {
+            setError('Email or username is required.');
+            return;
+        }
+
+        if (!formData.password) {
+            setError('Password is required.');
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
@@ -156,7 +167,12 @@ export function LoginPage() {
                             </p>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
+                        <form
+                            onSubmit={handleSubmit}
+                            onInvalid={(event) => event.preventDefault()}
+                            className="space-y-5"
+                            noValidate
+                        >
                             <div className="space-y-2">
                                 <label
                                     htmlFor="identifier"
@@ -171,7 +187,7 @@ export function LoginPage() {
                                     type="text"
                                     value={formData.identifier}
                                     onChange={handleChange}
-                                    required
+                                    aria-required="true"
                                     autoComplete="username"
                                     placeholder="you@example.com or username"
                                     className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
@@ -207,7 +223,7 @@ export function LoginPage() {
                                     type="password"
                                     value={formData.password}
                                     onChange={handleChange}
-                                    required
+                                    aria-required="true"
                                     autoComplete="current-password"
                                     placeholder="Enter your password"
                                     className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
