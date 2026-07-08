@@ -315,6 +315,126 @@ test('GET /api/challenges rejects invalid sort values', async () => {
     assert.match(response.body.message, /sort must be one of/);
 });
 
+test('GET /api/challenges?scope=public&categoryKey=movement returns only movement challenges', async () => {
+    const creator = await buildUser({ username: 'creator', email: 'creator@example.com' });
+    const viewer = await buildUser({ username: 'viewer', email: 'viewer@example.com' });
+
+    await createChallengeViaApi(creator, {
+        title: 'Read Daily',
+        habitTitle: 'Read',
+        taxonomy: {
+            categoryKey: 'learning',
+            subcategoryKey: 'reading',
+            canonicalHabitKey: 'read',
+            score: 0.9,
+            assignedAt: new Date(),
+        },
+    });
+    await createChallengeViaApi(creator, {
+        title: 'Run Club',
+        habitTitle: 'Run',
+        taxonomy: {
+            categoryKey: 'movement',
+            subcategoryKey: 'cardio',
+            canonicalHabitKey: 'run',
+            score: 0.9,
+            assignedAt: new Date(),
+        },
+    });
+
+    const response = await request(app)
+        .get('/api/challenges?scope=public&categoryKey=movement')
+        .set('Authorization', authHeader(viewer))
+        .expect(200);
+
+    assert.equal(response.body.length, 1);
+    assert.equal(response.body[0].title, 'Run Club');
+    assert.equal(response.body[0].taxonomy.categoryKey, 'movement');
+});
+
+test('GET /api/challenges?scope=public&categoryKey=movement keeps recommended ordering within category', async () => {
+    const creator = await buildUser({ username: 'creator2', email: 'creator2@example.com' });
+    const viewer = await buildUser({ username: 'viewer2', email: 'viewer2@example.com' });
+    const runHabit = await createPersonalHabit(viewer._id);
+
+    const completedAt = new Date();
+    await HabitCheckIn.create({
+        user: viewer._id,
+        habit: runHabit._id,
+        completedAt,
+        periodKey: periodKeyForDate(completedAt),
+        categoryKey: 'movement',
+        canonicalHabitKey: 'run',
+    });
+
+    await createChallengeViaApi(creator, {
+        title: 'Walk Daily',
+        habitTitle: 'Walk',
+        taxonomy: {
+            categoryKey: 'movement',
+            subcategoryKey: 'cardio',
+            canonicalHabitKey: 'walk',
+            score: 0.9,
+            assignedAt: new Date(),
+        },
+    });
+    await createChallengeViaApi(creator, {
+        title: 'Run Club',
+        habitTitle: 'Run',
+        taxonomy: {
+            categoryKey: 'movement',
+            subcategoryKey: 'cardio',
+            canonicalHabitKey: 'run',
+            score: 0.9,
+            assignedAt: new Date(),
+        },
+    });
+
+    const response = await request(app)
+        .get('/api/challenges?scope=public&categoryKey=movement')
+        .set('Authorization', authHeader(viewer))
+        .expect(200);
+
+    assert.equal(response.body.length, 2);
+    assert.equal(response.body[0].title, 'Run Club');
+    assert.match(response.body[0].recommendationReason, /Because you track run/i);
+});
+
+test('GET /api/challenges rejects invalid categoryKey values', async () => {
+    const user = await buildUser();
+
+    const response = await request(app)
+        .get('/api/challenges?scope=public&categoryKey=invalid-category')
+        .set('Authorization', authHeader(user))
+        .expect(400);
+
+    assert.match(response.body.message, /categoryKey must be a valid taxonomy category/);
+});
+
+test('GET /api/challenges?scope=public&categoryKey=nutrition returns empty array when no matches', async () => {
+    const creator = await buildUser({ username: 'creator3', email: 'creator3@example.com' });
+    const viewer = await buildUser({ username: 'viewer3', email: 'viewer3@example.com' });
+
+    await createChallengeViaApi(creator, {
+        title: 'Run Club',
+        habitTitle: 'Run',
+        taxonomy: {
+            categoryKey: 'movement',
+            subcategoryKey: 'cardio',
+            canonicalHabitKey: 'run',
+            score: 0.9,
+            assignedAt: new Date(),
+        },
+    });
+
+    const response = await request(app)
+        .get('/api/challenges?scope=public&categoryKey=nutrition')
+        .set('Authorization', authHeader(viewer))
+        .expect(200);
+
+    assert.deepEqual(response.body, []);
+});
+
 test('challenge habits are excluded from recommendation profile', async () => {
     const user = await buildUser();
     await Habit.create({

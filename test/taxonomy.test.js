@@ -1,72 +1,82 @@
-import test from 'node:test';
+import test, { after, afterEach, before } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-    buildCanonicalEmbedText,
-    buildEmbedText,
-    cosineSimilarity,
-    findNearestCanonical,
-} from '../src/features/taxonomy/taxonomy.service.js';
+import request from 'supertest';
+import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import createApp from '../src/app.js';
+import connectDB from '../src/config/database.js';
+import { signAccessToken } from '../src/features/auth/auth.service.js';
+import User from '../src/features/users/user.model.js';
+import { getTaxonomyCategories } from '../src/features/taxonomy/taxonomyCategories.js';
 
-const SAMPLE_STORE = [
-    {
-        key: 'run',
-        categoryKey: 'movement',
-        subcategoryKey: 'cardio',
-        categoryLabel: 'Movement',
-        embedding: [1, 0, 0],
-    },
-    {
-        key: 'read',
-        categoryKey: 'learning',
-        subcategoryKey: 'reading',
-        categoryLabel: 'Learning',
-        embedding: [0, 1, 0],
-    },
-];
+let mongo;
+let app;
 
-test('cosineSimilarity returns 1 for identical vectors', () => {
-    const vector = [1, 2, 3];
-    assert.equal(cosineSimilarity(vector, vector), 1);
-});
+async function buildUser(overrides = {}) {
+    const suffix = Math.random().toString(36).slice(2, 10);
 
-test('cosineSimilarity returns 0 for orthogonal vectors', () => {
-    assert.equal(cosineSimilarity([1, 0], [0, 1]), 0);
-});
-
-test('buildEmbedText joins title and description', () => {
-    assert.equal(
-        buildEmbedText({ title: 'Morning Run', description: 'Before breakfast' }),
-        'Morning Run. Before breakfast',
-    );
-});
-
-test('buildCanonicalEmbedText includes aliases', () => {
-    const text = buildCanonicalEmbedText({
-        label: 'Run',
-        description: 'Go running',
-        aliases: ['jog', 'morning run'],
+    return User.create({
+        username: overrides.username || `tax_user_${suffix}`,
+        email: overrides.email || `tax_user_${suffix}@example.com`,
+        firstName: overrides.firstName || 'Tax',
+        lastName: overrides.lastName || 'User',
+        passwordHash: overrides.passwordHash || 'hashed',
+        authProvider: overrides.authProvider || 'local',
+        ...overrides,
     });
-    assert.match(text, /Run/);
-    assert.match(text, /jog/);
+}
+
+function authHeader(user) {
+    return `Bearer ${signAccessToken(user)}`;
+}
+
+before(async () => {
+    process.env.JWT_SECRET = 'test-secret';
+    mongo = await MongoMemoryServer.create();
+    await connectDB(mongo.getUri());
+    app = createApp();
 });
 
-test('findNearestCanonical picks nearest canonical habit', () => {
-    const result = findNearestCanonical([0.99, 0.01, 0], SAMPLE_STORE, 0.50);
-    assert.equal(result.canonicalHabitKey, 'run');
-    assert.equal(result.categoryKey, 'movement');
-    assert.equal(result.categoryLabel, 'Movement');
-    assert.ok(result.score >= 0.50);
+afterEach(async () => {
+    await User.deleteMany({});
 });
 
-test('findNearestCanonical rejects low-confidence matches', () => {
-    const result = findNearestCanonical([0, 1, 0], [
-        {
-            key: 'run',
-            categoryKey: 'movement',
-            subcategoryKey: 'cardio',
-            categoryLabel: 'Movement',
-            embedding: [1, 0, 0],
-        },
-    ], 0.50);
-    assert.equal(result, null);
+after(async () => {
+    await mongoose.disconnect();
+
+    if (mongo) {
+        await mongo.stop();
+    }
+});
+
+test('getTaxonomyCategories returns active categories sorted by sortOrder', () => {
+    const categories = getTaxonomyCategories();
+
+    assert.ok(categories.length >= 10);
+    assert.equal(categories[0].key, 'movement');
+    assert.equal(categories[0].label, 'Movement');
+    assert.ok(categories.every((category) => category.key && category.label && Number.isInteger(category.sortOrder)));
+
+    for (let index = 1; index < categories.length; index += 1) {
+        assert.ok(categories[index - 1].sortOrder <= categories[index].sortOrder);
+    }
+});
+
+test('GET /api/taxonomy/categories returns active categories', async () => {
+    const user = await buildUser();
+
+    const response = await request(app)
+        .get('/api/taxonomy/categories')
+        .set('Authorization', authHeader(user))
+        .expect(200);
+
+    assert.ok(Array.isArray(response.body.data));
+    assert.equal(response.body.data[0].key, 'movement');
+    assert.equal(response.body.data.some((category) => category.key === 'nutrition'), true);
+});
+
+test('GET /api/taxonomy/categories requires authentication', async () => {
+    await request(app)
+        .get('/api/taxonomy/categories')
+        .expect(401);
 });

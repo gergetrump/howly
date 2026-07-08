@@ -1,7 +1,7 @@
 import HabitCheckIn from '../analytics/habitCheckIn.model.js';
 import CanonicalHabit from '../taxonomy/canonicalHabit.model.js';
 import { buildPeriod, endOfDay, startOfDay } from '../analytics/analytics.service.js';
-import { computeCompletionStanding } from './communityCompletionBenchmark.service.js';
+import { computeCompletionStanding } from './trendsCompletionBenchmark.service.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -244,7 +244,7 @@ function normalizePeriodKey(periodKey) {
     return 'week';
 }
 
-function buildCommunityPeriod(periodKey) {
+function buildTrendsPeriod(periodKey) {
     const normalized = normalizePeriodKey(periodKey);
 
     if (normalized === '24h') {
@@ -263,7 +263,7 @@ function buildCommunityPeriod(periodKey) {
     return buildPeriod(normalized === 'month' ? 'month' : 'week');
 }
 
-function buildPreviousCommunityPeriod(periodKey) {
+function buildPreviousTrendsPeriod(periodKey) {
     const normalized = normalizePeriodKey(periodKey);
 
     if (normalized === '24h') {
@@ -279,7 +279,7 @@ function buildPreviousCommunityPeriod(periodKey) {
         };
     }
 
-    const current = buildCommunityPeriod(periodKey);
+    const current = buildTrendsPeriod(periodKey);
     const previousEnd = endOfDay(addDays(current.start, -1));
     const previousStart = startOfDay(addDays(current.start, -current.days));
 
@@ -302,9 +302,9 @@ function serializePeriod(period) {
     };
 }
 
-export async function getCommunityAnalytics({ period = 'week', userId } = {}) {
-    const selectedPeriod = buildCommunityPeriod(period);
-    const comparisonPeriod = buildPreviousCommunityPeriod(period);
+export async function getTrendsAnalytics({ period = 'week', userId } = {}) {
+    const selectedPeriod = buildTrendsPeriod(period);
+    const comparisonPeriod = buildPreviousTrendsPeriod(period);
 
     const [stats, previousStats, standing] = await Promise.all([
         computeRangeAnalytics(selectedPeriod.start, selectedPeriod.end),

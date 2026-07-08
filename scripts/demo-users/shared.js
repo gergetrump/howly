@@ -111,7 +111,7 @@ export function printSeedHelp(scriptName) {
 
 Options:
   --count=30              Number of demo users to create
-  --days=60               Days of check-in history (default 60 for community trend deltas)
+  --days=60               Days of check-in history (default 60 for trends deltas)
   --friends=8             Demo users to friend with --friend-user-id
   --friend-user-id=ID     Real user to connect with demo users (or DEMO_FRIEND_USER_ID env)
   --premium-rate=0.75     Share of demo users with Premium (default 0.75)

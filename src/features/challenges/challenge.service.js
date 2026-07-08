@@ -585,6 +585,10 @@ export async function listChallenges(filters = {}, user) {
         conditions.push({ visibility: 'public' });
     }
 
+    if (filters.categoryKey) {
+        conditions.push({ 'taxonomy.categoryKey': filters.categoryKey });
+    }
+
     if (filters.status) {
         conditions.push({ status: filters.status });
     }
