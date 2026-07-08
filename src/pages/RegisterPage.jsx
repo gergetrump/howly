@@ -11,6 +11,51 @@ import { appCardClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
 import { registerUser } from '@/services/authService';
 
+const USERNAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+const DISPLAY_NAME_PATTERN = /^[\p{L}\p{M}][\p{L}\p{M} .'-]*$/u;
+const RESERVED_USERNAMES = new Set([
+    'admin',
+    'administrator',
+    'api',
+    'howly',
+    'moderator',
+    'root',
+    'support',
+    'system',
+]);
+
+function normalizeInputText(value) {
+    return typeof value === 'string' ? value.normalize('NFKC').trim() : '';
+}
+
+function validateAccountFields(data) {
+    const username = normalizeInputText(data.username);
+    const firstName = normalizeInputText(data.firstName);
+    const lastName = normalizeInputText(data.lastName);
+
+    if (username.length < 3 || username.length > 30) {
+        return 'Username must be between 3 and 30 characters.';
+    }
+
+    if (!USERNAME_PATTERN.test(username)) {
+        return 'Username may only contain letters, numbers, underscores, or hyphens.';
+    }
+
+    if (RESERVED_USERNAMES.has(username.toLowerCase())) {
+        return 'Username is reserved.';
+    }
+
+    if (!DISPLAY_NAME_PATTERN.test(firstName)) {
+        return 'First name may only contain letters, spaces, apostrophes, periods, or hyphens.';
+    }
+
+    if (!DISPLAY_NAME_PATTERN.test(lastName)) {
+        return 'Last name may only contain letters, spaces, apostrophes, periods, or hyphens.';
+    }
+
+    return '';
+}
+
 export function RegisterPage() {
     const navigate = useNavigate();
 
@@ -41,7 +86,20 @@ export function RegisterPage() {
         setIsSubmitting(true);
 
         try {
-            const response = await registerUser(formData);
+            const validationError = validateAccountFields(formData);
+
+            if (validationError) {
+                setError(validationError);
+                return;
+            }
+
+            const response = await registerUser({
+                ...formData,
+                username: normalizeInputText(formData.username),
+                firstName: normalizeInputText(formData.firstName),
+                lastName: normalizeInputText(formData.lastName),
+                email: normalizeInputText(formData.email).toLowerCase(),
+            });
 
             navigate('/login', {
                 replace: true,
@@ -124,6 +182,8 @@ export function RegisterPage() {
                                     value={formData.username}
                                     onChange={handleChange}
                                     required
+                                    minLength={3}
+                                    maxLength={30}
                                     autoComplete="username"
                                     placeholder="howlyuser"
                                     className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
@@ -146,6 +206,7 @@ export function RegisterPage() {
                                         value={formData.firstName}
                                         onChange={handleChange}
                                         required
+                                        maxLength={50}
                                         autoComplete="given-name"
                                         placeholder="Alex"
                                         className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
@@ -167,6 +228,7 @@ export function RegisterPage() {
                                         value={formData.lastName}
                                         onChange={handleChange}
                                         required
+                                        maxLength={50}
                                         autoComplete="family-name"
                                         placeholder="Wolf"
                                         className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
