@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { DISPLAY_NAME_PATTERN, USERNAME_PATTERN } from '../../utils/accountInputValidation.js';
 
 const { Schema } = mongoose;
 
@@ -11,6 +12,7 @@ const userSchema = new Schema(
       trim: true,
       minlength: 3,
       maxlength: 30,
+      match: [USERNAME_PATTERN, "Username may only contain letters, numbers, underscores, or hyphens."],
     },
 
     email: {
@@ -47,12 +49,14 @@ const userSchema = new Schema(
       type: String,
       trim: true,
       maxlength: 50,
+      match: [DISPLAY_NAME_PATTERN, "First name may only contain letters, spaces, apostrophes, periods, or hyphens."],
       required: true,
     },
     lastName: {
       type: String,
       trim: true,
       maxlength: 50,
+      match: [DISPLAY_NAME_PATTERN, "Last name may only contain letters, spaces, apostrophes, periods, or hyphens."],
       required: true,
     },
     profilePictureUrl: {
@@ -198,4 +202,3 @@ userSchema.index(
 );
 
 export default mongoose.model('User', userSchema);
-
