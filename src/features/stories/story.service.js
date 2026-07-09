@@ -16,7 +16,7 @@ import { toPublicUser } from '../users/user.service.js';
 import { createNotification, deleteNotificationsByFilter } from '../notifications/notification.service.js';
 import User from '../users/user.model.js';
 import { toOffsetPage } from '../../utils/pagination.js';
-import { moderateCommentText } from '../moderation/moderation.service.js';
+import { moderateComment } from '../../moderation/moderation.service.js';
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 const DAY_IN_MS = 24 * HOUR_IN_MS;
@@ -491,7 +491,7 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
     finalParentId = parentComment.parentComment || parentComment._id;
   }
 
-  const moderation = moderateCommentText(content);
+  const moderation = await moderateComment(content);
   if (!moderation.allowed) {
     return { errorCode: moderation.errorCode };
   }
@@ -501,6 +501,10 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
     story: storyId,
     content,
     parentComment: finalParentId,
+    moderation: {
+      status: moderation.status,
+      checkedAt: moderation.checkedAt,
+    },
   });
 
   await Story.updateOne({ _id: storyId }, { $inc: { commentCount: 1 } });
