@@ -134,6 +134,17 @@ const storyCommentSchema = new Schema(
       trim: true,
       maxlength: 500,
     },
+    moderation: {
+      status: {
+        type: String,
+        enum: ['approved', 'flagged', 'skipped'],
+        default: 'skipped',
+      },
+      checkedAt: {
+        type: Date,
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,
