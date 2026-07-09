@@ -609,7 +609,7 @@ export function DashboardPage() {
                 <DailyProgressCard completed={completedCount} total={totalCount} />
             </PageSection>
 
-            <div className={isChatOpen ? 'flex flex-col items-center gap-4 px-4 md:flex-row md:items-start' : ''}>
+            <div className={isChatOpen ? 'flex flex-col items-center gap-4 px-4 md:flex-row md:items-center' : ''}>
                 <CompanionStage
                     type={companion?.type}
                     name={companion?.name}

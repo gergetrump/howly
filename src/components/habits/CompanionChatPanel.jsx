@@ -72,7 +72,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
     const bubble = phase === 'thinking' ? lines.thinking : phase === 'results' ? lines.results : lines.greeting;
 
     return (
-        <div className={cn('min-w-0 flex-1 rounded-2xl border border-theme-accent/20 bg-theme-surface/70 p-4 text-theme-text shadow-xl', className)}>
+        <div className={cn('min-w-0 flex-1 rounded-2xl border border-theme-accent/20 bg-theme-surface p-4 text-theme-text shadow-xl', className)}>
             <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-sm font-semibold text-theme-accent-soft">
                     <Sparkles size={15} aria-hidden="true" />
