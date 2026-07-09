@@ -116,8 +116,35 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
     async function handleSubmit(e) {
         e.preventDefault();
 
-        if (!name.trim() || !frequency) return;
-        if (frequency === 'Custom' && customDays.length === 0) return;
+        if (!name.trim()) {
+            setFormError('Habit name is required.');
+            return;
+        }
+
+        if (!unit) {
+            setFormError('Unit is required.');
+            return;
+        }
+
+        if (unit === 'Custom' && !customUnit.trim()) {
+            setFormError('Custom unit is required.');
+            return;
+        }
+
+        if (!frequency) {
+            setFormError('Frequency is required.');
+            return;
+        }
+
+        if (frequency === 'Custom' && customDays.length === 0) {
+            setFormError('Choose at least one specific day.');
+            return;
+        }
+
+        if (!target || Number(target) < 1) {
+            setFormError('Target must be at least 1.');
+            return;
+        }
 
         const finalUnit = unit === 'Custom' ? customUnit : unit;
 
@@ -175,13 +202,13 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                 <h2 className="mb-8 text-center text-2xl font-bold tracking-tight text-theme-text">
                     {editHabit ? 'Edit Habit' : 'Add Habit'}
                 </h2>
-                {formError ? (
-                    <p className="mb-4 rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
-                        {formError}
-                    </p>
-                ) : null}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form
+                    onSubmit={handleSubmit}
+                    onInvalid={(event) => event.preventDefault()}
+                    className="space-y-6"
+                    noValidate
+                >
                     <div className="flex gap-4">
                         <div className="space-y-2.5">
                             <Popover open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
@@ -244,7 +271,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="e.g. Drink Water, Morning Run, Read..."
-                                required
+                                aria-required="true"
                                 maxLength={100}
                                 className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text caret-theme-accent placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-theme-accent/20"
                             />
@@ -308,7 +335,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                                     value={customUnit}
                                     onChange={(e) => setCustomUnit(e.target.value)}
                                     placeholder="e.g. push-ups"
-                                    required={unit === 'Custom'}
+                                    aria-required="true"
                                     className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20"
                                 />
                             </div>
@@ -362,6 +389,12 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                             </div>
                         </div>
                     )}
+
+                    {formError ? (
+                        <p className="rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
+                            {formError}
+                        </p>
+                    ) : null}
 
                     <Button
                         type="submit"

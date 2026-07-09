@@ -1,7 +1,7 @@
 // src/pages/RegisterPage.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserPlus } from 'lucide-react';
+import { CircleAlert, Eye, EyeOff, UserPlus } from 'lucide-react';
 
 import howlyIcon from '@/assets/howly.png';
 import { Background } from '@/components/brand/background';
@@ -10,6 +10,82 @@ import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
 import { registerUser } from '@/services/authService';
+
+const USERNAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+const DISPLAY_NAME_PATTERN = /^[\p{L}\p{M}][\p{L}\p{M} .'-]*$/u;
+const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
+const RESERVED_USERNAMES = new Set([
+    'admin',
+    'administrator',
+    'api',
+    'howly',
+    'moderator',
+    'root',
+    'support',
+    'system',
+]);
+
+function normalizeInputText(value) {
+    return typeof value === 'string' ? value.normalize('NFKC').trim() : '';
+}
+
+function validateAccountFields(data) {
+    const username = normalizeInputText(data.username);
+    const email = normalizeInputText(data.email).toLowerCase();
+    const firstName = normalizeInputText(data.firstName);
+    const lastName = normalizeInputText(data.lastName);
+    const password = typeof data.password === 'string' ? data.password : '';
+
+    if (!username) {
+        return 'Username is required.';
+    }
+
+    if (username.length < 3 || username.length > 30) {
+        return 'Username must be between 3 and 30 characters.';
+    }
+
+    if (!USERNAME_PATTERN.test(username)) {
+        return 'Username may only contain letters, numbers, underscores, or hyphens.';
+    }
+
+    if (RESERVED_USERNAMES.has(username.toLowerCase())) {
+        return 'Username is reserved.';
+    }
+
+    if (!firstName) {
+        return 'First name is required.';
+    }
+
+    if (!DISPLAY_NAME_PATTERN.test(firstName)) {
+        return 'First name may only contain letters, spaces, apostrophes, periods, or hyphens.';
+    }
+
+    if (!lastName) {
+        return 'Last name is required.';
+    }
+
+    if (!DISPLAY_NAME_PATTERN.test(lastName)) {
+        return 'Last name may only contain letters, spaces, apostrophes, periods, or hyphens.';
+    }
+
+    if (!email) {
+        return 'Email is required.';
+    }
+
+    if (!EMAIL_PATTERN.test(email)) {
+        return 'Enter a valid email address.';
+    }
+
+    if (!password) {
+        return 'Password is required.';
+    }
+
+    if (password.length < 8) {
+        return 'Password must be at least 8 characters.';
+    }
+
+    return '';
+}
 
 export function RegisterPage() {
     const navigate = useNavigate();
@@ -24,6 +100,7 @@ export function RegisterPage() {
 
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     function handleChange(event) {
         const { name, value } = event.target;
@@ -41,7 +118,20 @@ export function RegisterPage() {
         setIsSubmitting(true);
 
         try {
-            const response = await registerUser(formData);
+            const validationError = validateAccountFields(formData);
+
+            if (validationError) {
+                setError(validationError);
+                return;
+            }
+
+            const response = await registerUser({
+                ...formData,
+                username: normalizeInputText(formData.username),
+                firstName: normalizeInputText(formData.firstName),
+                lastName: normalizeInputText(formData.lastName),
+                email: normalizeInputText(formData.email).toLowerCase(),
+            });
 
             navigate('/login', {
                 replace: true,
@@ -108,7 +198,12 @@ export function RegisterPage() {
                             </p>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
+                        <form
+                            onSubmit={handleSubmit}
+                            onInvalid={(event) => event.preventDefault()}
+                            className="space-y-5"
+                            noValidate
+                        >
                             <div className="space-y-2">
                                 <label
                                     htmlFor="username"
@@ -123,7 +218,8 @@ export function RegisterPage() {
                                     type="text"
                                     value={formData.username}
                                     onChange={handleChange}
-                                    required
+                                    aria-required="true"
+                                    maxLength={30}
                                     autoComplete="username"
                                     placeholder="howlyuser"
                                     className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
@@ -145,7 +241,8 @@ export function RegisterPage() {
                                         type="text"
                                         value={formData.firstName}
                                         onChange={handleChange}
-                                        required
+                                        aria-required="true"
+                                        maxLength={50}
                                         autoComplete="given-name"
                                         placeholder="Alex"
                                         className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
@@ -166,7 +263,8 @@ export function RegisterPage() {
                                         type="text"
                                         value={formData.lastName}
                                         onChange={handleChange}
-                                        required
+                                        aria-required="true"
+                                        maxLength={50}
                                         autoComplete="family-name"
                                         placeholder="Wolf"
                                         className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
@@ -185,10 +283,11 @@ export function RegisterPage() {
                                 <input
                                     id="email"
                                     name="email"
-                                    type="email"
+                                    type="text"
+                                    inputMode="email"
                                     value={formData.email}
                                     onChange={handleChange}
-                                    required
+                                    aria-required="true"
                                     autoComplete="email"
                                     placeholder="you@example.com"
                                     className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
@@ -203,24 +302,41 @@ export function RegisterPage() {
                                     Password
                                 </label>
 
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    required
-                                    minLength={8}
-                                    autoComplete="new-password"
-                                    placeholder="At least 8 characters"
-                                    className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
-                                />
+                                <div className="relative">
+                                    <input
+                                        id="password"
+                                        name="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        aria-required="true"
+                                        autoComplete="new-password"
+                                        placeholder="At least 8 characters"
+                                        className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 pr-12 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword((isVisible) => !isVisible)}
+                                        className="absolute right-3 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full text-theme-text-muted transition hover:bg-theme-text/10 hover:text-theme-text focus:outline-none focus:ring-2 focus:ring-howly-primary/40"
+                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="size-4" aria-hidden="true" />
+                                        ) : (
+                                            <Eye className="size-4" aria-hidden="true" />
+                                        )}
+                                    </button>
+                                </div>
                             </div>
 
                             {error && (
-                                <p className="rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
-                                    {error}
-                                </p>
+                                <div
+                                    role="alert"
+                                    className="flex items-start gap-3 rounded-xl border border-theme-danger/35 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger shadow-sm shadow-black/10"
+                                >
+                                    <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                                    <p>{error}</p>
+                                </div>
                             )}
 
                             <Button

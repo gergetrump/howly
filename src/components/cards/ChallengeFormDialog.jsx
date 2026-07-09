@@ -127,32 +127,63 @@ function buildChallengeForm(challenge) {
 export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting, challenge }) {
     const isEditing = Boolean(challenge);
     const [form, setForm] = useState(() => buildChallengeForm(challenge));
+    const [formError, setFormError] = useState('');
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
     const durationDays = calculateDurationDays(form.startsAt, form.endsAt);
     const maxEndDate = addDaysToDateInput(form.startsAt, MAX_CHALLENGE_DURATION_DAYS);
     const calculatedReward = Math.max(durationDays, 0) * COINS_PER_CHALLENGE_DAY;
     const finalHabitUnit = form.habitUnit === 'Custom' ? form.customHabitUnit : form.habitUnit;
-    const canSubmit = Boolean(
-        form.title.trim()
-            && form.habitTitle.trim()
-            && form.habitFrequency
-            && durationDays > 0
-            && durationDays <= MAX_CHALLENGE_DURATION_DAYS
-            && form.startsAt
-            && form.endsAt
-    );
-
     function updateField(field, value) {
+        setFormError('');
         setForm((currentForm) => ({
             ...currentForm,
             [field]: value,
         }));
     }
 
+    function validateForm() {
+        if (!form.title.trim()) {
+            return 'Challenge name is required.';
+        }
+
+        if (!form.habitTitle.trim()) {
+            return 'Habit name is required.';
+        }
+
+        if (!form.habitUnit) {
+            return 'Unit is required.';
+        }
+
+        if (form.habitUnit === 'Custom' && !form.customHabitUnit.trim()) {
+            return 'Custom unit is required.';
+        }
+
+        if (!form.startsAt) {
+            return 'Start date is required.';
+        }
+
+        if (!form.endsAt) {
+            return 'End date is required.';
+        }
+
+        if (durationDays <= 0) {
+            return 'End date must be after the start date.';
+        }
+
+        if (durationDays > MAX_CHALLENGE_DURATION_DAYS) {
+            return 'Challenges can run for a maximum of 3 months.';
+        }
+
+        return '';
+    }
+
     async function handleSubmit(event) {
         event.preventDefault();
 
-        if (!canSubmit) {
+        const validationError = validateForm();
+
+        if (validationError) {
+            setFormError(validationError);
             return;
         }
 
@@ -179,6 +210,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
     function handleOpenChange(nextOpen) {
         if (!nextOpen) {
             setForm(buildChallengeForm(challenge));
+            setFormError('');
             setIconPickerOpen(false);
         }
 
@@ -197,7 +229,12 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                     </DialogDescription>
                 </DialogHeader>
 
-                <form className="space-y-6" onSubmit={handleSubmit}>
+                <form
+                    className="space-y-6"
+                    onSubmit={handleSubmit}
+                    onInvalid={(event) => event.preventDefault()}
+                    noValidate
+                >
                     <div className="space-y-4">
                         <div className="space-y-2.5">
                             <Label htmlFor="challenge-title" className="text-sm font-medium text-theme-text">
@@ -207,7 +244,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 id="challenge-title"
                                 value={form.title}
                                 onChange={(event) => updateField('title', event.target.value)}
-                                required
+                                aria-required="true"
                                 maxLength={120}
                                 placeholder="e.g. 30 Day Reading Challenge"
                                 className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text caret-theme-accent placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-theme-accent/20"
@@ -316,7 +353,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                     value={form.habitTitle}
                                     onChange={(event) => updateField('habitTitle', event.target.value)}
                                     placeholder="e.g. Drink Water, Morning Run, Read..."
-                                    required
+                                    aria-required="true"
                                     maxLength={100}
                                     className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text caret-theme-accent placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-theme-accent/20"
                                 />
@@ -365,7 +402,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                         value={form.customHabitUnit}
                                         onChange={(event) => updateField('customHabitUnit', event.target.value)}
                                         placeholder="e.g. Push-Ups"
-                                        required
+                                        aria-required="true"
                                         maxLength={50}
                                         className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20"
                                     />
@@ -406,7 +443,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 type="date"
                                 value={form.startsAt}
                                 onChange={(event) => updateField('startsAt', event.target.value)}
-                                required
+                                aria-required="true"
                                 lang="en"
                                 className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20 [color-scheme:dark]"
                             />
@@ -423,7 +460,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                                 max={maxEndDate}
                                 value={form.endsAt}
                                 onChange={(event) => updateField('endsAt', event.target.value)}
-                                required
+                                aria-required="true"
                                 lang="en"
                                 title="Challenges can run for a maximum of 3 months."
                                 className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20 [color-scheme:dark]"
@@ -447,6 +484,11 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                             Challenges can run for a maximum of 3 months.
                         </p>
                     ) : null}
+                    {formError ? (
+                        <p className="rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
+                            {formError}
+                        </p>
+                    ) : null}
 
                     <div className="grid gap-3 sm:grid-cols-[auto_1fr]">
                         <Button
@@ -460,7 +502,7 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                         </Button>
                         <ActionButton
                             type="submit"
-                            disabled={!canSubmit || isSubmitting}
+                            disabled={isSubmitting}
                             className="h-12 rounded-2xl bg-gradient-to-r from-theme-accent to-theme-accent text-base font-semibold text-theme-on-accent shadow-lg shadow-theme-bg/25 transition-all hover:from-theme-accent-strong hover:to-theme-accent-strong hover:shadow-theme-bg/40"
                         >
                             {isSubmitting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Plus className="size-4" aria-hidden="true" />}

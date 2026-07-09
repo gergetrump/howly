@@ -3,6 +3,7 @@ import { BarChart3, CheckCircle2, Clock3, Loader2, Target, TrendingUp, Trophy } 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
+import { PremiumFeaturePreview } from '@/components/common';
 import { getChallengeAnalytics, getHabitAnalytics } from '@/services/analyticsService';
 import { useAuth } from '@/context/authContext';
 import {
@@ -23,6 +24,107 @@ const PERIOD_LABELS = {
 };
 
 const CURRENT_YEAR = new Date().getFullYear();
+
+const MOCK_HABIT_ANALYTICS = {
+    availableYears: [CURRENT_YEAR],
+    summary: {
+        completionRate: 84,
+        completed: 21,
+        expected: 25,
+        averageCompletionTime: { label: '8:20 AM' },
+        averageCompletionTimeComparison: {
+            earlierThanPercent: 68,
+            comparedUsers: 120,
+        },
+    },
+    dailyTotals: [
+        { date: 'preview-1', label: 'Mon', completed: 3, expected: 3 },
+        { date: 'preview-2', label: 'Tue', completed: 2, expected: 3 },
+        { date: 'preview-3', label: 'Wed', completed: 3, expected: 3 },
+        { date: 'preview-4', label: 'Thu', completed: 2, expected: 4 },
+        { date: 'preview-5', label: 'Fri', completed: 4, expected: 4 },
+        { date: 'preview-6', label: 'Sat', completed: 3, expected: 4 },
+        { date: 'preview-7', label: 'Sun', completed: 4, expected: 4 },
+    ],
+    monthlyTotals: [
+        { key: 'preview-jan', label: 'Jan', completed: 18, expected: 24, completionRate: 75 },
+        { key: 'preview-feb', label: 'Feb', completed: 20, expected: 24, completionRate: 83 },
+        { key: 'preview-mar', label: 'Mar', completed: 22, expected: 26, completionRate: 85 },
+        { key: 'preview-apr', label: 'Apr', completed: 19, expected: 24, completionRate: 79 },
+        { key: 'preview-may', label: 'May', completed: 24, expected: 26, completionRate: 92 },
+        { key: 'preview-jun', label: 'Jun', completed: 21, expected: 25, completionRate: 84 },
+        { key: 'preview-jul', label: 'Jul', completed: 23, expected: 26, completionRate: 88 },
+        { key: 'preview-aug', label: 'Aug', completed: 20, expected: 25, completionRate: 80 },
+        { key: 'preview-sep', label: 'Sep', completed: 22, expected: 25, completionRate: 88 },
+        { key: 'preview-oct', label: 'Oct', completed: 25, expected: 27, completionRate: 93 },
+        { key: 'preview-nov', label: 'Nov', completed: 21, expected: 26, completionRate: 81 },
+        { key: 'preview-dec', label: 'Dec', completed: 24, expected: 27, completionRate: 89 },
+    ],
+    habits: [
+        {
+            habit: { id: 'preview-run', title: 'Morning run', icon: '🏃' },
+            completed: 6,
+            expected: 7,
+            completionRate: 86,
+            averageCompletionTime: { label: '7:10 AM' },
+        },
+        {
+            habit: { id: 'preview-read', title: 'Read 20 pages', icon: '📚' },
+            completed: 5,
+            expected: 6,
+            completionRate: 83,
+            averageCompletionTime: { label: '9:30 PM' },
+        },
+        {
+            habit: { id: 'preview-water', title: 'Drink water', icon: '💧' },
+            completed: 7,
+            expected: 7,
+            completionRate: 100,
+            averageCompletionTime: { label: '10:00 AM' },
+        },
+    ],
+};
+
+const MOCK_CHALLENGE_ANALYTICS = {
+    availableYears: [CURRENT_YEAR],
+    summary: {
+        activeChallengeCount: 2,
+        completionRate: 78,
+        completed: 14,
+        expected: 18,
+        averageCompletionTime: { label: '6:45 PM' },
+        averageCompletionTimeComparison: {
+            earlierThanPercent: 55,
+            comparedUsers: 88,
+        },
+    },
+    challenges: [
+        {
+            challenge: { title: 'Move Every Day', durationDays: 30 },
+            habit: { title: 'Evening walk' },
+            completed: 6,
+            expected: 7,
+            completionRate: 86,
+            progressRate: 63,
+            averageCompletionTime: { label: '6:30 PM' },
+            participant: { id: 'preview-challenge-1', status: 'active', daysCompleted: 19 },
+            daily: MOCK_HABIT_ANALYTICS.dailyTotals,
+            monthly: MOCK_HABIT_ANALYTICS.monthlyTotals,
+        },
+        {
+            challenge: { title: 'Mindful Month', durationDays: 21 },
+            habit: { title: 'Meditate' },
+            completed: 5,
+            expected: 7,
+            completionRate: 71,
+            progressRate: 48,
+            averageCompletionTime: { label: '8:15 AM' },
+            participant: { id: 'preview-challenge-2', status: 'active', daysCompleted: 10 },
+            daily: MOCK_HABIT_ANALYTICS.dailyTotals,
+            monthly: MOCK_HABIT_ANALYTICS.monthlyTotals,
+        },
+    ],
+};
 
 function percent(value) {
     return value === null || value === undefined ? 'No data' : `${value}%`;
@@ -489,6 +591,7 @@ function ChallengePerformance({ challenges, period }) {
 }
 export function AnalyticsPage() {
     const { user } = useAuth();
+    const isPremiumUser = user?.isPremium === true || user?.role === 'admin';
     const [period, setPeriod] = useState('week');
     const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
     const [habitAnalytics, setHabitAnalytics] = useState(null);
@@ -498,6 +601,10 @@ export function AnalyticsPage() {
     const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
+        if (!isPremiumUser) {
+            return undefined;
+        }
+
         function refreshAnalytics() {
             setRefreshKey((currentKey) => currentKey + 1);
         }
@@ -517,25 +624,34 @@ export function AnalyticsPage() {
             window.removeEventListener('focus', refreshAnalytics);
             document.removeEventListener('visibilitychange', refreshWhenVisible);
         };
-    }, []);
+    }, [isPremiumUser]);
+
+    const displayHabitAnalytics = isPremiumUser ? habitAnalytics : MOCK_HABIT_ANALYTICS;
+    const displayChallengeAnalytics = isPremiumUser ? challengeAnalytics : MOCK_CHALLENGE_ANALYTICS;
+    const displayIsLoading = isPremiumUser ? isLoading : false;
+    const displayError = isPremiumUser ? error : '';
 
     const availableYears = useMemo(() => {
         const years = new Set([
             CURRENT_YEAR,
-            ...(habitAnalytics?.availableYears ?? []),
-            ...(challengeAnalytics?.availableYears ?? []),
+            ...(displayHabitAnalytics?.availableYears ?? []),
+            ...(displayChallengeAnalytics?.availableYears ?? []),
         ]);
 
         return [...years]
             .filter((year) => Number.isInteger(year) && year <= CURRENT_YEAR)
             .sort((left, right) => right - left);
-    }, [challengeAnalytics?.availableYears, habitAnalytics?.availableYears]);
+    }, [displayChallengeAnalytics?.availableYears, displayHabitAnalytics?.availableYears]);
 
     const activeYear = period === 'year' && availableYears.includes(selectedYear)
         ? selectedYear
         : availableYears[0] ?? CURRENT_YEAR;
 
     useEffect(() => {
+        if (!isPremiumUser) {
+            return undefined;
+        }
+
         let isMounted = true;
 
         async function loadAnalytics() {
@@ -571,24 +687,18 @@ export function AnalyticsPage() {
         return () => {
             isMounted = false;
         };
-    }, [activeYear, period, refreshKey]);
+    }, [activeYear, isPremiumUser, period, refreshKey]);
 
     const bestHabit = useMemo(() => (
-        habitAnalytics?.habits?.find((item) => item.completionRate !== null) ?? null
-    ), [habitAnalytics]);
+        displayHabitAnalytics?.habits?.find((item) => item.completionRate !== null) ?? null
+    ), [displayHabitAnalytics]);
 
     const bestChallenge = useMemo(() => (
-        challengeAnalytics?.challenges?.find((item) => item.completionRate !== null) ?? null
-    ), [challengeAnalytics]);
+        displayChallengeAnalytics?.challenges?.find((item) => item.completionRate !== null) ?? null
+    ), [displayChallengeAnalytics]);
 
-    return (
-        <Page theme="forest" contentClassName="max-w-[1400px]">
-            <Heading
-                title="Analytics"
-                subtitle="Understand when your habits stick and where they slip."
-                streakDays={user?.streak ?? 0}
-            />
-
+    const analyticsContent = (
+        <>
             <PageSection width="full" title={`${PERIOD_LABELS[period]} overview`}>
                 <Tabs value={period} onValueChange={setPeriod}>
                     <TabsList className={appTabsListFullWidthClassName}>
@@ -623,33 +733,33 @@ export function AnalyticsPage() {
                     </div>
                 ) : null}
 
-                {isLoading ? (
+                {displayIsLoading ? (
                     <div className="flex items-center gap-2 rounded-xl border border-theme-text/10 bg-theme-text/5 p-4 text-sm text-theme-text">
                         <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                         Loading analytics
                     </div>
                 ) : null}
 
-                {error ? (
+                {displayError ? (
                     <div className="rounded-xl border border-theme-danger/30 bg-theme-danger/10 p-4 text-sm text-theme-danger">
-                        {error}
+                        {displayError}
                     </div>
                 ) : null}
 
-                {!isLoading && habitAnalytics ? (
+                {!displayIsLoading && displayHabitAnalytics ? (
                     <>
                         <div className="grid gap-4 md:grid-cols-3">
                             <SummaryCard
                                 icon={CheckCircle2}
                                 label="Follow-through"
-                                value={percent(habitAnalytics.summary.completionRate)}
-                                helper={`${habitAnalytics.summary.completed}/${habitAnalytics.summary.expected} scheduled habits`}
+                                value={percent(displayHabitAnalytics.summary.completionRate)}
+                                helper={`${displayHabitAnalytics.summary.completed}/${displayHabitAnalytics.summary.expected} scheduled habits`}
                             />
                             <SummaryCard
                                 icon={Clock3}
                                 label="Average time"
-                                value={habitAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
-                                helper={averageTimePeerHelper(habitAnalytics.summary, 'Across all completed habits')}
+                                value={displayHabitAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
+                                helper={averageTimePeerHelper(displayHabitAnalytics.summary, 'Across all completed habits')}
                             />
                             <SummaryCard
                                 icon={TrendingUp}
@@ -659,48 +769,70 @@ export function AnalyticsPage() {
                             />
                         </div>
                         {period === 'year' ? (
-                            <MonthlyCompletionChart monthlyTotals={habitAnalytics.monthlyTotals ?? []} />
+                            <MonthlyCompletionChart monthlyTotals={displayHabitAnalytics.monthlyTotals ?? []} />
                         ) : (
-                            <TimelineChart dailyTotals={habitAnalytics.dailyTotals ?? []} />
+                            <TimelineChart dailyTotals={displayHabitAnalytics.dailyTotals ?? []} />
                         )}
-                        <HabitPerformance habits={habitAnalytics.habits ?? []} />
+                        <HabitPerformance habits={displayHabitAnalytics.habits ?? []} />
                     </>
                 ) : null}
             </PageSection>
 
             <PageSection width="full" title="Challenge analytics">
-                {!isLoading && challengeAnalytics ? (
+                {!displayIsLoading && displayChallengeAnalytics ? (
                     <>
                         <div className="grid gap-4 md:grid-cols-3">
                             <SummaryCard
                                 icon={Trophy}
                                 label="Active challenges"
-                                value={challengeAnalytics.summary.activeChallengeCount}
-                                helper={`${challengeAnalytics.challenges?.length ?? 0} total challenge participations`}
+                                value={displayChallengeAnalytics.summary.activeChallengeCount}
+                                helper={`${displayChallengeAnalytics.challenges?.length ?? 0} total challenge participations`}
                             />
                             <SummaryCard
                                 icon={Target}
                                 label="Challenge follow-through"
-                                value={percent(challengeAnalytics.summary.completionRate)}
-                                helper={`${challengeAnalytics.summary.completed}/${challengeAnalytics.summary.expected} expected challenge days`}
+                                value={percent(displayChallengeAnalytics.summary.completionRate)}
+                                helper={`${displayChallengeAnalytics.summary.completed}/${displayChallengeAnalytics.summary.expected} expected challenge days`}
                             />
                             <SummaryCard
                                 icon={Clock3}
                                 label="Average time"
-                                value={challengeAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
+                                value={displayChallengeAnalytics.summary.averageCompletionTime?.label ?? 'No data'}
                                 helper={averageTimePeerHelper(
-                                    challengeAnalytics.summary,
+                                    displayChallengeAnalytics.summary,
                                     bestChallenge ? `Best: ${bestChallenge.challenge.title}` : 'Complete challenges to compare',
                                 )}
                             />
                         </div>
                         <ChallengePerformance
-                            challenges={challengeAnalytics.challenges ?? []}
+                            challenges={displayChallengeAnalytics.challenges ?? []}
                             period={period}
                         />
                     </>
                 ) : null}
             </PageSection>
+        </>
+    );
+
+    return (
+        <Page theme="forest" contentClassName="max-w-[1400px]">
+            <Heading
+                title="Analytics"
+                subtitle="Understand when your habits stick and where they slip."
+                streakDays={user?.streak ?? 0}
+            />
+
+            {isPremiumUser ? (
+                analyticsContent
+            ) : (
+                <PremiumFeaturePreview
+                    title="Unlock Analytics"
+                    description="Analytics shows your habit completion, completion times, and challenge progress. Upgrade to Premium to use these insights."
+                    returnTo="/analytics"
+                >
+                    {analyticsContent}
+                </PremiumFeaturePreview>
+            )}
         </Page>
     );
 }

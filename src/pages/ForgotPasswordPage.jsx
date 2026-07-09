@@ -10,6 +10,8 @@ import { appCardClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
 import { forgotPassword } from '@/services/authService';
 
+const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
+
 export function ForgotPasswordPage() {
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
@@ -21,10 +23,23 @@ export function ForgotPasswordPage() {
 
         setMessage('');
         setError('');
+
+        const trimmedEmail = email.trim().toLowerCase();
+
+        if (!trimmedEmail) {
+            setError('Email is required.');
+            return;
+        }
+
+        if (!EMAIL_PATTERN.test(trimmedEmail)) {
+            setError('Enter a valid email address.');
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
-            const response = await forgotPassword(email);
+            const response = await forgotPassword(trimmedEmail);
 
             setMessage(
                 response.message ||
@@ -86,7 +101,12 @@ export function ForgotPasswordPage() {
                             </p>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
+                        <form
+                            onSubmit={handleSubmit}
+                            onInvalid={(event) => event.preventDefault()}
+                            className="space-y-5"
+                            noValidate
+                        >
                             <div className="space-y-2">
                                 <label
                                     htmlFor="email"
@@ -98,10 +118,11 @@ export function ForgotPasswordPage() {
                                 <input
                                     id="email"
                                     name="email"
-                                    type="email"
+                                    type="text"
+                                    inputMode="email"
                                     value={email}
                                     onChange={(event) => setEmail(event.target.value)}
-                                    required
+                                    aria-required="true"
                                     autoComplete="email"
                                     placeholder="you@example.com"
                                     className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
