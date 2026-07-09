@@ -1,4 +1,5 @@
 import config from '../../config.js';
+import { moderateCommentText, COMMENT_MODERATION_BLOCKED } from '../features/moderation/moderation.service.js';
 
 const OPENAI_MODERATION_URL = 'https://api.openai.com/v1/moderations';
 
@@ -47,4 +48,24 @@ export async function moderateText(text) {
         console.error('Moderation request errored:', error.message);
         return { flagged: false, categories: {}, checked: false };
     }
+}
+
+export async function moderateComment(content) {
+    const local = moderateCommentText(content);
+
+    if (!local.allowed) {
+        return { allowed: false, errorCode: COMMENT_MODERATION_BLOCKED, reason: local.reason };
+    }
+
+    const ai = await moderateText(content);
+
+    if (ai.flagged) {
+        return { allowed: false, errorCode: COMMENT_MODERATION_BLOCKED, reason: 'ai_flagged' };
+    }
+
+    return {
+        allowed: true,
+        status: ai.checked ? 'approved' : 'skipped',
+        checkedAt: ai.checked ? new Date() : null,
+    };
 }
