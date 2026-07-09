@@ -26,8 +26,19 @@ import { logoutUser } from '@/services/authService';
 import {
     uploadCurrentUserProfilePicture,
     deleteCurrentUserProfilePicture,
+    deleteCurrentUser,
     updateCurrentUser,
 } from '@/services/userService';
+import {
+    ConfirmationDialog,
+    ConfirmationDialogAction,
+    ConfirmationDialogCancel,
+    ConfirmationDialogContent,
+    ConfirmationDialogDescription,
+    ConfirmationDialogFooter,
+    ConfirmationDialogHeader,
+    ConfirmationDialogTitle,
+} from '@/components/ui/confirmation-dialog';
 import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
 import { NotificationMuteDialog } from '@/components/social/NotificationMuteDialog.jsx';
 import { useAuth } from '@/context/authContext';
@@ -210,6 +221,11 @@ export function ProfilePage() {
     const [feedbackSuccess, setFeedbackSuccess] = useState('');
     const [isMuteDialogOpen, setIsMuteDialogOpen] = useState(false);
     const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+    const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+    const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
+    const [hasConfirmedAccountDeletion, setHasConfirmedAccountDeletion] = useState(false);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+    const [deleteAccountError, setDeleteAccountError] = useState('');
 
     function handleUpgradeToPremium() {
         navigate('/premium', {
@@ -229,6 +245,25 @@ export function ProfilePage() {
             localStorage.removeItem('howly_token');
             setUser(null);
             navigate('/login');
+        }
+    }
+
+    async function handleDeleteAccount() {
+        if (!hasConfirmedAccountDeletion || isDeletingAccount) {
+            return;
+        }
+
+        try {
+            setDeleteAccountError('');
+            setIsDeletingAccount(true);
+            await deleteCurrentUser();
+            localStorage.removeItem('howly_token');
+            setUser(null);
+            navigate('/login');
+        } catch (error) {
+            setDeleteAccountError(error.message || 'Could not delete your account.');
+        } finally {
+            setIsDeletingAccount(false);
         }
     }
 
@@ -517,13 +552,26 @@ export function ProfilePage() {
             </PageSection>
 
             <PageSection title="Session">
-                <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="w-full rounded-2xl bg-theme-danger/90 px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-theme-danger"
-                >
-                    Log out
-                </button>
+                <div className="space-y-3">
+                    <button
+                        type="button"
+                        onClick={() => setIsLogoutDialogOpen(true)}
+                        className="w-full rounded-2xl bg-theme-danger px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-theme-danger/90"
+                    >
+                        Log out
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setDeleteAccountError('');
+                            setHasConfirmedAccountDeletion(false);
+                            setIsDeleteAccountDialogOpen(true);
+                        }}
+                        className="w-full rounded-2xl bg-theme-danger px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-theme-danger/90"
+                    >
+                        Delete account
+                    </button>
+                </div>
             </PageSection>
 
             <BlockedUsersDialog
@@ -549,6 +597,90 @@ export function ProfilePage() {
                 open={isMuteDialogOpen}
                 onOpenChange={setIsMuteDialogOpen}
             />
+
+            <ConfirmationDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+                <ConfirmationDialogContent className="border-theme-text/10 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
+                    <ConfirmationDialogHeader className="space-y-4 text-center">
+                        <ConfirmationDialogTitle className="text-center text-2xl font-bold tracking-tight">
+                            Log out?
+                        </ConfirmationDialogTitle>
+                        <ConfirmationDialogDescription className="text-base text-theme-text-soft">
+                            Are you sure you want to log out of Howly?
+                        </ConfirmationDialogDescription>
+                    </ConfirmationDialogHeader>
+                    <ConfirmationDialogFooter className="mt-4 gap-3 sm:justify-center">
+                        <ConfirmationDialogCancel className="h-12 rounded-xl border-theme-text/20 bg-theme-text/10 px-6 text-theme-text hover:bg-theme-text/20 hover:text-theme-text">
+                            Stay logged in
+                        </ConfirmationDialogCancel>
+                        <ConfirmationDialogAction
+                            className="h-12 rounded-xl bg-theme-danger px-6 font-semibold text-white hover:bg-theme-danger/90"
+                            onClick={handleLogout}
+                        >
+                            Log out
+                        </ConfirmationDialogAction>
+                    </ConfirmationDialogFooter>
+                </ConfirmationDialogContent>
+            </ConfirmationDialog>
+
+            <ConfirmationDialog
+                open={isDeleteAccountDialogOpen}
+                onOpenChange={(nextOpen) => {
+                    setIsDeleteAccountDialogOpen(nextOpen);
+
+                    if (!nextOpen) {
+                        setHasConfirmedAccountDeletion(false);
+                        setDeleteAccountError('');
+                    }
+                }}
+            >
+                <ConfirmationDialogContent className="border-theme-text/10 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
+                    <ConfirmationDialogHeader className="space-y-4 text-center">
+                        <ConfirmationDialogTitle className="text-center text-2xl font-bold tracking-tight">
+                            Delete account?
+                        </ConfirmationDialogTitle>
+                        <ConfirmationDialogDescription className="text-base text-theme-text-soft">
+                            This will permanently delete your Howly account and remove access to your profile, habits, stories, challenges, progress, and items.
+                        </ConfirmationDialogDescription>
+                    </ConfirmationDialogHeader>
+
+                    <label className="mt-2 flex items-start gap-3 rounded-2xl border border-theme-danger/20 bg-theme-danger/10 p-4 text-left">
+                        <input
+                            type="checkbox"
+                            checked={hasConfirmedAccountDeletion}
+                            onChange={(event) => setHasConfirmedAccountDeletion(event.target.checked)}
+                            className="mt-0.5 size-4 rounded border-theme-danger/40 accent-[var(--color-theme-danger)]"
+                        />
+                        <span className="text-sm leading-5 text-theme-text-soft">
+                            I understand that deleting my account cannot be undone.
+                        </span>
+                    </label>
+
+                    {deleteAccountError ? (
+                        <p className="rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
+                            {deleteAccountError}
+                        </p>
+                    ) : null}
+
+                    <ConfirmationDialogFooter className="mt-4 gap-3 sm:justify-center">
+                        <ConfirmationDialogCancel
+                            className="h-12 rounded-xl border-theme-text/20 bg-theme-text/10 px-6 text-theme-text hover:bg-theme-text/20 hover:text-theme-text"
+                            disabled={isDeletingAccount}
+                        >
+                            Keep account
+                        </ConfirmationDialogCancel>
+                        <ConfirmationDialogAction
+                            className="h-12 rounded-xl bg-theme-danger/90 px-6 font-semibold text-white hover:bg-theme-danger disabled:pointer-events-none disabled:opacity-50"
+                            disabled={!hasConfirmedAccountDeletion || isDeletingAccount}
+                            onClick={(event) => {
+                                event.preventDefault();
+                                void handleDeleteAccount();
+                            }}
+                        >
+                            {isDeletingAccount ? 'Deleting...' : 'Delete account'}
+                        </ConfirmationDialogAction>
+                    </ConfirmationDialogFooter>
+                </ConfirmationDialogContent>
+            </ConfirmationDialog>
         </Page>
     );
 }
