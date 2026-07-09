@@ -40,6 +40,10 @@ const config = {
             embeddingModel: 'openai/text-embedding-3-small',
         },
     },
+    moderation: {
+        apiKey: 'REDACTED',
+        model: 'omni-moderation-latest',
+    },
     taxonomy: {
         minScore: 0.1,
     },
