@@ -78,7 +78,12 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                 setSuggestions(fallbackSuggestions());
                 setUsedFallback(true);
             }
-        } catch {
+        } catch (err) {
+            if (err.code === 'GOAL_MODERATION_BLOCKED') {
+                setError(err.message || 'Please rephrase your goal without harmful or inappropriate content.');
+                setPhase('input');
+                return;
+            }
             // AI unavailable / rate-limited — fall back to classic starter habits.
             setSuggestions(fallbackSuggestions());
             setUsedFallback(true);

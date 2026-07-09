@@ -47,7 +47,12 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                     ? list.map((habit, index) => ({ key: index, ...habit }))
                     : fallbackHabits(),
             );
-        } catch {
+        } catch (err) {
+            if (err.code === 'GOAL_MODERATION_BLOCKED') {
+                setError(err.message || 'Please rephrase your goal without harmful or inappropriate content.');
+                setPhase('input');
+                return;
+            }
             setGoal(input.trim());
             setHabits(fallbackHabits());
         }
