@@ -5,14 +5,15 @@ import {
     ChevronRight,
     Crown,
     EyeOff,
-    Flame,
     Info,
     MessageSquare,
     Target,
     Ban,
 } from 'lucide-react';
 
+import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
 import { Page, PageSection, Heading } from '@/components/layout';
+import { profileCompletedChallengeIconClassName } from '@/components/cards/cardStyles';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -338,7 +339,7 @@ export function ProfilePage() {
 
     const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Howly User'; const username = user?.username || 'unknown';
     const streak = user?.streak ?? 0;
-    const completed = user?.completedHabits ?? 0;
+    const completedChallenges = user?.completedChallenges ?? 0;
     const isPremium = user?.isPremium === true || user?.role === 'admin';
     return (
         <Page theme="forest">
@@ -414,18 +415,22 @@ export function ProfilePage() {
                 <div className="mt-6 flex items-center justify-center gap-10">
                     <div>
                         <div className="flex items-center justify-center gap-2 text-lg font-semibold text-theme-text">
-                            <Flame className="size-5 text-theme-gold" />
-                            <span>{streak}</span>
+                            <StreakBadge
+                                days={streak}
+                                showLabel={false}
+                                size="md"
+                                className="text-lg font-semibold text-theme-text [&>span:first-child]:text-lg"
+                            />
                         </div>
                         <p className="mt-1 text-sm text-theme-text-muted">Day Streak</p>
                     </div>
 
                     <div>
                         <div className="flex items-center justify-center gap-2 text-lg font-semibold text-theme-text">
-                            <Target className="size-5 text-theme-success" />
-                            <span>{completed}</span>
+                            <Target className={`size-5 ${profileCompletedChallengeIconClassName}`} />
+                            <span>{completedChallenges}</span>
                         </div>
-                        <p className="mt-1 text-sm text-theme-text-muted">Completed</p>
+                        <p className="mt-1 text-sm text-theme-text-muted">Challenges</p>
                     </div>
                 </div>
             </section>
