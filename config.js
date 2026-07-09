@@ -22,13 +22,13 @@ const config = {
         secretKey: 'REDACTED',
         webhook_secret: 'REDACTED'
     },
-    // OpenRouter (OpenAI-compatible aggregator, free tier) — used for AI habit suggestions.
+    // OpenRouter (OpenAI-compatible aggregator) — used for AI habit suggestions.
     ai: {
         openrouter: {
-            // Free key: https://openrouter.ai/keys
+            // Key: https://openrouter.ai/keys
             apiKey: 'REDACTED',
-            // Any free model from https://openrouter.ai/models?max_price=0
-            model: 'openai/gpt-oss-120b:free',
+            // Paid primary — uses account credit for reliable suggestions. Free models below are fallbacks.
+            model: 'openai/gpt-4o-mini',
             // Tried in order when the primary is rate-limited or unavailable.
             // Different providers, so an upstream throttle rarely hits all at once.
             fallbackModels: [
