@@ -8,7 +8,6 @@ import { PremiumUpgradeDialog } from '@/components/common';
 import { CompanionAvatar } from '@/components/brand';
 import { useAuth } from '@/context/authContext';
 import { suggestHabits, createHabitsFromTemplates } from '@/services/habitService';
-import { STARTER_HABITS } from '@/constants/starterHabits';
 import { getCompanionLines } from '@/constants/companionDialogue';
 import { cn } from '@/lib/utils';
 
@@ -16,14 +15,6 @@ import { cn } from '@/lib/utils';
 // before hitting the server; the server stays the source of truth.
 const FREE_MAX_HABITS = 9999;
 const PREMIUM_MAX_HABITS = 9999;
-
-function fallbackSuggestions() {
-    return STARTER_HABITS.slice(0, 3).map((habit) => ({
-        title: habit.title,
-        icon: habit.icon,
-        frequency: habit.frequency,
-    }));
-}
 
 export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingHabits = [] }) {
     const { user, companion } = useAuth();
@@ -38,7 +29,6 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
     const [goal, setGoal] = useState('');
     const [suggestions, setSuggestions] = useState([]);
     const [selected, setSelected] = useState([]); // indices into suggestions
-    const [usedFallback, setUsedFallback] = useState(false);
     const [error, setError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [premiumPrompt, setPremiumPrompt] = useState('');
@@ -53,7 +43,6 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
             setGoal('');
             setSuggestions([]);
             setSelected([]);
-            setUsedFallback(false);
             setError('');
             setIsSaving(false);
         }
@@ -70,27 +59,23 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
             const response = await suggestHabits(goal.trim());
             const list = response?.data?.suggestions ?? [];
 
-            if (list.length) {
-                setSuggestions(list);
-                setUsedFallback(false);
-            } else {
-                // AI worked but gave nothing usable — fall back so we never dead-end.
-                setSuggestions(fallbackSuggestions());
-                setUsedFallback(true);
-            }
-        } catch (err) {
-            if (err.code === 'GOAL_MODERATION_BLOCKED') {
-                setError(err.message || 'Please rephrase your goal without harmful or inappropriate content.');
+            if (!list.length) {
+                setError("Oops — I can't find any habits right now. Please ask me again in a moment.");
                 setPhase('input');
                 return;
             }
-            // AI unavailable / rate-limited — fall back to classic starter habits.
-            setSuggestions(fallbackSuggestions());
-            setUsedFallback(true);
-        }
 
-        setSelected([]);
-        setPhase('results');
+            setSuggestions(list);
+            setSelected([]);
+            setPhase('results');
+        } catch (err) {
+            if (err.code === 'GOAL_MODERATION_BLOCKED') {
+                setError(err.message || 'Please rephrase your goal without harmful or inappropriate content.');
+            } else {
+                setError("Oops — I can't find any habits right now. Please ask me again in a moment.");
+            }
+            setPhase('input');
+        }
     }
 
     function toggleSuggestion(index) {
@@ -139,7 +124,7 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
         phase === 'thinking'
             ? lines.thinking
             : phase === 'results'
-                ? (usedFallback ? lines.fallback : lines.results)
+                ? lines.results
                 : lines.greeting;
 
     return (

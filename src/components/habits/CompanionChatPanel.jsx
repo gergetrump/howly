@@ -3,20 +3,7 @@ import { Sparkles, X, Plus, Pencil, ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { suggestHabits, createHabitsFromTemplates } from '@/services/habitService';
-import { STARTER_HABITS } from '@/constants/starterHabits';
 import { getCompanionLines } from '@/constants/companionDialogue';
-
-// If the AI is unreachable or returns nothing usable, fall back to a few classic
-// starter habits so the panel never dead-ends.
-function fallbackHabits() {
-    return STARTER_HABITS.slice(0, 3).map((habit, index) => ({
-        key: index,
-        title: habit.title,
-        icon: habit.icon,
-        frequency: habit.frequency,
-        category: habit.category,
-    }));
-}
 
 // The companion "speaks" via this panel; the actual avatar sits to the left
 // (CompanionStage on the dashboard). Mounted fresh each time it opens, so no
@@ -41,23 +28,24 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
         try {
             const response = await suggestHabits(input.trim());
             const list = response?.data?.suggestions ?? [];
-            setGoal(response?.data?.goal || input.trim());
-            setHabits(
-                list.length
-                    ? list.map((habit, index) => ({ key: index, ...habit }))
-                    : fallbackHabits(),
-            );
-        } catch (err) {
-            if (err.code === 'GOAL_MODERATION_BLOCKED') {
-                setError(err.message || 'Please rephrase your goal without harmful or inappropriate content.');
+
+            if (!list.length) {
+                setError("Oops — I can't find any habits right now. Please ask me again in a moment.");
                 setPhase('input');
                 return;
             }
-            setGoal(input.trim());
-            setHabits(fallbackHabits());
-        }
 
-        setPhase('results');
+            setGoal(response?.data?.goal || input.trim());
+            setHabits(list.map((habit, index) => ({ key: index, ...habit })));
+            setPhase('results');
+        } catch (err) {
+            if (err.code === 'GOAL_MODERATION_BLOCKED') {
+                setError(err.message || 'Please rephrase your goal without harmful or inappropriate content.');
+            } else {
+                setError("Oops — I can't find any habits right now. Please ask me again in a moment.");
+            }
+            setPhase('input');
+        }
     }
 
     // Quick-add a suggestion as-is, then drop it from the list.
