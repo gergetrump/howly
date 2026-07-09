@@ -331,6 +331,7 @@ export async function createHabitsFromTemplates(userId, templates) {
 
     const docs = templates.map((t) => ({
         title: t.title,
+        description: typeof t.description === 'string' ? t.description.trim().slice(0, 1000) : '',
         icon: t.icon ?? '🎯',
         frequency: t.frequency,
         customDays: t.customDays || [],
