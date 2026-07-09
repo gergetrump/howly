@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { validateDisplayNameValue, validateUsernameValue } from '../../utils/accountInputValidation.js';
 
 // Lightweight validation helpers for user routes.
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
@@ -57,31 +58,28 @@ export function validateUpdateUserInput(body = {}) {
     const errors = [];
 
     if (body.firstName !== undefined) {
-        if (!isNonEmptyString(body.firstName)) {
-            errors.push('firstName must be a non-empty string');
-        } else if (body.firstName.trim().length > 50) {
-            errors.push('firstName must be 50 characters or less');
+        const result = validateDisplayNameValue(body.firstName, 'firstName');
+        if (result.error) {
+            errors.push(result.error);
         } else {
-            updates.firstName = body.firstName.trim();
+            updates.firstName = result.value;
         }
     }
 
     if (body.lastName !== undefined) {
-        if (!isNonEmptyString(body.lastName)) {
-            errors.push('lastName must be a non-empty string');
-        } else if (body.lastName.trim().length > 50) {
-            errors.push('lastName must be 50 characters or less');
+        const result = validateDisplayNameValue(body.lastName, 'lastName');
+        if (result.error) {
+            errors.push(result.error);
         } else {
-            updates.lastName = body.lastName.trim();
+            updates.lastName = result.value;
         }
     }
     if (body.username !== undefined) {
-        if (!isNonEmptyString(body.username)) {
-            errors.push('username must be a non-empty string');
-        } else if (body.username.trim().length < 3 || body.username.trim().length > 30) {
-            errors.push('username must be between 3 and 30 characters');
+        const result = validateUsernameValue(body.username);
+        if (result.error) {
+            errors.push(result.error);
         } else {
-            updates.username = body.username.trim();
+            updates.username = result.value;
         }
     }
 

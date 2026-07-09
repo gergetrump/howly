@@ -116,6 +116,23 @@ test('PATCH /api/users/me updates profile fields', async () => {
     assert.equal(updatedUser.email, 'updated@example.com');
 });
 
+test('PATCH /api/users/me rejects unsafe username and display name updates', async () => {
+    const user = await buildUser();
+    const token = signAccessToken(user);
+
+    await request(app)
+        .patch('/api/users/me')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ username: 'bad username' })
+        .expect(400);
+
+    await request(app)
+        .patch('/api/users/me')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ firstName: '<script>' })
+        .expect(400);
+});
+
 test('PATCH /api/users/me merges partial notification preference updates', async () => {
     const user = await buildUser({
         notificationPreferences: {

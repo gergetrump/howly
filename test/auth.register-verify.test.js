@@ -81,6 +81,47 @@ test('registering sends a pending account that requires email confirmation', asy
     assert.equal(usernameLoginResponse.body.user.email, 'new-user@example.com');
 });
 
+test('register endpoint rejects unsafe username and display name input', async () => {
+    await request(app)
+        .post('/api/auth/register')
+        .send({
+            username: '<script>',
+            email: 'unsafe@example.com',
+            firstName: 'Unsafe',
+            lastName: 'User',
+            password: 'password123',
+        })
+        .expect(400);
+
+    await request(app)
+        .post('/api/auth/register')
+        .send({
+            username: 'safe-user',
+            email: 'unsafe-name@example.com',
+            firstName: '<script>',
+            lastName: 'User',
+            password: 'password123',
+        })
+        .expect(400);
+});
+
+test('register endpoint accepts predictable username and display name characters', async () => {
+    const response = await request(app)
+        .post('/api/auth/register')
+        .send({
+            username: 'safe-user_123',
+            email: 'safe-user@example.com',
+            firstName: 'Anne Marie',
+            lastName: "O'Neill-Smith",
+            password: 'password123',
+        })
+        .expect(201);
+
+    assert.equal(response.body.user.username, 'safe-user_123');
+    assert.equal(response.body.user.firstName, 'Anne Marie');
+    assert.equal(response.body.user.lastName, "O'Neill-Smith");
+});
+
 test('browser verification requests receive an HTML confirmation page', async () => {
     const { verificationToken } = await registerLocalUser({
         username: 'browser-user',

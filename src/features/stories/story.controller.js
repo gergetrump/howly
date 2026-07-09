@@ -1,4 +1,5 @@
 import * as storyService from './story.service.js';
+import { COMMENT_MODERATION_BLOCKED } from '../moderation/moderation.service.js';
 import {
   validateCommentInput,
   validateCreateStoryInput,
@@ -180,6 +181,10 @@ export async function addStoryComment(req, res) {
 
   if (errorCode === 'PARENT_COMMENT_NOT_FOUND') {
     return badRequest(res, 'Parent comment not found');
+  }
+
+  if (errorCode === COMMENT_MODERATION_BLOCKED) {
+    return badRequest(res, 'Please keep comments respectful.', COMMENT_MODERATION_BLOCKED);
   }
 
   return res.status(201).json(comment);

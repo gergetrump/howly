@@ -76,6 +76,22 @@ function authHeader(user) {
   return `Bearer ${signAccessToken(user)}`;
 }
 
+async function expectCommentModerationBlocked({ owner, commenter, story, content }) {
+  const response = await request(app)
+    .post(`/api/stories/${story._id}/comments`)
+    .set('Authorization', authHeader(commenter))
+    .send({ content })
+    .expect(400);
+
+  assert.equal(response.body.code, 'COMMENT_MODERATION_BLOCKED');
+  assert.equal(response.body.message, 'Please keep comments respectful.');
+  assert.equal(await StoryComment.countDocuments({ story: story._id }), 0);
+  assert.equal(await Notification.countDocuments({ recipient: owner._id }), 0);
+
+  const updatedStory = await Story.findById(story._id).lean();
+  assert.equal(updatedStory.commentCount, 0);
+}
+
 // Start an isolated in-memory database for the stories test suite
 before(async () => {
   config.jwtSecret = 'test-secret';
@@ -421,6 +437,54 @@ test('stored story captions and comments are returned as JSON text, not HTML', a
 
   assert.match(commentsResponse.headers['content-type'], /application\/json/);
   assert.equal(commentsResponse.body[0].content, payload);
+});
+
+test('obviously abusive story comments are blocked before save and notification', async () => {
+  const owner = await buildUser();
+  const friend = await buildUser();
+  await makeFriends(owner, friend);
+
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  await expectCommentModerationBlocked({
+    owner,
+    commenter: friend,
+    story,
+    content: 'I hurt you',
+  });
+});
+
+test('sexual story comment requests are blocked before save and notification', async () => {
+  const owner = await buildUser();
+  const friend = await buildUser();
+  await makeFriends(owner, friend);
+
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  await expectCommentModerationBlocked({
+    owner,
+    commenter: friend,
+    story,
+    content: 'Send me nude pics',
+  });
+});
+
+test('spammy contact requests in story comments are blocked before save and notification', async () => {
+  const owner = await buildUser();
+  const friend = await buildUser();
+  await makeFriends(owner, friend);
+
+  const habit = await buildHabit(owner);
+  const story = await buildStory(owner, habit);
+
+  await expectCommentModerationBlocked({
+    owner,
+    commenter: friend,
+    story,
+    content: 'DM me on Telegram',
+  });
 });
 
 test('tagging the story owner creates a tagged notification instead of a normal comment notification', async () => {
