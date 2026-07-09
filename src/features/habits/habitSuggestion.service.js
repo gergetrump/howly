@@ -1,5 +1,6 @@
 import { ApiError } from '../../errors/ApiError.js';
 import { generateText } from '../../ai/ai.service.js';
+import { moderateText } from '../../moderation/moderation.service.js';
 
 const ALLOWED_FREQUENCIES = new Set(['Daily', 'Weekly', 'Monthly']);
 const MAX_SUGGESTIONS = 3;
@@ -78,6 +79,12 @@ function normalizeSuggestions(parsed) {
 
 export async function suggestHabitsFromGoal(input) {
     const goal = sanitizeGoal(input);
+
+    const moderation = await moderateText(goal);
+    if (moderation.flagged) {
+        throw new ApiError(400, 'GOAL_MODERATION_BLOCKED', 'Please rephrase your goal without harmful or inappropriate content.');
+    }
+
     let raw;
 
     try {

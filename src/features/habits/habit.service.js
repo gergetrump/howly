@@ -1,5 +1,6 @@
 import Habit from './habit.model.js';
 import { ApiError } from '../../errors/ApiError.js';
+import { moderateText } from '../../moderation/moderation.service.js';
 import {
     createMilestonePostForHabit,
     enrichMilestonePost,
@@ -307,6 +308,11 @@ function stripClientCategory(data) {
  */
 export async function createHabit(userId, data) {
     await assertCanCreateHabits(userId);
+
+    const moderation = await moderateText([data.title, data.description].filter(Boolean).join(' '));
+    if (moderation.flagged) {
+        throw new ApiError(400, 'HABIT_MODERATION_BLOCKED', 'Please choose a habit name without harmful or inappropriate content.');
+    }
 
     const habit = await Habit.create({ ...stripClientCategory(data), ownerId: userId });
     await revokeOverallStreakIfIncomplete(userId);

@@ -1,5 +1,4 @@
 import config from '../../config.js';
-import { moderateCommentText, COMMENT_MODERATION_BLOCKED } from '../features/moderation/moderation.service.js';
 
 const OPENAI_MODERATION_URL = 'https://api.openai.com/v1/moderations';
 
@@ -10,11 +9,14 @@ export async function moderateText(text) {
         return { flagged: false, categories: {}, checked: true };
     }
 
-    const { apiKey, model = 'omni-moderation-latest' } = config.moderation ?? {};
+    const { apiKey, model = 'omni-moderation-latest', timeoutMs = 2500 } = config.moderation ?? {};
 
     if (!apiKey) {
         return { flagged: false, categories: {}, checked: false };
     }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
         const response = await fetch(OPENAI_MODERATION_URL, {
@@ -24,6 +26,7 @@ export async function moderateText(text) {
                 Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({ model, input }),
+            signal: controller.signal,
         });
 
         if (!response.ok) {
@@ -47,25 +50,7 @@ export async function moderateText(text) {
     } catch (error) {
         console.error('Moderation request errored:', error.message);
         return { flagged: false, categories: {}, checked: false };
+    } finally {
+        clearTimeout(timeout);
     }
-}
-
-export async function moderateComment(content) {
-    const local = moderateCommentText(content);
-
-    if (!local.allowed) {
-        return { allowed: false, errorCode: COMMENT_MODERATION_BLOCKED, reason: local.reason };
-    }
-
-    const ai = await moderateText(content);
-
-    if (ai.flagged) {
-        return { allowed: false, errorCode: COMMENT_MODERATION_BLOCKED, reason: 'ai_flagged' };
-    }
-
-    return {
-        allowed: true,
-        status: ai.checked ? 'approved' : 'skipped',
-        checkedAt: ai.checked ? new Date() : null,
-    };
 }
