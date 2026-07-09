@@ -86,8 +86,8 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                         ))}
                     </div>
 
-                    <label className="block space-y-3">
-                        <span className="text-sm font-semibold text-theme-text">Subject</span>
+                    <label className="block">
+                        <span className="mb-3 block text-sm font-semibold leading-none text-theme-text">Subject</span>
                         <input
                             type="text"
                             value={form.subject}
@@ -98,8 +98,8 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                         />
                     </label>
 
-                    <label className="block space-y-3">
-                        <span className="text-sm font-semibold text-theme-text">Message</span>
+                    <label className="block">
+                        <span className="mb-3 block text-sm font-semibold leading-none text-theme-text">Message</span>
                         <textarea
                             value={form.message}
                             onChange={(event) => onFormChange({ ...form, message: event.target.value })}
@@ -465,29 +465,33 @@ export function ProfilePage() {
             </PageSection>
 
             <PageSection title="Account">
-                <div className="overflow-hidden rounded-2xl">
-                    {isPremium ? (
+                <div className="space-y-3">
+                    <div className="overflow-hidden rounded-2xl">
+                        {isPremium ? (
+                            <SettingsRow
+                                icon={Crown}
+                                iconColor="text-theme-gold"
+                                title={isManagingPremium ? 'Opening portal...' : 'Manage your Premium Subscription'}
+                                onClick={handleManagePremium}
+                                disabled={isManagingPremium}
+                            />
+                        ) : (
+                            <SettingsRow
+                                icon={Crown}
+                                iconColor="text-theme-gold"
+                                title="Upgrade to Premium"
+                                onClick={handleUpgradeToPremium}
+                            />
+                        )}
+                    </div>
+                    <div className="overflow-hidden rounded-2xl">
                         <SettingsRow
-                            icon={Crown}
-                            iconColor="text-theme-gold"
-                            title={isManagingPremium ? 'Opening portal...' : 'Manage your Premium Subscription'}
-                            onClick={handleManagePremium}
-                            disabled={isManagingPremium}
+                            icon={Bell}
+                            title="Notifications"
+                            subtitle="Manage in-app notifications and email preferences"
+                            onClick={() => setIsMuteDialogOpen(true)}
                         />
-                    ) : (
-                        <SettingsRow
-                            icon={Crown}
-                            iconColor="text-theme-gold"
-                            title="Upgrade to Premium"
-                            onClick={handleUpgradeToPremium}
-                        />
-                    )}
-                    <SettingsRow
-                        icon={Bell}
-                        title="Notifications"
-                        subtitle="Mute in-app notifications and manage email preferences"
-                        onClick={() => setIsMuteDialogOpen(true)}
-                    />
+                    </div>
                 </div>
                 {premiumError && (
                     <p className="mt-3 rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
@@ -497,9 +501,13 @@ export function ProfilePage() {
             </PageSection>
 
             <PageSection title="Support">
-                <div className="overflow-hidden rounded-2xl">
-                    <SettingsRow icon={MessageSquare} title="Help & Feedback" subtitle="Report a problem or share an idea" onClick={() => setIsFeedbackDialogOpen(true)} />
-                    <SettingsRow icon={Info} title="About Howly" onClick={() => setIsAboutDialogOpen(true)} />
+                <div className="space-y-3">
+                    <div className="overflow-hidden rounded-2xl">
+                        <SettingsRow icon={MessageSquare} title="Help & Feedback" subtitle="Report a problem or share an idea" onClick={() => setIsFeedbackDialogOpen(true)} />
+                    </div>
+                    <div className="overflow-hidden rounded-2xl">
+                        <SettingsRow icon={Info} title="About Howly" onClick={() => setIsAboutDialogOpen(true)} />
+                    </div>
                 </div>
             </PageSection>
 
