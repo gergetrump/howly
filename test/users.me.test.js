@@ -6,6 +6,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import createApp from '../src/app.js';
 import connectDB from '../src/config/database.js';
 import User from '../src/features/users/user.model.js';
+import Challenge from '../src/features/challenges/challenge.model.js';
+import ChallengeParticipant from '../src/features/challenges/challengeParticipant.model.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
 import config from '../config.js';
 
@@ -36,8 +38,36 @@ before(async () => {
 
 // Reset users between tests to keep isolation.
 afterEach(async () => {
-    await User.deleteMany({});
+    await Promise.all([
+        User.deleteMany({}),
+        Challenge.deleteMany({}),
+        ChallengeParticipant.deleteMany({}),
+    ]);
 });
+
+async function buildChallenge(owner, overrides = {}) {
+    const suffix = Math.random().toString(36).slice(2, 10);
+
+    return Challenge.create({
+        createdBy: owner._id,
+        title: overrides.title || `Challenge ${suffix}`,
+        habitTitle: overrides.habitTitle || `Habit ${suffix}`,
+        habitTemplate: {
+            title: overrides.habitTitle || `Habit ${suffix}`,
+            frequency: 'Daily',
+            icon: '🎯',
+        },
+        description: '',
+        coinReward: 100,
+        frequency: 'daily',
+        durationDays: 7,
+        startsAt: overrides.startsAt ?? new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+        endsAt: overrides.endsAt ?? new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        status: overrides.status ?? 'active',
+        visibility: 'public',
+        ...overrides,
+    });
+}
 
 // Tear down database connections after all tests complete.
 after(async () => {
@@ -60,6 +90,67 @@ test('GET /api/users/me returns current user', async () => {
     assert.equal(response.body.id, user._id.toString());
     assert.equal(response.body.email, user.email);
     assert.ok(!('passwordHash' in response.body));
+});
+
+test('GET /api/users/me returns completed challenge count', async () => {
+    const user = await buildUser();
+    const otherUser = await buildUser();
+    const token = signAccessToken(user);
+    const completedByParticipant = await buildChallenge(user, {
+        startsAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        endsAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+    });
+    const endedWithProgress = await buildChallenge(user);
+    const endedWithoutProgress = await buildChallenge(user);
+    const failedChallenge = await buildChallenge(user, { status: 'failed' });
+    const leftChallenge = await buildChallenge(user);
+    const otherUserChallenge = await buildChallenge(otherUser);
+
+    await ChallengeParticipant.create([
+        {
+            challenge: completedByParticipant._id,
+            user: user._id,
+            status: 'completed',
+            daysCompleted: 7,
+        },
+        {
+            challenge: endedWithProgress._id,
+            user: user._id,
+            status: 'active',
+            daysCompleted: 2,
+        },
+        {
+            challenge: endedWithoutProgress._id,
+            user: user._id,
+            status: 'active',
+            daysCompleted: 0,
+        },
+        {
+            challenge: failedChallenge._id,
+            user: user._id,
+            status: 'failed',
+            daysCompleted: 7,
+        },
+        {
+            challenge: leftChallenge._id,
+            user: user._id,
+            status: 'left',
+            daysCompleted: 2,
+        },
+        {
+            challenge: otherUserChallenge._id,
+            user: otherUser._id,
+            status: 'completed',
+            daysCompleted: 7,
+        },
+    ]);
+
+    const response = await request(app)
+        .get('/api/users/me')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+    assert.equal(response.body.completedChallenges, 2);
 });
 
 test('GET /api/users/me/plan returns free plan details', async () => {
@@ -157,12 +248,17 @@ test('PATCH /api/users/me merges partial notification preference updates', async
         .expect(200);
 
     assert.deepEqual(response.body.notificationPreferences, {
+        emailEnabled: false,
+        challengeInvitations: false,
+        friendRequests: false,
+        streakReminders: false,
         muteAll: false,
         muteTag: true,
         muteFriendRequest: true,
         muteComment: false,
         muteLike: true,
         muteReaction: true,
+        muteChallengeInvitation: false,
     });
 
     const updatedUser = await User.findById(user._id).lean();

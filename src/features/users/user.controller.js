@@ -31,6 +31,12 @@ function toPublicPlans() {
     );
 }
 
+async function toCurrentUserResponse(user) {
+    const completedChallenges = await userService.getCompletedChallengeCount(user._id);
+
+    return userService.toPublicUser(user, { completedChallenges });
+}
+
 // Return the authenticated user's public profile.
 export async function getCurrentUser(req, res) {
     const { error } = validateUserId(req.user?.id);
@@ -45,7 +51,7 @@ export async function getCurrentUser(req, res) {
         return notFound(res);
     }
 
-    return res.status(200).json(userService.toPublicUser(user));
+    return res.status(200).json(await toCurrentUserResponse(user));
 }
 
 export async function getCurrentUserPlan(req, res) {
@@ -128,7 +134,7 @@ export async function updateCurrentUser(req, res) {
         return notFound(res);
     }
 
-    return res.status(200).json(userService.toPublicUser(user));
+    return res.status(200).json(await toCurrentUserResponse(user));
 }
 
 // Mark the authenticated user's onboarding flow as completed.
@@ -145,7 +151,7 @@ export async function completeOnboarding(req, res) {
         return notFound(res);
     }
 
-    return res.status(200).json(userService.toPublicUser(user));
+    return res.status(200).json(await toCurrentUserResponse(user));
 }
 
 export async function updateCurrentUserNotificationPreferences(req, res) {
@@ -167,7 +173,7 @@ export async function updateCurrentUserNotificationPreferences(req, res) {
         return notFound(res);
     }
 
-    return res.status(200).json(userService.toPublicUser(user));
+    return res.status(200).json(await toCurrentUserResponse(user));
 }
 
 // Update the authenticated user's preferences (e.g. theme).
@@ -194,7 +200,7 @@ export async function updateCurrentUserPreferences(req, res) {
         return notFound(res);
     }
 
-    return res.status(200).json(userService.toPublicUser(user));
+    return res.status(200).json(await toCurrentUserResponse(user));
 }
 
 export async function deleteCurrentUser(req, res) {
@@ -253,7 +259,7 @@ export async function uploadCurrentUserProfilePicture(req, res) {
 
     return res.status(200).json({
         message: 'Profile picture uploaded successfully',
-        user: userService.toPublicUser(user),
+        user: await toCurrentUserResponse(user),
     });
     } catch (error) {
         console.error(error);
@@ -276,7 +282,7 @@ export async function deleteCurrentUserProfilePicture(req, res) {
         }
 
         return res.status(200).json({
-            user: userService.toPublicUser(user),
+            user: await toCurrentUserResponse(user),
         });
 
     } catch (error) {
