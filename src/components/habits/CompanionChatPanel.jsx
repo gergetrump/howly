@@ -56,6 +56,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
         try {
             const response = await createHabitsFromTemplates([{
                 title: habit.title,
+                description: habit.description,
                 icon: habit.icon,
                 frequency: habit.frequency,
                 category: habit.category,

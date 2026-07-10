@@ -101,6 +101,7 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
                 const suggestion = suggestions[index];
                 return {
                     title: suggestion.title,
+                    description: suggestion.description,
                     icon: suggestion.icon,
                     frequency: suggestion.frequency,
                 };
