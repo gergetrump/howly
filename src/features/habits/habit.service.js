@@ -297,9 +297,15 @@ export async function getHabitById(habitId, userId) {
     return populated;
 }
 
-function stripClientCategory(data) {
-    const payload = { ...data };
-    delete payload.category;
+const WRITABLE_HABIT_FIELDS = ['title', 'description', 'icon', 'type', 'target', 'unit', 'frequency', 'customDays'];
+
+function pickWritableHabitFields(data = {}) {
+    const payload = {};
+    for (const field of WRITABLE_HABIT_FIELDS) {
+        if (data[field] !== undefined) {
+            payload[field] = data[field];
+        }
+    }
     return payload;
 }
 
@@ -314,7 +320,7 @@ export async function createHabit(userId, data) {
         throw new ApiError(400, 'HABIT_MODERATION_BLOCKED', 'Please choose a habit name without harmful or inappropriate content.');
     }
 
-    const habit = await Habit.create({ ...stripClientCategory(data), ownerId: userId });
+    const habit = await Habit.create({ ...pickWritableHabitFields(data), ownerId: userId });
     await revokeOverallStreakIfIncomplete(userId);
     scheduleTaxonomyForHabit(habit._id);
 
@@ -365,7 +371,7 @@ export async function updateHabit(habitId, userId, data) {
         || (data.description !== undefined && data.description !== habit.description)
     );
 
-    Object.assign(habit, stripClientCategory(data));
+    Object.assign(habit, pickWritableHabitFields(data));
 
     if (shouldReassignTaxonomy) {
         clearTaxonomyFields(habit);

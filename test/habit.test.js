@@ -217,6 +217,50 @@ test('uncompleting a monthly habit leaves it re-completable and does not drain t
   assert.equal(recompleted.body.data.streakCount, 6);
 });
 
+test('habit create and update ignore client-supplied internal fields', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+  const savedKey = config.moderation.apiKey;
+  config.moderation.apiKey = '';
+
+  try {
+    const created = await request(app)
+      .post('/api/habits')
+      .set('Authorization', token)
+      .send({
+        title: 'Gym',
+        type: 'boolean',
+        frequency: 'Daily',
+        streakCount: 9999,
+        source: 'challenge',
+        lastCompletedAt: new Date().toISOString(),
+        deletedAt: new Date().toISOString(),
+      })
+      .expect(201);
+
+    assert.equal(created.body.data.streakCount, 0);
+    assert.equal(created.body.data.source, 'manual');
+
+    const stored = await Habit.findById(created.body.data.id);
+    assert.equal(stored.streakCount, 0);
+    assert.equal(stored.source, 'manual');
+    assert.equal(stored.deletedAt, null);
+    assert.equal(stored.lastCompletedAt, null);
+
+    const patched = await request(app)
+      .patch(`/api/habits/${created.body.data.id}`)
+      .set('Authorization', token)
+      .send({ title: 'Gym updated', streakCount: 5555, source: 'challenge' })
+      .expect(200);
+
+    assert.equal(patched.body.data.title, 'Gym updated');
+    assert.equal(patched.body.data.streakCount, 0);
+    assert.equal(patched.body.data.source, 'manual');
+  } finally {
+    config.moderation.apiKey = savedKey;
+  }
+});
+
 test('completing all due habits clears the overall streak repair deadline', async () => {
   const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
   const inOneDay = new Date(Date.now() + 24 * 60 * 60 * 1000);
