@@ -2,7 +2,7 @@ import Habit from '../habits/habit.model.js';
 import User from '../users/user.model.js';
 import { sendStreakReminderEmail } from '../mail/mail.service.js';
 import config from '../../../config.js';
-import { isCompletedForPeriod, isPreviousPeriod, previousPeriodMarker } from '../habits/habit.service.js';
+import { isCompletedForPeriod, isPreviousPeriod, previousPeriodMarker, isDueToday } from '../habits/habit.service.js';
 import {
     hasPremiumAccess,
     MAX_STREAK_SHIELDS,
@@ -78,6 +78,15 @@ function isOverallStreakMissed(user, now) {
     return !user.streakLastDay || daysBetween(now, user.streakLastDay) >= 2;
 }
 
+async function hasUnmetDueHabit(userId) {
+    const habits = await Habit.find({ ownerId: userId, deletedAt: null, source: { $ne: 'challenge' } })
+        .select('frequency lastCompletedAt customDays');
+    return habits.some((habit) =>
+        isDueToday(habit)
+        && !isCompletedForPeriod(habit)
+        && !isPreviousPeriod(habit, habit.lastCompletedAt));
+}
+
 async function bridgeAtRiskHabits(userId, now) {
     const habits = await Habit.find({ ownerId: userId, streakCount: { $gt: 0 } });
     let bridged = 0;
@@ -151,12 +160,21 @@ export async function runDailyStreakMaintenance(now = new Date()) {
     let overallOpened = 0;
     let overallBroken = 0;
     let overallAutoShielded = 0;
+    let overallRestDaysRescued = 0;
     for (const user of users) {
         if (!isOverallStreakMissed(user, now)) {
             if (user.streakRepairDeadline) {
                 user.streakRepairDeadline = null;
                 await user.save();
             }
+            continue;
+        }
+
+        if (!(await hasUnmetDueHabit(user._id))) {
+            user.streakLastDay = endOfYesterday(now);
+            user.streakRepairDeadline = null;
+            await user.save();
+            overallRestDaysRescued += 1;
             continue;
         }
 
@@ -183,7 +201,7 @@ export async function runDailyStreakMaintenance(now = new Date()) {
         }
     }
 
-    return { habitsOpened, habitsBroken, overallOpened, overallBroken, overallAutoShielded };
+    return { habitsOpened, habitsBroken, overallOpened, overallBroken, overallAutoShielded, overallRestDaysRescued };
 }
 
 export async function sendStreakRepairReminders(now = new Date()) {

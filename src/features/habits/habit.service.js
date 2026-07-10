@@ -81,7 +81,7 @@ export function isCompletedForPeriod(habit) {
     return isToday(date);
 }
 
-function isDueToday(habit) {
+export function isDueToday(habit) {
     if (habit.frequency === 'Custom' && habit.customDays && habit.customDays.length > 0) {
         const currentDay = new Date().getDay() || 7; // 1-7 (Mon-Sun)
         return habit.customDays.includes(currentDay);
