@@ -316,6 +316,18 @@ async function assertHabitTextClean(text) {
     }
 }
 
+function validateHabitFields({ type, target, frequency, customDays }) {
+    if (type === 'numeric' && !(typeof target === 'number' && target >= 1)) {
+        throw new ApiError(400, 'INVALID_HABIT', 'Numeric habits need a target of at least 1.');
+    }
+    if (frequency === 'Custom' && !(Array.isArray(customDays) && customDays.length > 0)) {
+        throw new ApiError(400, 'INVALID_HABIT', 'Custom habits need at least one weekday.');
+    }
+    if (Array.isArray(customDays) && customDays.some((day) => !Number.isInteger(day) || day < 1 || day > 7)) {
+        throw new ApiError(400, 'INVALID_HABIT', 'Weekdays must be whole numbers between 1 and 7.');
+    }
+}
+
 /**
  * Create a single habit.
  */
@@ -323,6 +335,7 @@ export async function createHabit(userId, data) {
     await assertCanCreateHabits(userId);
 
     await assertHabitTextClean([data.title, data.description].filter(Boolean).join(' '));
+    validateHabitFields(data);
 
     const habit = await Habit.create({ ...pickWritableHabitFields(data), ownerId: userId });
     await revokeOverallStreakIfIncomplete(userId);

@@ -380,6 +380,27 @@ test('changing a habit to due-today revokes a now-broken perfect-day streak', as
   }
 });
 
+test('habit creation validates numeric target, custom weekdays, and icon size', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+  const savedKey = config.moderation.apiKey;
+  config.moderation.apiKey = '';
+
+  try {
+    const post = (body) => request(app).post('/api/habits').set('Authorization', token).send(body);
+
+    await post({ title: 'Pushups', type: 'numeric', frequency: 'Daily' }).expect(400);
+    await post({ title: 'Gym', type: 'boolean', frequency: 'Custom' }).expect(400);
+    await post({ title: 'Gym', type: 'boolean', frequency: 'Custom', customDays: [2.5] }).expect(400);
+    await post({ title: 'Gym', type: 'boolean', frequency: 'Daily', icon: 'x'.repeat(100) }).expect(400);
+
+    await post({ title: 'Pushups', type: 'numeric', target: 20, frequency: 'Daily' }).expect(201);
+    await post({ title: 'Gym', type: 'boolean', frequency: 'Custom', customDays: [1, 3, 5] }).expect(201);
+  } finally {
+    config.moderation.apiKey = savedKey;
+  }
+});
+
 test('overall streak revoke ignores soft-deleted habits', async () => {
   const user = await buildUser({ streak: 5, streakLastDay: new Date() });
   const token = authHeader(user);
