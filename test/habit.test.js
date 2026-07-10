@@ -16,6 +16,8 @@ import config from '../config.js';
 import { getPlanForUser } from '../src/config/plans.js';
 import { getBoostPurchaseMonthKey } from '../src/features/inventory/inventory.service.js';
 import { applyFreezeToHabit } from '../src/features/streakFreeze/streakFreeze.service.js';
+import { applyHabitBoostReward, revertHabitBoostReward } from '../src/features/boosts/habitBoost.service.js';
+import { completeHabit, uncompleteHabit } from '../src/features/habits/habit.service.js';
 
 let mongo;
 let app;
@@ -399,6 +401,70 @@ test('habit creation validates numeric target, custom weekdays, and icon size', 
   } finally {
     config.moderation.apiKey = savedKey;
   }
+});
+
+test('concurrent boost rewards credit the bonus coins only once', async () => {
+  const user = await buildUser({ coins: 0 });
+  const habit = await Habit.create({
+    ownerId: user._id, title: 'Gym', type: 'boolean', frequency: 'Daily', lastCompletedAt: new Date(),
+  });
+  await HabitBoost.create({
+    user: user._id, habit: habit._id, assetKey: 'small-boost', bonusCoins: 50, remainingCompletions: 3,
+  });
+
+  await Promise.all([
+    applyHabitBoostReward({ userId: user._id, habit }),
+    applyHabitBoostReward({ userId: user._id, habit }),
+  ]);
+
+  const reloadedUser = await User.findById(user._id).select('coins');
+  assert.equal(reloadedUser.coins, 50);
+  const reloadedBoost = await HabitBoost.findOne({ user: user._id, habit: habit._id });
+  assert.equal(reloadedBoost.remainingCompletions, 2);
+});
+
+test('concurrent boost reverts deduct the bonus coins only once', async () => {
+  const user = await buildUser({ coins: 50 });
+  const now = new Date();
+  const periodKey = now.toISOString().slice(0, 10);
+  const habit = await Habit.create({
+    ownerId: user._id, title: 'Gym', type: 'boolean', frequency: 'Daily', lastCompletedAt: now,
+  });
+  await HabitBoost.create({
+    user: user._id, habit: habit._id, assetKey: 'small-boost', bonusCoins: 50,
+    remainingCompletions: 2, rewardedPeriodKeys: [periodKey],
+  });
+
+  await Promise.all([
+    revertHabitBoostReward({ userId: user._id, habit, uncompletedAt: now }),
+    revertHabitBoostReward({ userId: user._id, habit, uncompletedAt: now }),
+  ]);
+
+  const reloadedUser = await User.findById(user._id).select('coins');
+  assert.equal(reloadedUser.coins, 0);
+  const reloadedBoost = await HabitBoost.findOne({ user: user._id, habit: habit._id });
+  assert.equal(reloadedBoost.remainingCompletions, 3);
+});
+
+test('completing then uncompleting a boosted habit nets zero coins', async () => {
+  const user = await buildUser({ coins: 100 });
+  const habit = await Habit.create({
+    ownerId: user._id, title: 'Gym', type: 'boolean', frequency: 'Daily', streakCount: 0,
+  });
+  await HabitBoost.create({
+    user: user._id, habit: habit._id, assetKey: 'small-boost', bonusCoins: 50, remainingCompletions: 3,
+  });
+
+  await completeHabit(habit._id, user._id);
+  let reloaded = await User.findById(user._id).select('coins');
+  assert.equal(reloaded.coins, 150);
+
+  await uncompleteHabit(habit._id, user._id);
+  reloaded = await User.findById(user._id).select('coins');
+  assert.equal(reloaded.coins, 100);
+
+  const boost = await HabitBoost.findOne({ user: user._id, habit: habit._id });
+  assert.equal(boost.remainingCompletions, 3);
 });
 
 test('overall streak revoke ignores soft-deleted habits', async () => {
