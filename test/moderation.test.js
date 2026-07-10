@@ -1,7 +1,7 @@
 import test, { beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import config from '../config.js';
-import { moderateText } from '../src/moderation/moderation.service.js';
+import { moderateText, moderateImage } from '../src/moderation/moderation.service.js';
 
 const originalFetch = global.fetch;
 const originalApiKey = config.moderation.apiKey;
@@ -95,4 +95,50 @@ test('sends an abort signal so a hanging request can time out', async () => {
   await moderateText('run three times a week');
 
   assert.ok(receivedSignal instanceof AbortSignal);
+});
+
+test('flags a harmful image', async () => {
+  config.moderation.apiKey = 'sk-test-key';
+  global.fetch = async () => moderationResponse({ flagged: true });
+
+  const result = await moderateImage('https://cdn.example.com/pic.jpg');
+
+  assert.equal(result.flagged, true);
+  assert.equal(result.checked, true);
+});
+
+test('passes a clean image', async () => {
+  config.moderation.apiKey = 'sk-test-key';
+  global.fetch = async () => moderationResponse({ flagged: false });
+
+  const result = await moderateImage('https://cdn.example.com/pic.jpg');
+
+  assert.equal(result.flagged, false);
+  assert.equal(result.checked, true);
+});
+
+test('sends the image as an image_url moderation input', async () => {
+  config.moderation.apiKey = 'sk-test-key';
+  let sentBody;
+  global.fetch = async (url, options) => {
+    sentBody = JSON.parse(options.body);
+    return moderationResponse({ flagged: false });
+  };
+
+  await moderateImage('https://cdn.example.com/pic.jpg');
+
+  assert.equal(sentBody.input[0].type, 'image_url');
+  assert.equal(sentBody.input[0].image_url.url, 'https://cdn.example.com/pic.jpg');
+});
+
+test('image moderation fails open when the request errors', async () => {
+  config.moderation.apiKey = 'sk-test-key';
+  global.fetch = async () => {
+    throw new Error('network down');
+  };
+
+  const result = await moderateImage('https://cdn.example.com/pic.jpg');
+
+  assert.equal(result.flagged, false);
+  assert.equal(result.checked, false);
 });

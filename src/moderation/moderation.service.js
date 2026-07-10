@@ -2,13 +2,7 @@ import config from '../../config.js';
 
 const OPENAI_MODERATION_URL = 'https://api.openai.com/v1/moderations';
 
-export async function moderateText(text) {
-    const input = typeof text === 'string' ? text.trim() : '';
-
-    if (!input) {
-        return { flagged: false, categories: {}, checked: true };
-    }
-
+async function callModeration(input) {
     const { apiKey, model = 'omni-moderation-latest', timeoutMs = 2500 } = config.moderation ?? {};
 
     if (!apiKey) {
@@ -53,4 +47,22 @@ export async function moderateText(text) {
     } finally {
         clearTimeout(timeout);
     }
+}
+
+export async function moderateText(text) {
+    const input = typeof text === 'string' ? text.trim() : '';
+
+    if (!input) {
+        return { flagged: false, categories: {}, checked: true };
+    }
+
+    return callModeration(input);
+}
+
+export async function moderateImage(imageUrl) {
+    if (typeof imageUrl !== 'string' || !imageUrl) {
+        return { flagged: false, categories: {}, checked: true };
+    }
+
+    return callModeration([{ type: 'image_url', image_url: { url: imageUrl } }]);
 }

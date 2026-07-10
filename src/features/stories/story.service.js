@@ -17,6 +17,7 @@ import { createNotification, deleteNotificationsByFilter } from '../notification
 import User from '../users/user.model.js';
 import { toOffsetPage } from '../../utils/pagination.js';
 import { moderateCommentText } from '../moderation/moderation.service.js';
+import { moderateImage } from '../../moderation/moderation.service.js';
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 const DAY_IN_MS = 24 * HOUR_IN_MS;
@@ -150,6 +151,12 @@ export async function createStory({ userId, sourceType, sourceId, caption, image
       },
     ],
   });
+
+  const moderation = await moderateImage(uploadResult.secure_url);
+  if (moderation.flagged) {
+    await deleteFromCloudinary(uploadResult.public_id);
+    return { errorCode: 'STORY_IMAGE_MODERATION_BLOCKED' };
+  }
 
   const now = Date.now();
 
