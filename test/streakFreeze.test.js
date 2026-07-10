@@ -310,3 +310,21 @@ test('applyFreezeToOverall throws NOT_AT_RISK when the overall streak is not mis
     (error) => error.code === STREAK_FREEZE_ERROR_CODES.NOT_AT_RISK,
   );
 });
+
+test('concurrent shield applies spend only one shield', async () => {
+  const user = await buildUser({ streak: 7, streakLastDay: daysAgo(2), streakShields: 1 });
+
+  const results = await Promise.allSettled([
+    applyFreezeToOverall(user._id, new Date()),
+    applyFreezeToOverall(user._id, new Date()),
+  ]);
+
+  const fulfilled = results.filter((r) => r.status === 'fulfilled');
+  const rejected = results.filter((r) => r.status === 'rejected');
+  assert.equal(fulfilled.length, 1);
+  assert.equal(rejected.length, 1);
+  assert.equal(rejected[0].reason.code, STREAK_FREEZE_ERROR_CODES.NO_SHIELDS);
+
+  const reloaded = await User.findById(user._id).select('streakShields');
+  assert.equal(reloaded.streakShields, 0);
+});
