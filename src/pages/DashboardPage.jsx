@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { getMyHabits, deleteHabit, checkInHabit, uncheckInHabit, waitForHabitTaxonomy } from '@/services/habitService';
 import { applyHabitStreakFreeze } from '@/services/streakFreezeApi';
 import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
+import { createCheckoutSession } from '@/services/paymentService';
 import { getMyInventory } from '@/services/inventoryApi';
 import { getMyActiveStories } from '@/services/storyApi';
 import { getMyChallengeHabits } from '@/services/challengeService';
@@ -79,6 +80,8 @@ function HabitLimitCleanupDialog({
     error,
     onToggleHabit,
     onConfirm,
+    onBuyPremium,
+    isStartingCheckout,
 }) {
     const selectedCount = selectedHabitIds.size;
     const habitsToRemove = Math.max(habits.length - selectedCount, 0);
@@ -126,7 +129,15 @@ function HabitLimitCleanupDialog({
                                     </span>
                                     <span className="min-w-0 flex-1">
                                         <span className="block truncate font-semibold">{habit.title}</span>
-                                        <span className="mt-0.5 block text-xs text-slate-400">{habit.frequency}</span>
+                                        <span className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                                            <span>{habit.frequency}</span>
+                                            <StreakBadge
+                                                days={habit.streakCount ?? 0}
+                                                showLabel={false}
+                                                size="sm"
+                                                className="text-xs font-semibold text-slate-300 [&>span:first-child]:text-sm"
+                                            />
+                                        </span>
                                     </span>
                                     <span className={`grid size-6 shrink-0 place-items-center rounded-full border ${
                                         isSelected
@@ -147,16 +158,27 @@ function HabitLimitCleanupDialog({
                         </p>
                     ) : null}
 
-                    <Button
-                        type="button"
-                        variant="primary"
-                        onClick={onConfirm}
-                        disabled={!canConfirm}
-                        className="h-12 w-full rounded-2xl text-base shadow-lg shadow-black/25 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
-                    >
-                        {isSaving ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
-                        Keep Selected Habits
-                    </Button>
+                    <div className="space-y-3">
+                        <Button
+                            type="button"
+                            onClick={onBuyPremium}
+                            disabled={isStartingCheckout || isSaving}
+                            className="h-12 w-full rounded-2xl bg-amber-300 text-base font-bold text-slate-950 shadow-lg shadow-black/25 hover:bg-amber-200 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
+                        >
+                            {isStartingCheckout ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
+                            Renew Premium and keep all habits
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="primary"
+                            onClick={onConfirm}
+                            disabled={!canConfirm || isStartingCheckout}
+                            className="h-12 w-full rounded-2xl text-base shadow-lg shadow-black/25 disabled:bg-theme-text/10 disabled:text-theme-text-muted"
+                        >
+                            {isSaving ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
+                            Continue with Free Plan and keep selected habits only
+                        </Button>
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
@@ -183,6 +205,7 @@ export function DashboardPage() {
     const [planInfo, setPlanInfo] = useState(null);
     const [selectedCleanupHabitIds, setSelectedCleanupHabitIds] = useState(new Set());
     const [isCleaningUpHabits, setIsCleaningUpHabits] = useState(false);
+    const [isStartingPremiumCheckout, setIsStartingPremiumCheckout] = useState(false);
     const [habitCleanupError, setHabitCleanupError] = useState('');
     // Habit ids that already have an active story in the 7-day feed window
     const [sharedHabitIds, setSharedHabitIds] = useState(new Set());
@@ -382,6 +405,23 @@ export function DashboardPage() {
             setHabitCleanupError('Could not update your habits. Please try again.');
         } finally {
             setIsCleaningUpHabits(false);
+        }
+    }
+
+    async function handleBuyPremiumFromCleanup() {
+        try {
+            setHabitCleanupError('');
+            setIsStartingPremiumCheckout(true);
+            const response = await createCheckoutSession();
+
+            if (!response?.url) {
+                throw new Error('Checkout session did not include a URL');
+            }
+
+            window.location.href = response.url;
+        } catch (error) {
+            setHabitCleanupError(error.message || 'Could not start Premium checkout.');
+            setIsStartingPremiumCheckout(false);
         }
     }
 
@@ -765,6 +805,8 @@ export function DashboardPage() {
                 error={habitCleanupError}
                 onToggleHabit={toggleCleanupHabit}
                 onConfirm={confirmHabitLimitCleanup}
+                onBuyPremium={handleBuyPremiumFromCleanup}
+                isStartingCheckout={isStartingPremiumCheckout}
             />
 
             <Dialog open={Boolean(riskConfirmHabit)} onOpenChange={(open) => { if (!open) setRiskConfirmHabit(null); }}>

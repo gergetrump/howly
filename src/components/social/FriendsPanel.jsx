@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, Plus, Trash2, Ban } from 'lucide-react';
+import { AlertTriangle, MoreVertical, Plus, Trash2, Ban } from 'lucide-react';
 import { AlertDialog as AlertDialogPrimitive } from 'radix-ui';
 import { FriendCard } from '@/components/cards';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AddFriendPanel } from '@/components/social/AddFriendPanel.jsx';
 import { FriendRequestCard } from '@/components/social/FriendRequestCard.jsx';
+import { ReportUserDialog } from '@/components/social/ReportUserDialog.jsx';
 import { getDisplayName, getUsername } from '@/components/social/socialHelpers.js';
 import { appTabsListClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
@@ -46,6 +47,7 @@ function EmptyState({ children }) {
 function FriendActions({ friend, friendshipId, busy, onDelete, onBlock }) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false);
+    const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
     const friendName = getDisplayName(friend);
 
     return (
@@ -69,14 +71,21 @@ function FriendActions({ friend, friendshipId, busy, onDelete, onBlock }) {
                         onClick={() => setIsDeleteDialogOpen(true)}
                     >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Delete friend
+                        Remove
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        className="cursor-pointer focus:bg-theme-surface-2 focus:text-theme-text"
+                        onClick={() => setIsReportDialogOpen(true)}
+                    >
+                        <AlertTriangle className="mr-2 h-4 w-4" />
+                        Report
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         className="cursor-pointer text-theme-danger focus:bg-theme-surface-2 focus:text-theme-danger"
                         onClick={() => setIsBlockDialogOpen(true)}
                     >
                         <Ban className="mr-2 h-4 w-4" />
-                        Block friend
+                        Block
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -108,7 +117,7 @@ function FriendActions({ friend, friendshipId, busy, onDelete, onBlock }) {
                                 disabled={busy}
                                 onClick={() => onDelete(friendshipId, friend)}
                             >
-                                Delete friend
+                                Remove
                             </Button>
                         </AlertDialogPrimitive.Action>
                     </ConfirmationDialogFooter>
@@ -145,12 +154,18 @@ function FriendActions({ friend, friendshipId, busy, onDelete, onBlock }) {
                                     onBlock(friend.id || friend._id);
                                 }}
                             >
-                                Block friend
+                                Block
                             </Button>
                         </AlertDialogPrimitive.Action>
                     </ConfirmationDialogFooter>
                 </ConfirmationDialogContent>
             </ConfirmationDialog>
+
+            <ReportUserDialog
+                user={friend}
+                open={isReportDialogOpen}
+                onOpenChange={setIsReportDialogOpen}
+            />
         </div>
     );
 }
