@@ -261,6 +261,47 @@ test('habit create and update ignore client-supplied internal fields', async () 
   }
 });
 
+test('overall streak revoke ignores soft-deleted habits', async () => {
+  const user = await buildUser({ streak: 5, streakLastDay: new Date() });
+  const token = authHeader(user);
+  const savedKey = config.moderation.apiKey;
+  config.moderation.apiKey = '';
+
+  try {
+    await Habit.create({
+      ownerId: user._id,
+      title: 'Gym',
+      type: 'boolean',
+      frequency: 'Daily',
+      streakCount: 1,
+      lastCompletedAt: new Date(),
+    });
+
+    await Habit.create({
+      ownerId: user._id,
+      title: 'Deleted habit',
+      type: 'boolean',
+      frequency: 'Daily',
+      streakCount: 0,
+      lastCompletedAt: null,
+      deletedAt: new Date(),
+    });
+
+    const todayDow = new Date().getDay() || 7;
+    const otherDay = todayDow === 1 ? 2 : 1;
+    await request(app)
+      .post('/api/habits')
+      .set('Authorization', token)
+      .send({ title: 'Alternate day walk', type: 'boolean', frequency: 'Custom', customDays: [otherDay] })
+      .expect(201);
+
+    const refreshed = await User.findById(user._id).select('streak');
+    assert.equal(refreshed.streak, 5);
+  } finally {
+    config.moderation.apiKey = savedKey;
+  }
+});
+
 test('completing all due habits clears the overall streak repair deadline', async () => {
   const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
   const inOneDay = new Date(Date.now() + 24 * 60 * 60 * 1000);

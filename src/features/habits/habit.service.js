@@ -561,7 +561,7 @@ async function revokeOverallStreakIfIncomplete(userId) {
         return { streak: user.streak, revoked: false };
     }
 
-    const habits = await Habit.find({ ownerId: userId, source: { $ne: 'challenge' } })
+    const habits = await Habit.find(withActiveHabitFilter({ ownerId: userId, source: { $ne: 'challenge' } }))
         .select('frequency lastCompletedAt customDays');
     const dueToday = habits.filter(isDueToday);
 
