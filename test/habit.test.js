@@ -261,6 +261,125 @@ test('habit create and update ignore client-supplied internal fields', async () 
   }
 });
 
+test('bulk template creation is moderated', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+  const savedKey = config.moderation.apiKey;
+  const savedFetch = global.fetch;
+  const savedConsoleError = console.error;
+  config.moderation.apiKey = 'sk-test';
+  console.error = () => {};
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ results: [{ flagged: true, category_scores: {} }] }),
+    text: async () => '',
+  });
+
+  try {
+    const res = await request(app)
+      .post('/api/habits/templates')
+      .set('Authorization', token)
+      .send({ templates: [{ title: 'a harmful title', frequency: 'Daily' }] })
+      .expect(400);
+
+    assert.equal(res.body.errorCode, 'HABIT_MODERATION_BLOCKED');
+    assert.equal(await Habit.countDocuments({ ownerId: user._id }), 0);
+  } finally {
+    config.moderation.apiKey = savedKey;
+    global.fetch = savedFetch;
+    console.error = savedConsoleError;
+  }
+});
+
+test('habit title update is moderated', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+  const savedKey = config.moderation.apiKey;
+  const savedFetch = global.fetch;
+  const savedConsoleError = console.error;
+  config.moderation.apiKey = 'sk-test';
+  console.error = () => {};
+
+  const moderationResult = { flagged: false };
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ results: [{ flagged: moderationResult.flagged, category_scores: {} }] }),
+    text: async () => '',
+  });
+
+  try {
+    const created = await request(app)
+      .post('/api/habits')
+      .set('Authorization', token)
+      .send({ title: 'Gym', type: 'boolean', frequency: 'Daily' })
+      .expect(201);
+
+    moderationResult.flagged = true;
+    await request(app)
+      .patch(`/api/habits/${created.body.data.id}`)
+      .set('Authorization', token)
+      .send({ title: 'a harmful title' })
+      .expect(400);
+
+    const stored = await Habit.findById(created.body.data.id);
+    assert.equal(stored.title, 'Gym');
+  } finally {
+    config.moderation.apiKey = savedKey;
+    global.fetch = savedFetch;
+    console.error = savedConsoleError;
+  }
+});
+
+test('bulk template creation rejects a non-array or empty body', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+
+  await request(app)
+    .post('/api/habits/templates')
+    .set('Authorization', token)
+    .send({ templates: 'not an array' })
+    .expect(400);
+
+  await request(app)
+    .post('/api/habits/templates')
+    .set('Authorization', token)
+    .send({})
+    .expect(400);
+});
+
+test('changing a habit to due-today revokes a now-broken perfect-day streak', async () => {
+  const user = await buildUser({ streak: 5, streakLastDay: new Date() });
+  const token = authHeader(user);
+  const savedKey = config.moderation.apiKey;
+  config.moderation.apiKey = '';
+
+  try {
+    await Habit.create({
+      ownerId: user._id, title: 'Gym', type: 'boolean', frequency: 'Daily',
+      streakCount: 1, lastCompletedAt: new Date(),
+    });
+    const todayDow = new Date().getDay() || 7;
+    const otherDay = todayDow === 1 ? 2 : 1;
+    const restHabit = await Habit.create({
+      ownerId: user._id, title: 'Weekend', type: 'boolean', frequency: 'Custom',
+      customDays: [otherDay], streakCount: 0, lastCompletedAt: null,
+    });
+
+    await request(app)
+      .patch(`/api/habits/${restHabit._id}`)
+      .set('Authorization', token)
+      .send({ frequency: 'Daily' })
+      .expect(200);
+
+    const reloaded = await User.findById(user._id).select('streak');
+    assert.equal(reloaded.streak, 4);
+  } finally {
+    config.moderation.apiKey = savedKey;
+  }
+});
+
 test('overall streak revoke ignores soft-deleted habits', async () => {
   const user = await buildUser({ streak: 5, streakLastDay: new Date() });
   const token = authHeader(user);

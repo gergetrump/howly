@@ -309,16 +309,20 @@ function pickWritableHabitFields(data = {}) {
     return payload;
 }
 
+async function assertHabitTextClean(text) {
+    const moderation = await moderateText(text);
+    if (moderation.flagged) {
+        throw new ApiError(400, 'HABIT_MODERATION_BLOCKED', 'Please choose a habit name without harmful or inappropriate content.');
+    }
+}
+
 /**
  * Create a single habit.
  */
 export async function createHabit(userId, data) {
     await assertCanCreateHabits(userId);
 
-    const moderation = await moderateText([data.title, data.description].filter(Boolean).join(' '));
-    if (moderation.flagged) {
-        throw new ApiError(400, 'HABIT_MODERATION_BLOCKED', 'Please choose a habit name without harmful or inappropriate content.');
-    }
+    await assertHabitTextClean([data.title, data.description].filter(Boolean).join(' '));
 
     const habit = await Habit.create({ ...pickWritableHabitFields(data), ownerId: userId });
     await revokeOverallStreakIfIncomplete(userId);
@@ -333,7 +337,15 @@ export async function createHabit(userId, data) {
  * Bulk-create habits from an array of template objects (onboarding).
  */
 export async function createHabitsFromTemplates(userId, templates) {
+    if (!Array.isArray(templates) || templates.length === 0) {
+        throw new ApiError(400, 'INVALID_TEMPLATES', 'templates must be a non-empty array.');
+    }
+
     await assertCanCreateHabits(userId, templates.length);
+
+    await assertHabitTextClean(
+        templates.map((t) => [t.title, t.description].filter(Boolean).join(' ')).join('\n'),
+    );
 
     const docs = templates.map((t) => ({
         title: t.title,
@@ -366,9 +378,18 @@ export async function updateHabit(habitId, userId, data) {
         throw ApiError.notFound('Habit not found.');
     }
 
+    if (data.title !== undefined || data.description !== undefined) {
+        await assertHabitTextClean([data.title, data.description].filter(Boolean).join(' '));
+    }
+
     const shouldReassignTaxonomy = (
         (data.title !== undefined && data.title !== habit.title)
         || (data.description !== undefined && data.description !== habit.description)
+    );
+
+    const dueSetChanged = (
+        (data.frequency !== undefined && data.frequency !== habit.frequency)
+        || data.customDays !== undefined
     );
 
     Object.assign(habit, pickWritableHabitFields(data));
@@ -378,6 +399,10 @@ export async function updateHabit(habitId, userId, data) {
     }
 
     await habit.save();
+
+    if (dueSetChanged) {
+        await revokeOverallStreakIfIncomplete(userId);
+    }
 
     if (shouldReassignTaxonomy) {
         scheduleTaxonomyForHabit(habit._id);
