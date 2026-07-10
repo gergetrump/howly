@@ -497,13 +497,10 @@ export async function uncompleteHabit(habitId, userId) {
 
     // Revert streak
     habit.streakCount = Math.max(0, habit.streakCount - 1);
-    
-    // Approximate previous completion date to yesterday so streak can continue tomorrow
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
+
     const uncompletedAt = habit.lastCompletedAt || new Date();
     await removeHabitCheckInForCurrentPeriod({ userId, habit });
-    habit.lastCompletedAt = habit.streakCount > 0 ? yesterday : null;
+    habit.lastCompletedAt = habit.streakCount > 0 ? previousPeriodMarker(habit) : null;
 
     await habit.save();
     await revokeOverallStreakIfIncomplete(userId);

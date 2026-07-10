@@ -178,6 +178,45 @@ test('habit check-in and uncheck-in updates streaks correctly', async () => {
     .expect(400);
 });
 
+test('uncompleting a monthly habit leaves it re-completable and does not drain the streak', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+  const now = new Date();
+
+  const habit = await Habit.create({
+    ownerId: user._id,
+    title: 'Monthly review',
+    type: 'boolean',
+    frequency: 'Monthly',
+    streakCount: 5,
+    lastCompletedAt: new Date(now.getFullYear(), now.getMonth() - 1, 15),
+  });
+
+  const completed = await request(app)
+    .post(`/api/habits/${habit._id}/check-ins`)
+    .set('Authorization', token)
+    .expect(200);
+  assert.equal(completed.body.data.streakCount, 6);
+
+  const uncompleted = await request(app)
+    .delete(`/api/habits/${habit._id}/check-ins`)
+    .set('Authorization', token)
+    .expect(200);
+  assert.equal(uncompleted.body.data.streakCount, 5);
+  assert.equal(uncompleted.body.data.isCompletedToday, false);
+
+  await request(app)
+    .delete(`/api/habits/${habit._id}/check-ins`)
+    .set('Authorization', token)
+    .expect(400);
+
+  const recompleted = await request(app)
+    .post(`/api/habits/${habit._id}/check-ins`)
+    .set('Authorization', token)
+    .expect(200);
+  assert.equal(recompleted.body.data.streakCount, 6);
+});
+
 test('completing all due habits clears the overall streak repair deadline', async () => {
   const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
   const inOneDay = new Date(Date.now() + 24 * 60 * 60 * 1000);
