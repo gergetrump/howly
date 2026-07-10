@@ -1,6 +1,7 @@
 import User from './user.model.js';
 import Item from '../items/item.model.js';
 import UserItem from '../inventory/inventory.model.js';
+import ChallengeParticipant from '../challenges/challengeParticipant.model.js';
 import config from '../../../config.js';
 
 const SERVER_BASE_URL = config.serverBaseUrl ?? 'http://localhost:3000';
@@ -53,6 +54,34 @@ function escapeRegex(value) {
 // Fetch a user document by id.
 export async function getUserById(userId) {
     return User.findById(userId);
+}
+
+export async function getCompletedChallengeCount(userId) {
+    const participations = await ChallengeParticipant.find({
+        user: userId,
+        status: { $nin: ['left', 'failed'] },
+    })
+        .select('challenge status daysCompleted')
+        .populate('challenge', 'status endsAt')
+        .lean();
+    const now = new Date();
+
+    return participations.filter((participation) => {
+        const challenge = participation.challenge;
+
+        if (!challenge || challenge.status === 'failed') {
+            return false;
+        }
+
+        if (participation.status === 'completed') {
+            return true;
+        }
+
+        const challengeEnded = challenge.status === 'completed'
+            || (challenge.endsAt && challenge.endsAt <= now);
+
+        return challengeEnded && participation.daysCompleted > 0;
+    }).length;
 }
 
 export async function listDevUsers() {
@@ -161,7 +190,7 @@ export async function updateUserPreferences(userId, updates) {
 }
 
 // Strip sensitive fields before sending user data to clients
-export function toPublicUser(user) {
+export function toPublicUser(user, extras = {}) {
     if (!user) {
         return null;
     }
@@ -184,6 +213,11 @@ export function toPublicUser(user) {
         providerId: user.providerId,
         coins: user.coins,
         streak: user.streak,
+        ...(
+            Number.isInteger(extras.completedChallenges)
+                ? { completedChallenges: extras.completedChallenges }
+                : {}
+        ),
         streakShields: user.streakShields ?? 0,
         streakRepairDeadline: user.streakRepairDeadline ?? null,
         streakShieldAutoUsedAt: user.streakShieldAutoUsedAt ?? null,
