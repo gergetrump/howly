@@ -403,8 +403,15 @@ export function DashboardPage() {
     }
 
     async function handleHabitCompletion(habit) {
+        const wasCompleted = habit.isCompletedToday;
+
+        if (!wasCompleted && habit.activeBoost) {
+            setHabits(prev => prev.map(h => (h.id === habit.id
+                ? { ...h, activeBoost: { ...h.activeBoost, remainingCompletions: Math.max(0, h.activeBoost.remainingCompletions - 1) } }
+                : h)));
+        }
+
         try {
-            const wasCompleted = habit.isCompletedToday;
             const updatedHabit = wasCompleted
                 ? await uncheckInHabit(habit.id)
                 : await checkInHabit(habit.id);
@@ -444,7 +451,7 @@ export function DashboardPage() {
             }
         } catch (error) {
             console.error('Failed to complete habit:', error);
-            // Optionally show toast error here
+            await refreshHabitsAndUser();
         }
     }
 
