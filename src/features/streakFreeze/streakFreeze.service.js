@@ -18,12 +18,14 @@ export const STREAK_FREEZE_ERROR_CODES = {
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STREAK_REMINDER_WINDOW_MS = 2 * 60 * 60 * 1000;
 
+/* Returns a copy of the date set to local midnight. */
 function startOfDay(date) {
     const value = new Date(date);
     value.setHours(0, 0, 0, 0);
     return value;
 }
 
+/* Formats a date as a YYYY-MM-DD key. */
 function toDateKey(date) {
     const value = new Date(date);
     return [
@@ -33,10 +35,12 @@ function toDateKey(date) {
     ].join('-');
 }
 
+/* Returns the whole-day difference between two dates. */
 function daysBetween(a, b) {
     return Math.round((startOfDay(a) - startOfDay(b)) / DAY_MS);
 }
 
+/* Returns the end-of-day deadline at the end of the streak-repair grace window. */
 function graceDeadline(now) {
     const deadline = startOfDay(now);
     deadline.setDate(deadline.getDate() + STREAK_REPAIR_WINDOW_DAYS);
@@ -44,6 +48,7 @@ function graceDeadline(now) {
     return deadline;
 }
 
+/* Returns the last moment (23:59:59.999) of yesterday. */
 function endOfYesterday(now) {
     const value = startOfDay(now);
     value.setDate(value.getDate() - 1);
@@ -51,12 +56,14 @@ function endOfYesterday(now) {
     return value;
 }
 
+/* Returns whether the user has email notifications and the given preference both enabled. */
 function canSendNotificationEmail(user, preferenceKey) {
     const preferences = user?.notificationPreferences ?? {};
 
     return preferences.emailEnabled === true && preferences[preferenceKey] === true;
 }
 
+/* Returns whether a reminder was already sent for the user's current repair deadline. */
 function hasReminderAlreadyBeenSent(user) {
     const sentFor = user.streakReminderEmailLastSentFor;
     const deadline = user.streakRepairDeadline;
@@ -64,28 +71,33 @@ function hasReminderAlreadyBeenSent(user) {
     return sentFor && deadline && sentFor.getTime() === deadline.getTime();
 }
 
+/* Formats a repair deadline as a human-readable date/time for reminder emails. */
 function formatReminderDeadline(deadline) {
     return new Intl.DateTimeFormat('en', {
         dateStyle: 'medium',
         timeStyle: 'short',
     }).format(deadline);
 }
+/* Builds an Error carrying a streak-freeze error code. */
 function streakFreezeError(code) {
     const error = new Error(code);
     error.code = code;
     return error;
 }
 
+/* Returns whether a habit has an active streak that is due but not yet completed for the current period. */
 function isHabitStreakAtRisk(habit) {
     if ((habit.streakCount ?? 0) <= 0) return false;
     return !isCompletedForPeriod(habit) && !isPreviousPeriod(habit, habit.lastCompletedAt);
 }
 
+/* Returns whether the user's overall streak has lapsed (a full day missed). */
 function isOverallStreakMissed(user, now) {
     if ((user.streak ?? 0) <= 0) return false;
     return !user.streakLastDay || daysBetween(now, user.streakLastDay) >= 2;
 }
 
+/* Returns whether the user still has a habit due today that is neither completed nor covered by the previous period. */
 async function hasUnmetDueHabit(userId) {
     const habits = await Habit.find({ ownerId: userId, deletedAt: null, source: { $ne: 'challenge' } })
         .select('frequency lastCompletedAt customDays');
@@ -95,6 +107,7 @@ async function hasUnmetDueHabit(userId) {
         && !isPreviousPeriod(habit, habit.lastCompletedAt));
 }
 
+/* Marks each at-risk habit as completed for the previous period so its streak survives, returning how many were bridged. */
 async function bridgeAtRiskHabits(userId, now) {
     const habits = await Habit.find({ ownerId: userId, streakCount: { $gt: 0 } });
     let bridged = 0;
@@ -109,6 +122,7 @@ async function bridgeAtRiskHabits(userId, now) {
     return bridged;
 }
 
+/* Grants one streak shield to each premium/admin user once per calendar month. */
 export async function grantMonthlyShields(now = new Date()) {
     const users = await User.find({
         isDeleted: false,
@@ -134,6 +148,7 @@ export async function grantMonthlyShields(now = new Date()) {
     return { granted };
 }
 
+/* Daily job: opens grace windows, auto-spends shields, rescues rest days, and breaks lapsed habit and overall streaks. */
 export async function runDailyStreakMaintenance(now = new Date()) {
     const habits = await Habit.find({ streakCount: { $gt: 0 } });
 
@@ -213,6 +228,7 @@ export async function runDailyStreakMaintenance(now = new Date()) {
     return { habitsOpened, habitsBroken, overallOpened, overallBroken, overallAutoShielded, overallRestDaysRescued };
 }
 
+/* Emails users whose streak-repair deadline is approaching, at most once per deadline. */
 export async function sendStreakRepairReminders(now = new Date()) {
     const reminderWindowEnd = new Date(now.getTime() + STREAK_REMINDER_WINDOW_MS);
     const users = await User.find({
@@ -249,6 +265,7 @@ export async function sendStreakRepairReminders(now = new Date()) {
 
     return { sent, skipped, failed };
 }
+/* Spends a shield to rescue an at-risk habit streak (and the overall streak too if it was also missed). */
 export async function applyFreezeToHabit(userId, habitId, now = new Date()) {
     const [user, habit] = await Promise.all([
         User.findById(userId).select('streak streakLastDay streakShields streakRepairDeadline'),
@@ -281,6 +298,7 @@ export async function applyFreezeToHabit(userId, habitId, now = new Date()) {
     return { streakShields: spent.streakShields, habit: reloadedHabit };
 }
 
+/* Spends a shield to rescue the user's missed overall streak. */
 export async function applyFreezeToOverall(userId, now = new Date()) {
     const user = await User.findById(userId)
         .select('streak streakLastDay streakShields streakRepairDeadline');

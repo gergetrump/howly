@@ -6,8 +6,11 @@ const router = Router();
 
 router.use(requireAuth);
 
+/* Get the streak calendar summary for a month. */
 router.get('/calendar', getStreakCalendarSummary);
+/* Spend a shield to rescue a specific habit's streak. */
 router.post('/habits/:habitId', freezeHabitStreak);
+/* Spend a shield to rescue the overall streak. */
 router.post('/overall', freezeOverallStreak);
 
 export default router;

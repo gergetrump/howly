@@ -26,16 +26,19 @@ function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
 }
 
+/* Builds the normalized {userA, userB} key (IDs sorted) used to look up a friendship regardless of direction. */
 function buildFriendshipPair(firstUserId, secondUserId) {
   const [userA, userB] = [firstUserId.toString(), secondUserId.toString()].sort();
   return { userA, userB };
 }
 
+/* Returns whether the two users are friends. */
 async function areFriends(firstUserId, secondUserId) {
   const friendship = await Friendship.findOne(buildFriendshipPair(firstUserId, secondUserId)).lean();
   return Boolean(friendship);
 }
 
+/* Removes the "story liked" notification for a given actor/story after an unlike. */
 async function deleteStoryLikeNotification({ storyId, actorId, recipientId }) {
   await deleteNotificationsByFilter({
     recipient: recipientId,
@@ -46,6 +49,7 @@ async function deleteStoryLikeNotification({ storyId, actorId, recipientId }) {
   });
 }
 
+/* Removes comment/tag notifications tied to the given comment ids. */
 async function deleteStoryCommentNotifications(commentIds) {
   if (!commentIds.length) return;
 
@@ -56,6 +60,7 @@ async function deleteStoryCommentNotifications(commentIds) {
   });
 }
 
+/* Removes every notification associated with a story. */
 async function deleteStoryNotifications(storyId) {
   await deleteNotificationsByFilter({
     entityType: 'story',
@@ -63,6 +68,7 @@ async function deleteStoryNotifications(storyId) {
   });
 }
 
+/* Maps a story document to its public API response shape. */
 export function toStoryResponse(story, likedStoryIds = new Set()) {
   return {
     id: story._id.toString(),
@@ -83,6 +89,7 @@ export function toStoryResponse(story, likedStoryIds = new Set()) {
   };
 }
 
+/* Maps a story comment document to its public API response shape. */
 export function toStoryCommentResponse(comment) {
   return {
     id: comment._id.toString(),
@@ -132,6 +139,7 @@ async function resolveSource({ userId, sourceType, sourceId }) {
   return { errorCode: 'SOURCE_NOT_FOUND' };
 }
 
+/* Creates a story from an uploaded image after authorizing the source and moderating the image. */
 export async function createStory({ userId, sourceType, sourceId, caption, imageBuffer }) {
   const source = await resolveSource({ userId, sourceType, sourceId });
 
@@ -178,6 +186,7 @@ export async function createStory({ userId, sourceType, sourceId, caption, image
   return { story: toStoryResponse(story) };
 }
 
+/* Counts likes and comments per story, excluding users the viewer has blocked. */
 async function getVisibleStoryEngagementCounts({ storyIds, userId }) {
   if (!storyIds.length) {
     return {
@@ -217,6 +226,7 @@ async function getVisibleStoryEngagementCounts({ storyIds, userId }) {
   return { likeCountsByStory, commentCountsByStory };
 }
 
+/* Builds a single story's response with like/comment counts filtered to what the viewer may see. */
 async function toVisibleStoryResponse(story, userId, likedStoryIds = new Set()) {
   const response = toStoryResponse(story, likedStoryIds);
   const { likeCountsByStory, commentCountsByStory } = await getVisibleStoryEngagementCounts({
@@ -323,6 +333,7 @@ export async function getMyArchive({ userId }) {
   return stories.map((story) => toStoryResponse(story));
 }
 
+/* Toggles the current user's like on a story, updating the count and like notification. */
 export async function toggleStoryLike({ userId, storyId }) {
   const story = await Story.findById(storyId);
 
@@ -418,6 +429,7 @@ export async function getStoryLikes({ userId, storyId, pagination = null }) {
   return { likers: pagination ? toOffsetPage(likers, pagination) : likers };
 }
 
+/* Returns the users (owner and their friends, minus blocked) who can be @mentioned on a story. */
 export async function getStoryMentionCandidates({ userId, storyId }) {
   const story = await Story.findById(storyId).lean();
 
@@ -454,6 +466,7 @@ export async function getStoryMentionCandidates({ userId, storyId }) {
   return { candidates: candidates.map(toPublicUser).filter(Boolean) };
 }
 
+/* Deletes the user's story along with its image, likes, comments, and notifications. */
 export async function deleteStory({ userId, storyId }) {
   const story = await Story.findOne({ _id: storyId, user: userId });
 
@@ -476,6 +489,7 @@ export async function deleteStory({ userId, storyId }) {
   return { deleted: true };
 }
 
+/* Adds an optionally nested comment to a story, moderating it and firing comment/tag notifications. */
 export async function addStoryComment({ userId, storyId, content, parentCommentId = null }) {
   const story = await Story.findById(storyId);
 
@@ -589,6 +603,7 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
   return { comment: toStoryCommentResponse(comment) };
 }
 
+/* Returns a story's comments (paginated parents with their replies), excluding blocked users. */
 export async function getStoryComments({ userId, storyId, pagination = null }) {
   const story = await Story.findById(storyId).lean();
 
@@ -647,6 +662,7 @@ export async function getStoryComments({ userId, storyId, pagination = null }) {
   return { comments: comments.map(toStoryCommentResponse) };
 }
 
+/* Deletes a comment (and its replies if it is a parent) and refreshes the story's comment count. */
 export async function deleteStoryComment({ userId, storyId, commentId }) {
   const comment = await StoryComment.findOne({ _id: commentId, story: storyId });
 

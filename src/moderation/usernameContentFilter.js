@@ -36,12 +36,14 @@ const BLOCKED_USERNAME_TERMS = [
     'kkk',
 ];
 
+/* Normalizes a string for matching: lowercases it, reverses common leetspeak substitutions, and strips non-letters. */
 function normalizeForMatch(value) {
     const lowered = String(value ?? '').toLowerCase();
     const unleeted = lowered.replace(/./g, (character) => LEET_MAP[character] ?? character);
     return unleeted.replace(/[^a-z]/g, '');
 }
 
+/* Returns the first blocked/offensive term detected in a username, or null if it is clean. */
 export function findBlockedUsernameTerm(value) {
     const normalized = normalizeForMatch(value);
 

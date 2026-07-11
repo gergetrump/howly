@@ -12,7 +12,7 @@ const userSchema = new Schema(
       trim: true,
       minlength: 3,
       maxlength: 30,
-      match: [USERNAME_PATTERN, "Username may only contain letters, numbers, underscores, or hyphens."],
+      match: [USERNAME_PATTERN, "Username may only contain letters, numbers, dots, underscores, or hyphens."],
     },
 
     email: {

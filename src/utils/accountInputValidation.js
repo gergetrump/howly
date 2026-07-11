@@ -1,6 +1,6 @@
 import { findBlockedUsernameTerm } from '../moderation/usernameContentFilter.js';
 
-const USERNAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+const USERNAME_PATTERN = /^[A-Za-z0-9_.-]+$/;
 const DISPLAY_NAME_PATTERN = /^[\p{L}\p{M}][\p{L}\p{M} .'-]*$/u;
 const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001F\u007F]/;
 const RESERVED_USERNAMES = new Set([
@@ -34,7 +34,7 @@ export function validateUsernameValue(value, fieldName = 'username') {
   }
 
   if (!USERNAME_PATTERN.test(username)) {
-    return { error: `${fieldName} may only contain letters, numbers, underscores, or hyphens` };
+    return { error: `${fieldName} may only contain letters, numbers, dots, underscores, or hyphens` };
   }
 
   if (RESERVED_USERNAMES.has(username.toLowerCase())) {

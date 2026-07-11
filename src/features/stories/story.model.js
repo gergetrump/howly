@@ -6,6 +6,7 @@ export const STORY_SOURCE_TYPES = ['habit', 'challenge', 'milestone'];
 export const STORY_FEED_VISIBLE_HOURS = 30 * 24;
 export const STORY_ARCHIVE_DAYS = 90;
 
+/* Story: an image post tied to a habit/challenge/milestone, shown in the feed for 30 days and auto-deleted after 90. */
 const storySchema = new Schema(
   {
     user: {
@@ -86,6 +87,7 @@ const storySchema = new Schema(
 storySchema.index({ archiveExpiresAt: 1 }, { expireAfterSeconds: 0 });
 storySchema.index({ user: 1, createdAt: -1 });
 
+/* A single user's like on a story (unique per user/story pair). */
 const storyLikeSchema = new Schema(
   {
     user: {
@@ -108,6 +110,7 @@ const storyLikeSchema = new Schema(
 
 storyLikeSchema.index({ user: 1, story: 1 }, { unique: true });
 
+/* A comment on a story, optionally nested one level under a parent comment. */
 const storyCommentSchema = new Schema(
   {
     user: {

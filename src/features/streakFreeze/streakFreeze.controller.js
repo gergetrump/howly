@@ -14,6 +14,7 @@ const statusByErrorCode = {
     [STREAK_FREEZE_ERROR_CODES.NO_SHIELDS]: 400,
 };
 
+/* Maps a known streak-freeze service error to its HTTP status, or rethrows unknown errors. */
 function handleStreakFreezeError(res, serviceError) {
     if (serviceError.code && statusByErrorCode[serviceError.code]) {
         return res.status(statusByErrorCode[serviceError.code]).json({
@@ -25,6 +26,7 @@ function handleStreakFreezeError(res, serviceError) {
     throw serviceError;
 }
 
+/* POST /habits/:habitId — spends a shield to rescue an at-risk habit streak. */
 export const freezeHabitStreak = asyncHandler(async (req, res) => {
     try {
         const { streakShields, habit } = await applyFreezeToHabit(req.user.id, req.params.habitId);
@@ -43,6 +45,7 @@ export const freezeHabitStreak = asyncHandler(async (req, res) => {
     }
 });
 
+/* POST /overall — spends a shield to rescue the missed overall streak. */
 export const freezeOverallStreak = asyncHandler(async (req, res) => {
     try {
         const { streakShields, streak } = await applyFreezeToOverall(req.user.id);
@@ -53,6 +56,7 @@ export const freezeOverallStreak = asyncHandler(async (req, res) => {
     }
 });
 
+/* GET /calendar — returns the streak calendar summary for the requested month. */
 export const getStreakCalendarSummary = asyncHandler(async (req, res) => {
     const data = await getStreakCalendar(req.user.id, { month: req.query.month });
 
