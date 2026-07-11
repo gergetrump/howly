@@ -1,9 +1,5 @@
 import Item from './item.model.js';
 
-export async function createItem(itemData) {
-    return Item.create(itemData);
-}
-
 export async function listItems({ type, premiumOnly } = {}) {
     const filter = {};
 
