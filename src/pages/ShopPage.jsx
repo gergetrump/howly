@@ -318,22 +318,7 @@ export function ShopPage() {
         },
         [items, selectedCategory],
     );
-    const ownedItemIds = useMemo(
-        () => new Set(
-            [...ownedItemSignatures]
-                .map((signature) => signature.split(':')[0])
-                .filter(Boolean),
-        ),
-        [ownedItemSignatures],
-    );
-    const orderedItems = useMemo(
-        () => [...filteredItems].sort(
-            (firstItem, secondItem) => (
-                Number(ownedItemIds.has(String(firstItem._id))) - Number(ownedItemIds.has(String(secondItem._id)))
-            ),
-        ),
-        [filteredItems, ownedItemIds],
-    );
+    const orderedItems = filteredItems;
     const selectedCustomItem = useMemo(() => {
         return items.find((item) => item._id === selectedCustomItemId) ?? null;
     }, [items, selectedCustomItemId]);
