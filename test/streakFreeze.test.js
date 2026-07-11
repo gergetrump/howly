@@ -127,6 +127,7 @@ test('runDailyStreakMaintenance clears a stale deadline when the habit is no lon
 test('runDailyStreakMaintenance opens a grace deadline for a missed overall streak', async () => {
   const now = new Date();
   const user = await buildUser({ streak: 7, streakLastDay: daysAgo(2) });
+  await buildHabit(user._id, { streakCount: 0, lastCompletedAt: daysAgo(3) });
 
   const result = await runDailyStreakMaintenance(now);
 
@@ -145,6 +146,7 @@ test('runDailyStreakMaintenance auto-uses a shield to save a missed overall stre
     streakLastDay: daysAgo(2),
     streakShields: 2,
   });
+  await buildHabit(user._id, { streakCount: 0, lastCompletedAt: daysAgo(3) });
 
   const result = await runDailyStreakMaintenance(now);
 
@@ -165,6 +167,7 @@ test('runDailyStreakMaintenance breaks the overall streak after the grace deadli
     streakLastDay: daysAgo(2),
     streakRepairDeadline: daysAgo(1),
   });
+  await buildHabit(user._id, { streakCount: 0, lastCompletedAt: daysAgo(3) });
 
   const result = await runDailyStreakMaintenance(now);
 
@@ -186,6 +189,30 @@ test('runDailyStreakMaintenance leaves an overall streak completed yesterday unt
 
   const reloaded = await User.findById(user._id);
   assert.equal(reloaded.streak, 7);
+});
+
+test('runDailyStreakMaintenance does not penalize a rest day with no unmet due habits', async () => {
+  const now = new Date();
+  const user = await buildUser({ streak: 5, streakLastDay: daysAgo(2), streakShields: 1 });
+  const todayDow = new Date().getDay() || 7;
+  const otherDay = todayDow === 1 ? 2 : 1;
+  await buildHabit(user._id, {
+    frequency: 'Custom',
+    customDays: [otherDay],
+    streakCount: 0,
+    lastCompletedAt: daysAgo(2),
+  });
+
+  const result = await runDailyStreakMaintenance(now);
+
+  assert.equal(result.overallAutoShielded, 0);
+  assert.equal(result.overallOpened, 0);
+  assert.equal(result.overallBroken, 0);
+  assert.equal(result.overallRestDaysRescued, 1);
+
+  const reloaded = await User.findById(user._id);
+  assert.equal(reloaded.streak, 5);
+  assert.equal(reloaded.streakShields, 1);
 });
 
 test('applyFreezeToHabit bridges the missed period but leaves today open to check off', async () => {
@@ -282,4 +309,22 @@ test('applyFreezeToOverall throws NOT_AT_RISK when the overall streak is not mis
     () => applyFreezeToOverall(user._id, new Date()),
     (error) => error.code === STREAK_FREEZE_ERROR_CODES.NOT_AT_RISK,
   );
+});
+
+test('concurrent shield applies spend only one shield', async () => {
+  const user = await buildUser({ streak: 7, streakLastDay: daysAgo(2), streakShields: 1 });
+
+  const results = await Promise.allSettled([
+    applyFreezeToOverall(user._id, new Date()),
+    applyFreezeToOverall(user._id, new Date()),
+  ]);
+
+  const fulfilled = results.filter((r) => r.status === 'fulfilled');
+  const rejected = results.filter((r) => r.status === 'rejected');
+  assert.equal(fulfilled.length, 1);
+  assert.equal(rejected.length, 1);
+  assert.equal(rejected[0].reason.code, STREAK_FREEZE_ERROR_CODES.NO_SHIELDS);
+
+  const reloaded = await User.findById(user._id).select('streakShields');
+  assert.equal(reloaded.streakShields, 0);
 });

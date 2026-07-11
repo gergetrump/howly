@@ -1,5 +1,6 @@
 import * as userService from './user.service.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cloudinary.service.js';
+import { moderateImage } from '../../moderation/moderation.service.js';
 import { PLANS, getPlanForUser, getPlanKeyForUser } from '../../config/plans.js';
 import {
     validateSearchUsersInput,
@@ -222,6 +223,14 @@ export async function uploadCurrentUserProfilePicture(req, res) {
     try {
         if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const moderation = await moderateImage(`data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`);
+    if (moderation.flagged) {
+        return res.status(400).json({
+            message: 'Please choose an appropriate profile picture.',
+            code: 'PROFILE_IMAGE_MODERATION_BLOCKED',
+        });
     }
 
     const result = await uploadBufferToCloudinary(req.file.buffer, {

@@ -1,3 +1,5 @@
+import { findBlockedUsernameTerm } from '../moderation/usernameContentFilter.js';
+
 const USERNAME_PATTERN = /^[A-Za-z0-9_-]+$/;
 const DISPLAY_NAME_PATTERN = /^[\p{L}\p{M}][\p{L}\p{M} .'-]*$/u;
 const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001F\u007F]/;
@@ -37,6 +39,10 @@ export function validateUsernameValue(value, fieldName = 'username') {
 
   if (RESERVED_USERNAMES.has(username.toLowerCase())) {
     return { error: `${fieldName} is reserved` };
+  }
+
+  if (findBlockedUsernameTerm(username)) {
+    return { error: `${fieldName} contains inappropriate language` };
   }
 
   return { value: username };

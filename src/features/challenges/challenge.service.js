@@ -1,4 +1,5 @@
 import Challenge from './challenge.model.js';
+import { moderateText } from '../../moderation/moderation.service.js';
 import ChallengeInvitation from './challengeInvitation.model.js';
 import ChallengeParticipant from './challengeParticipant.model.js';
 import Habit from '../habits/habit.model.js';
@@ -630,6 +631,16 @@ export async function createChallenge(input, user) {
 
     if (createPermission.error) {
         return { error: createPermission.error, code: createPermission.code };
+    }
+
+    const moderation = await moderateText(
+        [input.title, input.description, input.habitTemplate?.title].filter(Boolean).join(' '),
+    );
+    if (moderation.flagged) {
+        return {
+            error: 'Please choose a challenge title and description without harmful or inappropriate content.',
+            code: 'CHALLENGE_MODERATION_BLOCKED',
+        };
     }
 
     const startsAt = input.startsAt || new Date();
