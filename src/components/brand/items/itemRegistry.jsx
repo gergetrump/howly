@@ -295,7 +295,7 @@ const itemRegistry = {
         displayName: 'Straw Hat',
         visual: StrawHat,
         layer: StrawHatLayer,
-        transform: 'translate(20 -115) scale(0.95 0.95)',
+        transform: 'translate(20 -190) scale(0.95 0.95)',
         previewClassName: 'max-h-[68%] max-w-[86%]',
     },
     'hat-with-pompom': {
