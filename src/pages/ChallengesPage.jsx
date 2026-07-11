@@ -1411,31 +1411,31 @@ export function ChallengesPage() {
                     }
                 }}
             >
-                <ConfirmationDialogContent className="border-theme-text/10 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
-                    <ConfirmationDialogHeader className="space-y-4 text-center">
-                        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-theme-danger/20 bg-theme-danger/10">
-                            <TriangleAlert className="size-7 text-theme-danger" aria-hidden="true" />
-                        </div>
-                        <ConfirmationDialogTitle className="text-center text-2xl font-bold tracking-tight">
+                <ConfirmationDialogContent className="flex flex-col items-center p-7 text-center">
+                    <ConfirmationDialogHeader className="flex w-full flex-col items-center justify-center space-y-3 text-center">
+                        <ConfirmationDialogTitle className="w-full text-center text-2xl font-bold tracking-tight">
                             Leave challenge?
                         </ConfirmationDialogTitle>
-                        <ConfirmationDialogDescription className="text-base text-theme-text-soft">
-                            Are you sure you want to leave{' '}
-                            <strong className="font-semibold text-theme-text">
-                                {pendingLeaveChallenge?.title}
-                            </strong>
-                            ? You will lose all of your rewards for this challenge.
+                        <ConfirmationDialogDescription className="flex flex-col gap-2 text-center text-sm leading-relaxed text-theme-text-soft sm:text-base">
+                            <span className="break-words [overflow-wrap:anywhere]">
+                                Are you sure you want to leave{' '}
+                                <strong className="font-semibold text-theme-text">
+                                    {pendingLeaveChallenge?.title}
+                                </strong>
+                                ? You will lose all of your rewards for this challenge.
+                            </span>
                         </ConfirmationDialogDescription>
                     </ConfirmationDialogHeader>
-                    <ConfirmationDialogFooter className="mt-4 gap-3 sm:justify-center">
-                        <ConfirmationDialogCancel className="h-12 rounded-xl border-theme-text/20 bg-theme-text/10 px-6 text-theme-text hover:bg-theme-text/20 hover:text-theme-text">
+                    <ConfirmationDialogFooter className="mt-6 w-full flex-col gap-3 sm:flex-col sm:space-x-0">
+                        <ConfirmationDialogCancel className="mt-0 h-11 w-full rounded-xl border border-theme-text/10 bg-theme-surface-2 text-sm font-semibold text-theme-text hover:bg-theme-surface-2/80 hover:text-theme-text">
                             Keep challenge
                         </ConfirmationDialogCancel>
                         <ConfirmationDialogAction
-                            className="h-12 rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-6 font-semibold text-theme-danger hover:bg-theme-danger/20"
+                            className="h-11 w-full rounded-xl bg-theme-danger text-sm font-semibold text-white shadow-lg shadow-red-900/20 hover:bg-theme-danger/85"
                             onClick={confirmLeaveChallenge}
                         >
-                            Leave challenge
+                            <TriangleAlert className="mr-2 h-4 w-4" />
+                            Yes, leave challenge
                         </ConfirmationDialogAction>
                     </ConfirmationDialogFooter>
                 </ConfirmationDialogContent>
