@@ -6,6 +6,11 @@ test('blocks a plain slur', () => {
   assert.equal(findBlockedUsernameTerm('faggot123'), 'faggot');
 });
 
+test('blocks sexy (incl. leetspeak) in a username', () => {
+  assert.equal(findBlockedUsernameTerm('sexybeast'), 'sexy');
+  assert.ok(findBlockedUsernameTerm('s3xy_99'));
+});
+
 test('blocks a leetspeak slur', () => {
   assert.ok(findBlockedUsernameTerm('n1gg3r'));
 });

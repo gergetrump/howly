@@ -30,6 +30,7 @@ const BLOCKED_USERNAME_TERMS = [
     'slut',
     'asshole',
     'pussy',
+    'sexy',
     'nazi',
     'hitler',
     'kkk',
