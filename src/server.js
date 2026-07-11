@@ -3,6 +3,10 @@ import connectDB from './config/database.js';
 import createApp from './app.js';
 import { startSchedulers } from './scheduler/index.js';
 
+
+process.env.TZ = config.timezone;
+console.log(`Application timezone: ${config.timezone} (local time now: ${new Date().toString()})`);
+
 const app = createApp();
 const PORT = config.port || 3000;
 

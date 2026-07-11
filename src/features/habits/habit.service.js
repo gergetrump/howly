@@ -185,9 +185,6 @@ function toHabitDto(habit) {
         title: habit.title,
         description: habit.description,
         icon: habit.icon,
-        type: habit.type,
-        target: habit.target ?? null,
-        unit: habit.unit ?? null,
         frequency: habit.frequency,
         customDays: habit.customDays || [],
         category: habit.category ?? null,
@@ -297,7 +294,7 @@ export async function getHabitById(habitId, userId) {
     return populated;
 }
 
-const WRITABLE_HABIT_FIELDS = ['title', 'description', 'icon', 'type', 'target', 'unit', 'frequency', 'customDays'];
+const WRITABLE_HABIT_FIELDS = ['title', 'description', 'icon', 'frequency', 'customDays'];
 
 function pickWritableHabitFields(data = {}) {
     const payload = {};
@@ -316,10 +313,7 @@ async function assertHabitTextClean(text) {
     }
 }
 
-function validateHabitFields({ type, target, frequency, customDays }) {
-    if (type === 'numeric' && !(typeof target === 'number' && target >= 1)) {
-        throw new ApiError(400, 'INVALID_HABIT', 'Numeric habits need a target of at least 1.');
-    }
+function validateHabitFields({ frequency, customDays }) {
     if (frequency === 'Custom' && !(Array.isArray(customDays) && customDays.length > 0)) {
         throw new ApiError(400, 'INVALID_HABIT', 'Custom habits need at least one weekday.');
     }
