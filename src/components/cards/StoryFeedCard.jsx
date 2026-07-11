@@ -27,6 +27,7 @@ import {
 const STORY_COMMENT_PAGE_SIZE = 10;
 const STORY_LIKE_PAGE_SIZE = 20;
 
+/* Normalizes a plain-array or paged API response into a { items, hasMore, nextOffset } shape. */
 function normalizePageResponse(response) {
     if (Array.isArray(response)) {
         return {
@@ -71,6 +72,7 @@ function getLikerName(liker) {
     return liker?.firstName || liker?.username || 'someone';
 }
 
+/* Returns the list of users with duplicates and empty entries removed, keyed by id. */
 function getUniqueUsers(users) {
     const seen = new Set();
     return users.filter((u) => {
@@ -82,6 +84,7 @@ function getUniqueUsers(users) {
     });
 }
 
+/* Builds the "Liked/Commented by ... and others" summary line shown under a story. */
 function buildSocialSummary(likers, comments, likeCount, commentCount) {
     if (!likeCount && !commentCount) {
         return '';
@@ -131,6 +134,7 @@ function buildSocialSummary(likers, comments, likeCount, commentCount) {
     return '';
 }
 
+/* Feed card rendering a story image with likes, comments, and owner delete controls. */
 export function StoryFeedCard({
     authorName,
     authorAvatarSrc,
@@ -264,6 +268,7 @@ export function StoryFeedCard({
         };
     }, [story.id, story.commentCount, isCommentsOpen]);
 
+    /* Fetches the next page of comments and appends the newly seen, de-duplicated ones. */
     async function handleLoadMoreComments() {
         if (isLoadingMoreComments || !hasMoreComments) {
             return [];
@@ -303,6 +308,7 @@ export function StoryFeedCard({
         }
     }
 
+    /* Fetches the next page of likers and appends the newly seen, de-duplicated ones. */
     async function handleLoadMoreLikers() {
         if (isLoadingMoreLikers || !hasMoreLikers) {
             return;
@@ -341,6 +347,7 @@ export function StoryFeedCard({
         }
     }
 
+    /* Deletes this story through the parent handler, surfacing any error inline. */
     async function handleDelete() {
         try {
             setError('');

@@ -7,7 +7,6 @@ import {
     getUnreadNotificationCount,
     markNotificationRead,
 } from '@/services/notificationApi';
-import { setNotificationMenuOpen } from '@/components/layout/notificationMenuState';
 import { NotificationDropdown } from '@/components/layout/NotificationDropdown';
 
 const NOTIFICATION_PAGE_SIZE = 10;
@@ -49,7 +48,6 @@ export function NotificationBell({ user }) {
 
     const closeNotificationMenu = useCallback(() => {
         isMenuOpenRef.current = false;
-        setNotificationMenuOpen(false);
         setIsNotificationMenuOpen(false);
         setVisibleUnreadNotificationIds(new Set());
     }, []);
@@ -138,12 +136,6 @@ export function NotificationBell({ user }) {
     }, [closeNotificationMenu, user]);
 
     useEffect(() => {
-        return () => {
-            setNotificationMenuOpen(false);
-        };
-    }, []);
-
-    useEffect(() => {
         function handleDocumentPointerDown(event) {
             if (!notificationMenuRef.current?.contains(event.target)) {
                 closeNotificationMenu();
@@ -227,7 +219,6 @@ export function NotificationBell({ user }) {
         const nextIsOpen = !isNotificationMenuOpen;
 
         isMenuOpenRef.current = nextIsOpen;
-        setNotificationMenuOpen(nextIsOpen);
         setIsNotificationMenuOpen(nextIsOpen);
 
         if (!nextIsOpen) {

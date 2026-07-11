@@ -30,19 +30,6 @@ const ICONS = [
   '🚴', '🍎', '😴', '🧹', '💻', '💸',
 ];
 
-const UNITS = ['L', 'ml', 'min', 'hours', 'km', 'steps', 'times', 'pages', 'Custom'];
-const UNIT_LABELS = {
-    L: 'l',
-    ml: 'ml',
-    min: 'min',
-    hours: 'hours',
-    km: 'km',
-    steps: 'Steps',
-    times: 'Times',
-    pages: 'Pages',
-    Custom: 'Custom',
-};
-
 const FREQUENCIES = ['Daily', 'Weekly', 'Monthly', 'Custom'];
 
 const DAYS_OF_WEEK = [
@@ -55,15 +42,15 @@ const DAYS_OF_WEEK = [
     { label: 'Sun', value: 7 },
 ];
 
+/* Modal for creating or editing a habit; validates input, calls the create/update API, and handles the free-plan habit limit. */
 export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, prefill, existingHabits = [] }) {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [icon, setIcon] = useState('🎯');
-    const [target, setTarget] = useState('1');
+    const [target, setTarget] = useState('');
     const [unit, setUnit] = useState('');
-    const [customUnit, setCustomUnit] = useState('');
     const [frequency, setFrequency] = useState('');
     const [customDays, setCustomDays] = useState([]);
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
@@ -75,27 +62,17 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
         if (open && editHabit) {
             setName(editHabit.title || '');
             setDescription(editHabit.description || '');
-            setTarget(String(editHabit.target || 1));
             setIcon(editHabit.icon || '🎯');
+            setTarget(editHabit.target ? String(editHabit.target) : '');
+            setUnit(editHabit.unit || '');
             setFrequency(editHabit.frequency || '');
             setCustomDays(editHabit.customDays || []);
             setFormError('');
-
-            if (UNITS.includes(editHabit.unit)) {
-                setUnit(editHabit.unit);
-                setCustomUnit('');
-            } else if (editHabit.unit) {
-                setUnit('Custom');
-                setCustomUnit(editHabit.unit);
-            } else {
-                setUnit('');
-            }
         } else if (open && prefill) {
             setName(prefill.title || '');
             setDescription(prefill.description || '');
-            setTarget('1');
-            setUnit('');
-            setCustomUnit('');
+            setTarget(prefill.target ? String(prefill.target) : '');
+            setUnit(prefill.unit || '');
             setFrequency(prefill.frequency || '');
             setCustomDays([]);
             setFormError('');
@@ -103,9 +80,8 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
         } else if (open && !editHabit) {
             setName('');
             setDescription('');
-            setTarget('1');
+            setTarget('');
             setUnit('');
-            setCustomUnit('');
             setFrequency('');
             setCustomDays([]);
             setIcon('🎯');
@@ -113,6 +89,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
         }
     }, [open, editHabit, prefill]);
 
+    /* Validates the form and creates or updates the habit, redirecting free users to Premium when the habit limit is reached. */
     async function handleSubmit(e) {
         e.preventDefault();
 
@@ -121,13 +98,8 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             return;
         }
 
-        if (!unit) {
-            setFormError('Unit is required.');
-            return;
-        }
-
-        if (unit === 'Custom' && !customUnit.trim()) {
-            setFormError('Custom unit is required.');
+        if (!editHabit && !description.trim()) {
+            setFormError('Description is required.');
             return;
         }
 
@@ -141,23 +113,19 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             return;
         }
 
-        if (!target || Number(target) < 1) {
-            setFormError('Target must be at least 1.');
-            return;
-        }
-
-        const finalUnit = unit === 'Custom' ? customUnit : unit;
-
         const data = {
             title: name,
             description: description.trim(),
-            type: 'numeric',
-            target: Number(target) || 1,
-            unit: finalUnit,
             frequency,
             customDays,
             icon,
         };
+
+        const numericTarget = Number(target);
+        if (target !== '' && Number.isFinite(numericTarget) && numericTarget >= 1) {
+            data.target = numericTarget;
+            if (unit.trim()) data.unit = unit.trim();
+        }
 
         if (!editHabit && prefill?.canonicalHabitKey) {
             data.canonicalHabitKey = prefill.canonicalHabitKey;
@@ -284,7 +252,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
 
                     <div className="space-y-2.5">
                         <Label htmlFor="habit-description" className="text-sm font-medium text-theme-text">
-                            Description
+                            Description{!editHabit && <span className="text-theme-danger"> *</span>}
                         </Label>
                         <textarea
                             id="habit-description"
@@ -297,53 +265,27 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2.5">
-                            <Label htmlFor="habit-target" className="text-sm font-medium text-theme-text">
-                                Target
-                            </Label>
+                    <div className="space-y-2.5">
+                        <Label className="text-sm font-medium text-theme-text">
+                            Goal <span className="font-normal text-theme-text-muted">(optional)</span>
+                        </Label>
+                        <div className="flex gap-3">
                             <Input
-                                id="habit-target"
                                 type="number"
                                 min={1}
                                 value={target}
                                 onChange={(e) => setTarget(e.target.value)}
-                                className="h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20 [&::-webkit-inner-spin-button]:opacity-50"
+                                placeholder="8"
+                                className="h-12 w-24 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text caret-theme-accent placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-theme-accent/20"
+                            />
+                            <Input
+                                value={unit}
+                                onChange={(e) => setUnit(e.target.value)}
+                                placeholder="glasses, min, pages…"
+                                maxLength={50}
+                                className="h-12 flex-1 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text caret-theme-accent placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-theme-accent/20"
                             />
                         </div>
-
-                        <div className="space-y-2.5">
-                            <Label className="text-sm font-medium text-theme-text">Unit</Label>
-                            <Select value={unit} onValueChange={setUnit}>
-                                <SelectTrigger className="!h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:ring-theme-accent/20 [&>svg]:opacity-50 [&>svg]:text-theme-text">
-                                    <SelectValue placeholder="Select unit" />
-                                </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={4} className="rounded-xl border-theme-accent/20 bg-theme-surface w-[var(--radix-select-trigger-width)] z-[100]">
-                                    {UNITS.map((u) => (
-                                        <SelectItem
-                                            key={u}
-                                            value={u}
-                                            className="text-theme-text focus:!bg-theme-accent/40 focus:!text-theme-text data-[state=checked]:text-theme-text cursor-pointer [&_*]:!text-theme-text"
-                                        >
-                                            {UNIT_LABELS[u] ?? u}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {unit === 'Custom' && (
-                            <div className="col-span-2 space-y-2.5">
-                                <Label className="text-sm font-medium text-theme-text">Custom Unit</Label>
-                                <Input
-                                    value={customUnit}
-                                    onChange={(e) => setCustomUnit(e.target.value)}
-                                    placeholder="e.g. push-ups"
-                                    aria-required="true"
-                                    className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20"
-                                />
-                            </div>
-                        )}
                     </div>
 
                     <div className="space-y-2.5">

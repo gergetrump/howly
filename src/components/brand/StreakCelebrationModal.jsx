@@ -22,6 +22,7 @@ const CONFETTI = Array.from({ length: 30 }, (_, index) => ({
     round: index % 2 === 0,
 }));
 
+/* Reusable centered modal with a confetti burst for celebrating an achievement. */
 export function CelebrationModal({
     open,
     ariaLabel,
@@ -107,6 +108,7 @@ export function CelebrationModal({
     );
 }
 
+/* Listens for perfect-day streak increases and shows the rolling streak celebration. */
 export function StreakCelebrationModal() {
     const { companion } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
@@ -121,6 +123,7 @@ export function StreakCelebrationModal() {
             timersRef.current = [];
         }
 
+        /* Opens the modal and animates the day count rolling up on an overall-streak-up event. */
         function handleStreakUp(event) {
             const from = Number(event.detail?.from ?? 0);
             const to = Number(event.detail?.to ?? from);

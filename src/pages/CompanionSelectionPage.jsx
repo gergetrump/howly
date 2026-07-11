@@ -20,6 +20,7 @@ const COMPANION_PERKS = [
     { icon: '❤️', label: 'Keep you motivated daily' },
 ];
 
+/* Companion selection (onboarding step 1): pick a companion type, name it, and save it. */
 export function CompanionSelectionPage() {
     const navigate = useNavigate();
 
@@ -28,12 +29,14 @@ export function CompanionSelectionPage() {
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    /* Selects a companion type and pre-fills the matching default name. */
     function handleSelectType(type) {
         setSelectedType(type);
         // Pre-fill the matching default name; the user can still edit it.
         setName(getDefaultCompanionName(type));
     }
 
+    /* Validates the name, saves the chosen companion, then advances to habit selection. */
     async function handleSubmit() {
         const trimmedName = name.trim();
 

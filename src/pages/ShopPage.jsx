@@ -42,6 +42,7 @@ function isItemCategoryValue(value) {
     return ITEM_CATEGORIES.some((category) => category.value === value);
 }
 
+/* Shop: browse and preview items, manage a cart, buy items/power-ups with coins, and handle Premium upgrades. */
 export function ShopPage() {
     const { user, setUser, companion } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -88,6 +89,7 @@ export function ShopPage() {
     const isFreeUser = user?.isPremium !== true && user?.role !== 'admin';
     const premiumMonthlyCoins = planInfo?.plans?.premium?.monthlyBenefits?.coins;
 
+    /* Restores the item the user was viewing before being sent to the Premium page. */
     const restorePremiumReturnItem = useCallback(() => {
         const returnItemId = window.sessionStorage.getItem(PREMIUM_RETURN_ITEM_STORAGE_KEY);
 
@@ -97,6 +99,7 @@ export function ShopPage() {
         }
     }, []);
 
+    /* Opens the Premium upsell dialog, remembering which item to return to afterward. */
     const openPremiumPage = useCallback((description, returnItemId = '', title = undefined, showUpgradeActions = true) => {
         if (returnItemId) {
             window.sessionStorage.setItem(PREMIUM_RETURN_ITEM_STORAGE_KEY, returnItemId);
@@ -109,6 +112,7 @@ export function ShopPage() {
         setIsPremiumDialogOpen(true);
     }, []);
 
+    /* Closes the purchase dialog and opens the Premium dialog while preserving scroll position. */
     const openPremiumPageAfterPurchaseDialog = useCallback((description, returnItemId = '', title = undefined, showUpgradeActions = true) => {
         const scrollX = window.scrollX;
         const scrollY = window.scrollY;
@@ -121,6 +125,7 @@ export function ShopPage() {
         });
     }, [openPremiumPage]);
 
+    /* Refetches the current user (coins, premium status, shields) into auth state. */
     const refreshCurrentUser = useCallback(async () => {
         const currentUser = await getCurrentUser();
         const refreshedUser = currentUser.user ?? currentUser;
@@ -129,6 +134,7 @@ export function ShopPage() {
         return refreshedUser;
     }, [setUser]);
 
+    /* Refetches this month's boost purchase counts and the monthly limit. */
     const refreshBoostPurchaseLimits = useCallback(async () => {
         const limits = await getBoostPurchaseLimits();
         setMonthlyBoostPurchaseQuantities(limits?.purchases ?? {});
@@ -295,6 +301,7 @@ export function ShopPage() {
         ? requestedCategory
         : activeCategory;
 
+    /* Switches the active item category and drops the category URL param. */
     function handleCategoryChange(nextCategory) {
         setActiveCategory(nextCategory);
 
@@ -343,6 +350,7 @@ export function ShopPage() {
         ? activeColorSlots[selectedCustomItem.assetKey] ?? selectedCustomizationConfig?.colorSlots[0]?.key
         : '';
 
+    /* Adds an item to a preview list, replacing any item already in the same single-equip slot or type. */
     const addSelectedItem = useCallback((currentItems, item) => {
         const itemSlot = getItemEquipSlot(item?.assetKey);
 
@@ -466,6 +474,7 @@ export function ShopPage() {
             : Number.POSITIVE_INFINITY;
     }
 
+    /* Computes how many more of a stackable power-up can be added, given owned and monthly caps. */
     function getMaxCartQuantityForEntry(entry) {
         const item = getPurchaseEntryItem(entry);
 
@@ -524,6 +533,7 @@ export function ShopPage() {
         return ownedItemSignatures.has(getItemOwnershipSignature(item, getItemCustomization(item)));
     }
 
+    /* Adds an item to the cart, stacking quantity for power-ups and skipping already-owned items. */
     function addCartEntry(currentCartItems, item) {
         const nextEntry = createPurchaseEntry(item);
 
@@ -562,6 +572,7 @@ export function ShopPage() {
         setIsPremiumDialogOpen(true);
     }
 
+    /* Adds an item to the cart, prompting for Premium if it is a premium-only item. */
     function handleAddCurrentItemToCart(item) {
         if (isFreeUser && item?.premiumOnly) {
             handlePremiumRequired();
@@ -571,6 +582,7 @@ export function ShopPage() {
         setCartItems((currentCartItems) => addCartEntry(currentCartItems, item));
     }
 
+    /* Toggles an item in the companion preview and selects it for customization. */
     function handleTryOnItem(itemId) {
         const item = items.find((shopItem) => shopItem._id === itemId);
 
@@ -616,6 +628,7 @@ export function ShopPage() {
         }));
     }
 
+    /* Opens the purchase confirmation for the not-yet-owned entries. */
     function openBuyConfirmation(entriesForPurchase) {
         const nextItemsToBuy = entriesForPurchase.filter((entry) => !isPurchaseEntryOwned(entry));
 
@@ -678,6 +691,7 @@ export function ShopPage() {
         }));
     }
 
+    /* Increments locally tracked owned power-up quantities after a successful purchase. */
     function addPurchasedPowerUpQuantities(purchasedQuantitiesByCartKey, purchasedEntries) {
         setOwnedPowerUpQuantities((currentQuantities) => {
             const nextQuantities = { ...currentQuantities };
@@ -702,6 +716,7 @@ export function ShopPage() {
         });
     }
 
+    /* Increments locally tracked monthly boost purchase counts after a successful purchase. */
     function addPurchasedMonthlyBoostQuantities(purchasedQuantitiesByCartKey, purchasedEntries) {
         setMonthlyBoostPurchaseQuantities((currentQuantities) => {
             const nextQuantities = { ...currentQuantities };
@@ -722,6 +737,7 @@ export function ShopPage() {
         });
     }
 
+    /* Applies an overall streak freeze to save the day's streak, then refreshes the user. */
     async function rescueStreakNow() {
         try {
             await applyOverallStreakFreeze();
@@ -732,6 +748,7 @@ export function ShopPage() {
         }
     }
 
+    /* Buys each cart entry in turn, updates inventory/coins, and maps purchase errors to prompts. */
     async function handleBuyItems(entriesForPurchase) {
         setError('');
 

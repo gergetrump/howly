@@ -62,6 +62,7 @@ export function StreakFreezeCard({
     const cartQuantityMax = isCartQuantityMax?.(item) ?? false;
     const ownedQuantityMax = isOwnedQuantityMax?.(item) ?? false;
 
+    /* Runs the action, but prompts free users to upgrade when the item is premium-only. */
     function guardPremium(action) {
         if (isFreeUser && item?.premiumOnly) {
             onPremiumRequired?.();

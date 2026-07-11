@@ -32,6 +32,7 @@ function ThemePreview({ preview }) {
     );
 }
 
+/* Theme selector grid: shows each theme, locks unowned premium ones (linking to the shop), and applies the chosen theme. */
 export function ThemePicker() {
     const navigate = useNavigate();
     const { theme, setTheme, themes } = useTheme();
