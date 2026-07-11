@@ -152,6 +152,20 @@ test('POST /api/stories with invalid sourceType returns 400', async () => {
   assert.match(response.body.message, /sourceType/);
 });
 
+test('POST /api/stories rejects challenge as a story source', async () => {
+  const user = await buildUser();
+
+  const response = await request(app)
+    .post('/api/stories')
+    .set('Authorization', authHeader(user))
+    .field('sourceType', 'challenge')
+    .field('sourceId', new mongoose.Types.ObjectId().toString())
+    .attach('image', Buffer.from('fake-image'), 'photo.jpg')
+    .expect(400);
+
+  assert.match(response.body.message, /sourceType/);
+});
+
 test('POST /api/stories for a habit that is not yours returns 404', async () => {
   const user = await buildUser();
   const otherUser = await buildUser();

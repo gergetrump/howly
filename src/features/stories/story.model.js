@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const { Schema } = mongoose;
 
-export const STORY_SOURCE_TYPES = ['habit', 'challenge', 'milestone'];
+export const STORY_SOURCE_TYPES = ['habit', 'milestone'];
 export const STORY_FEED_VISIBLE_HOURS = 30 * 24;
 export const STORY_ARCHIVE_DAYS = 90;
 

@@ -10,7 +10,6 @@ import { Friendship } from '../social/social.model.js';
 import { getBlockedUserIds } from '../social/social.service.js';
 import { MilestonePost } from '../milestones/milestone.model.js';
 import Habit from '../habits/habit.model.js';
-import Challenge from '../challenges/challenge.model.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cloudinary.service.js';
 import { toPublicUser } from '../users/user.service.js';
 import { createNotification, deleteNotificationsByFilter } from '../notifications/notification.service.js';
@@ -104,16 +103,6 @@ async function resolveSource({ userId, sourceType, sourceId }) {
     }
 
     return { sourceTitle: habit.title, sourceEmoji: habit.icon || '🎯' };
-  }
-
-  if (sourceType === 'challenge') {
-    const challenge = await Challenge.findById(sourceId).lean();
-
-    if (!challenge) {
-      return { errorCode: 'SOURCE_NOT_FOUND' };
-    }
-
-    return { sourceTitle: challenge.title, sourceEmoji: '🏋️' };
   }
 
   if (sourceType === 'milestone') {
