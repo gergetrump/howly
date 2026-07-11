@@ -42,7 +42,6 @@ import {
 import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
 import { NotificationMuteDialog } from '@/components/social/NotificationMuteDialog.jsx';
 import { useAuth } from '@/context/authContext';
-import { createManagePremiumSession } from '@/services/paymentService';
 import { sendFeedback } from '@/services/feedbackService';
 import { toast } from 'sonner';
 
@@ -208,8 +207,6 @@ export function ProfilePage() {
     const { user, setUser, isLoadingUser } = useAuth();
     // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState('');
-    const [premiumError, setPremiumError] = useState('');
-    const [isManagingPremium, setIsManagingPremium] = useState(false);
     const [isUploadingPicture, setIsUploadingPicture] = useState(false);
     const [isDeletingPicture, setIsDeletingPicture] = useState(false);
     const [pictureError, setPictureError] = useState('');
@@ -231,6 +228,15 @@ export function ProfilePage() {
         navigate('/premium', {
             state: {
                 message: 'Upgrade to Premium to unlock more habits, challenges, monthly coins, streak shields, and premium shop items.',
+                returnTo: '/profile',
+            },
+        });
+    }
+
+    function handleManagePremium() {
+        navigate('/premium', {
+            state: {
+                message: 'You are on Premium. Review your plan benefits below, or manage billing and cancellation in Stripe.',
                 returnTo: '/profile',
             },
         });
@@ -318,29 +324,6 @@ export function ProfilePage() {
             toast.error(error.message || "We couldn't send your feedback right now. Please try again.");
         } finally {
             setIsSendingFeedback(false);
-        }
-    }
-
-    async function handleManagePremium() {
-        try {
-            setPremiumError('');
-            setIsManagingPremium(true);
-            const response = await createManagePremiumSession();
-
-            if (!response?.url) {
-                throw new Error('Manage premium session did not include a URL');
-            }
-
-            window.location.href = response.url;
-        } catch (error) {
-            console.error('Could not start manage-premium session:', error);
-            setPremiumError(
-                error.message === 'Request failed'
-                    ? 'Premium management is unavailable right now.'
-                    : error.message || 'Could not manage premium'
-            );
-        } finally {
-            setIsManagingPremium(false);
         }
     }
 
@@ -511,9 +494,8 @@ export function ProfilePage() {
                             <SettingsRow
                                 icon={Crown}
                                 iconColor="text-theme-gold"
-                                title={isManagingPremium ? 'Opening portal...' : 'Manage your Premium Subscription'}
+                                title="Manage your Premium Subscription"
                                 onClick={handleManagePremium}
-                                disabled={isManagingPremium}
                             />
                         ) : (
                             <SettingsRow
@@ -533,11 +515,6 @@ export function ProfilePage() {
                         />
                     </div>
                 </div>
-                {premiumError && (
-                    <p className="mt-3 rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
-                        {premiumError}
-                    </p>
-                )}
             </PageSection>
 
             <PageSection title="Support">

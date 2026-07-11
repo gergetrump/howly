@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Check, Coins, Crown, Loader2, Shield, Sparkles } from 'lucide-react';
+import { BarChart3, Check, Coins, Crown, Globe, Loader2, Shield, Sparkles } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { getCurrentUserPlan } from '@/services/userService';
 const FALLBACK_FREE_PLAN = {
     label: 'Free',
     limits: {
-        maxHabits: 2,
+        maxHabits: 4,
         maxActiveChallenges: 2,
         maxActiveCreatedChallenges: 0,
     },
@@ -28,9 +28,9 @@ const FALLBACK_FREE_PLAN = {
 const FALLBACK_PREMIUM_PLAN = {
     label: 'Premium',
     limits: {
-        maxHabits: 6,
-        maxActiveChallenges: 5,
-        maxActiveCreatedChallenges: 1,
+        maxHabits: 20,
+        maxActiveChallenges: 8,
+        maxActiveCreatedChallenges: 3,
     },
     permissions: {
         canCreateChallenges: true,
@@ -64,28 +64,68 @@ function yesNo(value) {
 }
 
 function buildHighlights(plan) {
+    const maxActiveCreatedChallenges = plan.limits?.maxActiveCreatedChallenges ?? FALLBACK_PREMIUM_PLAN.limits.maxActiveCreatedChallenges;
+    const hostedChallengesText = maxActiveCreatedChallenges === 1
+        ? 'host one of your own'
+        : `host up to ${maxActiveCreatedChallenges} of your own`;
+
     return [
         {
             icon: Crown,
-            title: `Create up to ${plan.limits?.maxHabits ?? 6} habits`,
+            title: `Create up to ${plan.limits?.maxHabits ?? FALLBACK_PREMIUM_PLAN.limits.maxHabits} habits`,
             text: 'Track more routines without pruning your current habit list.',
         },
         {
             icon: Sparkles,
             title: 'Create your own challenges',
-            text: `Join up to ${plan.limits?.maxActiveChallenges ?? 5} active challenges and host one of your own.`,
+            text: `Join up to ${plan.limits?.maxActiveChallenges ?? FALLBACK_PREMIUM_PLAN.limits.maxActiveChallenges} active challenges and ${hostedChallengesText}.`,
         },
         {
             icon: Coins,
-            title: `${plan.monthlyBenefits?.coins ?? 300} moon coins every month`,
+            title: `${plan.monthlyBenefits?.coins ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.coins} moon coins every month`,
             text: 'Use bonus coins for accessories and shop items.',
         },
         {
             icon: Shield,
-            title: `${plan.monthlyBenefits?.streakShields ?? 1} streak shield every month`,
+            title: `${plan.monthlyBenefits?.streakShields ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.streakShields} streak shield every month`,
             text: 'A little protection for the days life gets loud.',
         },
     ];
+}
+
+const PREMIUM_INSIGHT_CARDS = [
+    {
+        icon: BarChart3,
+        title: 'Analytics',
+        text: 'Track habit completion, timing patterns, and challenge progress over time.',
+        to: '/analytics',
+    },
+    {
+        icon: Globe,
+        title: 'Trends',
+        text: 'See anonymous community patterns and your private consistency benchmark.',
+        to: '/trends',
+    },
+];
+
+function PremiumBenefitCard({ icon: Icon, title, text, to, isPremium, onOpen }) {
+    const isClickable = Boolean(to && isPremium);
+    const CardWrapper = isClickable ? 'button' : 'div';
+
+    return (
+        <CardWrapper
+            type={isClickable ? 'button' : undefined}
+            onClick={isClickable ? () => onOpen(to) : undefined}
+            className={`rounded-xl border border-theme-text/10 bg-theme-text/5 p-4 text-left ${isClickable ? 'transition hover:border-theme-gold/30 hover:bg-theme-gold/5' : ''}`}
+        >
+            <Icon className="size-6 text-theme-gold" aria-hidden="true" />
+            <h3 className="mt-3 font-semibold text-theme-text">{title}</h3>
+            <p className="mt-1 text-sm leading-5 text-theme-text-muted">{text}</p>
+            {isClickable ? (
+                <p className="mt-3 text-sm font-semibold text-theme-gold">Open {title}</p>
+            ) : null}
+        </CardWrapper>
+    );
 }
 
 function FeatureRow({ label, freeValue, premiumValue }) {
@@ -113,7 +153,10 @@ export function PremiumPage() {
     const isPremium = user?.isPremium === true || user?.role === 'admin' || planInfo?.currentPlanKey === 'premium';
     const redirectMessage = location.state?.message;
     const returnTo = location.state?.returnTo;
-    const premiumHighlights = useMemo(() => buildHighlights(premiumPlan), [premiumPlan]);
+    const premiumHighlights = useMemo(
+        () => [...buildHighlights(premiumPlan), ...PREMIUM_INSIGHT_CARDS],
+        [premiumPlan],
+    );
 
     useEffect(() => {
         let isCurrent = true;
@@ -210,17 +253,21 @@ export function PremiumPage() {
                                     </div>
                                 </div>
                                 <p className="mt-4 text-sm leading-6 text-theme-text-soft">
-                                    Premium removes the free limits that slow down bigger routines and gives you monthly rewards for the shop.
+                                    Premium removes the free limits that slow down bigger routines, unlocks deeper progress insights, and gives you monthly rewards for the shop.
                                 </p>
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-2">
-                                {premiumHighlights.map(({ icon: Icon, title, text }) => (
-                                    <div key={title} className="rounded-xl border border-theme-text/10 bg-theme-surface-2 p-4">
-                                        <Icon className="size-6 text-theme-gold" aria-hidden="true" />
-                                        <h3 className="mt-3 font-semibold text-theme-text">{title}</h3>
-                                        <p className="mt-1 text-sm leading-5 text-theme-text-muted">{text}</p>
-                                    </div>
+                                {premiumHighlights.map(({ icon, title, text, to }) => (
+                                    <PremiumBenefitCard
+                                        key={title}
+                                        icon={icon}
+                                        title={title}
+                                        text={text}
+                                        to={to}
+                                        isPremium={isPremium}
+                                        onOpen={navigate}
+                                    />
                                 ))}
                             </div>
                         </div>
@@ -294,13 +341,18 @@ export function PremiumPage() {
                     </div>
                     <FeatureRow
                         label="Habits"
-                        freeValue={`${freePlan.limits?.maxHabits ?? 2}`}
-                        premiumValue={`${premiumPlan.limits?.maxHabits ?? 6}`}
+                        freeValue={`${freePlan.limits?.maxHabits ?? FALLBACK_FREE_PLAN.limits.maxHabits}`}
+                        premiumValue={`${premiumPlan.limits?.maxHabits ?? FALLBACK_PREMIUM_PLAN.limits.maxHabits}`}
                     />
                     <FeatureRow
                         label="Active challenges"
-                        freeValue={`${freePlan.limits?.maxActiveChallenges ?? 2}`}
-                        premiumValue={`${premiumPlan.limits?.maxActiveChallenges ?? 5}`}
+                        freeValue={`${freePlan.limits?.maxActiveChallenges ?? FALLBACK_FREE_PLAN.limits.maxActiveChallenges}`}
+                        premiumValue={`${premiumPlan.limits?.maxActiveChallenges ?? FALLBACK_PREMIUM_PLAN.limits.maxActiveChallenges}`}
+                    />
+                    <FeatureRow
+                        label="Hosted challenges"
+                        freeValue={`${freePlan.limits?.maxActiveCreatedChallenges ?? FALLBACK_FREE_PLAN.limits.maxActiveCreatedChallenges}`}
+                        premiumValue={`${premiumPlan.limits?.maxActiveCreatedChallenges ?? FALLBACK_PREMIUM_PLAN.limits.maxActiveCreatedChallenges}`}
                     />
                     <FeatureRow
                         label="Create challenges"
@@ -314,13 +366,28 @@ export function PremiumPage() {
                     />
                     <FeatureRow
                         label="Monthly moon coins"
-                        freeValue={`${freePlan.monthlyBenefits?.coins ?? 0}`}
-                        premiumValue={`${premiumPlan.monthlyBenefits?.coins ?? 300}`}
+                        freeValue={`${freePlan.monthlyBenefits?.coins ?? FALLBACK_FREE_PLAN.monthlyBenefits.coins}`}
+                        premiumValue={`${premiumPlan.monthlyBenefits?.coins ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.coins}`}
                     />
                     <FeatureRow
                         label="Monthly streak shields"
-                        freeValue={`${freePlan.monthlyBenefits?.streakShields ?? 0}`}
-                        premiumValue={`${premiumPlan.monthlyBenefits?.streakShields ?? 1}`}
+                        freeValue={`${freePlan.monthlyBenefits?.streakShields ?? FALLBACK_FREE_PLAN.monthlyBenefits.streakShields}`}
+                        premiumValue={`${premiumPlan.monthlyBenefits?.streakShields ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.streakShields}`}
+                    />
+                    <FeatureRow
+                        label="Analytics"
+                        freeValue="Not included"
+                        premiumValue="Included"
+                    />
+                    <FeatureRow
+                        label="Trends"
+                        freeValue="Not included"
+                        premiumValue="Included"
+                    />
+                    <FeatureRow
+                        label="Premium themes"
+                        freeValue="Default only"
+                        premiumValue="All themes"
                     />
                 </div>
             </PageSection>
