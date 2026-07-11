@@ -813,7 +813,7 @@ export function ShopPage() {
                 : 0;
             if (streakDeadline > Date.now() && (refreshedUser?.streakShields ?? 0) > streakShieldsBefore) {
                 toast('Your streak is still at risk', {
-                    description: 'Use a shield now to save it.',
+                    description: 'Use a shield now to save your daily streak and at-risk habits.',
                     duration: 12000,
                     action: {
                         label: 'Save streak',
@@ -863,7 +863,7 @@ export function ShopPage() {
                 toast.error("You've reached this month's purchase limit for this boost.");
                 await refreshBoostPurchaseLimits();
             } else if (buyError.code === 'SHIELDS_AT_MAX') {
-                toast.error('You already have the maximum number of shields.');
+                toast.error('You cannot add more shields right now.');
                 await refreshCurrentUser();
             } else if (buyError.code === 'PREMIUM_REQUIRED') {
                 if (isFreeUser) {

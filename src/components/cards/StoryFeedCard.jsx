@@ -519,18 +519,18 @@ export function StoryFeedCard({
 
             {isConfirmingDelete && (
                 <ConfirmationDialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
-                    <ConfirmationDialogContent className="p-8 flex flex-col items-center text-center z-[100]">
-                        <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-4 text-center w-full">
+                    <ConfirmationDialogContent className="p-7 flex flex-col items-center text-center z-[100]">
+                        <ConfirmationDialogHeader className="flex flex-col items-center justify-center space-y-3 text-center w-full">
                             <ConfirmationDialogTitle className="text-2xl font-bold tracking-tight text-center w-full">Delete this story?</ConfirmationDialogTitle>
-                            <ConfirmationDialogDescription className="text-base text-theme-text-soft text-center">
+                            <ConfirmationDialogDescription className="text-sm leading-relaxed text-theme-text-soft text-center sm:text-base">
                                 This will permanently remove your story post, likes, and comments. This can't be undone.
                             </ConfirmationDialogDescription>
                         </ConfirmationDialogHeader>
-                        <ConfirmationDialogFooter className="flex-col w-full gap-3 mt-8 sm:flex-col sm:space-x-0">
+                        <ConfirmationDialogFooter className="flex-col w-full gap-3 mt-6 sm:flex-col sm:space-x-0">
                             <AlertDialogPrimitive.Cancel asChild>
                                 <Button 
                                     variant="outline"
-                                    className="w-full h-14 rounded-xl bg-theme-surface-2 border border-theme-text/10 text-theme-text hover:bg-theme-surface-2/80 hover:text-theme-text mt-0 text-lg font-semibold"
+                                    className="w-full h-11 rounded-xl bg-theme-surface-2 border border-theme-text/10 text-theme-text hover:bg-theme-surface-2/80 hover:text-theme-text mt-0 text-sm font-semibold"
                                 >
                                     Keep it
                                 </Button>
@@ -539,9 +539,9 @@ export function StoryFeedCard({
                                 <Button 
                                     onClick={handleDelete}
                                     disabled={isDeleting}
-                                    className="w-full h-14 rounded-xl bg-[#d65d53] hover:bg-[#c2534a] text-white text-lg font-semibold shadow-lg shadow-red-900/20"
+                                    className="w-full h-11 rounded-xl bg-[#d65d53] hover:bg-[#c2534a] text-white text-sm font-semibold shadow-lg shadow-red-900/20"
                                 >
-                                    <Trash2 className="mr-2 h-5 w-5" /> {isDeleting ? 'Deleting...' : 'Yes, delete story'}
+                                    <Trash2 className="mr-2 h-4 w-4" /> {isDeleting ? 'Deleting...' : 'Yes, delete story'}
                                 </Button>
                             </AlertDialogPrimitive.Action>
                         </ConfirmationDialogFooter>

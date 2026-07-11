@@ -13,7 +13,7 @@ const STREAK_FREEZE_ASSET_KEY = 'streak-freeze';
 // Shop card for the Streak Freeze power-up. Renders as a normal ItemCard (same
 // look as the wearable items) but with cart/buy controls like boost power-ups.
 // Buying grants +1 shield through the shared inventory endpoint; the backend
-// special-cases this asset and keeps the reserve capped.
+// special-cases this asset and stores it as a stockpiled reserve.
 export function StreakFreezeCard({
     onAddToCart,
     onBuy,
@@ -94,7 +94,7 @@ export function StreakFreezeCard({
                         sideOffset={8}
                         className="z-[120] w-56 rounded-xl border border-theme-text/10 bg-theme-bg/95 p-3 text-left text-[11px] font-semibold leading-snug text-theme-text shadow-xl shadow-slate-950/30"
                     >
-                        Save one habit streak or your overall streak before the repair time runs out. You can hold up to 3 shields.
+                        Save your daily streak and all at-risk habit streaks before the repair time runs out. You can stockpile shields.
                     </PopoverContent>
                 </Popover>
             )}
@@ -107,7 +107,7 @@ export function StreakFreezeCard({
                 disabled={cartQuantityMax}
                 onClick={() => guardPremium(() => onAddToCart?.(item))}
             >
-                {cartQuantity > 0 ? `${cartQuantity}x in cart` : cartQuantityMax ? 'Max 3' : 'Add to cart'}
+                {cartQuantity > 0 ? `${cartQuantity}x in cart` : cartQuantityMax ? 'Cart full' : 'Add to cart'}
             </ActionButton>
             <ActionButton
                 type="button"
