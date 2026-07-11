@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BarChart3, Check, Coins, Crown, Globe, Loader2, Shield, Sparkles } from 'lucide-react';
+import { BarChart3, Check, Coins, Crown, Loader2, MessageCircle, Shield, Sparkles } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
@@ -96,15 +96,15 @@ function buildHighlights(plan) {
 const PREMIUM_INSIGHT_CARDS = [
     {
         icon: BarChart3,
-        title: 'Analytics',
-        text: 'Track habit completion, timing patterns, and challenge progress over time.',
+        title: 'Analytics & Trends',
+        text: 'Track habit completion, challenge progress, timing patterns, and community trends.',
         to: '/analytics',
     },
     {
-        icon: Globe,
-        title: 'Trends',
-        text: 'See anonymous community patterns and your private consistency benchmark.',
-        to: '/trends',
+        icon: MessageCircle,
+        title: 'AI habit ideas',
+        text: 'Chat with your companion for personalized habit suggestions when you need fresh routine ideas.',
+        to: '/dashboard',
     },
 ];
 
@@ -168,10 +168,7 @@ export function PremiumPage() {
                 }
             })
             .catch((planError) => {
-                console.error('Failed to load premium plan:', planError);
-                if (isCurrent) {
-                    setError('Premium details could not be loaded. The checkout is still available.');
-                }
+                console.warn('Failed to load premium plan. Using fallback plan details:', planError);
             })
             .finally(() => {
                 if (isCurrent) {
@@ -371,12 +368,12 @@ export function PremiumPage() {
                         premiumValue={yesNo(premiumPlan.permissions?.canBuyPremiumItems)}
                     />
                     <FeatureRow
-                        label="Analytics"
+                        label="Analytics & trends"
                         freeValue="Not included"
                         premiumValue="Included"
                     />
                     <FeatureRow
-                        label="Trends"
+                        label="AI habit ideas"
                         freeValue="Not included"
                         premiumValue="Included"
                     />

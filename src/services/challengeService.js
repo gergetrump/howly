@@ -22,6 +22,12 @@ export async function updateChallenge(challengeId, data) {
     });
 }
 
+export async function deleteChallenge(challengeId) {
+    return apiRequest(`/challenges/${challengeId}`, {
+        method: 'DELETE',
+    });
+}
+
 export async function getChallengeById(challengeId) {
     return apiRequest(`/challenges/${challengeId}`);
 }

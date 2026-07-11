@@ -1,7 +1,17 @@
 import { useState } from 'react';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, Trash2, TriangleAlert } from 'lucide-react';
 import { ActionButton } from '@/components/common';
 import { Button } from '@/components/ui/button';
+import {
+    ConfirmationDialog,
+    ConfirmationDialogAction,
+    ConfirmationDialogCancel,
+    ConfirmationDialogContent,
+    ConfirmationDialogDescription,
+    ConfirmationDialogFooter,
+    ConfirmationDialogHeader,
+    ConfirmationDialogTitle,
+} from '@/components/ui/confirmation-dialog';
 import {
     Dialog,
     DialogContent,
@@ -124,11 +134,12 @@ function buildChallengeForm(challenge) {
     };
 }
 
-export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting, challenge }) {
+export function ChallengeFormDialog({ open, onOpenChange, onSubmit, onDelete, isSubmitting, isDeleting, challenge }) {
     const isEditing = Boolean(challenge);
     const [form, setForm] = useState(() => buildChallengeForm(challenge));
     const [formError, setFormError] = useState('');
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const durationDays = calculateDurationDays(form.startsAt, form.endsAt);
     const maxEndDate = addDaysToDateInput(form.startsAt, MAX_CHALLENGE_DURATION_DAYS);
     const calculatedReward = Math.max(durationDays, 0) * COINS_PER_CHALLENGE_DAY;
@@ -217,17 +228,27 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
         onOpenChange(nextOpen);
     }
 
+    async function handleConfirmDelete() {
+        if (!challenge || !onDelete) {
+            return;
+        }
+
+        setDeleteConfirmOpen(false);
+        await onDelete(challenge);
+    }
+
     return (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="max-h-[88vh] overflow-y-auto rounded-2xl border-0 bg-theme-surface p-6 text-theme-text shadow-2xl sm:max-w-2xl sm:p-10">
-                <DialogHeader className="text-center">
-                    <DialogTitle className="text-2xl font-bold tracking-tight text-theme-text">
-                        {isEditing ? 'Edit Challenge' : 'Create Challenge'}
-                    </DialogTitle>
-                    <DialogDescription className="text-theme-text-soft">
-                        Set up the Challenge and the Habit every participant will receive.
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Dialog open={open} onOpenChange={handleOpenChange}>
+                <DialogContent className="max-h-[88vh] overflow-y-auto rounded-2xl border-0 bg-theme-surface p-6 text-theme-text shadow-2xl sm:max-w-2xl sm:p-10">
+                    <DialogHeader className="text-center">
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-theme-text">
+                            {isEditing ? 'Edit Challenge' : 'Create Challenge'}
+                        </DialogTitle>
+                        <DialogDescription className="text-theme-text-soft">
+                            Set up the Challenge and the Habit every participant will receive.
+                        </DialogDescription>
+                    </DialogHeader>
 
                 <form
                     className="space-y-6"
@@ -490,19 +511,31 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                         </p>
                     ) : null}
 
-                    <div className="grid gap-3 sm:grid-cols-[auto_1fr]">
+                    <div className={`grid gap-3 ${isEditing ? 'sm:grid-cols-[auto_auto_1fr]' : 'sm:grid-cols-[auto_1fr]'}`}>
+                        {isEditing ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setDeleteConfirmOpen(true)}
+                                disabled={isSubmitting || isDeleting}
+                                className="h-12 rounded-2xl border-theme-danger/30 bg-theme-danger/10 px-6 text-theme-danger hover:bg-theme-danger/20"
+                            >
+                                {isDeleting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Trash2 className="size-4" aria-hidden="true" />}
+                                Delete
+                            </Button>
+                        ) : null}
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => handleOpenChange(false)}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isDeleting}
                             className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 px-6 text-theme-text hover:bg-theme-surface-2"
                         >
                             Cancel
                         </Button>
                         <ActionButton
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isDeleting}
                             className="h-12 rounded-2xl bg-gradient-to-r from-theme-accent to-theme-accent text-base font-semibold text-theme-on-accent shadow-lg shadow-theme-bg/25 transition-all hover:from-theme-accent-strong hover:to-theme-accent-strong hover:shadow-theme-bg/40"
                         >
                             {isSubmitting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Plus className="size-4" aria-hidden="true" />}
@@ -510,7 +543,40 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, isSubmitting
                         </ActionButton>
                     </div>
                 </form>
-            </DialogContent>
-        </Dialog>
+                </DialogContent>
+            </Dialog>
+
+            <ConfirmationDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                <ConfirmationDialogContent className="flex flex-col items-center p-7 text-center">
+                    <ConfirmationDialogHeader className="flex w-full flex-col items-center justify-center space-y-3 text-center">
+                        <ConfirmationDialogTitle className="w-full text-center text-2xl font-bold tracking-tight">
+                            Delete challenge?
+                        </ConfirmationDialogTitle>
+                        <ConfirmationDialogDescription className="flex flex-col gap-2 text-center text-sm leading-relaxed text-theme-text-soft sm:text-base">
+                            <span className="break-words [overflow-wrap:anywhere]">
+                                Are you sure you want to delete{' '}
+                                <strong className="font-semibold text-theme-text">
+                                    {challenge?.title}
+                                </strong>
+                                ? This cannot be undone.
+                            </span>
+                        </ConfirmationDialogDescription>
+                    </ConfirmationDialogHeader>
+                    <ConfirmationDialogFooter className="mt-6 w-full flex-col gap-3 sm:flex-col sm:space-x-0">
+                        <ConfirmationDialogCancel className="mt-0 h-11 w-full rounded-xl border border-theme-text/10 bg-theme-surface-2 text-sm font-semibold text-theme-text hover:bg-theme-surface-2/80 hover:text-theme-text">
+                            Keep challenge
+                        </ConfirmationDialogCancel>
+                        <ConfirmationDialogAction
+                            className="h-11 w-full rounded-xl bg-theme-danger text-sm font-semibold text-white shadow-lg shadow-red-900/20 hover:bg-theme-danger/85"
+                            onClick={handleConfirmDelete}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <TriangleAlert className="mr-2 h-4 w-4" />}
+                            Yes, delete challenge
+                        </ConfirmationDialogAction>
+                    </ConfirmationDialogFooter>
+                </ConfirmationDialogContent>
+            </ConfirmationDialog>
+        </>
     );
 }

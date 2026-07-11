@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
-import { BarChart3, CircleHelp, Globe, Loader2, Sparkles, Trophy } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Activity, BarChart3, ChevronDown, CircleHelp, Globe, Loader2, Sparkles, Trophy, Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { PremiumFeaturePreview } from '@/components/common';
 import { getTrendsAnalytics } from '@/services/trendsService';
 import { useAuth } from '@/context/AuthContext';
+import { buildTrendCompanionIntent, storePendingCompanionIntent } from '@/lib/trendCompanionIntent';
 import { appCardClassName, appCardInsetClassName, appTabsListCompactClassName, appTabsTriggerCompactClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +42,8 @@ const helpButtonClassName = 'grid h-6 w-6 shrink-0 place-items-center rounded-fu
 
 const helpPopoverContentClassName = 'z-[120] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-theme-text/10 bg-theme-bg/95 p-4 text-left text-xs leading-snug text-theme-text shadow-xl shadow-theme-bg/30';
 
+const PERSONAL_SCOPE_HELPER = 'Personal habits only. Challenges excluded.';
+
 const MOCK_TRENDS_ANALYTICS = {
     summary: {
         standing: {
@@ -48,6 +54,22 @@ const MOCK_TRENDS_ANALYTICS = {
         topCategory: {
             categoryLabel: 'Movement',
         },
+        pulse: {
+            checkIns: 1240,
+            checkInsTrend: {
+                changePercent: 12,
+                direction: 'up',
+                display: 'percent',
+            },
+            activeUsers: {
+                count: 86,
+                trend: {
+                    changePercent: 8,
+                    direction: 'up',
+                    display: 'percent',
+                },
+            },
+        },
     },
     byCategory: [
         {
@@ -56,6 +78,11 @@ const MOCK_TRENDS_ANALYTICS = {
             share: 34,
             checkIns: 340,
             trend: { direction: 'up', changePercent: 18 },
+            bySubcategory: [
+                { subcategoryKey: 'cardio', subcategoryLabel: 'Cardio', share: 18, checkIns: 180 },
+                { subcategoryKey: 'strength', subcategoryLabel: 'Strength', share: 10, checkIns: 100 },
+                { subcategoryKey: 'mobility', subcategoryLabel: 'Mobility', share: 6, checkIns: 60 },
+            ],
         },
         {
             categoryKey: 'mindfulness',
@@ -81,27 +108,39 @@ const MOCK_TRENDS_ANALYTICS = {
     ],
     trendingHabits: [
         {
-            canonicalHabitKey: 'morning-run',
-            label: 'Morning run',
+            canonicalHabitKey: 'run',
+            label: 'Run',
+            categoryKey: 'movement',
             categoryLabel: 'Movement',
+            checkIns: 412,
+            uniqueUsers: 78,
             trend: { direction: 'up', changePercent: 24 },
         },
         {
             canonicalHabitKey: 'drink-water',
             label: 'Drink water',
+            categoryKey: 'health',
             categoryLabel: 'Health',
+            checkIns: 280,
+            uniqueUsers: 52,
             trend: { direction: 'up', changePercent: 17 },
         },
         {
             canonicalHabitKey: 'read',
-            label: 'Read before bed',
+            label: 'Read',
+            categoryKey: 'learning',
             categoryLabel: 'Learning',
+            checkIns: 195,
+            uniqueUsers: 41,
             trend: { direction: 'flat', changePercent: 0 },
         },
         {
             canonicalHabitKey: 'meditate',
             label: 'Meditate',
+            categoryKey: 'mindfulness',
             categoryLabel: 'Mindfulness',
+            checkIns: 120,
+            uniqueUsers: 29,
             trend: { display: 'new', direction: 'up', changePercent: 100 },
         },
     ],
@@ -143,15 +182,19 @@ function HelpSection({ heading, children }) {
 
 function ConsistencyHelpPopover() {
     return (
-        <InfoPopover ariaLabel="What does your consistency mean?" title="Your consistency">
+        <InfoPopover ariaLabel="What does your consistency mean?" title="Your consistency (personal habits)">
+            <HelpSection heading="Personal habits only">
+                This card uses your own habits only. Challenge habits are excluded so the
+                benchmark stays fair and comparable across users.
+            </HelpSection>
             <HelpSection heading="Ahead of X%">
                 Compares your personal habit completion rate to other Howly users for this period.
                 &ldquo;Ahead of X%&rdquo; means you completed a higher share of your scheduled habits
                 than X% of eligible users. Ties do not count.
             </HelpSection>
             <HelpSection heading="Completion rate">
-                Your own rate: completed habit days divided by expected days. Challenge habits are
-                excluded. Only habits that existed at the start of the period count.
+                Your own rate: completed habit days divided by expected days. Only personal habits
+                that existed at the start of the period count.
             </HelpSection>
         </InfoPopover>
     );
@@ -160,6 +203,10 @@ function ConsistencyHelpPopover() {
 function CategoryBreakdownHelpPopover({ comparisonPeriod }) {
     return (
         <InfoPopover ariaLabel="What do these category percentages mean?" title="What Howly is working on">
+            <HelpSection heading="Platform totals">
+                Counts all classified check-ins on Howly in this period, including personal habits
+                and challenge habits.
+            </HelpSection>
             <HelpSection heading="Share %">
                 The share of all classified habit check-ins on Howly in this period that belong to
                 this life area. For example, 28% means about 28% of platform check-ins were in
@@ -170,6 +217,11 @@ function CategoryBreakdownHelpPopover({ comparisonPeriod }) {
                 means 17% more check-ins and &darr; 8% means 8% fewer. &ldquo;New&rdquo; means there
                 were no check-ins in the previous window.
             </HelpSection>
+            <HelpSection heading="Subcategories">
+                Tap a category to see finer sub-areas (for example Cardio or Strength under Movement).
+                Subcategory percentages are shares of all classified check-ins in this period, same as
+                the parent category row.
+            </HelpSection>
         </InfoPopover>
     );
 }
@@ -177,6 +229,19 @@ function CategoryBreakdownHelpPopover({ comparisonPeriod }) {
 function TrendingHabitsHelpPopover({ comparisonPeriod }) {
     return (
         <InfoPopover ariaLabel="What do these trend percentages mean?" title="Trending on Howly">
+            <HelpSection heading="Platform totals">
+                Ranks standard habit types by check-ins across Howly, including personal habits
+                and challenge habits.
+            </HelpSection>
+            <HelpSection heading="User counts">
+                The &ldquo;X users did this&rdquo; line counts distinct users who checked in on
+                that habit type in the period. Anonymous totals only — ghost-mode users are
+                excluded, same as other platform pulse metrics.
+            </HelpSection>
+            <HelpSection heading="Try what&apos;s rising">
+                Ask Howly for habit ideas opens your companion on the dashboard with tailored
+                suggestions, or find public challenges in the same life area.
+            </HelpSection>
             <HelpSection heading="Trend arrows">
                 How much check-ins for each standard habit type changed compared to{' '}
                 {comparisonPeriod}. For example, &uarr; 17% means 17% more check-ins and &darr; 8%
@@ -191,8 +256,43 @@ function TrendingHabitsHelpPopover({ comparisonPeriod }) {
     );
 }
 
+function PulseHelpPopover() {
+    return (
+        <InfoPopover ariaLabel="What do these platform totals mean?" title="Howly together">
+            <HelpSection heading="Platform totals">
+                Anonymous check-in counts across all non-deleted Howly users for the selected
+                period. Includes personal habits and challenge habits. No usernames or individual
+                habit titles are shown.
+            </HelpSection>
+            <HelpSection heading="Ghost mode">
+                Users in ghost mode are excluded from platform totals so their activity stays
+                private.
+            </HelpSection>
+            <HelpSection heading="Trend arrows">
+                Each card shows how the total changed compared to the previous equivalent period.
+                For example, &uarr; 12% means 12% more than the prior window and &darr; 8% means
+                8% fewer. &ldquo;New&rdquo; means there were none in the previous window.
+            </HelpSection>
+            <HelpSection heading="Active users">
+                Distinct users who completed at least one habit in the period, including personal
+                and challenge check-ins.
+            </HelpSection>
+        </InfoPopover>
+    );
+}
+
 function formatCategory(value) {
     return value?.categoryLabel ?? 'No data';
+}
+
+function formatPulseCheckIns(checkIns) {
+    const count = Number.isFinite(checkIns) ? checkIns : 0;
+    return count.toLocaleString();
+}
+
+function formatActiveUsers(activeUsers) {
+    const count = activeUsers?.count ?? 0;
+    return count.toLocaleString();
 }
 
 function formatStandingValue(standing) {
@@ -217,20 +317,18 @@ function formatStandingValue(standing) {
 
 function standingHelperText(standing, periodInRange) {
     if (standing?.display === 'percent') {
-        const rate = standing.userCompletionRate;
-        const rateLabel = Number.isFinite(rate) ? `${rate}% completion rate` : 'Personal habit completion rate';
-        return `${rateLabel} ${periodInRange}`;
+        return `Completion rate ${periodInRange}. ${PERSONAL_SCOPE_HELPER}`;
     }
 
     if (standing?.display === 'no_habits') {
-        return `Personal habits only ${periodInRange}`;
+        return `${PERSONAL_SCOPE_HELPER} ${periodInRange}`;
     }
 
     if (standing?.display === 'not_eligible') {
-        return `Nothing was due ${periodInRange}`;
+        return `Nothing was due on personal habits ${periodInRange}. ${PERSONAL_SCOPE_HELPER}`;
     }
 
-    return `Personal habit completion rate ${periodInRange}`;
+    return `${PERSONAL_SCOPE_HELPER} ${periodInRange}`;
 }
 
 function standingValueClassName(standing) {
@@ -240,6 +338,23 @@ function standingValueClassName(standing) {
 
     return 'text-theme-text';
 }
+
+function formatUniqueUsersShort(count) {
+    if (!Number.isFinite(count) || count <= 0) {
+        return null;
+    }
+
+    return count === 1 ? '1 user' : `${count.toLocaleString()} users`;
+}
+
+const habitCategoryBadgeClassName =
+    'shrink-0 border border-theme-accent/30 bg-theme-accent/15 text-theme-accent-soft hover:bg-theme-accent/15';
+
+const trendingHabitSecondaryCtaClassName = cn(
+    'rounded-full px-3 py-1.5 text-sm',
+    'border-theme-text/20 bg-theme-text/5 text-theme-text-soft',
+    'hover:bg-theme-text/10 hover:text-theme-text',
+);
 
 function formatTrendValue(trend) {
     if (!trend) {
@@ -309,19 +424,22 @@ function PeriodToggle({ period, onPeriodChange }) {
     );
 }
 
-function SummaryCard({ icon: Icon, label, labelAction, value, helper, valueClassName }) {
+function SummaryCard({ icon: Icon, label, labelAction, value, trend, helper, valueClassName }) {
     return (
         <Card className={appCardClassName}>
             <CardContent className="flex items-center gap-4">
                 <div className={cn('flex size-12 items-center justify-center rounded-xl', appCardInsetClassName)}>
                     <Icon className="size-6 text-howly-primary" aria-hidden="true" />
                 </div>
-                <div>
+                <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                         <p className="text-sm text-theme-text-soft">{label}</p>
                         {labelAction}
                     </div>
-                    <p className={cn('text-2xl font-bold tabular-nums', valueClassName ?? 'text-theme-text')}>{value}</p>
+                    <div className="flex items-baseline gap-2">
+                        <p className={cn('text-2xl font-bold tabular-nums', valueClassName ?? 'text-theme-text')}>{value}</p>
+                        {trend ? <TrendDelta trend={trend} size="sm" className="text-sm font-semibold" /> : null}
+                    </div>
                     {helper ? <p className="text-xs text-theme-text-muted">{helper}</p> : null}
                 </div>
             </CardContent>
@@ -329,7 +447,7 @@ function SummaryCard({ icon: Icon, label, labelAction, value, helper, valueClass
     );
 }
 
-function CategoryBreakdown({ categories, showTrends }) {
+function CategoryBreakdown({ categories, showTrends, expandedCategoryKey, onExpandedCategoryChange }) {
     if (!categories?.length) {
         return (
             <p className="rounded-xl bg-theme-text/5 p-4 text-center text-sm text-theme-text-soft">
@@ -342,28 +460,94 @@ function CategoryBreakdown({ categories, showTrends }) {
 
     return (
         <div className="space-y-3">
-            {categories.map((item) => (
-                <div key={item.categoryKey} className="space-y-2">
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                        <span className="font-medium text-theme-text">{item.categoryLabel}</span>
-                        <span className="flex shrink-0 items-center gap-2 text-theme-text-soft">
-                            <span>{item.share}%</span>
-                            {showTrends ? <TrendDelta trend={item.trend} className="w-12 text-right" /> : null}
-                        </span>
+            {categories.map((item) => {
+                const hasSubcategories = item.bySubcategory?.length > 0;
+                const isExpanded = expandedCategoryKey === item.categoryKey;
+
+                return (
+                    <div key={item.categoryKey} className="space-y-2">
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                            {hasSubcategories ? (
+                                <button
+                                    type="button"
+                                    className="flex min-w-0 flex-1 items-center gap-1.5 text-left font-medium text-theme-text transition hover:text-howly-primary"
+                                    aria-expanded={isExpanded}
+                                    onClick={() => onExpandedCategoryChange(
+                                        isExpanded ? null : item.categoryKey,
+                                    )}
+                                >
+                                    <ChevronDown
+                                        className={cn(
+                                            'size-4 shrink-0 text-theme-text-soft transition-transform',
+                                            isExpanded && 'rotate-180',
+                                        )}
+                                        aria-hidden="true"
+                                    />
+                                    <span className="truncate">{item.categoryLabel}</span>
+                                </button>
+                            ) : (
+                                <span className="font-medium text-theme-text">{item.categoryLabel}</span>
+                            )}
+                            <span className="flex shrink-0 items-center gap-2 text-theme-text-soft">
+                                <span>{item.share}%</span>
+                                {showTrends ? <TrendDelta trend={item.trend} className="w-12 text-right" /> : null}
+                            </span>
+                        </div>
+                        <div className="h-3 overflow-hidden rounded-full bg-theme-text/10">
+                            <div
+                                className="h-full rounded-full bg-howly-primary shadow-[0_0_12px] shadow-howly-primary/25 transition-all"
+                                style={{ width: `${Math.max((item.checkIns / maxCheckIns) * 100, item.checkIns ? 4 : 0)}%` }}
+                            />
+                        </div>
+                        {isExpanded ? (
+                            <div className="space-y-2 border-l-2 border-theme-text/10 pl-4">
+                                {hasSubcategories ? (
+                                    item.bySubcategory.map((subcategory) => (
+                                        <div key={subcategory.subcategoryKey} className="space-y-1.5">
+                                            <div className="flex items-center justify-between gap-3 text-sm">
+                                                <span className="text-theme-text-soft">
+                                                    └ {subcategory.subcategoryLabel}
+                                                </span>
+                                                <span className="shrink-0 tabular-nums text-theme-text-soft">
+                                                    {subcategory.share}%
+                                                </span>
+                                            </div>
+                                            <div className="h-2 overflow-hidden rounded-full bg-theme-text/10">
+                                                <div
+                                                    className="h-full rounded-full bg-howly-primary/70 transition-all"
+                                                    style={{
+                                                        width: `${Math.max(
+                                                            (subcategory.checkIns / item.checkIns) * 100,
+                                                            subcategory.checkIns ? 4 : 0,
+                                                        )}%`,
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-xs text-theme-text-muted">
+                                        No subcategory breakdown for this period.
+                                    </p>
+                                )}
+                            </div>
+                        ) : null}
                     </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-theme-text/10">
-                        <div
-                            className="h-full rounded-full bg-howly-primary shadow-[0_0_12px] shadow-howly-primary/25 transition-all"
-                            style={{ width: `${Math.max((item.checkIns / maxCheckIns) * 100, item.checkIns ? 4 : 0)}%` }}
-                        />
-                    </div>
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 }
 
-function TrendingHabits({ habits, showTrends }) {
+const trendingHabitPrimaryCtaClassName = 'rounded-full px-3 py-1.5 text-sm';
+
+function TrendingHabits({
+    habits,
+    showTrends,
+    companionName = 'Howly',
+    onAddHabit,
+    onFindChallenges,
+}) {
     if (!habits?.length) {
         return (
             <p className="rounded-xl bg-theme-text/5 p-4 text-center text-sm text-theme-text-soft">
@@ -372,34 +556,93 @@ function TrendingHabits({ habits, showTrends }) {
         );
     }
 
+    const maxCheckIns = Math.max(...habits.map((item) => item.checkIns ?? 0), 1);
+
     return (
-        <div className="space-y-3">
-            {habits.map((item, index) => (
-                <div
-                    key={item.canonicalHabitKey}
-                    className="flex items-center justify-between gap-4 rounded-xl border border-theme-text/10 bg-theme-text/5 p-4"
-                >
-                    <div className="min-w-0">
-                        <p className="font-semibold text-theme-text">
-                            {index + 1}. {item.label}
-                        </p>
-                        <p className="truncate text-sm text-theme-text-soft">
-                            {item.categoryLabel ?? 'Unclassified'}
-                        </p>
+        <div className="space-y-6">
+            {habits.map((item) => {
+                const uniqueUsersLabel = formatUniqueUsersShort(item.uniqueUsers);
+                const categoryLabel = item.categoryLabel ?? null;
+
+                return (
+                    <div key={item.canonicalHabitKey} className="space-y-2.5">
+                        <div className="flex items-start justify-between gap-3">
+                            <span className="min-w-0 truncate text-base font-semibold leading-snug text-theme-text">
+                                {item.label}
+                            </span>
+                            {showTrends ? (
+                                <TrendDelta trend={item.trend} className="mt-0.5 w-12 shrink-0 text-right" />
+                            ) : null}
+                        </div>
+
+                        {categoryLabel || uniqueUsersLabel ? (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                {categoryLabel ? (
+                                    <Badge className={habitCategoryBadgeClassName}>
+                                        {categoryLabel}
+                                    </Badge>
+                                ) : null}
+                                {uniqueUsersLabel ? (
+                                    <span className="inline-flex items-center gap-1 text-xs text-theme-text-soft">
+                                        <Users className="size-3.5 shrink-0" aria-hidden="true" />
+                                        {uniqueUsersLabel}
+                                    </span>
+                                ) : null}
+                            </div>
+                        ) : null}
+
+                        <div className="h-3 overflow-hidden rounded-full bg-theme-text/10">
+                            <div
+                                className="h-full rounded-full bg-howly-primary shadow-[0_0_12px] shadow-howly-primary/25 transition-all"
+                                style={{
+                                    width: `${Math.max(
+                                        ((item.checkIns ?? 0) / maxCheckIns) * 100,
+                                        item.checkIns ? 4 : 0,
+                                    )}%`,
+                                }}
+                            />
+                        </div>
+
+                        {onAddHabit || onFindChallenges ? (
+                            <div className="flex flex-wrap gap-2 pt-0.5">
+                                {onAddHabit ? (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="primary"
+                                        className={cn(trendingHabitPrimaryCtaClassName, 'gap-1.5')}
+                                        onClick={() => onAddHabit(item)}
+                                    >
+                                        <Sparkles size={14} aria-hidden="true" />
+                                        Ask {companionName} for habit ideas
+                                    </Button>
+                                ) : null}
+                                {onFindChallenges && item.categoryKey ? (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        className={trendingHabitSecondaryCtaClassName}
+                                        onClick={() => onFindChallenges(item)}
+                                    >
+                                        Find challenges
+                                    </Button>
+                                ) : null}
+                            </div>
+                        ) : null}
                     </div>
-                    {showTrends ? (
-                        <TrendDelta trend={item.trend} className="shrink-0 text-right" />
-                    ) : null}
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 }
 
 export function TrendsPage() {
-    const { user } = useAuth();
+    const navigate = useNavigate();
+    const { user, companion } = useAuth();
     const isPremiumUser = user?.isPremium === true || user?.role === 'admin';
     const [period, setPeriod] = useState('7d');
+    const [expandedCategoryKey, setExpandedCategoryKey] = useState(null);
     const [trendsAnalytics, setTrendsAnalytics] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -440,6 +683,19 @@ export function TrendsPage() {
         };
     }, [isPremiumUser, period]);
 
+    function handlePeriodChange(nextPeriod) {
+        setExpandedCategoryKey(null);
+        setPeriod(nextPeriod);
+    }
+
+    function handleFindChallenges(item) {
+        const params = new URLSearchParams({ tab: 'public' });
+        if (item.categoryKey) {
+            params.set('category', item.categoryKey);
+        }
+        navigate(`/challenges?${params.toString()}`);
+    }
+
     const displayTrendsAnalytics = isPremiumUser ? trendsAnalytics : MOCK_TRENDS_ANALYTICS;
     const displayIsLoading = isPremiumUser ? isLoading : false;
     const displayError = isPremiumUser ? error : '';
@@ -447,8 +703,17 @@ export function TrendsPage() {
     const selectedPeriod = TRENDS_PERIOD_OPTIONS.find((option) => option.value === period)
         ?? TRENDS_PERIOD_OPTIONS[1];
     const periodInRange = selectedPeriod.inRange;
-    const comparisonPeriod = selectedPeriod.comparison;
+    const comparisonPeriod = displayTrendsAnalytics?.comparisonPeriod?.label ?? selectedPeriod.comparison;
     const standing = summary?.standing;
+    const pulse = summary?.pulse;
+
+    function handleAddTrendingHabit(item) {
+        const companionIntent = buildTrendCompanionIntent(item, periodInRange);
+        storePendingCompanionIntent(companionIntent);
+        navigate('/dashboard', {
+            state: { companionIntent },
+        });
+    }
 
     const trendsContent = (
             <div className="space-y-8">
@@ -463,7 +728,7 @@ export function TrendsPage() {
                         <h2 className="text-lg font-semibold text-theme-text">
                             {selectedPeriod.heading}
                         </h2>
-                        <PeriodToggle period={period} onPeriodChange={setPeriod} />
+                        <PeriodToggle period={period} onPeriodChange={handlePeriodChange} />
                     </div>
 
                     {displayIsLoading ? (
@@ -472,21 +737,41 @@ export function TrendsPage() {
                             Loading trends analytics
                         </div>
                     ) : (
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <SummaryCard
-                                icon={Trophy}
-                                label="Your consistency"
-                                labelAction={<ConsistencyHelpPopover />}
-                                value={formatStandingValue(standing)}
-                                valueClassName={standingValueClassName(standing)}
-                                helper={standingHelperText(standing, periodInRange)}
-                            />
-                            <SummaryCard
-                                icon={Globe}
-                                label="Top focus area"
-                                value={formatCategory(summary?.topCategory)}
-                                helper={`Leading category ${periodInRange}`}
-                            />
+                        <div>
+                            <div className="mb-3 flex items-center gap-1.5">
+                                <h3 className="text-sm font-semibold text-theme-text-soft">Howly together</h3>
+                                <PulseHelpPopover />
+                            </div>
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <SummaryCard
+                                    icon={Activity}
+                                    label="Habit check-ins"
+                                    value={formatPulseCheckIns(pulse?.checkIns)}
+                                    trend={pulse?.checkInsTrend}
+                                    helper={`All platform check-ins, incl. challenges ${periodInRange}`}
+                                />
+                                <SummaryCard
+                                    icon={Users}
+                                    label="Active users"
+                                    value={formatActiveUsers(pulse?.activeUsers)}
+                                    trend={pulse?.activeUsers?.trend}
+                                    helper={`Users with any check-in, incl. challenges ${periodInRange}`}
+                                />
+                                <SummaryCard
+                                    icon={Trophy}
+                                    label="Your consistency"
+                                    labelAction={<ConsistencyHelpPopover />}
+                                    value={formatStandingValue(standing)}
+                                    valueClassName={standingValueClassName(standing)}
+                                    helper={standingHelperText(standing, periodInRange)}
+                                />
+                                <SummaryCard
+                                    icon={Globe}
+                                    label="Top focus area"
+                                    value={formatCategory(summary?.topCategory)}
+                                    helper={`Leading platform category, incl. challenges ${periodInRange}`}
+                                />
+                            </div>
                         </div>
                     )}
                 </PageSection>
@@ -512,6 +797,8 @@ export function TrendsPage() {
                             <CategoryBreakdown
                                 categories={displayTrendsAnalytics?.byCategory ?? []}
                                 showTrends
+                                expandedCategoryKey={expandedCategoryKey}
+                                onExpandedCategoryChange={setExpandedCategoryKey}
                             />
                         )}
                     </CardContent>
@@ -525,7 +812,8 @@ export function TrendsPage() {
                             <TrendingHabitsHelpPopover comparisonPeriod={comparisonPeriod} />
                         </CardTitle>
                         <CardDescription className="text-theme-text-soft">
-                            The standard habit types rising or falling {periodInRange}.
+                            Try what&apos;s rising {periodInRange}. Howly will suggest habits on your
+                            dashboard, or find a fitting challenge.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -538,13 +826,16 @@ export function TrendsPage() {
                             <TrendingHabits
                                 habits={displayTrendsAnalytics?.trendingHabits ?? []}
                                 showTrends
+                                companionName={companion?.name || 'Howly'}
+                                onAddHabit={handleAddTrendingHabit}
+                                onFindChallenges={handleFindChallenges}
                             />
                         )}
                     </CardContent>
                 </Card>
 
                 <p className="text-center text-xs text-theme-text-muted">
-                    Anonymous patterns only: shares and trends, never individual habit names or usernames. Your consistency rank is a private benchmark against other Howly users.
+                    Anonymous platform totals and patterns only. Never individual usernames or habit titles. Your consistency rank is a private benchmark against other Howly users.
                 </p>
             </div>
     );

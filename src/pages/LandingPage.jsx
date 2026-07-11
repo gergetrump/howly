@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CircleCheckBig, Image, Users, Flame } from 'lucide-react';
+import { CircleCheckBig, Image, Users, Sparkles } from 'lucide-react';
 import howlyIcon from '@/assets/howly.png';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -38,10 +38,10 @@ const FEATURES = [
             'Stay accountable through friendly challenges, or toggle Ghost Mode to go solo for the day.',
     },
     {
-        icon: Flame,
+        icon: Sparkles,
         iconColor: 'text-howly-primary',
         iconBg: 'bg-howly-primary/15',
-        title: 'Increase your streak',
+        title: 'Level up your companion',
         description:
             'Earn in-game currency for consistency and customise your cosmic companion.',
     },
@@ -56,7 +56,7 @@ function FeatureCard({ icon: Icon, iconColor, iconBg, title, description }) {
         <Card
             className={cn(
                 appCardClassName,
-                'group relative border-theme-text/10 transition-all duration-300 hover:border-howly-primary/40 hover:shadow-howly-primary/10 hover:shadow-lg',
+                'group relative border-theme-text/20 transition-all duration-300 hover:border-howly-primary/40 hover:shadow-howly-primary/10 hover:shadow-lg',
             )}
         >
             <CardContent className="flex flex-col gap-4 pt-2">
@@ -102,13 +102,14 @@ export function LandingPage() {
                 <div className="flex items-center gap-3">
                     <Button
                         variant="ghost"
-                        className="text-theme-text-soft hover:text-theme-text"
+                        className="h-10 px-5 text-theme-text-soft hover:bg-theme-text/10 hover:text-theme-text"
                         asChild
                     >
                         <Link to="/login">Log in</Link>
                     </Button>
                     <Button
-                        className="bg-howly-primary text-theme-text hover:opacity-90 transition-opacity"
+                        variant="primary"
+                        className="h-10 px-5"
                         asChild
                     >
                         <Link to="/register">Sign up</Link>
@@ -127,7 +128,7 @@ export function LandingPage() {
                     </p>
                     <h1 className="text-4xl font-bold leading-tight tracking-tight text-theme-text xs:text-5xl md:text-5xl lg:text-6xl">
                         Build the routine.{' '}
-                        <span className="bg-gradient-to-r from-howly-primary to-pink-400 bg-clip-text text-transparent">
+                        <span className="text-howly-primary">
                             with your pack.
                         </span>
                     </h1>
@@ -138,7 +139,8 @@ export function LandingPage() {
                     </p>
                     <div className="flex items-center gap-4">
                         <Button
-                            className="h-12 rounded-full bg-howly-primary px-8 text-base font-semibold text-theme-text shadow-lg transition-all hover:opacity-90 hover:shadow-xl hover:-translate-y-0.5"
+                            variant="primary"
+                            className="h-12 px-8 text-base"
                             asChild
                         >
                             <Link to="/register">Let&apos;s get started</Link>

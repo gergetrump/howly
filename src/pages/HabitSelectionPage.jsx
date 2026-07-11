@@ -150,14 +150,15 @@ export function HabitSelectionPage() {
                                 variant="ghost"
                                 onClick={handleSkip}
                                 disabled={isSubmitting}
-                                className="text-theme-text-soft hover:text-theme-text"
+                                className="text-theme-text-soft hover:bg-theme-text/10 hover:text-theme-text"
                             >
                                 Skip for now
                             </Button>
                             <Button
+                                variant="primary"
                                 onClick={handleAddHabits}
                                 disabled={isSubmitting || selected.length === 0}
-                                className="h-12 flex-1 rounded-full bg-howly-primary text-base font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="h-12 px-8 text-base"
                             >
                                 {isSubmitting
                                     ? 'Saving...'

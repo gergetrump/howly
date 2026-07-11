@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Sparkles, X, Plus, Pencil, ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -8,25 +8,36 @@ import { getCompanionLines } from '@/constants/companionDialogue';
 // The companion "speaks" via this panel; the actual avatar sits to the left
 // (CompanionStage on the dashboard). Mounted fresh each time it opens, so no
 // reset logic is needed.
-export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAdded, onEditSuggestion, className }) {
+export function CompanionChatPanel({
+    companionName = 'Howly',
+    onClose,
+    onHabitAdded,
+    onEditSuggestion,
+    launchIntent = null,
+    className,
+}) {
     const lines = getCompanionLines(companionName);
+    const autoSubmittedIntentKey = useRef(null);
 
     const [phase, setPhase] = useState('input'); // input | thinking | results
-    const [input, setInput] = useState('');
+    const [sentMessage, setSentMessage] = useState('');
+    const [input, setInput] = useState(launchIntent?.displayGoal ?? '');
     const [goal, setGoal] = useState('');
     const [habits, setHabits] = useState([]); // { key, title, icon, frequency, category }
     const [error, setError] = useState('');
     const [addingKey, setAddingKey] = useState(null);
 
-    async function handleAsk(event) {
-        event.preventDefault();
-        if (!input.trim()) return;
+    async function runSuggest(displayLabel, apiGoal) {
+        const trimmedGoal = apiGoal?.trim();
+        if (!trimmedGoal) {
+            return;
+        }
 
         setError('');
         setPhase('thinking');
 
         try {
-            const response = await suggestHabits(input.trim());
+            const response = await suggestHabits(trimmedGoal);
             const list = response?.data?.suggestions ?? [];
 
             if (!list.length) {
@@ -35,7 +46,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                 return;
             }
 
-            setGoal(response?.data?.goal || input.trim());
+            setGoal(displayLabel || response?.data?.goal || trimmedGoal);
             setHabits(list.map((habit, index) => ({ key: index, ...habit })));
             setPhase('results');
         } catch (err) {
@@ -48,19 +59,63 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
         }
     }
 
+    useLayoutEffect(() => {
+        const suggestGoal = launchIntent?.suggestGoal?.trim();
+        const displayGoal = launchIntent?.displayGoal?.trim();
+
+        if (!suggestGoal || !displayGoal) {
+            return undefined;
+        }
+
+        const intentKey = `${displayGoal}::${suggestGoal}`;
+        if (autoSubmittedIntentKey.current === intentKey) {
+            return undefined;
+        }
+
+        autoSubmittedIntentKey.current = intentKey;
+        setSentMessage(displayGoal);
+        setInput('');
+        void runSuggest(displayGoal, suggestGoal);
+
+        return undefined;
+    }, [launchIntent?.displayGoal, launchIntent?.suggestGoal]);
+
+    async function handleAsk(event) {
+        event.preventDefault();
+        if (!input.trim()) {
+            return;
+        }
+
+        setSentMessage(input.trim());
+        setInput('');
+        setPhase('thinking');
+
+        const apiGoal = input.trim() === launchIntent?.displayGoal && launchIntent?.suggestGoal
+            ? launchIntent.suggestGoal
+            : input.trim();
+
+        await runSuggest(input.trim(), apiGoal);
+    }
+
     // Quick-add a suggestion as-is, then drop it from the list.
     async function handleAdd(habit) {
         setAddingKey(habit.key);
         setError('');
 
         try {
-            const response = await createHabitsFromTemplates([{
+            const template = {
                 title: habit.title,
                 description: habit.description,
                 icon: habit.icon,
                 frequency: habit.frequency,
                 category: habit.category,
-            }]);
+            };
+
+            if (launchIntent?.canonicalHabitKey) {
+                template.canonicalHabitKey = launchIntent.canonicalHabitKey;
+            }
+
+            const response = await createHabitsFromTemplates([template]);
             (response?.data ?? []).forEach((created) => onHabitAdded?.(created));
             setHabits((previous) => previous.filter((entry) => entry.key !== habit.key));
         } catch (err) {
@@ -70,7 +125,11 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
         }
     }
 
-    const bubble = phase === 'thinking' ? lines.thinking : phase === 'results' ? lines.results : lines.greeting;
+    const bubble = phase === 'thinking'
+        ? lines.thinking
+        : phase === 'results'
+            ? lines.results
+            : lines.greeting;
 
     return (
         <div className={cn('min-w-0 flex-1 rounded-2xl border border-theme-accent/20 bg-theme-surface p-4 text-theme-text shadow-xl', className)}>
@@ -88,6 +147,12 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                     <X size={16} />
                 </button>
             </div>
+
+            {sentMessage ? (
+                <p className="mt-2 ml-auto block w-fit max-w-[85%] rounded-2xl bg-theme-accent/15 px-3 py-2 text-sm text-theme-text">
+                    {sentMessage}
+                </p>
+            ) : null}
 
             <p className="mt-2 inline-block rounded-2xl bg-theme-surface-2/70 px-3 py-2 text-sm text-theme-accent-soft">
                 {bubble}
@@ -123,7 +188,10 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                             <button
                                 type="button"
                                 onClick={() => onEditSuggestion?.(
-                                    { ...habit },
+                                    {
+                                        ...habit,
+                                        canonicalHabitKey: launchIntent?.canonicalHabitKey ?? null,
+                                    },
                                     () => setHabits((previous) => previous.filter((entry) => entry.key !== habit.key)),
                                 )}
                                 aria-label="Edit habit"

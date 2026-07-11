@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { CircleHelp, Loader2, Pencil, Trophy, TriangleAlert, UserPlus, UsersRound } from 'lucide-react';
+import { ChevronDown, CircleHelp, Loader2, Pencil, Trophy, TriangleAlert, UserPlus, UsersRound } from 'lucide-react';
 import { ActionButton, CardGrid, PlanLimitDialog } from '@/components/common';
 import { ChallengeCategoryChips } from '@/components/challenges/ChallengeCategoryChips.jsx';
 import { appTabsListFullWidthClassName, appTabsTriggerClassName } from '@/components/cards/cardStyles';
@@ -41,6 +41,7 @@ import {
     claimChallengeReward,
     createChallenge,
     createChallengeInvitation,
+    deleteChallenge,
     getChallengeParticipants,
     getChallengeInvitations,
     getChallenges,
@@ -69,6 +70,8 @@ const CHALLENGE_TABS = [
     { value: 'public', label: 'Public Challenges' },
     { value: 'past', label: 'Past Challenges' },
 ];
+const CHALLENGE_TAB_VALUES = new Set(CHALLENGE_TABS.map((tab) => tab.value));
+const CHALLENGE_PAGE_SIZE = 20;
 const PAST_CHALLENGE_STATUSES = new Set(['completed', 'failed']);
 
 function getUserId(user) {
@@ -93,6 +96,24 @@ function normalizeFriendRequestsResponse(requestsResponse) {
     return {
         incoming: normalizeListPage(requestsResponse?.incoming ?? []),
         outgoing: normalizeListPage(requestsResponse?.outgoing ?? []),
+    };
+}
+
+function normalizeChallengePage(response) {
+    if (Array.isArray(response)) {
+        return {
+            items: response,
+            hasMore: false,
+            nextOffset: response.length,
+        };
+    }
+
+    return {
+        items: response?.items ?? [],
+        hasMore: response?.hasMore === true,
+        nextOffset: Number.isInteger(response?.nextOffset)
+            ? response.nextOffset
+            : (response?.items?.length ?? 0),
     };
 }
 
@@ -356,13 +377,20 @@ function ChallengeParticipantsBadge({
     );
 }
 
+function readTabFromSearchParams(searchParams) {
+    const requestedTab = searchParams.get('tab');
+    return requestedTab && CHALLENGE_TAB_VALUES.has(requestedTab) ? requestedTab : 'active';
+}
+
 export function ChallengesPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState('active');
+    const [activeTab, setActiveTab] = useState(() => readTabFromSearchParams(searchParams));
     const [challenges, setChallenges] = useState([]);
+    const [hasMoreChallenges, setHasMoreChallenges] = useState(false);
+    const [isLoadingMoreChallenges, setIsLoadingMoreChallenges] = useState(false);
     const [invitations, setInvitations] = useState({ incoming: [], outgoing: [] });
     const [pendingNotificationJump, setPendingNotificationJump] = useState(() => (
         location.state?.notificationJump?.type === 'challenge_invitation_received'
@@ -394,6 +422,7 @@ export function ChallengesPage() {
     const [taxonomyCategories, setTaxonomyCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const hasInitializedCategoryFromUrl = useRef(false);
+    const challengesLoadedCountRef = useRef(CHALLENGE_PAGE_SIZE);
 
     const userId = getUserId(user);
     const incomingInvitations = invitations.incoming ?? [];
@@ -432,7 +461,11 @@ export function ChallengesPage() {
         }
 
         try {
-            const challengeParams = { scope };
+            const challengeParams = {
+                scope,
+                limit: CHALLENGE_PAGE_SIZE,
+                offset: 0,
+            };
 
             if (scope === 'public' && categoryKey !== 'all') {
                 challengeParams.categoryKey = categoryKey;
@@ -443,10 +476,13 @@ export function ChallengesPage() {
                 getChallengeInvitations(),
             ]);
 
-            const nextChallenges = Array.isArray(challengeData) ? challengeData : [];
+            const challengePage = normalizeChallengePage(challengeData);
+            const nextChallenges = challengePage.items;
             const nextInvitations = invitationData ?? { incoming: [], outgoing: [] };
 
             setChallenges(nextChallenges);
+            setHasMoreChallenges(challengePage.hasMore);
+            challengesLoadedCountRef.current = Math.max(challengePage.nextOffset, nextChallenges.length);
             setInvitations(nextInvitations);
             setParticipantsByChallengeId({});
             setParticipantErrorsByChallengeId({});
@@ -456,6 +492,8 @@ export function ChallengesPage() {
             if (showError) {
                 setError(null);
                 setChallenges([]);
+                setHasMoreChallenges(false);
+                challengesLoadedCountRef.current = 0;
             }
             return null;
         } finally {
@@ -484,6 +522,55 @@ export function ChallengesPage() {
         });
     }, []);
 
+    const handleLoadMoreChallenges = useCallback(async () => {
+        if (isLoadingMoreChallenges || !hasMoreChallenges) {
+            return;
+        }
+
+        setIsLoadingMoreChallenges(true);
+        setError(null);
+
+        try {
+            const currentOffset = challengesLoadedCountRef.current;
+            const challengeParams = {
+                scope: activeTab,
+                limit: CHALLENGE_PAGE_SIZE,
+                offset: currentOffset,
+            };
+
+            if (activeTab === 'public' && selectedCategory !== 'all') {
+                challengeParams.categoryKey = selectedCategory;
+            }
+
+            const response = await getChallenges(challengeParams);
+            const challengePage = normalizeChallengePage(response);
+
+            setChallenges((currentChallenges) => {
+                const seenChallengeIds = new Set(currentChallenges.map((challenge) => challenge?.id).filter(Boolean));
+                const nextItems = challengePage.items.filter((challenge) => {
+                    if (!challenge?.id || seenChallengeIds.has(challenge.id)) {
+                        return false;
+                    }
+
+                    seenChallengeIds.add(challenge.id);
+                    return true;
+                });
+
+                return [...currentChallenges, ...nextItems];
+            });
+
+            challengesLoadedCountRef.current = Math.max(
+                challengePage.nextOffset,
+                currentOffset + challengePage.items.length,
+            );
+            setHasMoreChallenges(challengePage.hasMore);
+        } catch (loadMoreError) {
+            setError({ message: loadMoreError.message || 'More challenges could not be loaded.' });
+        } finally {
+            setIsLoadingMoreChallenges(false);
+        }
+    }, [activeTab, hasMoreChallenges, isLoadingMoreChallenges, selectedCategory]);
+
     useEffect(() => {
         let isCancelled = false;
 
@@ -508,6 +595,10 @@ export function ChallengesPage() {
     }, []);
 
     useEffect(() => {
+        setActiveTab(readTabFromSearchParams(searchParams));
+    }, [searchParams]);
+
+    useEffect(() => {
         if (!taxonomyCategories.length || hasInitializedCategoryFromUrl.current) {
             return undefined;
         }
@@ -529,6 +620,22 @@ export function ChallengesPage() {
             }
         };
     }, [searchParams, taxonomyCategories]);
+
+    function handleTabChange(nextTab) {
+        setActiveTab(nextTab);
+
+        setSearchParams((currentParams) => {
+            const nextParams = new URLSearchParams(currentParams);
+
+            if (nextTab === 'active') {
+                nextParams.delete('tab');
+            } else {
+                nextParams.set('tab', nextTab);
+            }
+
+            return nextParams;
+        }, { replace: true });
+    }
 
     function handleCategoryChange(nextCategory) {
         setSelectedCategory(nextCategory);
@@ -1013,6 +1120,26 @@ export function ChallengesPage() {
         }
     }
 
+    async function handleDeleteChallenge(challenge) {
+        if (!challenge) {
+            return;
+        }
+
+        setBusyAction(`delete-${challenge.id}`);
+        clearChallengeFeedback();
+
+        try {
+            await deleteChallenge(challenge.id);
+            showChallengeToast('Your challenge has been deleted.');
+            closeFormDialog(false);
+            await refreshCurrentChallenges();
+        } catch (actionError) {
+            showActionError(actionError, "We couldn't delete your challenge. Please try again.");
+        } finally {
+            setBusyAction('');
+        }
+    }
+
     async function confirmLeaveChallenge() {
         const challenge = pendingLeaveChallenge;
 
@@ -1143,7 +1270,7 @@ export function ChallengesPage() {
                 onAction={openCreateDialog}
                 titleAction={<ChallengeInfoPopover />}
             >
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <Tabs value={activeTab} onValueChange={handleTabChange}>
                     <TabsList className={appTabsListFullWidthClassName}>
                         {CHALLENGE_TABS.map((tab) => (
                             <TabsTrigger
@@ -1185,6 +1312,7 @@ export function ChallengesPage() {
                 ) : null}
 
                 {!isLoading && visibleChallenges.length > 0 ? (
+                    <>
                     <CardGrid columns={2}>
                         {visibleChallenges.map((challenge) => {
                             const isOwnChallenge = userId && challenge.createdBy === userId;
@@ -1343,6 +1471,21 @@ export function ChallengesPage() {
                             );
                         })}
                     </CardGrid>
+
+                    {hasMoreChallenges ? (
+                        <div className="flex justify-center">
+                            <ActionButton
+                                type="button"
+                                className="gap-2 px-5"
+                                disabled={isLoadingMoreChallenges}
+                                onClick={handleLoadMoreChallenges}
+                            >
+                                <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                                {isLoadingMoreChallenges ? 'Loading...' : 'Load more'}
+                            </ActionButton>
+                        </div>
+                    ) : null}
+                    </>
                 ) : null}
 
                 {!isLoading && visibleChallenges.length === 0 && (activeTab !== 'active' || incomingInvitations.length === 0) ? (
@@ -1361,7 +1504,9 @@ export function ChallengesPage() {
                 open={isFormOpen}
                 onOpenChange={closeFormDialog}
                 onSubmit={handleSubmitChallenge}
+                onDelete={handleDeleteChallenge}
                 isSubmitting={busyAction === 'create' || busyAction === 'edit'}
+                isDeleting={Boolean(editingChallenge && busyAction === `delete-${editingChallenge.id}`)}
                 challenge={editingChallenge}
             />
 

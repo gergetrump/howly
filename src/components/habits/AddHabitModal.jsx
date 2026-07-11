@@ -159,6 +159,10 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             icon,
         };
 
+        if (!editHabit && prefill?.canonicalHabitKey) {
+            data.canonicalHabitKey = prefill.canonicalHabitKey;
+        }
+
         try {
             setFormError('');
             let result;
