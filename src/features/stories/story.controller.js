@@ -7,6 +7,7 @@ import {
   validateStoryListPagination,
 } from './story.validation.js';
 
+/* Sends a 400 response with a message and an optional error code. */
 const badRequest = (res, message, code) => {
   const body = { message };
 

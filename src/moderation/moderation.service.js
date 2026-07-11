@@ -2,6 +2,7 @@ import config from '../../config.js';
 
 const OPENAI_MODERATION_URL = 'https://api.openai.com/v1/moderations';
 
+/* Calls the OpenAI moderation API with a timeout, failing open (unflagged) on missing key or any error. */
 async function callModeration(input) {
     const { apiKey, model = 'omni-moderation-latest', timeoutMs = 2500 } = config.moderation ?? {};
 
@@ -49,6 +50,7 @@ async function callModeration(input) {
     }
 }
 
+/* Runs a text string through moderation, treating empty input as safe. */
 export async function moderateText(text) {
     const input = typeof text === 'string' ? text.trim() : '';
 
@@ -59,6 +61,7 @@ export async function moderateText(text) {
     return callModeration(input);
 }
 
+/* Runs an image URL through moderation, treating missing input as safe. */
 export async function moderateImage(imageUrl) {
     if (typeof imageUrl !== 'string' || !imageUrl) {
         return { flagged: false, categories: {}, checked: true };

@@ -1,6 +1,7 @@
 import Habit from '../habits/habit.model.js';
 import ChallengeParticipant from '../challenges/challengeParticipant.model.js';
 import HabitCheckIn from './habitCheckIn.model.js';
+import User from '../users/user.model.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const WEEKDAY_VALUES = [1, 2, 3, 4, 5, 6, 7];
@@ -863,6 +864,60 @@ export async function getChallengeAnalytics(userId, { period = 'week', year } = 
             const rightRate = right.completionRate ?? -1;
             return rightRate - leftRate;
         }),
+    };
+}
+
+
+export async function getStreakCalendar(userId, { month } = {}) {
+    const now = startOfDay(new Date());
+    let year = now.getFullYear();
+    let monthIndex = now.getMonth();
+
+    if (typeof month === 'string' && /^\d{4}-\d{2}$/.test(month)) {
+        const [parsedYear, parsedMonth] = month.split('-').map(Number);
+        if (parsedMonth >= 1 && parsedMonth <= 12) {
+            year = parsedYear;
+            monthIndex = parsedMonth - 1;
+        }
+    }
+
+    const monthStart = startOfDay(new Date(year, monthIndex, 1));
+    const monthEnd = endOfDay(new Date(year, monthIndex + 1, 0));
+    const todayKey = toDateKey(now);
+
+    // Perfect days and shield days come straight from the forward-only logs written by the streak
+    // engine (creditOverallStreak / the shield-rescue paths). This matches the real overall-streak
+    // definition exactly — unlike reconstructing from check-ins, which mis-handles weekly/monthly habits.
+    const user = await User.findById(userId)
+        .select('streak bestStreak streakPerfectDays streakShieldUsedDays')
+        .lean();
+    const perfectDayKeys = new Set(user?.streakPerfectDays ?? []);
+    const shieldDayKeys = new Set(user?.streakShieldUsedDays ?? []);
+
+    const days = [];
+    for (let cursor = new Date(monthStart); cursor <= monthEnd; cursor = addDays(cursor, 1)) {
+        const key = toDateKey(cursor);
+        const shieldUsed = shieldDayKeys.has(key);
+
+        days.push({
+            date: key,
+            weekday: cursor.getDay() || 7,
+            isToday: key === todayKey,
+            isFuture: cursor > now,
+            shieldUsed,
+            // A shielded day was rescued, not completed — never show it as a perfect day.
+            perfect: perfectDayKeys.has(key) && !shieldUsed,
+        });
+    }
+
+    return {
+        month: `${year}-${String(monthIndex + 1).padStart(2, '0')}`,
+        monthLabel: monthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        firstWeekday: startOfDay(new Date(year, monthIndex, 1)).getDay() || 7,
+        streak: user?.streak ?? 0,
+        // All-time record can never be below the current streak (never-broken streak = the record).
+        bestStreak: Math.max(user?.bestStreak ?? 0, user?.streak ?? 0),
+        days,
     };
 }
 

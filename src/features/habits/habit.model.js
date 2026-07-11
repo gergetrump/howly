@@ -25,14 +25,10 @@ const habitSchema = new Schema(
             default: '🎯',
             maxlength: 32,
         },
-        type: {
-            type: String,
-            enum: ['boolean', 'numeric'],
-            required: true,
-            default: 'boolean',
-        },
+
         target: {
             type: Number,
+            min: 1,
         },
         unit: {
             type: String,

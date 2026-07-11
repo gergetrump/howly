@@ -5,6 +5,7 @@ import {
     sendStreakRepairReminders,
 } from '../features/streakFreeze/streakFreeze.service.js';
 
+/* Runs the daily streak-maintenance job once, logging its success or failure. */
 async function runDaily() {
     try {
         const result = await runDailyStreakMaintenance();
@@ -14,6 +15,7 @@ async function runDaily() {
     }
 }
 
+/* Sends streak-repair reminder emails, logging only when any were sent or failed. */
 async function runStreakReminders() {
     try {
         const result = await sendStreakRepairReminders();
@@ -25,6 +27,7 @@ async function runStreakReminders() {
     }
 }
 
+/* Grants the monthly premium streak shields, logging the outcome. */
 async function runMonthly() {
     try {
         const result = await grantMonthlyShields();

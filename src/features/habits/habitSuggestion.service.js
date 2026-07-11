@@ -29,6 +29,7 @@ const SYSTEM_PROMPT = [
     '- Return exactly 3 habits. No explanations, no markdown fences.',
 ].join('\n');
 
+/* Cleans raw user goal input: strips control characters, collapses whitespace, and caps length at 200 characters. */
 function sanitizeGoal(input) {
     return String(input ?? '')
         .replace(/\p{Cc}/gu, ' ')
@@ -37,6 +38,7 @@ function sanitizeGoal(input) {
         .slice(0, 200);
 }
 
+/* Parses the model's raw text into JSON, tolerating markdown code fences and surrounding prose. */
 function parseModelJson(raw) {
     let text = raw.trim();
 
@@ -60,6 +62,7 @@ function parseModelJson(raw) {
     }
 }
 
+/* Validates and normalizes the parsed AI output into at most 3 well-formed habit suggestions. */
 function normalizeSuggestions(parsed) {
     const list = Array.isArray(parsed) ? parsed : parsed?.habits;
 
@@ -84,6 +87,7 @@ function normalizeSuggestions(parsed) {
     return suggestions;
 }
 
+/* Moderates and sanitizes a user goal, asks the AI for habit suggestions, and returns the normalized result. */
 export async function suggestHabitsFromGoal(input) {
     const goal = sanitizeGoal(input);
 

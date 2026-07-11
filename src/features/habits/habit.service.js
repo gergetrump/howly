@@ -186,7 +186,6 @@ function toHabitDto(habit) {
         title: habit.title,
         description: habit.description,
         icon: habit.icon,
-        type: habit.type,
         target: habit.target ?? null,
         unit: habit.unit ?? null,
         frequency: habit.frequency,
@@ -298,7 +297,7 @@ export async function getHabitById(habitId, userId) {
     return populated;
 }
 
-const WRITABLE_HABIT_FIELDS = ['title', 'description', 'icon', 'type', 'target', 'unit', 'frequency', 'customDays'];
+const WRITABLE_HABIT_FIELDS = ['title', 'description', 'icon', 'target', 'unit', 'frequency', 'customDays'];
 
 function pickWritableHabitFields(data = {}) {
     const payload = {};
@@ -317,9 +316,12 @@ async function assertHabitTextClean(text) {
     }
 }
 
-function validateHabitFields({ type, target, frequency, customDays }) {
-    if (type === 'numeric' && !(typeof target === 'number' && target >= 1)) {
-        throw new ApiError(400, 'INVALID_HABIT', 'Numeric habits need a target of at least 1.');
+function validateHabitFields({ description, target, frequency, customDays }) {
+    if (typeof description !== 'string' || !description.trim()) {
+        throw new ApiError(400, 'INVALID_HABIT', 'Description is required.');
+    }
+    if (target !== undefined && target !== null && !(typeof target === 'number' && Number.isFinite(target) && target >= 1)) {
+        throw new ApiError(400, 'INVALID_HABIT', 'Target must be a positive number.');
     }
     if (frequency === 'Custom' && !(Array.isArray(customDays) && customDays.length > 0)) {
         throw new ApiError(400, 'INVALID_HABIT', 'Custom habits need at least one weekday.');
@@ -585,12 +587,29 @@ export async function uncompleteHabit(habitId, userId) {
 }
 
 
+function toDateKey(date) {
+    const value = new Date(date);
+    return [
+        value.getFullYear(),
+        String(value.getMonth() + 1).padStart(2, '0'),
+        String(value.getDate()).padStart(2, '0'),
+    ].join('-');
+}
+
 async function creditOverallStreak(userId) {
     const user = await User.findById(userId).select('streak streakLastDay streakRepairDeadline');
     if (!user) return null;
 
-    // Already credited today → nothing to do.
+    // Already credited today → nothing to do (but make sure today is in the calendar log,
+    // covering streaks credited before the log existed).
     if (user.streakLastDay && isToday(user.streakLastDay)) {
+        await User.updateOne(
+            { _id: userId },
+            {
+                $addToSet: { streakPerfectDays: toDateKey(user.streakLastDay) },
+                $max: { bestStreak: user.streak },
+            },
+        );
         return { streak: user.streak, creditedToday: true };
     }
 
@@ -613,6 +632,15 @@ async function creditOverallStreak(userId) {
     user.streakLastDay = new Date();
     user.streakRepairDeadline = null;
     await user.save();
+
+    // Forward-only log for the streak calendar: mark today as a perfect day, and bump the all-time best.
+    await User.updateOne(
+        { _id: userId },
+        {
+            $addToSet: { streakPerfectDays: toDateKey(user.streakLastDay) },
+            $max: { bestStreak: user.streak },
+        },
+    );
 
     return { streak: user.streak, creditedToday: true };
 }
@@ -638,6 +666,12 @@ async function revokeOverallStreakIfIncomplete(userId) {
     yesterday.setDate(yesterday.getDate() - 1);
     user.streakLastDay = yesterday;
     await user.save();
+
+    // Today is no longer a perfect day → drop it from the streak-calendar log.
+    await User.updateOne(
+        { _id: userId },
+        { $pull: { streakPerfectDays: toDateKey(new Date()) } },
+    );
 
     return { streak: user.streak, revoked: true };
 }
