@@ -27,6 +27,14 @@ function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
 }
 
+function resolvePostUserId(post) {
+  if (post?.user && typeof post.user === 'object') {
+    return post.user._id ?? post.user;
+  }
+
+  return post?.user ?? null;
+}
+
 function buildFriendshipPair(firstUserId, secondUserId) {
   const [userA, userB] = [firstUserId.toString(), secondUserId.toString()].sort();
   return { userA, userB };
@@ -327,12 +335,17 @@ async function getEquippedItemsByUserId(userIds) {
 export async function enrichMilestonePost(post, currentUserReaction = null, currentUserId = null) {
   await post.populate(['user', 'habit']);
 
-  const companion = await Companion.findOne({ user: post.user._id ?? post.user }).lean();
+  const postUserId = resolvePostUserId(post);
+  if (!postUserId) {
+    return null;
+  }
+
+  const companion = await Companion.findOne({ user: postUserId }).lean();
   const companionUserId = companion?.user?.toString();
   const companionsByUserId = companionUserId
     ? new Map([[companionUserId, companion]])
     : new Map();
-  const equippedItemsByUserId = await getEquippedItemsByUserId([post.user._id ?? post.user]);
+  const equippedItemsByUserId = await getEquippedItemsByUserId([postUserId]);
   const postId = post._id.toString();
   const currentUserReactions = normalizeReactionList(currentUserReaction);
   const userReactionsByPostId = currentUserReactions.length
@@ -428,10 +441,11 @@ export async function getFriendFeed({ userId, limit = null }) {
   const posts = await (Number.isInteger(limit) && limit > 0
     ? postsQuery.limit(limit)
     : postsQuery);
+  const activePosts = posts.filter((post) => resolvePostUserId(post));
 
   const reactions = await MilestoneLike.find({
     user: userId,
-    milestonePost: { $in: posts.map((post) => post._id) },
+    milestonePost: { $in: activePosts.map((post) => post._id) },
   })
     .sort({ createdAt: 1 })
     .lean();
@@ -444,19 +458,19 @@ export async function getFriendFeed({ userId, limit = null }) {
     postReactions.push(reaction.emoji);
     userReactionsByPostId.set(postId, postReactions);
   });
-  const reactionCountsByPostId = await getReactionCountsByPostId(posts.map((post) => post._id), userId);
-  const reactionsByPostId = await getReactionsByPostId(posts.map((post) => post._id), userId);
+  const reactionCountsByPostId = await getReactionCountsByPostId(activePosts.map((post) => post._id), userId);
+  const reactionsByPostId = await getReactionsByPostId(activePosts.map((post) => post._id), userId);
   const companions = await Companion.find({
-    user: { $in: posts.map((post) => post.user._id ?? post.user) },
+    user: { $in: activePosts.map((post) => resolvePostUserId(post)) },
   }).lean();
   const companionsByUserId = new Map(
     companions.map((companion) => [companion.user.toString(), companion])
   );
   const equippedItemsByUserId = await getEquippedItemsByUserId(
-    posts.map((post) => post.user._id ?? post.user)
+    activePosts.map((post) => resolvePostUserId(post))
   );
 
-  return posts.map((post) =>
+  return activePosts.map((post) =>
     toMilestonePostResponse(
       post,
       userReactionsByPostId,

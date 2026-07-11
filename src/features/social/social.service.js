@@ -32,6 +32,10 @@ function buildFriendshipPair(firstUserId, secondUserId) {
 }
 
 function toFriendRequestResponse(request) {
+  if (!request?.requester || !request?.recipient) {
+    return null;
+  }
+
   return {
     id: request._id.toString(),
     requester: toPublicUser(request.requester),
@@ -44,11 +48,23 @@ function toFriendRequestResponse(request) {
 }
 
 function toFriendshipResponse(friendship, currentUserId) {
+  if (!friendship?.userA || !friendship?.userB) {
+    return null;
+  }
+
   const otherUser = sameId(friendship.userA._id, currentUserId)
     ? friendship.userB
     : friendship.userA;
 
+  if (!otherUser) {
+    return null;
+  }
+
   const friend = toPublicUser(otherUser);
+  if (!friend) {
+    return null;
+  }
+
   if (otherUser.ghostMode) {
     friend.streak = null;
   }
@@ -346,8 +362,8 @@ export async function listFriendRequests({ userId, incomingPagination = null, ou
     incomingPagination ? incomingQuery.limit(incomingPagination.fetchLimit) : incomingQuery,
     outgoingPagination ? outgoingQuery.limit(outgoingPagination.fetchLimit) : outgoingQuery,
   ]);
-  const incomingItems = incoming.map(toFriendRequestResponse);
-  const outgoingItems = outgoing.map(toFriendRequestResponse);
+  const incomingItems = incoming.map(toFriendRequestResponse).filter(Boolean);
+  const outgoingItems = outgoing.map(toFriendRequestResponse).filter(Boolean);
 
   return {
     incoming: incomingPagination ? toOffsetPage(incomingItems, incomingPagination) : incomingItems,
@@ -448,7 +464,9 @@ export async function listFriends({ userId, pagination = null }) {
   const friendships = await (pagination
     ? friendshipsQuery.limit(pagination.fetchLimit)
     : friendshipsQuery);
-  const friends = friendships.map((friendship) => toFriendshipResponse(friendship, userId));
+  const friends = friendships
+    .map((friendship) => toFriendshipResponse(friendship, userId))
+    .filter(Boolean);
 
   return pagination ? toOffsetPage(friends, pagination) : friends;
 }
