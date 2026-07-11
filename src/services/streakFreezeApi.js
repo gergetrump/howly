@@ -11,3 +11,8 @@ export function applyOverallStreakFreeze() {
         method: 'POST',
     });
 }
+
+export function getStreakCalendar(month) {
+    const query = month ? `?month=${encodeURIComponent(month)}` : '';
+    return apiRequest(`/streak-freeze/calendar${query}`);
+}
