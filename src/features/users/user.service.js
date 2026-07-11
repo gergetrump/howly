@@ -233,26 +233,8 @@ export function toPublicUser(user, extras = {}) {
     };
 }
 
-export async function softDeleteUser(userId) {
-    return User.findByIdAndUpdate(
-        userId,
-        {
-            isDeleted: true,
-            deletedAt: new Date(),
-        },
-        { returnDocument: 'after' }
-    );
-}
-
-export async function restoreUser(userId) {
-    return User.findByIdAndUpdate(
-        userId,
-        {
-            isDeleted: false,
-            deletedAt: null,
-        },
-        { returnDocument: 'after' }
-    );
+export async function deleteUserById(userId) {
+    return User.findByIdAndDelete(userId);
 }
 
 export async function updateUserProfilePicture(userId, profilePictureUrl) {

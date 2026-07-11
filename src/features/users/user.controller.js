@@ -210,7 +210,7 @@ export async function deleteCurrentUser(req, res) {
         return badRequest(res, error);
     }
 
-    const user = await userService.softDeleteUser(req.user.id);
+    const user = await userService.deleteUserById(req.user.id);
 
     if (!user) {
         return notFound(res);
