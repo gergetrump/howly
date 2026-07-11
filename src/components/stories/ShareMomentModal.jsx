@@ -7,7 +7,7 @@ import { createStory } from '@/services/storyApi';
 
 /**
  * Generic "Share a moment " modal.
- * Works for any story source: pass sourceType ('habit' | 'challenge' | 'milestone'),
+clea * Works for supported story sources: pass sourceType ('habit' | 'milestone'),
  * sourceId and a display title/emoji for context.
  */
 export function ShareMomentModal({
