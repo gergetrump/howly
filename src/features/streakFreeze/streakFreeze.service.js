@@ -287,7 +287,7 @@ export async function applyFreezeToHabit(userId, habitId, now = new Date()) {
     const spent = await User.findOneAndUpdate(
         { _id: userId, streakShields: { $gt: 0 } },
         shieldUpdate,
-        { new: true },
+        { returnDocument: 'after' },
     );
 
     if (!spent) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NO_SHIELDS);
@@ -313,7 +313,7 @@ export async function applyFreezeToOverall(userId, now = new Date()) {
             $set: { streakLastDay: endOfYesterday(now), streakRepairDeadline: null },
             $addToSet: { streakShieldUsedDays: toDateKey(endOfYesterday(now)) },
         },
-        { new: true },
+        { returnDocument: 'after' },
     );
 
     if (!spent) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NO_SHIELDS);

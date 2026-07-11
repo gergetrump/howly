@@ -25,6 +25,16 @@ const habitSchema = new Schema(
             default: '🎯',
             maxlength: 32,
         },
+
+        target: {
+            type: Number,
+            min: 1,
+        },
+        unit: {
+            type: String,
+            trim: true,
+            maxlength: 50,
+        },
         frequency: {
             type: String,
             enum: FREQUENCIES,
