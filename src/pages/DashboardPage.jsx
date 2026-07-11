@@ -8,7 +8,7 @@ import { HabitCard } from '@/components/cards';
 import { appTabsListFullWidthClassName, appTabsTriggerClassName } from '@/components/cards/cardStyles';
 import { DailyProgressCard } from '@/components/habits/DailyProgressCard.jsx';
 import { CompanionStage } from '@/components/brand';
-import { StreakCelebrationModal } from '@/components/brand/StreakCelebrationModal';
+import { CelebrationModal, StreakCelebrationModal } from '@/components/brand/StreakCelebrationModal';
 import { AddHabitModal } from '@/components/habits/AddHabitModal.jsx';
 import { CompanionChatPanel } from '@/components/habits/CompanionChatPanel.jsx';
 import { StreakRepairBanner } from '@/components/habits/StreakRepairBanner.jsx';
@@ -17,7 +17,6 @@ import { ShareMomentModal } from '@/components/stories/ShareMomentModal.jsx';
 
 
 import { toast } from 'sonner';
-import { NotificationBanner } from '@/components/ui/notification-banner';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -663,16 +662,14 @@ export function DashboardPage() {
             />
 
             {milestoneNotice ? (
-                <div className="fixed right-6 top-24 z-[9999] w-[min(92vw,520px)]">
-                    <NotificationBanner
-                        variant="milestone"
-                        icon="🎉"
-                        eyebrow={`Congrats! You unlocked a ${milestoneNotice.streakDays}-day milestone`}
-                        title={milestoneNotice.habitTitle}
-                        onClose={() => setMilestoneNotice(null)}
-                        autoCloseMs={10000}
-                    />
-                </div>
+                <CelebrationModal
+                    open
+                    ariaLabel={`Congrats, ${milestoneNotice.streakDays}-day milestone unlocked`}
+                    visual={<span className="howly-celebrate-glow text-6xl leading-none" aria-hidden="true">🎉</span>}
+                    eyebrow={`Congrats! You unlocked a ${milestoneNotice.streakDays}-day milestone`}
+                    title={milestoneNotice.habitTitle}
+                    onClose={() => setMilestoneNotice(null)}
+                />
             ) : null}
 
             <StreakRepairBanner onRescued={refreshHabitsAndUser} />

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BarChart3, Check, Coins, Crown, Globe, Loader2, Shield, Sparkles } from 'lucide-react';
+import { BarChart3, Check, Coins, Crown, Loader2, MessageCircle, Shield, Sparkles } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
@@ -96,15 +96,15 @@ function buildHighlights(plan) {
 const PREMIUM_INSIGHT_CARDS = [
     {
         icon: BarChart3,
-        title: 'Analytics',
-        text: 'Track habit completion, timing patterns, and challenge progress over time.',
+        title: 'Analytics & Trends',
+        text: 'Track habit completion, challenge progress, timing patterns, and community trends.',
         to: '/analytics',
     },
     {
-        icon: Globe,
-        title: 'Trends',
-        text: 'See anonymous community patterns and your private consistency benchmark.',
-        to: '/trends',
+        icon: MessageCircle,
+        title: 'AI habit ideas',
+        text: 'Chat with your companion for personalized habit suggestions when you need fresh routine ideas.',
+        to: '/dashboard',
     },
 ];
 
@@ -168,10 +168,7 @@ export function PremiumPage() {
                 }
             })
             .catch((planError) => {
-                console.error('Failed to load premium plan:', planError);
-                if (isCurrent) {
-                    setError('Premium details could not be loaded. The checkout is still available.');
-                }
+                console.warn('Failed to load premium plan. Using fallback plan details:', planError);
             })
             .finally(() => {
                 if (isCurrent) {
@@ -228,8 +225,8 @@ export function PremiumPage() {
                 streakDays={user?.streak ?? 0}
             />
 
-            <PageSection width="lg" align="center">
-                <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <PageSection width="full" align="center" className="max-w-6xl">
+                <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(21rem,0.42fr)] xl:gap-8">
                     <section className="rounded-2xl border border-theme-text/10 bg-theme-surface p-6 shadow-2xl">
                         <div className="flex flex-col gap-5">
                             {redirectMessage ? (
@@ -257,7 +254,7 @@ export function PremiumPage() {
                                 </p>
                             </div>
 
-                            <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                                 {premiumHighlights.map(({ icon, title, text, to }) => (
                                     <PremiumBenefitCard
                                         key={title}
@@ -273,7 +270,7 @@ export function PremiumPage() {
                         </div>
                     </section>
 
-                    <aside className="rounded-2xl border border-amber-200/30 bg-theme-surface p-6 text-theme-text shadow-2xl">
+                    <aside className="self-start rounded-2xl border border-amber-200/30 bg-theme-surface p-6 text-theme-text shadow-2xl">
                         <p className="text-sm font-semibold uppercase tracking-wide text-theme-gold">
                             Monthly plan
                         </p>
@@ -328,10 +325,11 @@ export function PremiumPage() {
             </PageSection>
 
             <PageSection
-                width="lg"
+                width="full"
                 align="center"
                 title="Free vs Premium"
-                description={isLoadingPlan ? 'Loading plan details...' : 'Premium values come from the backend plan configuration.'}
+                description={isLoadingPlan ? 'Loading plan details...' : 'See what changes when you upgrade.'}
+                className="mt-10 max-w-6xl"
             >
                 <div className="overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-surface text-theme-text shadow-xl">
                     <div className="grid grid-cols-[1.25fr_0.8fr_0.8fr] gap-3 bg-theme-surface-2 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-theme-text-soft">
@@ -345,29 +343,14 @@ export function PremiumPage() {
                         premiumValue={`${premiumPlan.limits?.maxHabits ?? FALLBACK_PREMIUM_PLAN.limits.maxHabits}`}
                     />
                     <FeatureRow
-                        label="Active challenges"
+                        label="Joined active challenges"
                         freeValue={`${freePlan.limits?.maxActiveChallenges ?? FALLBACK_FREE_PLAN.limits.maxActiveChallenges}`}
                         premiumValue={`${premiumPlan.limits?.maxActiveChallenges ?? FALLBACK_PREMIUM_PLAN.limits.maxActiveChallenges}`}
                     />
                     <FeatureRow
-                        label="Hosted challenges"
+                        label="Created active challenges"
                         freeValue={`${freePlan.limits?.maxActiveCreatedChallenges ?? FALLBACK_FREE_PLAN.limits.maxActiveCreatedChallenges}`}
                         premiumValue={`${premiumPlan.limits?.maxActiveCreatedChallenges ?? FALLBACK_PREMIUM_PLAN.limits.maxActiveCreatedChallenges}`}
-                    />
-                    <FeatureRow
-                        label="Create challenges"
-                        freeValue={yesNo(freePlan.permissions?.canCreateChallenges)}
-                        premiumValue={yesNo(premiumPlan.permissions?.canCreateChallenges)}
-                    />
-                    <FeatureRow
-                        label="Premium shop items"
-                        freeValue={yesNo(freePlan.permissions?.canBuyPremiumItems)}
-                        premiumValue={yesNo(premiumPlan.permissions?.canBuyPremiumItems)}
-                    />
-                    <FeatureRow
-                        label="Monthly moon coins"
-                        freeValue={`${freePlan.monthlyBenefits?.coins ?? FALLBACK_FREE_PLAN.monthlyBenefits.coins}`}
-                        premiumValue={`${premiumPlan.monthlyBenefits?.coins ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.coins}`}
                     />
                     <FeatureRow
                         label="Monthly streak shields"
@@ -375,19 +358,34 @@ export function PremiumPage() {
                         premiumValue={`${premiumPlan.monthlyBenefits?.streakShields ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.streakShields}`}
                     />
                     <FeatureRow
-                        label="Analytics"
+                        label="Monthly moon coins"
+                        freeValue={`${freePlan.monthlyBenefits?.coins ?? FALLBACK_FREE_PLAN.monthlyBenefits.coins}`}
+                        premiumValue={`${premiumPlan.monthlyBenefits?.coins ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.coins}`}
+                    />
+                    <FeatureRow
+                        label="Premium shop items"
+                        freeValue={yesNo(freePlan.permissions?.canBuyPremiumItems)}
+                        premiumValue={yesNo(premiumPlan.permissions?.canBuyPremiumItems)}
+                    />
+                    <FeatureRow
+                        label="Analytics & trends"
                         freeValue="Not included"
                         premiumValue="Included"
                     />
                     <FeatureRow
-                        label="Trends"
+                        label="AI habit ideas"
                         freeValue="Not included"
                         premiumValue="Included"
                     />
                     <FeatureRow
-                        label="Premium themes"
+                        label="Themes"
                         freeValue="Default only"
                         premiumValue="All themes"
+                    />
+                    <FeatureRow
+                        label="Companions"
+                        freeValue="Starter choice only"
+                        premiumValue="Switch anytime"
                     />
                 </div>
             </PageSection>

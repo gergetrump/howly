@@ -22,6 +22,91 @@ const CONFETTI = Array.from({ length: 30 }, (_, index) => ({
     round: index % 2 === 0,
 }));
 
+export function CelebrationModal({
+    open,
+    ariaLabel,
+    visual,
+    eyebrow,
+    title,
+    subtitle,
+    actionLabel = 'Nice!',
+    onClose,
+    children,
+}) {
+    if (!open) {
+        return null;
+    }
+
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                onClick={onClose}
+                aria-hidden="true"
+            />
+
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-label={ariaLabel}
+                className="howly-celebrate-in relative w-full max-w-xs overflow-hidden rounded-3xl border border-theme-gold/30 bg-theme-surface p-8 text-center shadow-2xl shadow-black/50"
+            >
+                {visual ? (
+                    <div className="mx-auto mb-1 flex min-h-24 w-24 items-center justify-center">
+                        {visual}
+                    </div>
+                ) : null}
+
+                {eyebrow ? (
+                    <p className="text-sm font-semibold uppercase tracking-wide text-theme-text-soft">{eyebrow}</p>
+                ) : null}
+
+                {title ? (
+                    <p className="mt-2 text-3xl font-bold leading-tight text-theme-gold">{title}</p>
+                ) : null}
+
+                {children}
+
+                {subtitle ? (
+                    <p className="mt-2 text-base font-semibold text-theme-text-soft">{subtitle}</p>
+                ) : null}
+
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className={cn(
+                        'mt-7 w-full rounded-xl bg-theme-accent px-4 py-2.5 text-sm font-semibold text-theme-on-accent transition',
+                        'hover:bg-theme-accent-strong',
+                    )}
+                >
+                    {actionLabel}
+                </button>
+
+                <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                    {CONFETTI.map((piece, index) => (
+                        <span
+                            key={index}
+                            className="howly-confetti-piece absolute left-1/2 top-7"
+                            style={{
+                                width: piece.size,
+                                height: piece.size,
+                                backgroundColor: piece.color,
+                                borderRadius: piece.round ? '9999px' : '2px',
+                                '--dx': `${piece.dx}px`,
+                                '--dy': `${piece.dy}px`,
+                                '--spin': `${piece.spin}deg`,
+                                '--dur': `${piece.duration}s`,
+                                '--delay': `${piece.delay}s`,
+                            }}
+                        />
+                    ))}
+                </div>
+            </div>
+        </div>,
+        document.body,
+    );
+}
+
 export function StreakCelebrationModal() {
     const { companion } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
@@ -63,94 +148,46 @@ export function StreakCelebrationModal() {
         };
     }, []);
 
-    if (!isOpen) {
-        return null;
-    }
-
     const numbers = [];
     for (let value = range.from; value <= range.to; value += 1) {
         numbers.push(value);
     }
     const steps = Math.max(0, numbers.length - 1);
 
-    return createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                onClick={() => setIsOpen(false)}
-                aria-hidden="true"
-            />
-
-            <div
-                role="dialog"
-                aria-modal="true"
-                aria-label={`Perfect day, ${range.to} day streak`}
-                className="howly-celebrate-in relative w-full max-w-xs overflow-hidden rounded-3xl border border-theme-gold/30 bg-theme-surface p-8 text-center shadow-2xl shadow-black/50"
-            >
-                <div className="mx-auto mb-1 w-24">
-                    <CompanionAvatar
-                        type={companion?.type}
-                        name={companion?.name}
-                        size="sm"
-                        equippedItemConfigs={outfit}
-                    />
-                </div>
-
-                <p className="text-sm font-semibold uppercase tracking-wide text-theme-text-soft">Perfect day</p>
-
-                <div className="mt-2 flex justify-center">
-                    <div className="overflow-hidden" style={{ height: ROW_HEIGHT }}>
-                        <div
-                            className="howly-roll"
-                            style={{ transform: `translateY(-${(isRolled ? steps : 0) * ROW_HEIGHT}px)` }}
-                        >
-                            {numbers.map((value) => (
-                                <div
-                                    key={value}
-                                    className="flex items-center justify-center text-6xl font-bold leading-none tabular-nums text-theme-gold"
-                                    style={{ height: ROW_HEIGHT }}
-                                >
-                                    {value}
-                                </div>
-                            ))}
-                        </div>
+    return (
+        <CelebrationModal
+            open={isOpen}
+            ariaLabel={`Perfect day, ${range.to} day streak`}
+            visual={(
+                <CompanionAvatar
+                    type={companion?.type}
+                    name={companion?.name}
+                    size="sm"
+                    equippedItemConfigs={outfit}
+                />
+            )}
+            eyebrow="Perfect day"
+            subtitle="day streak"
+            onClose={() => setIsOpen(false)}
+        >
+            <div className="mt-2 flex justify-center">
+                <div className="overflow-hidden" style={{ height: ROW_HEIGHT }}>
+                    <div
+                        className="howly-roll"
+                        style={{ transform: `translateY(-${(isRolled ? steps : 0) * ROW_HEIGHT}px)` }}
+                    >
+                        {numbers.map((value) => (
+                            <div
+                                key={value}
+                                className="flex items-center justify-center text-6xl font-bold leading-none tabular-nums text-theme-gold"
+                                style={{ height: ROW_HEIGHT }}
+                            >
+                                {value}
+                            </div>
+                        ))}
                     </div>
                 </div>
-
-                <p className="mt-2 text-base font-semibold text-theme-text-soft">day streak</p>
-
-                <button
-                    type="button"
-                    onClick={() => setIsOpen(false)}
-                    className={cn(
-                        'mt-7 w-full rounded-xl bg-theme-accent px-4 py-2.5 text-sm font-semibold text-theme-on-accent transition',
-                        'hover:bg-theme-accent-strong',
-                    )}
-                >
-                    Nice!
-                </button>
-
-                <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                    {CONFETTI.map((piece, index) => (
-                        <span
-                            key={index}
-                            className="howly-confetti-piece absolute left-1/2 top-7"
-                            style={{
-                                width: piece.size,
-                                height: piece.size,
-                                backgroundColor: piece.color,
-                                borderRadius: piece.round ? '9999px' : '2px',
-                                '--dx': `${piece.dx}px`,
-                                '--dy': `${piece.dy}px`,
-                                '--spin': `${piece.spin}deg`,
-                                '--dur': `${piece.duration}s`,
-                                '--delay': `${piece.delay}s`,
-                            }}
-                        />
-                    ))}
-                </div>
             </div>
-        </div>,
-        document.body,
+        </CelebrationModal>
     );
 }
