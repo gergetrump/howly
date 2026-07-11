@@ -8,6 +8,16 @@ export function registerUser(userData) {
     });
 }
 
+// Server-side username check (format + reserved + blocklist) for instant
+// signup feedback. Resolves to { valid, error }; the blocklist stays on the server.
+export function checkUsername(username) {
+    return apiRequest('/auth/check-username', {
+        method: 'POST',
+        body: JSON.stringify({ username }),
+        redirectOnUnauthorized: false,
+    });
+}
+
 export function verifyEmail(token) {
     return apiRequest(`/auth/verify-email?token=${encodeURIComponent(token)}`, {
         method: 'GET',

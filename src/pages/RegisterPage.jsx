@@ -1,7 +1,7 @@
 // src/pages/RegisterPage.jsx
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CircleAlert, Eye, EyeOff, UserPlus } from 'lucide-react';
+import { CircleAlert, Eye, EyeOff, Loader2, UserPlus } from 'lucide-react';
 
 import howlyIcon from '@/assets/howly.png';
 import { Background } from '@/components/brand/background';
@@ -9,47 +9,28 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
-import { registerUser } from '@/services/authService';
+import { checkUsername, registerUser } from '@/services/authService';
+import { normalizeUsername, validateUsernameFormat } from '@/lib/usernameValidation';
 
-const USERNAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+const USERNAME_BLOCKED_MESSAGE = 'Username contains inappropriate language.';
+
 const DISPLAY_NAME_PATTERN = /^[\p{L}\p{M}][\p{L}\p{M} .'-]*$/u;
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
-const RESERVED_USERNAMES = new Set([
-    'admin',
-    'administrator',
-    'api',
-    'howly',
-    'moderator',
-    'root',
-    'support',
-    'system',
-]);
 
 function normalizeInputText(value) {
     return typeof value === 'string' ? value.normalize('NFKC').trim() : '';
 }
 
 function validateAccountFields(data) {
-    const username = normalizeInputText(data.username);
     const email = normalizeInputText(data.email).toLowerCase();
     const firstName = normalizeInputText(data.firstName);
     const lastName = normalizeInputText(data.lastName);
     const password = typeof data.password === 'string' ? data.password : '';
 
-    if (!username) {
-        return 'Username is required.';
-    }
+    const usernameError = validateUsernameFormat(data.username);
 
-    if (username.length < 3 || username.length > 30) {
-        return 'Username must be between 3 and 30 characters.';
-    }
-
-    if (!USERNAME_PATTERN.test(username)) {
-        return 'Username may only contain letters, numbers, underscores, or hyphens.';
-    }
-
-    if (RESERVED_USERNAMES.has(username.toLowerCase())) {
-        return 'Username is reserved.';
+    if (usernameError) {
+        return usernameError;
     }
 
     if (!firstName) {
@@ -99,11 +80,27 @@ export function RegisterPage() {
     });
 
     const [error, setError] = useState('');
+    const [usernameError, setUsernameError] = useState('');
+    const [isCheckingUsername, setIsCheckingUsername] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    // Bumped whenever the username changes or a new check starts, so a slow
+    // in-flight server check can't overwrite the field with a stale result.
+    const usernameCheckSeqRef = useRef(0);
+
     function handleChange(event) {
         const { name, value } = event.target;
+
+        if (name === 'username') {
+            // Any pending server check is now stale; drop its result when it lands.
+            usernameCheckSeqRef.current += 1;
+            setIsCheckingUsername(false);
+
+            if (usernameError) {
+                setUsernameError('');
+            }
+        }
 
         setFormData((previousData) => ({
             ...previousData,
@@ -111,13 +108,75 @@ export function RegisterPage() {
         }));
     }
 
+    // Asks the server whether the username is allowed (the blocklist lives there).
+    // Fails open: a network hiccup never blocks signup — register re-validates anyway.
+    async function isUsernameAllowedByServer(value) {
+        try {
+            const { valid } = await checkUsername(normalizeUsername(value));
+            return valid;
+        } catch {
+            return true;
+        }
+    }
+
+    async function handleUsernameBlur() {
+        const value = formData.username;
+
+        // Don't nag on a field the user hasn't filled in yet — submit still enforces "required".
+        if (!value.trim()) {
+            setUsernameError('');
+            return;
+        }
+
+        // Instant, offline format check first — catches typos with no round-trip.
+        const formatError = validateUsernameFormat(value);
+
+        if (formatError) {
+            setUsernameError(formatError);
+            return;
+        }
+
+        // Format is fine — ask the server about the blocklist.
+        const seq = (usernameCheckSeqRef.current += 1);
+        setIsCheckingUsername(true);
+
+        const allowed = await isUsernameAllowedByServer(value);
+
+        // Ignore the result if the field changed or another check started meanwhile.
+        if (seq !== usernameCheckSeqRef.current) {
+            return;
+        }
+
+        setIsCheckingUsername(false);
+        setUsernameError(allowed ? '' : USERNAME_BLOCKED_MESSAGE);
+    }
+
     async function handleSubmit(event) {
         event.preventDefault();
 
         setError('');
+
+        const formatError = validateUsernameFormat(formData.username);
+
+        if (formatError) {
+            setUsernameError(formatError);
+            return;
+        }
+
         setIsSubmitting(true);
 
+        // A pending blur check must not clobber the field while we submit.
+        usernameCheckSeqRef.current += 1;
+        setIsCheckingUsername(false);
+
         try {
+            const usernameAllowed = await isUsernameAllowedByServer(formData.username);
+
+            if (!usernameAllowed) {
+                setUsernameError(USERNAME_BLOCKED_MESSAGE);
+                return;
+            }
+
             const validationError = validateAccountFields(formData);
 
             if (validationError) {
@@ -218,12 +277,41 @@ export function RegisterPage() {
                                     type="text"
                                     value={formData.username}
                                     onChange={handleChange}
+                                    onBlur={handleUsernameBlur}
                                     aria-required="true"
+                                    aria-invalid={Boolean(usernameError)}
+                                    aria-describedby={usernameError ? 'username-error' : undefined}
                                     maxLength={30}
                                     autoComplete="username"
                                     placeholder="howlyuser"
-                                    className="w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary"
+                                    className={cn(
+                                        'w-full rounded-xl border border-theme-text/20 bg-theme-surface/70 px-4 py-3 text-sm text-theme-text placeholder:text-theme-text-muted outline-none transition-colors focus:border-howly-primary',
+                                        usernameError && 'border-theme-danger focus:border-theme-danger',
+                                    )}
                                 />
+
+                                {isCheckingUsername ? (
+                                    <p className="flex items-center gap-1.5 text-xs text-theme-text-muted">
+                                        <Loader2
+                                            className="size-3.5 shrink-0 animate-spin"
+                                            aria-hidden="true"
+                                        />
+                                        Checking username…
+                                    </p>
+                                ) : (
+                                    usernameError && (
+                                        <p
+                                            id="username-error"
+                                            className="flex items-center gap-1.5 text-xs text-theme-danger"
+                                        >
+                                            <CircleAlert
+                                                className="size-3.5 shrink-0"
+                                                aria-hidden="true"
+                                            />
+                                            {usernameError}
+                                        </p>
+                                    )
+                                )}
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-2">

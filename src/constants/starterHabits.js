@@ -12,4 +12,7 @@ export const STARTER_HABITS = [
     { id: 'journal', title: 'Journal', icon: '✍️', frequency: 'Daily' },
 ];
 
-export const FREE_TIER_HABIT_LIMIT = STARTER_HABITS.length;
+// Must match the backend free plan limit (backend config/plans.js → free maxHabits: 4).
+// The list above offers more starter habits than this on purpose — users pick their
+// favourite few now and can add the rest later once onboarding is done.
+export const FREE_TIER_HABIT_LIMIT = 4;
