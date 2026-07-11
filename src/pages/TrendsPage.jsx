@@ -10,23 +10,29 @@ import { useAuth } from '@/context/authContext';
 import { appCardClassName, appCardInsetClassName, appTabsListCompactClassName, appTabsTriggerCompactClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
 
-const PERIOD_HEADINGS = {
-    '24h': 'Last 24 hours on Howly',
-    week: 'Last 7 days on Howly',
-    month: 'Last 30 days on Howly',
-};
-
-const PERIOD_IN_RANGE_LABELS = {
-    '24h': 'in the last 24 hours',
-    week: 'in the last 7 days',
-    month: 'in the last 30 days',
-};
-
-const PERIOD_COMPARISON_LABELS = {
-    '24h': 'the previous 24 hours',
-    week: 'the previous 7 days',
-    month: 'the previous 30 days',
-};
+const TRENDS_PERIOD_OPTIONS = [
+    {
+        value: '24h',
+        tabLabel: '24 hours',
+        heading: 'Last 24 hours on Howly',
+        inRange: 'in the last 24 hours',
+        comparison: 'the previous 24 hours',
+    },
+    {
+        value: '7d',
+        tabLabel: '7 days',
+        heading: 'Last 7 days on Howly',
+        inRange: 'in the last 7 days',
+        comparison: 'the previous 7 days',
+    },
+    {
+        value: '30d',
+        tabLabel: '30 days',
+        heading: 'Last 30 days on Howly',
+        inRange: 'in the last 30 days',
+        comparison: 'the previous 30 days',
+    },
+];
 
 const helpButtonClassName = 'grid h-6 w-6 shrink-0 place-items-center rounded-full border border-theme-text/10 bg-theme-text/10 text-theme-text transition hover:bg-theme-text/20 hover:text-theme-text';
 
@@ -293,15 +299,11 @@ function PeriodToggle({ period, onPeriodChange }) {
     return (
         <Tabs value={period} onValueChange={onPeriodChange}>
             <TabsList className={appTabsListCompactClassName}>
-                <TabsTrigger value="24h" className={appTabsTriggerCompactClassName}>
-                    24 hours
-                </TabsTrigger>
-                <TabsTrigger value="week" className={appTabsTriggerCompactClassName}>
-                    7 days
-                </TabsTrigger>
-                <TabsTrigger value="month" className={appTabsTriggerCompactClassName}>
-                    30 days
-                </TabsTrigger>
+                {TRENDS_PERIOD_OPTIONS.map(({ value, tabLabel }) => (
+                    <TabsTrigger key={value} value={value} className={appTabsTriggerCompactClassName}>
+                        {tabLabel}
+                    </TabsTrigger>
+                ))}
             </TabsList>
         </Tabs>
     );
@@ -397,7 +399,7 @@ function TrendingHabits({ habits, showTrends }) {
 export function TrendsPage() {
     const { user } = useAuth();
     const isPremiumUser = user?.isPremium === true || user?.role === 'admin';
-    const [period, setPeriod] = useState('24h');
+    const [period, setPeriod] = useState('7d');
     const [trendsAnalytics, setTrendsAnalytics] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -442,8 +444,10 @@ export function TrendsPage() {
     const displayIsLoading = isPremiumUser ? isLoading : false;
     const displayError = isPremiumUser ? error : '';
     const summary = displayTrendsAnalytics?.summary;
-    const periodInRange = PERIOD_IN_RANGE_LABELS[period] ?? PERIOD_IN_RANGE_LABELS.week;
-    const comparisonPeriod = PERIOD_COMPARISON_LABELS[period] ?? PERIOD_COMPARISON_LABELS.week;
+    const selectedPeriod = TRENDS_PERIOD_OPTIONS.find((option) => option.value === period)
+        ?? TRENDS_PERIOD_OPTIONS[1];
+    const periodInRange = selectedPeriod.inRange;
+    const comparisonPeriod = selectedPeriod.comparison;
     const standing = summary?.standing;
 
     const trendsContent = (
@@ -457,7 +461,7 @@ export function TrendsPage() {
                 <PageSection width="full">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <h2 className="text-lg font-semibold text-theme-text">
-                            {PERIOD_HEADINGS[period] ?? PERIOD_HEADINGS.week}
+                            {selectedPeriod.heading}
                         </h2>
                         <PeriodToggle period={period} onPeriodChange={setPeriod} />
                     </div>
