@@ -98,6 +98,11 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             return;
         }
 
+        if (!editHabit && !description.trim()) {
+            setFormError('Description is required.');
+            return;
+        }
+
         if (!frequency) {
             setFormError('Frequency is required.');
             return;
@@ -247,7 +252,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
 
                     <div className="space-y-2.5">
                         <Label htmlFor="habit-description" className="text-sm font-medium text-theme-text">
-                            Description
+                            Description{!editHabit && <span className="text-theme-danger"> *</span>}
                         </Label>
                         <textarea
                             id="habit-description"
