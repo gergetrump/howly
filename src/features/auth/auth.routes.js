@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import {
-    checkUsername,
     confirmEmail,
     getMe,
     login,
@@ -16,7 +15,6 @@ import { requireAuth } from '../../middleware/auth.middleware.js';
 const router = Router();
 
 router.post('/register', register);
-router.post('/check-username', checkUsername);
 router.post('/login', login);
 router.get('/verify-email', confirmEmail);
 router.post('/verify-email', confirmEmail);
