@@ -38,6 +38,10 @@ const habitCheckInSchema = new Schema(
             type: String,
             default: null,
         },
+        subcategoryKey: {
+            type: String,
+            default: null,
+        },
     },
     {
         timestamps: true,

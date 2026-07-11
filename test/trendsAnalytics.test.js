@@ -15,6 +15,8 @@ import config from '../config.js';
 let mongo;
 let app;
 
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
 async function buildUser(overrides = {}) {
     const suffix = Math.random().toString(36).slice(2, 10);
     return User.create({
@@ -174,8 +176,12 @@ test('GET /api/trends/analytics returns anonymous trends aggregates', async () =
     assert.equal(response.body.data.trendingHabits.length, 2);
     assert.equal(response.body.data.trendingHabits[0].canonicalHabitKey, 'run');
     assert.equal(response.body.data.trendingHabits[0].checkIns, 2);
+    assert.equal(response.body.data.trendingHabits[0].uniqueUsers, 1);
     assert.equal(response.body.data.comparisonPeriod.key, 'previous_7d');
     assert.equal(response.body.data.byCategory[0].trend.direction, 'up');
+    assert.equal(response.body.data.summary.pulse.checkIns, 3);
+    assert.equal(response.body.data.summary.pulse.activeUsers.count, 2);
+    assert.equal(response.body.data.summary.pulse.checkInsTrend.display, 'new');
 
     const todayResponse = await request(app)
         .get('/api/trends/analytics?period=24h')
@@ -267,6 +273,8 @@ test('GET /api/trends/analytics excludes deleted users from standing pool', asyn
     assert.equal(response.body.data.summary.standing.userCompletionRate, 14);
     assert.equal(response.body.data.summary.standing.aheadPercent, 0);
     assert.equal(response.body.data.trendingHabits.length, 1);
+    assert.equal(response.body.data.summary.pulse.checkIns, 1);
+    assert.equal(response.body.data.summary.pulse.activeUsers.count, 1);
 });
 
 test('GET /api/trends/analytics keeps check-ins after habit soft-delete', async () => {
@@ -368,6 +376,114 @@ test('GET /api/trends/analytics returns period-over-period category trends', asy
     assert.equal(response.body.data.byCategory[0].trend.changePercent, 100);
     assert.equal(response.body.data.trendingHabits[0].trend.display, 'percent');
     assert.equal(response.body.data.trendingHabits[0].trend.changePercent, 100);
+    assert.equal(response.body.data.summary.pulse.checkInsTrend.display, 'percent');
+    assert.equal(response.body.data.summary.pulse.checkInsTrend.changePercent, 100);
+});
+
+test('GET /api/trends/analytics excludes ghost-mode users from pulse aggregates', async () => {
+    const visibleUser = await buildUser({ username: 'visible_user', email: 'visible@example.com' });
+    const ghostUser = await buildUser({
+        username: 'ghost_user',
+        email: 'ghost@example.com',
+        ghostMode: true,
+    });
+    const token = authHeader(visibleUser);
+    const completedAt = new Date();
+    const periodStart = new Date();
+    periodStart.setDate(periodStart.getDate() - 6);
+    periodStart.setHours(0, 0, 0, 0);
+
+    const habits = await Promise.all([
+        Habit.create({
+            title: 'Visible habit',
+            type: 'boolean',
+            frequency: 'Daily',
+            ownerId: visibleUser._id,
+            createdAt: periodStart,
+            category: 'Movement',
+            taxonomy: {
+                categoryKey: 'movement',
+                subcategoryKey: 'cardio',
+                canonicalHabitKey: 'run',
+                score: 0.9,
+                assignedAt: completedAt,
+            },
+        }),
+        Habit.create({
+            title: 'Ghost habit',
+            type: 'boolean',
+            frequency: 'Daily',
+            ownerId: ghostUser._id,
+            createdAt: periodStart,
+            category: 'Learning',
+            taxonomy: {
+                categoryKey: 'learning',
+                subcategoryKey: 'reading',
+                canonicalHabitKey: 'read',
+                score: 0.88,
+                assignedAt: completedAt,
+            },
+        }),
+    ]);
+
+    await HabitCheckIn.create([
+        {
+            user: visibleUser._id,
+            habit: habits[0]._id,
+            completedAt,
+            periodKey: completedAt.toISOString().slice(0, 10),
+        },
+        {
+            user: ghostUser._id,
+            habit: habits[1]._id,
+            completedAt,
+            periodKey: completedAt.toISOString().slice(0, 10),
+        },
+    ]);
+
+    const response = await request(app)
+        .get('/api/trends/analytics?period=7d')
+        .set('Authorization', token)
+        .expect(200);
+
+    assert.equal(response.body.data.summary.pulse.checkIns, 1);
+    assert.equal(response.body.data.summary.pulse.activeUsers.count, 1);
+    assert.equal(response.body.data.trendingHabits.length, 1);
+    assert.equal(response.body.data.trendingHabits[0].canonicalHabitKey, 'run');
+});
+
+test('GET /api/trends/analytics counts distinct active users in pulse', async () => {
+    const periodStart = new Date();
+    periodStart.setDate(periodStart.getDate() - 6);
+    periodStart.setHours(0, 0, 0, 0);
+    const completedAt = new Date();
+
+    const users = [];
+    for (let index = 0; index < 10; index += 1) {
+        users.push(await buildUser({
+            username: `pulse_user_${index}`,
+            email: `pulse_${index}@example.com`,
+        }));
+    }
+
+    for (const user of users) {
+        const habit = await createDailyHabit(user._id, `Habit ${user.username}`, periodStart);
+        await HabitCheckIn.create({
+            user: user._id,
+            habit: habit._id,
+            completedAt,
+            periodKey: completedAt.toISOString().slice(0, 10),
+        });
+    }
+
+    const response = await request(app)
+        .get('/api/trends/analytics?period=7d')
+        .set('Authorization', authHeader(users[0]))
+        .expect(200);
+
+    assert.equal(response.body.data.summary.pulse.checkIns, 10);
+    assert.equal(response.body.data.summary.pulse.activeUsers.count, 10);
+    assert.equal(response.body.data.summary.pulse.activeUsers.trend.display, 'new');
 });
 
 test('GET /api/trends/analytics returns completion standing percentile', async () => {
@@ -498,4 +614,141 @@ test('GET /api/trends/analytics excludes challenge habits from standing', async 
 
     assert.equal(response.body.data.summary.standing.display, 'percent');
     assert.equal(response.body.data.summary.standing.userCompletionRate, 100);
+});
+
+test('GET /api/trends/analytics returns subcategory breakdown nested under categories', async () => {
+    const user = await buildUser({ username: 'subcategory_user', email: 'subcategory@example.com' });
+    const token = authHeader(user);
+    const completedAt = new Date();
+    const periodStart = new Date();
+    periodStart.setDate(periodStart.getDate() - 6);
+    periodStart.setHours(0, 0, 0, 0);
+
+    const [cardioHabit, strengthHabit, readHabit, unclassifiedMovementHabit] = await Promise.all([
+        Habit.create({
+            title: 'Morning run',
+            type: 'boolean',
+            frequency: 'Daily',
+            ownerId: user._id,
+            createdAt: periodStart,
+            category: 'Movement',
+            taxonomy: {
+                categoryKey: 'movement',
+                subcategoryKey: 'cardio',
+                canonicalHabitKey: 'run',
+                score: 0.9,
+                assignedAt: completedAt,
+            },
+        }),
+        Habit.create({
+            title: 'Lift weights',
+            type: 'boolean',
+            frequency: 'Daily',
+            ownerId: user._id,
+            createdAt: periodStart,
+            category: 'Movement',
+            taxonomy: {
+                categoryKey: 'movement',
+                subcategoryKey: 'strength',
+                canonicalHabitKey: 'strength-training',
+                score: 0.9,
+                assignedAt: completedAt,
+            },
+        }),
+        Habit.create({
+            title: 'Read book',
+            type: 'boolean',
+            frequency: 'Daily',
+            ownerId: user._id,
+            createdAt: periodStart,
+            category: 'Learning',
+            taxonomy: {
+                categoryKey: 'learning',
+                subcategoryKey: 'reading',
+                canonicalHabitKey: 'read',
+                score: 0.88,
+                assignedAt: completedAt,
+            },
+        }),
+        Habit.create({
+            title: 'Stretch',
+            type: 'boolean',
+            frequency: 'Daily',
+            ownerId: user._id,
+            createdAt: periodStart,
+            category: 'Movement',
+            taxonomy: {
+                categoryKey: 'movement',
+                subcategoryKey: null,
+                canonicalHabitKey: null,
+                score: null,
+                assignedAt: null,
+            },
+        }),
+    ]);
+
+    await HabitCheckIn.create([
+        {
+            user: user._id,
+            habit: cardioHabit._id,
+            completedAt,
+            periodKey: periodKeyForDate(completedAt),
+        },
+        {
+            user: user._id,
+            habit: cardioHabit._id,
+            completedAt: new Date(completedAt.getTime() - DAY_IN_MS),
+            periodKey: periodKeyForDate(new Date(completedAt.getTime() - DAY_IN_MS)),
+        },
+        {
+            user: user._id,
+            habit: cardioHabit._id,
+            completedAt: new Date(completedAt.getTime() - 2 * DAY_IN_MS),
+            periodKey: periodKeyForDate(new Date(completedAt.getTime() - 2 * DAY_IN_MS)),
+        },
+        {
+            user: user._id,
+            habit: strengthHabit._id,
+            completedAt,
+            periodKey: periodKeyForDate(completedAt),
+        },
+        {
+            user: user._id,
+            habit: readHabit._id,
+            completedAt,
+            periodKey: periodKeyForDate(completedAt),
+        },
+        {
+            user: user._id,
+            habit: unclassifiedMovementHabit._id,
+            completedAt,
+            periodKey: periodKeyForDate(completedAt),
+        },
+    ]);
+
+    const response = await request(app)
+        .get('/api/trends/analytics?period=7d')
+        .set('Authorization', token)
+        .expect(200);
+
+    const movementCategory = response.body.data.byCategory.find((item) => item.categoryKey === 'movement');
+    const learningCategory = response.body.data.byCategory.find((item) => item.categoryKey === 'learning');
+
+    assert.ok(movementCategory);
+    assert.equal(movementCategory.checkIns, 5);
+    assert.equal(movementCategory.bySubcategory.length, 2);
+    assert.equal(movementCategory.bySubcategory[0].subcategoryKey, 'cardio');
+    assert.equal(movementCategory.bySubcategory[0].subcategoryLabel, 'Cardio');
+    assert.equal(movementCategory.bySubcategory[0].checkIns, 3);
+    assert.equal(movementCategory.bySubcategory[1].subcategoryKey, 'strength');
+    assert.equal(movementCategory.bySubcategory[1].subcategoryLabel, 'Strength');
+    assert.equal(movementCategory.bySubcategory[1].checkIns, 1);
+
+    const subcategoryShareTotal = movementCategory.bySubcategory.reduce((sum, item) => sum + item.share, 0);
+    assert.ok(subcategoryShareTotal <= movementCategory.share);
+
+    assert.ok(learningCategory);
+    assert.equal(learningCategory.bySubcategory.length, 1);
+    assert.equal(learningCategory.bySubcategory[0].subcategoryKey, 'reading');
+    assert.equal(learningCategory.bySubcategory[0].subcategoryLabel, 'Reading');
 });

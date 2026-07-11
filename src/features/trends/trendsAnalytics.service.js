@@ -49,6 +49,7 @@ function buildCheckInBasePipeline(start, end) {
         {
             $match: {
                 'userDoc.isDeleted': { $ne: true },
+                'userDoc.ghostMode': { $ne: true },
             },
         },
         {
@@ -79,9 +80,26 @@ function buildCheckInBasePipeline(start, end) {
                         { $arrayElemAt: ['$habitDoc.taxonomy.canonicalHabitKey', 0] },
                     ],
                 },
+                resolvedSubcategoryKey: {
+                    $ifNull: [
+                        '$subcategoryKey',
+                        { $arrayElemAt: ['$habitDoc.taxonomy.subcategoryKey', 0] },
+                    ],
+                },
             },
         },
     ];
+}
+
+function formatSubcategoryLabel(subcategoryKey) {
+    if (!subcategoryKey) {
+        return '';
+    }
+
+    return subcategoryKey
+        .split('-')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 }
 
 function formatTopCategory(categoryRows) {
@@ -103,6 +121,46 @@ function buildCategoryRows(categoryResults, totalClassifiedCheckIns) {
         share: totalClassifiedCheckIns
             ? Math.round((row.checkIns / totalClassifiedCheckIns) * 100)
             : 0,
+    }));
+}
+
+function buildSubcategoryRows(subcategoryResults, totalClassifiedCheckIns) {
+    return subcategoryResults.map((row) => ({
+        categoryKey: row._id.categoryKey,
+        subcategoryKey: row._id.subcategoryKey,
+        subcategoryLabel: formatSubcategoryLabel(row._id.subcategoryKey),
+        checkIns: row.checkIns,
+        share: totalClassifiedCheckIns
+            ? Math.round((row.checkIns / totalClassifiedCheckIns) * 100)
+            : 0,
+    }));
+}
+
+function groupSubcategoriesByCategory(subcategoryRows) {
+    const grouped = new Map();
+
+    for (const row of subcategoryRows) {
+        if (!grouped.has(row.categoryKey)) {
+            grouped.set(row.categoryKey, []);
+        }
+
+        grouped.get(row.categoryKey).push({
+            subcategoryKey: row.subcategoryKey,
+            subcategoryLabel: row.subcategoryLabel,
+            checkIns: row.checkIns,
+            share: row.share,
+        });
+    }
+
+    return grouped;
+}
+
+function attachSubcategoriesToCategories(categories, subcategoryRows) {
+    const grouped = groupSubcategoriesByCategory(subcategoryRows);
+
+    return categories.map((category) => ({
+        ...category,
+        bySubcategory: grouped.get(category.categoryKey) ?? [],
     }));
 }
 
@@ -151,6 +209,17 @@ function attachCategoryTrends(currentCategories, previousCategories) {
     }));
 }
 
+function buildPulseSummary(currentStats, previousStats) {
+    return {
+        checkIns: currentStats.checkIns,
+        checkInsTrend: buildTrendMetric(currentStats.checkIns, previousStats.checkIns),
+        activeUsers: {
+            count: currentStats.activeUsers ?? 0,
+            trend: buildTrendMetric(currentStats.activeUsers, previousStats.activeUsers),
+        },
+    };
+}
+
 function attachTrendingTrends(currentHabits, previousHabits) {
     const previousByKey = indexByKey(previousHabits, 'canonicalHabitKey');
 
@@ -178,7 +247,7 @@ async function loadCanonicalLabels(keys) {
 async function computeRangeAnalytics(start, end) {
     const basePipeline = buildCheckInBasePipeline(start, end);
 
-    const [summaryRows, categoryRows, trendingRows] = await Promise.all([
+    const [summaryRows, categoryRows, subcategoryRows, trendingRows] = await Promise.all([
         HabitCheckIn.aggregate([
             ...basePipeline,
             {
@@ -211,6 +280,25 @@ async function computeRangeAnalytics(start, end) {
             ...basePipeline,
             {
                 $match: {
+                    resolvedCategoryKey: { $nin: [null, ''] },
+                    resolvedSubcategoryKey: { $nin: [null, ''] },
+                },
+            },
+            {
+                $group: {
+                    _id: {
+                        categoryKey: '$resolvedCategoryKey',
+                        subcategoryKey: '$resolvedSubcategoryKey',
+                    },
+                    checkIns: { $sum: 1 },
+                },
+            },
+            { $sort: { checkIns: -1 } },
+        ]),
+        HabitCheckIn.aggregate([
+            ...basePipeline,
+            {
+                $match: {
                     resolvedCanonicalHabitKey: { $nin: [null, ''] },
                 },
             },
@@ -231,6 +319,7 @@ async function computeRangeAnalytics(start, end) {
     const summary = summaryRows[0] ?? { checkIns: 0, users: [] };
     const totalClassifiedCheckIns = categoryRows.reduce((sum, row) => sum + row.checkIns, 0);
     const byCategory = buildCategoryRows(categoryRows, totalClassifiedCheckIns);
+    const bySubcategory = buildSubcategoryRows(subcategoryRows, totalClassifiedCheckIns);
     const canonicalLabels = await loadCanonicalLabels(trendingRows.map((row) => row._id));
 
     const trendingHabits = trendingRows.map((row) => ({
@@ -247,6 +336,7 @@ async function computeRangeAnalytics(start, end) {
         activeUsers: summary.users.length,
         topCategory: formatTopCategory(byCategory),
         byCategory,
+        bySubcategory,
         trendingHabits,
     };
 }
@@ -329,8 +419,12 @@ export async function getTrendsAnalytics({ period = DEFAULT_TRENDS_PERIOD, userI
         summary: {
             topCategory: stats.topCategory,
             standing,
+            pulse: buildPulseSummary(stats, previousStats),
         },
-        byCategory: attachCategoryTrends(stats.byCategory, previousStats.byCategory),
+        byCategory: attachSubcategoriesToCategories(
+            attachCategoryTrends(stats.byCategory, previousStats.byCategory),
+            stats.bySubcategory,
+        ),
         trendingHabits: attachTrendingTrends(stats.trendingHabits, previousStats.trendingHabits),
     };
 }

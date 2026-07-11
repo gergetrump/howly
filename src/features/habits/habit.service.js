@@ -16,6 +16,7 @@ import { applyHabitBoostReward, revertHabitBoostReward } from '../boosts/habitBo
 import HabitBoost from '../boosts/habitBoost.model.js';
 import { toTaxonomyDto } from '../taxonomy/taxonomy.schema.js';
 import {
+    applyCanonicalTaxonomyToHabit,
     copyTaxonomyToHabit,
     clearTaxonomyFields,
     scheduleTaxonomyForHabit,
@@ -337,9 +338,21 @@ export async function createHabit(userId, data) {
     await assertHabitTextClean([data.title, data.description].filter(Boolean).join(' '));
     validateHabitFields(data);
 
+    const canonicalHabitKey = typeof data.canonicalHabitKey === 'string'
+        ? data.canonicalHabitKey.trim()
+        : '';
+
     const habit = await Habit.create({ ...pickWritableHabitFields(data), ownerId: userId });
     await revokeOverallStreakIfIncomplete(userId);
-    scheduleTaxonomyForHabit(habit._id);
+
+    if (canonicalHabitKey) {
+        const applied = await applyCanonicalTaxonomyToHabit(habit, canonicalHabitKey);
+        if (!applied) {
+            scheduleTaxonomyForHabit(habit._id);
+        }
+    } else {
+        scheduleTaxonomyForHabit(habit._id);
+    }
 
     const dto = toHabitDto(habit);
     const [populated] = await populateActiveBoosts(userId, [dto]);
@@ -374,8 +387,21 @@ export async function createHabitsFromTemplates(userId, templates) {
     const habits = await Habit.insertMany(docs);
     await revokeOverallStreakIfIncomplete(userId);
 
-    for (const habit of habits) {
-        scheduleTaxonomyForHabit(habit._id);
+    for (let index = 0; index < habits.length; index += 1) {
+        const habit = habits[index];
+        const template = templates[index];
+        const canonicalHabitKey = typeof template?.canonicalHabitKey === 'string'
+            ? template.canonicalHabitKey.trim()
+            : '';
+
+        if (canonicalHabitKey) {
+            const applied = await applyCanonicalTaxonomyToHabit(habit, canonicalHabitKey);
+            if (!applied) {
+                scheduleTaxonomyForHabit(habit._id);
+            }
+        } else {
+            scheduleTaxonomyForHabit(habit._id);
+        }
     }
 
     return habits.map(toHabitDto);
