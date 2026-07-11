@@ -6,7 +6,7 @@ import { StreakShieldBadge } from '@/components/brand/StreakShieldBadge.jsx';
 import { NotificationBell } from '@/components/layout/NotificationBell';
 import howlyIcon from '@/assets/wolf.svg';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 
 const defaultItems = [
     { label: 'Home', to: '/dashboard', icon: Home },

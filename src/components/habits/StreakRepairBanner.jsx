@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { StreakShieldIcon } from '@/components/brand/StreakShieldIcon.jsx';
 import { applyOverallStreakFreeze } from '@/services/streakFreezeApi';
 

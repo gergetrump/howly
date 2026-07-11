@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { appTabsListWrapClassName, appTabsTriggerWrapClassName } from '@/components/cards/cardStyles';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import {
     getMyInventory,

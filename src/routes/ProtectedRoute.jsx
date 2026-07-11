@@ -11,7 +11,7 @@
  * redirect loop when the onboarding routes themselves live under this guard.
  */
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 
 export function ProtectedRoute() {
     const { user, isLoadingUser } = useAuth();

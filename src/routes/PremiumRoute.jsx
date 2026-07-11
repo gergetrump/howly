@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 
 function hasPremiumAccess(user) {
     return user?.role === 'admin' || user?.isPremium === true;

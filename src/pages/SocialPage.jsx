@@ -33,7 +33,7 @@ import {
 } from '@/services/socialApi';
 import { searchUsers } from '@/services/userApi';
 import { deleteStory, getStoryLikes, toggleStoryLike } from '@/services/storyApi';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 
 const SOCIAL_REFRESH_INTERVAL_MS = 10000;
 const SOCIAL_FEED_PAGE_SIZE = 10;

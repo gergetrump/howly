@@ -4,7 +4,7 @@ import howlyIcon from '@/assets/howly.png';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
-import { Background } from '@/components/brand/background';
+import { Background } from '@/components/brand/Background.jsx';
 import { appCardClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
 

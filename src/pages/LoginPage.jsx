@@ -3,11 +3,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 
 import howlyIcon from '@/assets/howly.png';
-import { Background } from '@/components/brand/background';
+import { Background } from '@/components/brand/Background.jsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName } from '@/components/cards/cardStyles';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { loginUser, resendVerificationEmail } from '@/services/authService';
 

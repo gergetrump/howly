@@ -22,7 +22,7 @@ import {
     ShopCustomizationPanel,
     ShopItemGrid,
 } from '@/components/shop';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import { StreakFreezeCard } from '@/components/shop/StreakFreezeCard.jsx';
 import { buyItem, getBoostPurchaseLimits, getMyInventory } from '@/services/inventoryApi';

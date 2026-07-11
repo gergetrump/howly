@@ -41,7 +41,7 @@ import {
 } from '@/components/ui/confirmation-dialog';
 import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
 import { NotificationMuteDialog } from '@/components/social/NotificationMuteDialog.jsx';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { sendFeedback } from '@/services/feedbackService';
 import { toast } from 'sonner';
 

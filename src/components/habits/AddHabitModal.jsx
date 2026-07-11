@@ -21,7 +21,7 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { PlanLimitDialog } from '@/components/common';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { createHabit, updateHabit } from '@/services/habitService';
 
 const ICONS = [

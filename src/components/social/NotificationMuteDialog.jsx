@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { appTabsListFullWidthClassName, appTabsTriggerClassName } from '@/components/cards/cardStyles';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { updateCurrentUser } from '@/services/userService';
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {

@@ -4,7 +4,7 @@ import { BarChart3, Check, Coins, Crown, Globe, Loader2, Shield, Sparkles } from
 
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { createCheckoutSession, createManagePremiumSession } from '@/services/paymentService';
 import { getCurrentUserPlan } from '@/services/userService';
 

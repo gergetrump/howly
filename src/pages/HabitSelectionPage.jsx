@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Background } from '@/components/brand/background';
+import { Background } from '@/components/brand/Background.jsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName } from '@/components/cards/cardStyles';
@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { STARTER_HABITS, FREE_TIER_HABIT_LIMIT } from '@/constants/starterHabits';
 import { createHabitsFromTemplates } from '@/services/habitService';
 import { completeOnboarding } from '@/services/userService';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 
 export function HabitSelectionPage() {
     const navigate = useNavigate();

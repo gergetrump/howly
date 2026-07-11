@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { KeyRound } from 'lucide-react';
 
 import howlyIcon from '@/assets/howly.png';
-import { Background } from '@/components/brand/background';
+import { Background } from '@/components/brand/Background.jsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { appCardClassName } from '@/components/cards/cardStyles';

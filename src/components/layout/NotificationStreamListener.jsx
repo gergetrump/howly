@@ -1,5 +1,5 @@
 import { useNotificationStream } from '@/hooks/useNotificationStream';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 
 export function NotificationStreamListener() {
     const { user } = useAuth();

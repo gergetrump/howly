@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { PremiumFeaturePreview } from '@/components/common';
 import { getChallengeAnalytics, getHabitAnalytics } from '@/services/analyticsService';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import {
     analyticsCompletionBarClassName,
     analyticsCompletionBarShadowClassName,
