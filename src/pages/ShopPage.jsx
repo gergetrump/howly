@@ -36,7 +36,6 @@ const SINGLE_PREVIEW_SLOTS = new Set(['body', 'face', 'hand', 'head', 'neck']);
 const MAX_OWNED_POWER_UP_QUANTITY = 20;
 const MAX_MONTHLY_BOOST_PURCHASE_QUANTITY = 20;
 const STREAK_FREEZE_ASSET_KEY = 'streak-freeze';
-const MAX_STREAK_SHIELDS = 3;
 const BOOST_ASSET_KEYS = new Set(['small-boost', 'medium-boost', 'big-boost']);
 
 function isItemCategoryValue(value) {
@@ -454,7 +453,8 @@ export function ShopPage() {
 
     function getMaxOwnedQuantityForPowerUp(item) {
         if (item?.assetKey === STREAK_FREEZE_ASSET_KEY) {
-            return MAX_STREAK_SHIELDS;
+            // No stockpile cap on shields — buy as many as you can afford.
+            return Number.POSITIVE_INFINITY;
         }
 
         return MAX_OWNED_POWER_UP_QUANTITY;
