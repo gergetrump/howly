@@ -57,8 +57,8 @@ export function StreakRepairBanner({ onRescued }) {
                 <p className="text-sm font-semibold text-theme-text">Your streak is at risk!</p>
                 <p className="text-xs text-theme-gold/90">
                     {canUseFreeze
-                        ? `Use a shield within ${timeLeft} to save it.`
-                        : `Grab a shield within ${timeLeft} to save it.`}
+                        ? `Use a shield within ${timeLeft} to save your daily streak and at-risk habits.`
+                        : `Grab a shield within ${timeLeft} to save your daily streak and at-risk habits.`}
                 </p>
             </div>
             {canUseFreeze ? (
