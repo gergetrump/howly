@@ -44,9 +44,6 @@ export const PLANS = Object.freeze({
     }),
 });
 
-// Maximum streak shields a user can stockpile (caps monthly grants + purchases).
-export const MAX_STREAK_SHIELDS = 3;
-
 // Grace window (days) to repair a streak after a missed day with no shield.
 export const STREAK_REPAIR_WINDOW_DAYS = 2;
 

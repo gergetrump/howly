@@ -5,7 +5,6 @@ import config from '../../../config.js';
 import { isCompletedForPeriod, isPreviousPeriod, previousPeriodMarker, isDueToday } from '../habits/habit.service.js';
 import {
     hasPremiumAccess,
-    MAX_STREAK_SHIELDS,
     STREAK_REPAIR_WINDOW_DAYS,
 } from '../../config/plans.js';
 
@@ -117,10 +116,8 @@ export async function grantMonthlyShields(now = new Date()) {
             && last.getMonth() === now.getMonth();
         if (alreadyThisMonth) continue;
 
-        if ((user.streakShields ?? 0) < MAX_STREAK_SHIELDS) {
-            user.streakShields = (user.streakShields ?? 0) + 1;
-            granted += 1;
-        }
+        user.streakShields = (user.streakShields ?? 0) + 1;
+        granted += 1;
         user.streakShieldsLastGrantedAt = now;
         await user.save();
     }
