@@ -2,7 +2,7 @@ import User from '../users/user.model.js';
 import Item from '../items/item.model.js';
 import UserItem from './inventory.model.js';
 import BoostPurchaseLimit from './boostPurchaseLimit.model.js';
-import { getPlanForUser, MAX_STREAK_SHIELDS } from '../../config/plans.js';
+import { getPlanForUser } from '../../config/plans.js';
 import {
     activateHabitBoost,
     BOOST_ERROR_CODES,
@@ -632,16 +632,12 @@ export async function useInventoryItem({ userId, userItemId, habitId }) {
     };
 }
 
-// Buy the consumable Streak Freeze: +1 shield (capped), repeatable.
+// Buy the consumable Streak Freeze: +1 shield, repeatable (no stockpile cap).
 async function buyStreakFreeze({ user, item }) {
     const plan = getPlanForUser(user);
 
     if (item.premiumOnly && !plan.permissions.canBuyPremiumItems) {
         throw inventoryError(INVENTORY_ERROR_CODES.PREMIUM_REQUIRED);
-    }
-
-    if ((user.streakShields ?? 0) >= MAX_STREAK_SHIELDS) {
-        throw inventoryError(INVENTORY_ERROR_CODES.SHIELDS_AT_MAX);
     }
 
     if (user.coins < item.price) {

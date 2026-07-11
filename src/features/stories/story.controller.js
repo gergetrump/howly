@@ -44,6 +44,10 @@ export async function createStory(req, res) {
       return notFound(res, 'Source not found or not yours');
     }
 
+    if (errorCode === 'STORY_IMAGE_MODERATION_BLOCKED') {
+      return badRequest(res, 'Please choose an appropriate image.', 'STORY_IMAGE_MODERATION_BLOCKED');
+    }
+
     return res.status(201).json(story);
   } catch (err) {
     console.error('Failed to create story:', err);

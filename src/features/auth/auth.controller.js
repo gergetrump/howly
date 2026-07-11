@@ -10,6 +10,7 @@ import {
     verifyEmail as verifyUserEmail,
 } from './auth.service.js';
 import { validateLoginInput, validateRegisterInput } from './auth.validation.js';
+import { validateUsernameValue } from '../../utils/accountInputValidation.js';
 import config from '../../../config.js';
 
 const badRequest = (res, message) => res.status(400).json({ message });
@@ -122,6 +123,32 @@ export async function register(req, res) {
         return res.status(500).json({
             message: 'Something went wrong'
         })
+    }
+}
+
+// Lightweight username validity check for the signup form's instant feedback.
+// Runs the same rules as registration (format, reserved names, and the
+// server-side blocklist) so the word list never has to ship to the browser.
+export async function checkUsername(req, res) {
+    try {
+        const rawUsername = req?.body?.username;
+
+        // Cheap guard: never normalize an oversized payload just to reject it.
+        if (typeof rawUsername !== 'string' || rawUsername.length > 100) {
+            return res.status(200).json({ valid: false, error: 'username is invalid' });
+        }
+
+        const result = validateUsernameValue(rawUsername);
+
+        return res.status(200).json({
+            valid: !result.error,
+            error: result.error ?? null,
+        });
+    } catch (error) {
+        console.error('Check username error:', error);
+        return res.status(500).json({
+            message: 'Something went wrong while checking the username',
+        });
     }
 }
 

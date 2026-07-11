@@ -1,5 +1,6 @@
 import Habit from './habit.model.js';
 import { ApiError } from '../../errors/ApiError.js';
+import { moderateText } from '../../moderation/moderation.service.js';
 import {
     createMilestonePostForHabit,
     enrichMilestonePost,
@@ -80,7 +81,7 @@ export function isCompletedForPeriod(habit) {
     return isToday(date);
 }
 
-function isDueToday(habit) {
+export function isDueToday(habit) {
     if (habit.frequency === 'Custom' && habit.customDays && habit.customDays.length > 0) {
         const currentDay = new Date().getDay() || 7; // 1-7 (Mon-Sun)
         return habit.customDays.includes(currentDay);
@@ -296,10 +297,35 @@ export async function getHabitById(habitId, userId) {
     return populated;
 }
 
-function stripClientCategory(data) {
-    const payload = { ...data };
-    delete payload.category;
+const WRITABLE_HABIT_FIELDS = ['title', 'description', 'icon', 'type', 'target', 'unit', 'frequency', 'customDays'];
+
+function pickWritableHabitFields(data = {}) {
+    const payload = {};
+    for (const field of WRITABLE_HABIT_FIELDS) {
+        if (data[field] !== undefined) {
+            payload[field] = data[field];
+        }
+    }
     return payload;
+}
+
+async function assertHabitTextClean(text) {
+    const moderation = await moderateText(text);
+    if (moderation.flagged) {
+        throw new ApiError(400, 'HABIT_MODERATION_BLOCKED', 'Please choose a habit name without harmful or inappropriate content.');
+    }
+}
+
+function validateHabitFields({ type, target, frequency, customDays }) {
+    if (type === 'numeric' && !(typeof target === 'number' && target >= 1)) {
+        throw new ApiError(400, 'INVALID_HABIT', 'Numeric habits need a target of at least 1.');
+    }
+    if (frequency === 'Custom' && !(Array.isArray(customDays) && customDays.length > 0)) {
+        throw new ApiError(400, 'INVALID_HABIT', 'Custom habits need at least one weekday.');
+    }
+    if (Array.isArray(customDays) && customDays.some((day) => !Number.isInteger(day) || day < 1 || day > 7)) {
+        throw new ApiError(400, 'INVALID_HABIT', 'Weekdays must be whole numbers between 1 and 7.');
+    }
 }
 
 /**
@@ -308,7 +334,10 @@ function stripClientCategory(data) {
 export async function createHabit(userId, data) {
     await assertCanCreateHabits(userId);
 
-    const habit = await Habit.create({ ...stripClientCategory(data), ownerId: userId });
+    await assertHabitTextClean([data.title, data.description].filter(Boolean).join(' '));
+    validateHabitFields(data);
+
+    const habit = await Habit.create({ ...pickWritableHabitFields(data), ownerId: userId });
     await revokeOverallStreakIfIncomplete(userId);
     scheduleTaxonomyForHabit(habit._id);
 
@@ -321,10 +350,19 @@ export async function createHabit(userId, data) {
  * Bulk-create habits from an array of template objects (onboarding).
  */
 export async function createHabitsFromTemplates(userId, templates) {
+    if (!Array.isArray(templates) || templates.length === 0) {
+        throw new ApiError(400, 'INVALID_TEMPLATES', 'templates must be a non-empty array.');
+    }
+
     await assertCanCreateHabits(userId, templates.length);
+
+    await assertHabitTextClean(
+        templates.map((t) => [t.title, t.description].filter(Boolean).join(' ')).join('\n'),
+    );
 
     const docs = templates.map((t) => ({
         title: t.title,
+        description: typeof t.description === 'string' ? t.description.trim().slice(0, 1000) : '',
         icon: t.icon ?? '🎯',
         frequency: t.frequency,
         customDays: t.customDays || [],
@@ -353,18 +391,31 @@ export async function updateHabit(habitId, userId, data) {
         throw ApiError.notFound('Habit not found.');
     }
 
+    if (data.title !== undefined || data.description !== undefined) {
+        await assertHabitTextClean([data.title, data.description].filter(Boolean).join(' '));
+    }
+
     const shouldReassignTaxonomy = (
         (data.title !== undefined && data.title !== habit.title)
         || (data.description !== undefined && data.description !== habit.description)
     );
 
-    Object.assign(habit, stripClientCategory(data));
+    const dueSetChanged = (
+        (data.frequency !== undefined && data.frequency !== habit.frequency)
+        || data.customDays !== undefined
+    );
+
+    Object.assign(habit, pickWritableHabitFields(data));
 
     if (shouldReassignTaxonomy) {
         clearTaxonomyFields(habit);
     }
 
     await habit.save();
+
+    if (dueSetChanged) {
+        await revokeOverallStreakIfIncomplete(userId);
+    }
 
     if (shouldReassignTaxonomy) {
         scheduleTaxonomyForHabit(habit._id);
@@ -490,13 +541,10 @@ export async function uncompleteHabit(habitId, userId) {
 
     // Revert streak
     habit.streakCount = Math.max(0, habit.streakCount - 1);
-    
-    // Approximate previous completion date to yesterday so streak can continue tomorrow
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
+
     const uncompletedAt = habit.lastCompletedAt || new Date();
     await removeHabitCheckInForCurrentPeriod({ userId, habit });
-    habit.lastCompletedAt = habit.streakCount > 0 ? yesterday : null;
+    habit.lastCompletedAt = habit.streakCount > 0 ? previousPeriodMarker(habit) : null;
 
     await habit.save();
     await revokeOverallStreakIfIncomplete(userId);
@@ -551,7 +599,7 @@ async function revokeOverallStreakIfIncomplete(userId) {
         return { streak: user.streak, revoked: false };
     }
 
-    const habits = await Habit.find({ ownerId: userId, source: { $ne: 'challenge' } })
+    const habits = await Habit.find(withActiveHabitFilter({ ownerId: userId, source: { $ne: 'challenge' } }))
         .select('frequency lastCompletedAt customDays');
     const dueToday = habits.filter(isDueToday);
 

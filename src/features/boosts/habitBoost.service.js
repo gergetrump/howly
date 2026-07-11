@@ -125,75 +125,76 @@ export async function activateHabitBoost({ userId, item, habitId }) {
 }
 
 export async function applyHabitBoostReward({ userId, habit }) {
-    const boost = await HabitBoost.findOne({
-        user: userId,
-        habit: habit._id,
-        remainingCompletions: { $gt: 0 },
-    }).sort({ createdAt: 1 });
+    const periodKey = getCompletionPeriodKey(habit, habit.lastCompletedAt ?? new Date());
+
+    const boost = await HabitBoost.findOneAndUpdate(
+        {
+            user: userId,
+            habit: habit._id,
+            remainingCompletions: { $gt: 0 },
+            rewardedPeriodKeys: { $ne: periodKey },
+        },
+        {
+            $push: { rewardedPeriodKeys: periodKey },
+            $inc: { remainingCompletions: -1 },
+        },
+        { new: true, sort: { createdAt: 1 } },
+    );
 
     if (!boost) {
         return null;
     }
 
-    const periodKey = getCompletionPeriodKey(habit, habit.lastCompletedAt ?? new Date());
-
-    if (boost.rewardedPeriodKeys.includes(periodKey)) {
-        return null;
-    }
-
-    boost.rewardedPeriodKeys.push(periodKey);
-    boost.remainingCompletions = Math.max(0, boost.remainingCompletions - 1);
-
-    if (boost.remainingCompletions === 0) {
+    if (boost.remainingCompletions === 0 && !boost.completedAt) {
         boost.completedAt = new Date();
+        await boost.save();
     }
 
-    await Promise.all([
-        boost.save(),
-        User.findByIdAndUpdate(userId, { $inc: { coins: boost.bonusCoins } }),
-    ]);
-
-    const freshUser = await User.findById(userId).select('coins');
+    const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { $inc: { coins: boost.bonusCoins } },
+        { new: true },
+    ).select('coins');
 
     return {
         assetKey: boost.assetKey,
         bonusCoins: boost.bonusCoins,
         remainingCompletions: boost.remainingCompletions,
-        coins: freshUser.coins,
+        coins: updatedUser.coins,
     };
 }
 
 export async function revertHabitBoostReward({ userId, habit, uncompletedAt = new Date() }) {
     const periodKey = getCompletionPeriodKey(habit, uncompletedAt);
 
-    const boost = await HabitBoost.findOne({
-        user: userId,
-        habit: habit._id,
-        rewardedPeriodKeys: periodKey,
-    });
+    const boost = await HabitBoost.findOneAndUpdate(
+        {
+            user: userId,
+            habit: habit._id,
+            rewardedPeriodKeys: periodKey,
+        },
+        {
+            $pull: { rewardedPeriodKeys: periodKey },
+            $inc: { remainingCompletions: 1 },
+            $set: { completedAt: null },
+        },
+        { new: true },
+    );
 
     if (!boost) {
         return null;
     }
 
-    boost.rewardedPeriodKeys = boost.rewardedPeriodKeys.filter((key) => key !== periodKey);
-    boost.remainingCompletions = Math.min(
-        boost.remainingCompletions + 1,
-        BOOST_CONFIG_BY_ASSET_KEY[boost.assetKey].completions
-    );
-    boost.completedAt = null;
-
-    await Promise.all([
-        boost.save(),
-        User.findByIdAndUpdate(userId, { $inc: { coins: -boost.bonusCoins } }),
-    ]);
-
-    const freshUser = await User.findById(userId).select('coins');
+    const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { $inc: { coins: -boost.bonusCoins } },
+        { new: true },
+    ).select('coins');
 
     return {
         assetKey: boost.assetKey,
         coinsReverted: boost.bonusCoins,
         remainingCompletions: boost.remainingCompletions,
-        coins: freshUser.coins,
+        coins: updatedUser.coins,
     };
 }

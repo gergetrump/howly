@@ -2,10 +2,9 @@ import Habit from '../habits/habit.model.js';
 import User from '../users/user.model.js';
 import { sendStreakReminderEmail } from '../mail/mail.service.js';
 import config from '../../../config.js';
-import { isCompletedForPeriod, isPreviousPeriod, previousPeriodMarker } from '../habits/habit.service.js';
+import { isCompletedForPeriod, isPreviousPeriod, previousPeriodMarker, isDueToday } from '../habits/habit.service.js';
 import {
     hasPremiumAccess,
-    MAX_STREAK_SHIELDS,
     STREAK_REPAIR_WINDOW_DAYS,
 } from '../../config/plans.js';
 
@@ -78,6 +77,15 @@ function isOverallStreakMissed(user, now) {
     return !user.streakLastDay || daysBetween(now, user.streakLastDay) >= 2;
 }
 
+async function hasUnmetDueHabit(userId) {
+    const habits = await Habit.find({ ownerId: userId, deletedAt: null, source: { $ne: 'challenge' } })
+        .select('frequency lastCompletedAt customDays');
+    return habits.some((habit) =>
+        isDueToday(habit)
+        && !isCompletedForPeriod(habit)
+        && !isPreviousPeriod(habit, habit.lastCompletedAt));
+}
+
 async function bridgeAtRiskHabits(userId, now) {
     const habits = await Habit.find({ ownerId: userId, streakCount: { $gt: 0 } });
     let bridged = 0;
@@ -108,10 +116,8 @@ export async function grantMonthlyShields(now = new Date()) {
             && last.getMonth() === now.getMonth();
         if (alreadyThisMonth) continue;
 
-        if ((user.streakShields ?? 0) < MAX_STREAK_SHIELDS) {
-            user.streakShields = (user.streakShields ?? 0) + 1;
-            granted += 1;
-        }
+        user.streakShields = (user.streakShields ?? 0) + 1;
+        granted += 1;
         user.streakShieldsLastGrantedAt = now;
         await user.save();
     }
@@ -151,6 +157,7 @@ export async function runDailyStreakMaintenance(now = new Date()) {
     let overallOpened = 0;
     let overallBroken = 0;
     let overallAutoShielded = 0;
+    let overallRestDaysRescued = 0;
     for (const user of users) {
         if (!isOverallStreakMissed(user, now)) {
             if (user.streakRepairDeadline) {
@@ -160,12 +167,22 @@ export async function runDailyStreakMaintenance(now = new Date()) {
             continue;
         }
 
-        if ((user.streakShields ?? 0) > 0) {
-            user.streakShields -= 1;
+        if (!(await hasUnmetDueHabit(user._id))) {
             user.streakLastDay = endOfYesterday(now);
             user.streakRepairDeadline = null;
-            user.streakShieldAutoUsedAt = now;
             await user.save();
+            overallRestDaysRescued += 1;
+            continue;
+        }
+
+        const autoSpent = await User.findOneAndUpdate(
+            { _id: user._id, streakShields: { $gt: 0 } },
+            {
+                $inc: { streakShields: -1 },
+                $set: { streakLastDay: endOfYesterday(now), streakRepairDeadline: null, streakShieldAutoUsedAt: now },
+            },
+        );
+        if (autoSpent) {
             await bridgeAtRiskHabits(user._id, now);
             overallAutoShielded += 1;
             continue;
@@ -183,7 +200,7 @@ export async function runDailyStreakMaintenance(now = new Date()) {
         }
     }
 
-    return { habitsOpened, habitsBroken, overallOpened, overallBroken, overallAutoShielded };
+    return { habitsOpened, habitsBroken, overallOpened, overallBroken, overallAutoShielded, overallRestDaysRescued };
 }
 
 export async function sendStreakRepairReminders(now = new Date()) {
@@ -231,19 +248,23 @@ export async function applyFreezeToHabit(userId, habitId, now = new Date()) {
     if (!user) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.USER_NOT_FOUND);
     if (!habit) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.HABIT_NOT_FOUND);
     if (!isHabitStreakAtRisk(habit)) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NOT_AT_RISK);
-    if ((user.streakShields ?? 0) <= 0) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NO_SHIELDS);
 
-    user.streakShields -= 1;
-    if (isOverallStreakMissed(user, now)) {
-        user.streakLastDay = endOfYesterday(now);
-        user.streakRepairDeadline = null;
-    }
-    await user.save();
+    const shieldUpdate = isOverallStreakMissed(user, now)
+        ? { $inc: { streakShields: -1 }, $set: { streakLastDay: endOfYesterday(now), streakRepairDeadline: null } }
+        : { $inc: { streakShields: -1 } };
 
-    await bridgeAtRiskHabits(user._id, now);
+    const spent = await User.findOneAndUpdate(
+        { _id: userId, streakShields: { $gt: 0 } },
+        shieldUpdate,
+        { new: true },
+    );
+
+    if (!spent) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NO_SHIELDS);
+
+    await bridgeAtRiskHabits(userId, now);
     const reloadedHabit = await Habit.findById(habit._id);
 
-    return { streakShields: user.streakShields, habit: reloadedHabit };
+    return { streakShields: spent.streakShields, habit: reloadedHabit };
 }
 
 export async function applyFreezeToOverall(userId, now = new Date()) {
@@ -252,15 +273,17 @@ export async function applyFreezeToOverall(userId, now = new Date()) {
 
     if (!user) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.USER_NOT_FOUND);
     if (!isOverallStreakMissed(user, now)) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NOT_AT_RISK);
-    if ((user.streakShields ?? 0) <= 0) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NO_SHIELDS);
 
-    user.streakShields -= 1;
-    user.streakLastDay = endOfYesterday(now);
-    user.streakRepairDeadline = null;
-    await user.save();
+    const spent = await User.findOneAndUpdate(
+        { _id: userId, streakShields: { $gt: 0 } },
+        { $inc: { streakShields: -1 }, $set: { streakLastDay: endOfYesterday(now), streakRepairDeadline: null } },
+        { new: true },
+    );
 
-    await bridgeAtRiskHabits(user._id, now);
+    if (!spent) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NO_SHIELDS);
 
-    return { streakShields: user.streakShields, streak: user.streak };
+    await bridgeAtRiskHabits(userId, now);
+
+    return { streakShields: spent.streakShields, streak: spent.streak };
 }
 

@@ -16,6 +16,8 @@ import config from '../config.js';
 import { getPlanForUser } from '../src/config/plans.js';
 import { getBoostPurchaseMonthKey } from '../src/features/inventory/inventory.service.js';
 import { applyFreezeToHabit } from '../src/features/streakFreeze/streakFreeze.service.js';
+import { applyHabitBoostReward, revertHabitBoostReward } from '../src/features/boosts/habitBoost.service.js';
+import { completeHabit, uncompleteHabit } from '../src/features/habits/habit.service.js';
 
 let mongo;
 let app;
@@ -176,6 +178,334 @@ test('habit check-in and uncheck-in updates streaks correctly', async () => {
     .delete(`/api/habits/${habitId}/check-ins`)
     .set('Authorization', token)
     .expect(400);
+});
+
+test('uncompleting a monthly habit leaves it re-completable and does not drain the streak', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+  const now = new Date();
+
+  const habit = await Habit.create({
+    ownerId: user._id,
+    title: 'Monthly review',
+    type: 'boolean',
+    frequency: 'Monthly',
+    streakCount: 5,
+    lastCompletedAt: new Date(now.getFullYear(), now.getMonth() - 1, 15),
+  });
+
+  const completed = await request(app)
+    .post(`/api/habits/${habit._id}/check-ins`)
+    .set('Authorization', token)
+    .expect(200);
+  assert.equal(completed.body.data.streakCount, 6);
+
+  const uncompleted = await request(app)
+    .delete(`/api/habits/${habit._id}/check-ins`)
+    .set('Authorization', token)
+    .expect(200);
+  assert.equal(uncompleted.body.data.streakCount, 5);
+  assert.equal(uncompleted.body.data.isCompletedToday, false);
+
+  await request(app)
+    .delete(`/api/habits/${habit._id}/check-ins`)
+    .set('Authorization', token)
+    .expect(400);
+
+  const recompleted = await request(app)
+    .post(`/api/habits/${habit._id}/check-ins`)
+    .set('Authorization', token)
+    .expect(200);
+  assert.equal(recompleted.body.data.streakCount, 6);
+});
+
+test('habit create and update ignore client-supplied internal fields', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+  const savedKey = config.moderation.apiKey;
+  config.moderation.apiKey = '';
+
+  try {
+    const created = await request(app)
+      .post('/api/habits')
+      .set('Authorization', token)
+      .send({
+        title: 'Gym',
+        type: 'boolean',
+        frequency: 'Daily',
+        streakCount: 9999,
+        source: 'challenge',
+        lastCompletedAt: new Date().toISOString(),
+        deletedAt: new Date().toISOString(),
+      })
+      .expect(201);
+
+    assert.equal(created.body.data.streakCount, 0);
+    assert.equal(created.body.data.source, 'manual');
+
+    const stored = await Habit.findById(created.body.data.id);
+    assert.equal(stored.streakCount, 0);
+    assert.equal(stored.source, 'manual');
+    assert.equal(stored.deletedAt, null);
+    assert.equal(stored.lastCompletedAt, null);
+
+    const patched = await request(app)
+      .patch(`/api/habits/${created.body.data.id}`)
+      .set('Authorization', token)
+      .send({ title: 'Gym updated', streakCount: 5555, source: 'challenge' })
+      .expect(200);
+
+    assert.equal(patched.body.data.title, 'Gym updated');
+    assert.equal(patched.body.data.streakCount, 0);
+    assert.equal(patched.body.data.source, 'manual');
+  } finally {
+    config.moderation.apiKey = savedKey;
+  }
+});
+
+test('bulk template creation is moderated', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+  const savedKey = config.moderation.apiKey;
+  const savedFetch = global.fetch;
+  const savedConsoleError = console.error;
+  config.moderation.apiKey = 'sk-test';
+  console.error = () => {};
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ results: [{ flagged: true, category_scores: {} }] }),
+    text: async () => '',
+  });
+
+  try {
+    const res = await request(app)
+      .post('/api/habits/templates')
+      .set('Authorization', token)
+      .send({ templates: [{ title: 'a harmful title', frequency: 'Daily' }] })
+      .expect(400);
+
+    assert.equal(res.body.errorCode, 'HABIT_MODERATION_BLOCKED');
+    assert.equal(await Habit.countDocuments({ ownerId: user._id }), 0);
+  } finally {
+    config.moderation.apiKey = savedKey;
+    global.fetch = savedFetch;
+    console.error = savedConsoleError;
+  }
+});
+
+test('habit title update is moderated', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+  const savedKey = config.moderation.apiKey;
+  const savedFetch = global.fetch;
+  const savedConsoleError = console.error;
+  config.moderation.apiKey = 'sk-test';
+  console.error = () => {};
+
+  const moderationResult = { flagged: false };
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ results: [{ flagged: moderationResult.flagged, category_scores: {} }] }),
+    text: async () => '',
+  });
+
+  try {
+    const created = await request(app)
+      .post('/api/habits')
+      .set('Authorization', token)
+      .send({ title: 'Gym', type: 'boolean', frequency: 'Daily' })
+      .expect(201);
+
+    moderationResult.flagged = true;
+    await request(app)
+      .patch(`/api/habits/${created.body.data.id}`)
+      .set('Authorization', token)
+      .send({ title: 'a harmful title' })
+      .expect(400);
+
+    const stored = await Habit.findById(created.body.data.id);
+    assert.equal(stored.title, 'Gym');
+  } finally {
+    config.moderation.apiKey = savedKey;
+    global.fetch = savedFetch;
+    console.error = savedConsoleError;
+  }
+});
+
+test('bulk template creation rejects a non-array or empty body', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+
+  await request(app)
+    .post('/api/habits/templates')
+    .set('Authorization', token)
+    .send({ templates: 'not an array' })
+    .expect(400);
+
+  await request(app)
+    .post('/api/habits/templates')
+    .set('Authorization', token)
+    .send({})
+    .expect(400);
+});
+
+test('changing a habit to due-today revokes a now-broken perfect-day streak', async () => {
+  const user = await buildUser({ streak: 5, streakLastDay: new Date() });
+  const token = authHeader(user);
+  const savedKey = config.moderation.apiKey;
+  config.moderation.apiKey = '';
+
+  try {
+    await Habit.create({
+      ownerId: user._id, title: 'Gym', type: 'boolean', frequency: 'Daily',
+      streakCount: 1, lastCompletedAt: new Date(),
+    });
+    const todayDow = new Date().getDay() || 7;
+    const otherDay = todayDow === 1 ? 2 : 1;
+    const restHabit = await Habit.create({
+      ownerId: user._id, title: 'Weekend', type: 'boolean', frequency: 'Custom',
+      customDays: [otherDay], streakCount: 0, lastCompletedAt: null,
+    });
+
+    await request(app)
+      .patch(`/api/habits/${restHabit._id}`)
+      .set('Authorization', token)
+      .send({ frequency: 'Daily' })
+      .expect(200);
+
+    const reloaded = await User.findById(user._id).select('streak');
+    assert.equal(reloaded.streak, 4);
+  } finally {
+    config.moderation.apiKey = savedKey;
+  }
+});
+
+test('habit creation validates numeric target, custom weekdays, and icon size', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+  const savedKey = config.moderation.apiKey;
+  config.moderation.apiKey = '';
+
+  try {
+    const post = (body) => request(app).post('/api/habits').set('Authorization', token).send(body);
+
+    await post({ title: 'Pushups', type: 'numeric', frequency: 'Daily' }).expect(400);
+    await post({ title: 'Gym', type: 'boolean', frequency: 'Custom' }).expect(400);
+    await post({ title: 'Gym', type: 'boolean', frequency: 'Custom', customDays: [2.5] }).expect(400);
+    await post({ title: 'Gym', type: 'boolean', frequency: 'Daily', icon: 'x'.repeat(100) }).expect(400);
+
+    await post({ title: 'Pushups', type: 'numeric', target: 20, frequency: 'Daily' }).expect(201);
+    await post({ title: 'Gym', type: 'boolean', frequency: 'Custom', customDays: [1, 3, 5] }).expect(201);
+  } finally {
+    config.moderation.apiKey = savedKey;
+  }
+});
+
+test('concurrent boost rewards credit the bonus coins only once', async () => {
+  const user = await buildUser({ coins: 0 });
+  const habit = await Habit.create({
+    ownerId: user._id, title: 'Gym', type: 'boolean', frequency: 'Daily', lastCompletedAt: new Date(),
+  });
+  await HabitBoost.create({
+    user: user._id, habit: habit._id, assetKey: 'small-boost', bonusCoins: 50, remainingCompletions: 3,
+  });
+
+  await Promise.all([
+    applyHabitBoostReward({ userId: user._id, habit }),
+    applyHabitBoostReward({ userId: user._id, habit }),
+  ]);
+
+  const reloadedUser = await User.findById(user._id).select('coins');
+  assert.equal(reloadedUser.coins, 50);
+  const reloadedBoost = await HabitBoost.findOne({ user: user._id, habit: habit._id });
+  assert.equal(reloadedBoost.remainingCompletions, 2);
+});
+
+test('concurrent boost reverts deduct the bonus coins only once', async () => {
+  const user = await buildUser({ coins: 50 });
+  const now = new Date();
+  const periodKey = now.toISOString().slice(0, 10);
+  const habit = await Habit.create({
+    ownerId: user._id, title: 'Gym', type: 'boolean', frequency: 'Daily', lastCompletedAt: now,
+  });
+  await HabitBoost.create({
+    user: user._id, habit: habit._id, assetKey: 'small-boost', bonusCoins: 50,
+    remainingCompletions: 2, rewardedPeriodKeys: [periodKey],
+  });
+
+  await Promise.all([
+    revertHabitBoostReward({ userId: user._id, habit, uncompletedAt: now }),
+    revertHabitBoostReward({ userId: user._id, habit, uncompletedAt: now }),
+  ]);
+
+  const reloadedUser = await User.findById(user._id).select('coins');
+  assert.equal(reloadedUser.coins, 0);
+  const reloadedBoost = await HabitBoost.findOne({ user: user._id, habit: habit._id });
+  assert.equal(reloadedBoost.remainingCompletions, 3);
+});
+
+test('completing then uncompleting a boosted habit nets zero coins', async () => {
+  const user = await buildUser({ coins: 100 });
+  const habit = await Habit.create({
+    ownerId: user._id, title: 'Gym', type: 'boolean', frequency: 'Daily', streakCount: 0,
+  });
+  await HabitBoost.create({
+    user: user._id, habit: habit._id, assetKey: 'small-boost', bonusCoins: 50, remainingCompletions: 3,
+  });
+
+  await completeHabit(habit._id, user._id);
+  let reloaded = await User.findById(user._id).select('coins');
+  assert.equal(reloaded.coins, 150);
+
+  await uncompleteHabit(habit._id, user._id);
+  reloaded = await User.findById(user._id).select('coins');
+  assert.equal(reloaded.coins, 100);
+
+  const boost = await HabitBoost.findOne({ user: user._id, habit: habit._id });
+  assert.equal(boost.remainingCompletions, 3);
+});
+
+test('overall streak revoke ignores soft-deleted habits', async () => {
+  const user = await buildUser({ streak: 5, streakLastDay: new Date() });
+  const token = authHeader(user);
+  const savedKey = config.moderation.apiKey;
+  config.moderation.apiKey = '';
+
+  try {
+    await Habit.create({
+      ownerId: user._id,
+      title: 'Gym',
+      type: 'boolean',
+      frequency: 'Daily',
+      streakCount: 1,
+      lastCompletedAt: new Date(),
+    });
+
+    await Habit.create({
+      ownerId: user._id,
+      title: 'Deleted habit',
+      type: 'boolean',
+      frequency: 'Daily',
+      streakCount: 0,
+      lastCompletedAt: null,
+      deletedAt: new Date(),
+    });
+
+    const todayDow = new Date().getDay() || 7;
+    const otherDay = todayDow === 1 ? 2 : 1;
+    await request(app)
+      .post('/api/habits')
+      .set('Authorization', token)
+      .send({ title: 'Alternate day walk', type: 'boolean', frequency: 'Custom', customDays: [otherDay] })
+      .expect(201);
+
+    const refreshed = await User.findById(user._id).select('streak');
+    assert.equal(refreshed.streak, 5);
+  } finally {
+    config.moderation.apiKey = savedKey;
+  }
 });
 
 test('completing all due habits clears the overall streak repair deadline', async () => {

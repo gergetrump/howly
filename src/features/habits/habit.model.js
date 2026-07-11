@@ -23,6 +23,7 @@ const habitSchema = new Schema(
         icon: {
             type: String,
             default: '🎯',
+            maxlength: 32,
         },
         type: {
             type: String,
@@ -64,6 +65,7 @@ const habitSchema = new Schema(
         templateKey: {
             type: String,
             default: null,
+            maxlength: 100,
         },
         challengeId: {
             type: Schema.Types.ObjectId,
