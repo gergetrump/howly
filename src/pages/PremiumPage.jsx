@@ -228,8 +228,8 @@ export function PremiumPage() {
                 streakDays={user?.streak ?? 0}
             />
 
-            <PageSection width="lg" align="center">
-                <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <PageSection width="full" align="center" className="max-w-6xl">
+                <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(21rem,0.42fr)] xl:gap-8">
                     <section className="rounded-2xl border border-theme-text/10 bg-theme-surface p-6 shadow-2xl">
                         <div className="flex flex-col gap-5">
                             {redirectMessage ? (
@@ -257,7 +257,7 @@ export function PremiumPage() {
                                 </p>
                             </div>
 
-                            <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                                 {premiumHighlights.map(({ icon, title, text, to }) => (
                                     <PremiumBenefitCard
                                         key={title}
@@ -273,7 +273,7 @@ export function PremiumPage() {
                         </div>
                     </section>
 
-                    <aside className="rounded-2xl border border-amber-200/30 bg-theme-surface p-6 text-theme-text shadow-2xl">
+                    <aside className="self-start rounded-2xl border border-amber-200/30 bg-theme-surface p-6 text-theme-text shadow-2xl">
                         <p className="text-sm font-semibold uppercase tracking-wide text-theme-gold">
                             Monthly plan
                         </p>
@@ -328,10 +328,11 @@ export function PremiumPage() {
             </PageSection>
 
             <PageSection
-                width="lg"
+                width="full"
                 align="center"
                 title="Free vs Premium"
                 description={isLoadingPlan ? 'Loading plan details...' : 'See what changes when you upgrade.'}
+                className="mt-10 max-w-6xl"
             >
                 <div className="overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-surface text-theme-text shadow-xl">
                     <div className="grid grid-cols-[1.25fr_0.8fr_0.8fr] gap-3 bg-theme-surface-2 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-theme-text-soft">
