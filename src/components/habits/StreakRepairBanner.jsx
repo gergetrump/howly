@@ -6,6 +6,7 @@ import { useAuth } from '@/context/authContext';
 import { StreakShieldIcon } from '@/components/brand/StreakShieldIcon.jsx';
 import { applyOverallStreakFreeze } from '@/services/streakFreezeApi';
 
+/* Banner warning that the streak is at risk, letting the user spend a shield to rescue it or go buy one. */
 export function StreakRepairBanner({ onRescued }) {
     const navigate = useNavigate();
     const { user, setUser } = useAuth();
@@ -27,6 +28,7 @@ export function StreakRepairBanner({ onRescued }) {
 
     const canUseFreeze = (user?.streakShields ?? 0) > 0;
 
+    /* Applies an overall streak freeze, updating the user's streak and shield count, then notifies the parent. */
     async function handleUseFreeze() {
         if (isSaving) {
             return;

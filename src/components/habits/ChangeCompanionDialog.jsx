@@ -13,6 +13,7 @@ import { selectCompanion } from '@/services/companionService';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
+/* Form for picking a companion type and naming it, then saving the selection to the backend. */
 function ChangeCompanionForm({ currentType, currentName, onSaved, onCancel }) {
     const [selectedType, setSelectedType] = useState(currentType ?? DEFAULT_COMPANION_TYPE);
     const [name, setName] = useState(() => currentName || getDefaultCompanionName(currentType ?? DEFAULT_COMPANION_TYPE));
@@ -23,6 +24,7 @@ function ChangeCompanionForm({ currentType, currentName, onSaved, onCancel }) {
         setSelectedType(type);
     }
 
+    /* Validates the name and saves the chosen companion type and name via the API, with a toast on success or failure. */
     async function handleSave() {
         const trimmedName = name.trim();
 
@@ -113,6 +115,7 @@ function ChangeCompanionForm({ currentType, currentName, onSaved, onCancel }) {
     );
 }
 
+/* Dialog wrapper that renders the change-companion form while open. */
 export function ChangeCompanionDialog({ open, onOpenChange, currentType, currentName, onSaved }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

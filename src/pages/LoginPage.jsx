@@ -11,6 +11,7 @@ import { useAuth } from '@/context/authContext';
 import { cn } from '@/lib/utils';
 import { loginUser, resendVerificationEmail } from '@/services/authService';
 
+/* Login page: validates credentials, stores the auth token, and resends the verification email when needed. */
 export function LoginPage() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -56,6 +57,7 @@ export function LoginPage() {
         }));
     }
 
+    /* Validates the form, logs in and stores the token, or resends a verification email if unverified. */
     async function handleSubmit(event) {
         event.preventDefault();
 

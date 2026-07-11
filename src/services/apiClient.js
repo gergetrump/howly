@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../../config.js';
 
+/* Central fetch wrapper that attaches the auth token, sets headers, redirects on 401, and throws on error responses. */
 export async function apiRequest(path, options = {}) {
     const { redirectOnUnauthorized = true, ...requestOptions } = options;
     const token = localStorage.getItem('howly_token');

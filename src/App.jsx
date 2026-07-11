@@ -1,6 +1,7 @@
 import { Toaster } from 'sonner';
 import { AppRoutes } from '@/routes/appRoutes';
 
+/* Root component: renders the app routes and the global themed toast notifications. */
 function App() {
     return (
         <>

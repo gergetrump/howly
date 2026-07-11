@@ -1,3 +1,4 @@
+/* Rewrites a Cloudinary URL to add auto format/quality and an optional width limit. */
 export function cloudinaryUrl(url, { width } = {}) {
     if (typeof url !== 'string' || !url.includes('/upload/')) {
         return url;

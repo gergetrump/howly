@@ -11,6 +11,7 @@ import { createHabitsFromTemplates } from '@/services/habitService';
 import { completeOnboarding } from '@/services/userService';
 import { useAuth } from '@/context/authContext';
 
+/* Habit selection (onboarding step 2): pick starter habits within the free limit, then finish onboarding. */
 export function HabitSelectionPage() {
     const navigate = useNavigate();
     const { refreshUser } = useAuth();
@@ -21,6 +22,7 @@ export function HabitSelectionPage() {
 
     const atLimit = selected.length >= FREE_TIER_HABIT_LIMIT;
 
+    /* Toggles a starter habit in the selection, capped at the free-tier limit. */
     function toggleHabit(id) {
         setSelected((previous) => {
             if (previous.includes(id)) {
@@ -41,6 +43,7 @@ export function HabitSelectionPage() {
         navigate('/dashboard');
     }
 
+    /* Finishes onboarding without adding any starter habits. */
     async function handleSkip() {
         setError('');
         setIsSubmitting(true);
@@ -52,6 +55,7 @@ export function HabitSelectionPage() {
         }
     }
 
+    /* Creates the selected starter habits from templates, then finishes onboarding. */
     async function handleAddHabits() {
         if (selected.length === 0) {
             return;

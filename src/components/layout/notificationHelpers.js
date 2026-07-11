@@ -2,6 +2,7 @@ function getActorName(actor) {
     return actor?.firstName || actor?.username || 'Someone';
 }
 
+/* Builds the human-readable text shown for a notification based on its type and actor. */
 export function getNotificationMessage(notification) {
     const actorName = getActorName(notification.actor);
 
@@ -42,6 +43,7 @@ export function getNotificationMessage(notification) {
     }
 }
 
+/* Returns the in-app route a notification should link to based on its type and entity. */
 export function getNotificationLink(notification) {
     const entityId = notification.entityId;
     const commentId = notification.metadata?.commentId;
@@ -64,6 +66,7 @@ export function getNotificationLink(notification) {
     }
 }
 
+/* Builds the router navigation state ("jump" payload) so the target page can focus the related item. */
 export function getNotificationNavigationState(notification) {
     const entityId = notification.entityId;
     const commentId = notification.metadata?.commentId;

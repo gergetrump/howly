@@ -7,11 +7,13 @@ import { getStreakCalendar } from '@/services/streakFreezeApi';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+/* Formats a date into a "YYYY-MM" month key. */
 function monthKeyOf(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
 
+/* Hover popover showing a monthly calendar of perfect days and shield usage, plus the current and longest streak. */
 export function StreakCalendarPopover({ children }) {
     const [open, setOpen] = useState(false);
     const [month, setMonth] = useState(() => monthKeyOf(new Date()));
@@ -23,6 +25,7 @@ export function StreakCalendarPopover({ children }) {
     const currentMonthKey = monthKeyOf(new Date());
     const atCurrentMonth = month >= currentMonthKey;
 
+    /* Fetches the streak calendar data for the given month from the API. */
     const load = useCallback(async (targetMonth) => {
         setIsLoading(true);
         setError('');
@@ -36,6 +39,7 @@ export function StreakCalendarPopover({ children }) {
         }
     }, []);
 
+    /* Opens or closes the popover, lazily loading the calendar the first time it opens. */
     const setOpenAndLoad = useCallback((next) => {
         setOpen(next);
         if (next && !data && !isLoading) {
@@ -43,6 +47,7 @@ export function StreakCalendarPopover({ children }) {
         }
     }, [data, isLoading, load, month]);
 
+    /* Cancels any pending close and opens the popover immediately on hover-in. */
     function openNow() {
         if (closeTimer.current) {
             clearTimeout(closeTimer.current);
@@ -51,6 +56,7 @@ export function StreakCalendarPopover({ children }) {
         setOpenAndLoad(true);
     }
 
+    /* Schedules the popover to close shortly after the pointer leaves, so moving onto it keeps it open. */
     function closeSoon() {
         if (closeTimer.current) {
             clearTimeout(closeTimer.current);
@@ -58,6 +64,7 @@ export function StreakCalendarPopover({ children }) {
         closeTimer.current = setTimeout(() => setOpen(false), 140);
     }
 
+    /* Navigates the calendar to the previous month and loads its data. */
     function goToPreviousMonth() {
         const [year, monthNumber] = month.split('-').map(Number);
         const target = monthKeyOf(new Date(year, monthNumber - 2, 1));
@@ -65,6 +72,7 @@ export function StreakCalendarPopover({ children }) {
         load(target);
     }
 
+    /* Navigates the calendar to the next month (unless already at the current month) and loads its data. */
     function goToNextMonth() {
         if (atCurrentMonth) return;
         const [year, monthNumber] = month.split('-').map(Number);

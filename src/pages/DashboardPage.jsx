@@ -34,6 +34,7 @@ import { appCardClassName, appCardInsetClassName } from '@/components/cards/card
 import { cn } from '@/lib/utils';
 import { getEquippedItemConfigsFromInventory } from '@/lib/inventoryItems';
 
+/* Card for a single challenge habit on the dashboard, with a completion toggle. */
 function DashboardChallengeHabitCard({ item, onToggle }) {
     const progressText = `${item.participant?.daysCompleted ?? 0}/${item.challenge?.durationDays ?? 0} days`;
 
@@ -70,6 +71,7 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
     );
 }
 
+/* Dialog that lets a downgraded user pick which habits to keep within the free-plan limit. */
 function HabitLimitCleanupDialog({
     open,
     habits,
@@ -184,6 +186,7 @@ function HabitLimitCleanupDialog({
     );
 }
 
+/* Dashboard: shows the companion, daily progress, habits, and challenge habits; handles check-ins, edits, and plan limits. */
 export function DashboardPage() {
     const navigate = useNavigate();
     const { user, companion, setUser } = useAuth();
@@ -355,6 +358,7 @@ export function DashboardPage() {
         }
     }
 
+    /* Refetches habits and the current user, e.g. after a streak rescue. */
     async function refreshHabitsAndUser() {
         try {
             const [habitsResponse, freshUser] = await Promise.all([getMyHabits({ limit: 100 }), getCurrentUser()]);
@@ -365,6 +369,7 @@ export function DashboardPage() {
         }
     }
 
+    /* Toggles a habit in the keep-selection, enforcing the free-plan limit. */
     function toggleCleanupHabit(habitId) {
         setHabitCleanupError('');
         setSelectedCleanupHabitIds((currentIds) => {
@@ -384,6 +389,7 @@ export function DashboardPage() {
         });
     }
 
+    /* Deletes the habits the user did not choose to keep after downgrading to Free. */
     async function confirmHabitLimitCleanup() {
         if (selectedCleanupHabitIds.size !== freeHabitLimit) {
             setHabitCleanupError(`Please select exactly ${freeHabitLimit} habits to keep.`);
@@ -407,6 +413,7 @@ export function DashboardPage() {
         }
     }
 
+    /* Starts a Premium checkout session and redirects to Stripe. */
     async function handleBuyPremiumFromCleanup() {
         try {
             setHabitCleanupError('');
@@ -424,6 +431,7 @@ export function DashboardPage() {
         }
     }
 
+    /* Applies a streak freeze (shield) to an at-risk habit and refreshes state. */
     async function handleUseHabitFreeze(habit) {
         try {
             await applyHabitStreakFreeze(habit.id);
@@ -433,6 +441,7 @@ export function DashboardPage() {
         }
     }
 
+    /* Confirms first if completing an at-risk habit would reset its streak, otherwise checks it in. */
     function handleCompletionClick(habit) {
         if (!habit.isCompletedToday && habit.streakRepairDeadline) {
             setRiskConfirmHabit(habit);
@@ -441,6 +450,7 @@ export function DashboardPage() {
         handleHabitCompletion(habit);
     }
 
+    /* Checks a habit in or out, updating boosts, coins, streaks, and optional story/milestone prompts. */
     async function handleHabitCompletion(habit) {
         const wasCompleted = habit.isCompletedToday;
 
@@ -494,6 +504,7 @@ export function DashboardPage() {
         }
     }
 
+    /* Checks a challenge habit in or out and refreshes the challenge habit list. */
     async function handleChallengeHabitCompletion(item) {
         try {
             const wasCompleted = item.habit.isCompletedToday;
@@ -523,6 +534,7 @@ export function DashboardPage() {
         }
     }
 
+    /* Deletes a habit and removes it from the list. */
     async function handleDelete(habitId) {
         try {
             await deleteHabit(habitId);
@@ -539,6 +551,7 @@ export function DashboardPage() {
         setIsAddModalOpen(true);
     }
 
+    /* Polls for a habit's auto-generated category and merges it into local state once ready. */
     function refreshHabitTaxonomyInBackground(habitId) {
         void waitForHabitTaxonomy(habitId).then((updated) => {
             if (!updated) {
@@ -548,6 +561,7 @@ export function DashboardPage() {
         });
     }
 
+    /* Adds a newly created habit to the list and backfills its category if missing. */
     function handleNewHabitAdded(habit) {
         setHabits((prev) => [habit, ...prev]);
         if (!habit.category) {
@@ -586,6 +600,7 @@ export function DashboardPage() {
         );
     }
 
+    /* Opens the add-habit modal, or routes to Premium/limit prompt when the habit limit is reached. */
     function openAddHabitDialog() {
         const maxHabits = planLimits?.maxHabits;
 

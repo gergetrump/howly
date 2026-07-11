@@ -18,24 +18,30 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
     const [error, setError] = useState('');
     const [addingKey, setAddingKey] = useState(null);
 
+    /* Sends the user's goal to the AI habit-suggestion service and shows the returned suggestions, handling moderation blocks. */
     async function handleAsk(event) {
         event.preventDefault();
-        if (!input.trim()) return;
+        const trimmedGoal = input.trim();
+        if (!trimmedGoal) return;
 
         setError('');
+        setInput('');            // clear the field — the goal is now "sent"
+        setGoal(trimmedGoal);    // show it immediately as a sent message
         setPhase('thinking');
 
         try {
-            const response = await suggestHabits(input.trim());
+            const response = await suggestHabits(trimmedGoal);
             const list = response?.data?.suggestions ?? [];
 
             if (!list.length) {
                 setError("Oops — I can't find any habits right now. Please ask me again in a moment.");
+                setGoal('');
+                setInput(trimmedGoal);   // give the text back so they can retry
                 setPhase('input');
                 return;
             }
 
-            setGoal(response?.data?.goal || input.trim());
+            setGoal(response?.data?.goal || trimmedGoal);
             setHabits(list.map((habit, index) => ({ key: index, ...habit })));
             setPhase('results');
         } catch (err) {
@@ -44,6 +50,8 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
             } else {
                 setError("Oops — I can't find any habits right now. Please ask me again in a moment.");
             }
+            setGoal('');
+            setInput(trimmedGoal);       // restore the text on error
             setPhase('input');
         }
     }
@@ -89,9 +97,20 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
                 </button>
             </div>
 
-            <p className="mt-2 inline-block rounded-2xl bg-theme-surface-2/70 px-3 py-2 text-sm text-theme-accent-soft">
-                {bubble}
-            </p>
+            <div className="mt-2 space-y-2">
+                {goal ? (
+                    <div className="flex justify-end">
+                        <p className="max-w-[85%] rounded-2xl rounded-br-md bg-theme-accent px-3 py-2 text-sm text-theme-on-accent">
+                            {goal}
+                        </p>
+                    </div>
+                ) : null}
+                <div className="flex">
+                    <p className="max-w-[85%] rounded-2xl rounded-bl-md bg-theme-surface-2/70 px-3 py-2 text-sm text-theme-accent-soft">
+                        {bubble}
+                    </p>
+                </div>
+            </div>
 
             {error ? (
                 <p className="mt-2 rounded-xl border border-theme-danger/30 bg-theme-danger/10 px-3 py-2 text-xs text-theme-danger">
@@ -101,12 +120,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
 
             {phase === 'results' ? (
                 <div className="mt-3 space-y-2">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-theme-accent-soft">Goal</p>
-                    <p className="rounded-xl border border-theme-accent/20 bg-theme-accent/10 px-3 py-2 text-sm font-semibold text-theme-text">
-                        {goal}
-                    </p>
-
-                    <p className="pt-1 text-[11px] font-medium uppercase tracking-wide text-theme-accent-soft">Suggested habits</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-theme-accent-soft">Suggested habits</p>
                     {habits.map((habit) => (
                         <div
                             key={habit.key}

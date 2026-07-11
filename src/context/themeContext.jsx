@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { updateUserPreferences } from '@/services/userApi';
 import { useAuth } from '@/context/authContext';
 
+/* The selectable UI themes, with premium flags and preview color swatches. */
 export const THEMES = [
     {
         id: 'forest-dark',
@@ -54,14 +55,17 @@ const STORAGE_KEY = 'howly_theme';
 
 const ThemeContext = createContext(null);
 
+/* Checks whether a theme id is one of the known themes. */
 function isValidTheme(theme) {
     return THEME_IDS.includes(theme);
 }
 
+/* Applies a theme by setting the data-theme attribute on the document root. */
 function applyTheme(theme) {
     document.documentElement.dataset.theme = theme;
 }
 
+/* Reads the persisted theme from localStorage, falling back to the default. */
 function getStoredTheme() {
     if (!localStorage.getItem('howly_token')) {
         return DEFAULT_THEME;
@@ -71,6 +75,7 @@ function getStoredTheme() {
     return isValidTheme(stored) ? stored : DEFAULT_THEME;
 }
 
+/* Context provider that manages the active theme across localStorage, the DOM, and the user profile. */
 export function ThemeProvider({ children }) {
     const { user } = useAuth();
     // localStorage first for instant paint, backend sync follows
@@ -101,6 +106,7 @@ export function ThemeProvider({ children }) {
         }
     }, [user]);
 
+    /* Switches the active theme instantly and persists it to the user's profile in the background. */
     async function setTheme(nextTheme) {
         if (!isValidTheme(nextTheme) || nextTheme === theme) {
             return;
@@ -125,6 +131,7 @@ export function ThemeProvider({ children }) {
     );
 }
 
+/* Hook exposing the current theme and setter, throwing if used outside the provider. */
 export function useTheme() {
     const context = useContext(ThemeContext);
 

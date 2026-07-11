@@ -3,6 +3,7 @@ import { Progress } from '@/components/ui/progress';
 import { useTheme } from '@/context/themeContext';
 import { cn } from '@/lib/utils';
 
+/* Card showing today's completed-vs-total habit count with a progress bar. */
 export function DailyProgressCard({ completed = 0, total = 0 }) {
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     const { theme } = useTheme();

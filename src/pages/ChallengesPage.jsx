@@ -129,6 +129,7 @@ function getInvitationChallengeId(invitation) {
         : invitation?.challenge;
 }
 
+/* Returns true when a notification's target challenge or invitation is present in the loaded data. */
 function isChallengeNotificationAvailable(notificationJump, { challenges = [], invitations = { incoming: [], outgoing: [] } } = {}) {
     const challengeId = notificationJump?.challengeId ?? notificationJump?.metadata?.challengeId;
     const invitationId = notificationJump?.invitationId;
@@ -241,6 +242,7 @@ function ChallengeInfoPopover() {
     );
 }
 
+/* Hover/focus popover that lazy-loads and lists the users who joined a challenge. */
 function ChallengeParticipantsBadge({
     challenge,
     participants = [],
@@ -356,6 +358,7 @@ function ChallengeParticipantsBadge({
     );
 }
 
+/* Challenges: lists active/friend/public/past challenges and handles joining, leaving, creating, inviting, and claiming rewards. */
 export function ChallengesPage() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -420,6 +423,7 @@ export function ChallengesPage() {
 
     const visibleChallenges = useMemo(() => challenges.filter(Boolean), [challenges]);
 
+    /* Fetches the challenges for the given scope (and category) plus the viewer's invitations. */
     const loadChallengeData = useCallback(async (
         scope,
         { categoryKey = 'all', showLoading = true, showError = true } = {},
@@ -472,6 +476,7 @@ export function ChallengesPage() {
         })
     ), [activeTab, loadChallengeData, selectedCategory]);
 
+    /* Polls for a challenge's auto-generated category and merges it into local state once ready. */
     const refreshChallengeTaxonomyInBackground = useCallback((challengeId) => {
         void waitForChallengeTaxonomy(challengeId).then((updatedChallenge) => {
             if (!updatedChallenge) {
@@ -530,6 +535,7 @@ export function ChallengesPage() {
         };
     }, [searchParams, taxonomyCategories]);
 
+    /* Switches the public-challenge category filter and mirrors it in the URL query string. */
     function handleCategoryChange(nextCategory) {
         setSelectedCategory(nextCategory);
 
@@ -621,6 +627,7 @@ export function ChallengesPage() {
         };
     }, [refreshCurrentChallenges]);
 
+    /* Loads the viewer's friends, friend requests, and block lists used by the profile preview. */
     const refreshProfileContext = useCallback(async () => {
         try {
             const [friendData, requestData, blockedData, blockerData] = await Promise.all([
@@ -645,6 +652,7 @@ export function ChallengesPage() {
         void refreshProfileContext();
     }, [refreshProfileContext]);
 
+    /* Lazily fetches and caches the participant list for a single challenge. */
     async function loadChallengeParticipants(challengeId) {
         if (
             !challengeId
@@ -682,6 +690,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Works out the viewer's relationship (self/friends/incoming/outgoing/none) to a given user. */
     function getProfileRelationship(profileUser) {
         const profileUserId = profileUser?.id ?? profileUser?._id;
 
@@ -718,6 +727,7 @@ export function ChallengesPage() {
         return { status: 'none' };
     }
 
+    /* Sends a friend request to the previewed user and updates the outgoing list. */
     async function handleSendProfileFriendRequest(profileUser) {
         const profileUserId = profileUser?.id ?? profileUser?._id;
 
@@ -745,6 +755,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Accepts a friend request from the profile preview and moves the user into the friends list. */
     async function handleAcceptProfileFriendRequest(requestId) {
         if (!requestId) {
             return;
@@ -771,6 +782,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Blocks the previewed user and refreshes the profile relationship context. */
     async function handleBlockProfileUser(profileUserId) {
         if (!profileUserId) {
             return;
@@ -791,6 +803,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Unblocks the previewed user and refreshes the profile relationship context. */
     async function handleUnblockProfileUser(profileUserId) {
         if (!profileUserId) {
             return;
@@ -810,6 +823,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Routes a failed challenge action to the Premium page, a plan-limit dialog, or a toast. */
     function showActionError(actionError, fallbackMessage) {
         if (isFreeUser && isUpgradeError(actionError.code)) {
             navigate('/premium', {
@@ -858,6 +872,7 @@ export function ChallengesPage() {
         });
     }
 
+    /* Checks the plan's create limit (or routes free users to Premium) before opening the create form. */
     async function openCreateDialog() {
         if (isFreeUser) {
             navigate('/premium', {
@@ -909,6 +924,7 @@ export function ChallengesPage() {
         setIsFormOpen(true);
     }
 
+    /* Opens the invite dialog for a challenge and loads the viewer's friends to pick from. */
     async function openInviteDialog(challenge) {
         setInviteChallenge(challenge);
         setSelectedFriendIds([]);
@@ -953,6 +969,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Creates or updates a challenge, then refreshes the list and backfills its category. */
     async function handleSubmitChallenge(formData, challenge) {
         setBusyAction(challenge ? 'edit' : 'create');
         clearChallengeFeedback();
@@ -983,6 +1000,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Joins a challenge and refreshes the list. */
     async function handleJoinChallenge(challengeId) {
         setBusyAction('join');
         clearChallengeFeedback();
@@ -998,6 +1016,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Leaves a challenge and refreshes the list. */
     async function handleLeaveChallenge(challengeId) {
         setBusyAction(`leave-${challengeId}`);
         clearChallengeFeedback();
@@ -1024,6 +1043,7 @@ export function ChallengesPage() {
         await handleLeaveChallenge(challenge.id);
     }
 
+    /* Claims a finished challenge's coin reward and refreshes the list. */
     async function handleClaimReward(challengeId) {
         setBusyAction(`reward-${challengeId}`);
         clearChallengeFeedback();
@@ -1039,6 +1059,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Accepts a challenge invitation and refreshes the list. */
     async function handleAcceptInvitation(invitationId) {
         setBusyAction(`accept-${invitationId}`);
         clearChallengeFeedback();
@@ -1054,6 +1075,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Declines a challenge invitation and refreshes the list. */
     async function handleRejectInvitation(invitationId) {
         setBusyAction(`reject-${invitationId}`);
         clearChallengeFeedback();
@@ -1069,6 +1091,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Sends invitations to all selected friends and reports how many succeeded or failed. */
     async function handleSendChallengeInvitation() {
         if (!inviteChallenge || selectedFriendIds.length === 0) {
             return;

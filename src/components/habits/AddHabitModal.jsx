@@ -42,6 +42,7 @@ const DAYS_OF_WEEK = [
     { label: 'Sun', value: 7 },
 ];
 
+/* Modal for creating or editing a habit; validates input, calls the create/update API, and handles the free-plan habit limit. */
 export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, prefill, existingHabits = [] }) {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -80,6 +81,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
         }
     }, [open, editHabit, prefill]);
 
+    /* Validates the form and creates or updates the habit, redirecting free users to Premium when the habit limit is reached. */
     async function handleSubmit(e) {
         e.preventDefault();
 

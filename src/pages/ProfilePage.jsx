@@ -152,11 +152,13 @@ function AboutDialog({ open, onOpenChange }) {
     );
 }
 
+/* Settings row that toggles Ghost Mode (hides the user's streak from friends) via the API. */
 function GhostModeRow() {
     const { user, setUser } = useAuth();
     const [isSaving, setIsSaving] = useState(false);
     const isGhost = user?.ghostMode === true;
 
+    /* Persists the Ghost Mode on/off change to the server and updates the user. */
     async function handleToggle() {
         if (isSaving) {
             return;
@@ -201,6 +203,7 @@ function GhostModeRow() {
     );
 }
 
+/* Profile: shows the user's avatar and stats, and manages picture, privacy, Premium, feedback, logout, and account deletion. */
 export function ProfilePage() {
     const navigate = useNavigate();
 
@@ -242,6 +245,7 @@ export function ProfilePage() {
         });
     }
 
+    /* Logs the user out, clears the stored token, and returns to the login page. */
     async function handleLogout() {
         try {
             await logoutUser();
@@ -254,6 +258,7 @@ export function ProfilePage() {
         }
     }
 
+    /* Permanently deletes the account after confirmation, then clears the session. */
     async function handleDeleteAccount() {
         if (!hasConfirmedAccountDeletion || isDeletingAccount) {
             return;
@@ -274,6 +279,7 @@ export function ProfilePage() {
     }
 
 
+    /* Uploads the chosen image as the new profile picture. */
     async function handleProfilePictureChange(event) {
         const file = event.target.files?.[0];
 
@@ -295,6 +301,7 @@ export function ProfilePage() {
         }
     }
 
+    /* Removes the current profile picture. */
     async function handleDeleteProfilePicture() {
         try {
             setPictureError('');
@@ -309,6 +316,7 @@ export function ProfilePage() {
         }
     }
 
+    /* Submits the feedback form to the Howly team and resets it on success. */
     async function handleSendFeedback(event) {
         event.preventDefault();
 
