@@ -337,6 +337,7 @@ function buildCheckInTaxonomySnapshot(habit) {
         categoryKey: habit.taxonomy?.categoryKey ?? null,
         categoryLabel: habit.category ?? null,
         canonicalHabitKey: habit.taxonomy?.canonicalHabitKey ?? null,
+        subcategoryKey: habit.taxonomy?.subcategoryKey ?? null,
     };
 }
 

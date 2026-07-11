@@ -8,6 +8,7 @@ import { Friendship } from '../social/social.model.js';
 import { sendChallengeInvitationEmail } from '../mail/mail.service.js';
 import config from '../../../config.js';
 import { getPlanForUser, hasPremiumAccess } from '../../config/plans.js';
+import { toOffsetPage } from '../../utils/pagination.js';
 import { toTaxonomyDto } from '../taxonomy/taxonomy.schema.js';
 import {
     clearTaxonomyFields,
@@ -783,14 +784,17 @@ export async function listChallenges(filters = {}, user) {
             participantCounts,
             viewerParticipations,
         );
-        const labelKeys = sortedChallenges.flatMap((challenge) => [
+        const page = filters.pagination
+            ? toOffsetPage(sortedChallenges, filters.pagination)
+            : { items: sortedChallenges };
+        const labelKeys = page.items.flatMap((challenge) => [
             challenge.taxonomy?.canonicalHabitKey,
             challenge.taxonomy?.categoryKey,
             challenge.taxonomy?.subcategoryKey,
         ]);
         const labels = await loadRecommendationLabels(labelKeys);
 
-        return sortedChallenges.map((challenge) => (
+        const items = page.items.map((challenge) => (
             serializeChallenge(
                 challenge,
                 participantCounts.get(challenge._id.toString()) ?? 0,
@@ -800,15 +804,22 @@ export async function listChallenges(filters = {}, user) {
                 },
             )
         ));
+
+        return filters.pagination ? { ...page, items } : items;
     }
 
-    return visibleChallenges.map((challenge) => (
+    const page = filters.pagination
+        ? toOffsetPage(visibleChallenges, filters.pagination)
+        : { items: visibleChallenges };
+    const items = page.items.map((challenge) => (
         serializeChallenge(
             challenge,
             participantCounts.get(challenge._id.toString()) ?? 0,
             viewerParticipations.get(challenge._id.toString())
         )
     ));
+
+    return filters.pagination ? { ...page, items } : items;
 }
 
 export async function getChallengeById(challengeId, user) {
@@ -966,6 +977,14 @@ export async function deleteChallenge(challengeId, user) {
         return { forbidden: true };
     }
 
+    if (hasStarted(challenge)) {
+        return {
+            error: 'challenge cannot be deleted after it has started',
+            code: 'CHALLENGE_DELETE_LOCKED',
+        };
+    }
+
+    await Habit.deleteMany({ challengeId, source: 'challenge' });
     await ChallengeParticipant.deleteMany({ challenge: challengeId });
     await ChallengeInvitation.deleteMany({ challenge: challengeId });
     await Challenge.findByIdAndDelete(challengeId);

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { validateOffsetPagination } from '../../utils/pagination.js';
 import { isValidTaxonomyCategoryKey } from '../taxonomy/taxonomyCategories.js';
 import {
     CHALLENGE_FREQUENCIES,
@@ -310,6 +311,16 @@ export function validateUpdateChallengeInput(body = {}) {
 export function validateListChallengesInput(query = {}) {
     const value = {};
     const errors = [];
+    const { error: paginationError, value: pagination } = validateOffsetPagination(query, {
+        defaultLimit: 20,
+        maxLimit: 50,
+    });
+
+    if (paginationError) {
+        errors.push(paginationError);
+    } else if (pagination) {
+        value.pagination = pagination;
+    }
 
     if (query.status !== undefined) {
         if (!CHALLENGE_STATUS_SET.has(query.status)) {

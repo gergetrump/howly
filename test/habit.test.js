@@ -7,6 +7,7 @@ import createApp from '../src/app.js';
 import connectDB from '../src/config/database.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
 import Habit from '../src/features/habits/habit.model.js';
+import CanonicalHabit from '../src/features/taxonomy/canonicalHabit.model.js';
 import User from '../src/features/users/user.model.js';
 import Item from '../src/features/items/item.model.js';
 import UserItem from '../src/features/inventory/inventory.model.js';
@@ -50,6 +51,7 @@ before(async () => {
 afterEach(async () => {
   await Promise.all([
     Habit.deleteMany({}),
+    CanonicalHabit.deleteMany({}),
     User.deleteMany({}),
     Item.deleteMany({}),
     UserItem.deleteMany({}),
@@ -870,4 +872,72 @@ test('premium users can create habits without hitting the plan limit', async () 
       })
       .expect(201);
   }
+});
+
+test('POST /api/habits applies taxonomy from canonicalHabitKey when provided', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+
+  await CanonicalHabit.create({
+    key: 'run',
+    label: 'Run',
+    categoryKey: 'movement',
+    subcategoryKey: 'cardio',
+    categoryLabel: 'Movement',
+    description: 'Going for a run or jog.',
+    status: 'active',
+  });
+
+  const response = await request(app)
+    .post('/api/habits')
+    .set('Authorization', token)
+    .send({
+      title: 'Morning Run',
+      type: 'numeric',
+      target: 1,
+      unit: 'times',
+      frequency: 'Daily',
+      icon: '🏃',
+      canonicalHabitKey: 'run',
+    })
+    .expect(201);
+
+  assert.equal(response.body.data.taxonomy?.canonicalHabitKey, 'run');
+  assert.equal(response.body.data.taxonomy?.categoryKey, 'movement');
+  assert.equal(response.body.data.category, 'Movement');
+
+  const stored = await Habit.findById(response.body.data.id).lean();
+  assert.equal(stored.taxonomy?.canonicalHabitKey, 'run');
+});
+
+test('POST /api/habits/templates applies taxonomy from canonicalHabitKey when provided', async () => {
+  const user = await buildUser();
+  const token = authHeader(user);
+
+  await CanonicalHabit.create({
+    key: 'read',
+    label: 'Read',
+    categoryKey: 'learning',
+    subcategoryKey: 'reading',
+    categoryLabel: 'Learning',
+    description: 'Reading for learning or pleasure.',
+    status: 'active',
+  });
+
+  const response = await request(app)
+    .post('/api/habits/templates')
+    .set('Authorization', token)
+    .send({
+      templates: [{
+        title: 'Read 15 minutes before bed',
+        description: 'Wind down with a book.',
+        icon: '📖',
+        frequency: 'Daily',
+        canonicalHabitKey: 'read',
+      }],
+    })
+    .expect(201);
+
+  assert.equal(response.body.data[0].taxonomy?.canonicalHabitKey, 'read');
+  assert.equal(response.body.data[0].category, 'Learning');
 });

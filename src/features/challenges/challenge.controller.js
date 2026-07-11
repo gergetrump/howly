@@ -105,6 +105,10 @@ export async function deleteChallenge(req, res) {
         return forbidden(res);
     }
 
+    if (result?.error) {
+        return badRequest(res, result.error, result.code);
+    }
+
     return res.status(204).send();
 }
 
