@@ -4,6 +4,25 @@ import { buildPeriod, endOfDay, startOfDay } from '../analytics/analytics.servic
 import { computeCompletionStanding } from './trendsCompletionBenchmark.service.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_TRENDS_PERIOD = '7d';
+
+const TRENDS_PERIOD_LABELS = {
+    '24h': 'last 24 hours',
+    '7d': 'last 7 days',
+    '30d': 'last 30 days',
+};
+
+const TRENDS_COMPARISON_PERIOD_KEYS = {
+    '24h': 'previous_24h',
+    '7d': 'previous_7d',
+    '30d': 'previous_30d',
+};
+
+const TRENDS_COMPARISON_PERIOD_LABELS = {
+    '24h': 'previous 24 hours',
+    '7d': 'previous 7 days',
+    '30d': 'previous 30 days',
+};
 
 function addDays(date, days) {
     const nextDate = new Date(date);
@@ -232,22 +251,8 @@ async function computeRangeAnalytics(start, end) {
     };
 }
 
-function normalizePeriodKey(periodKey) {
-    if (periodKey === 'today' || periodKey === '24h') {
-        return '24h';
-    }
-
-    if (periodKey === 'month') {
-        return 'month';
-    }
-
-    return 'week';
-}
-
 function buildTrendsPeriod(periodKey) {
-    const normalized = normalizePeriodKey(periodKey);
-
-    if (normalized === '24h') {
+    if (periodKey === '24h') {
         const end = new Date();
         const start = new Date(end.getTime() - DAY_IN_MS);
 
@@ -256,39 +261,45 @@ function buildTrendsPeriod(periodKey) {
             days: 1,
             start,
             end,
-            label: 'last 24 hours',
+            label: TRENDS_PERIOD_LABELS['24h'],
         };
     }
 
-    return buildPeriod(normalized === 'month' ? 'month' : 'week');
+    const trendsKey = periodKey === '30d' ? '30d' : '7d';
+    const range = buildPeriod(trendsKey === '30d' ? 'month' : 'week');
+
+    return {
+        ...range,
+        key: trendsKey,
+        label: TRENDS_PERIOD_LABELS[trendsKey],
+    };
 }
 
 function buildPreviousTrendsPeriod(periodKey) {
-    const normalized = normalizePeriodKey(periodKey);
-
-    if (normalized === '24h') {
+    if (periodKey === '24h') {
         const end = new Date(Date.now() - DAY_IN_MS);
         const start = new Date(end.getTime() - DAY_IN_MS);
 
         return {
-            key: 'previous_24h',
+            key: TRENDS_COMPARISON_PERIOD_KEYS['24h'],
             days: 1,
             start,
             end,
-            label: 'previous 24 hours',
+            label: TRENDS_COMPARISON_PERIOD_LABELS['24h'],
         };
     }
 
-    const current = buildTrendsPeriod(periodKey);
+    const trendsKey = periodKey === '30d' ? '30d' : '7d';
+    const current = buildTrendsPeriod(trendsKey);
     const previousEnd = endOfDay(addDays(current.start, -1));
     const previousStart = startOfDay(addDays(current.start, -current.days));
 
     return {
-        key: normalized === 'month' ? 'previous_30_days' : 'previous_7_days',
+        key: TRENDS_COMPARISON_PERIOD_KEYS[trendsKey],
         days: current.days,
         start: previousStart,
         end: previousEnd,
-        label: normalized === 'month' ? 'previous 30 days' : 'previous 7 days',
+        label: TRENDS_COMPARISON_PERIOD_LABELS[trendsKey],
     };
 }
 
@@ -302,7 +313,7 @@ function serializePeriod(period) {
     };
 }
 
-export async function getTrendsAnalytics({ period = 'week', userId } = {}) {
+export async function getTrendsAnalytics({ period = DEFAULT_TRENDS_PERIOD, userId } = {}) {
     const selectedPeriod = buildTrendsPeriod(period);
     const comparisonPeriod = buildPreviousTrendsPeriod(period);
 
