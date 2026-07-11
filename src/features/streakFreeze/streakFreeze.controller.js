@@ -1,5 +1,6 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { isCompletedForPeriod } from '../habits/habit.service.js';
+import { getStreakCalendar } from '../analytics/analytics.service.js';
 import {
     applyFreezeToHabit,
     applyFreezeToOverall,
@@ -50,4 +51,10 @@ export const freezeOverallStreak = asyncHandler(async (req, res) => {
     } catch (serviceError) {
         return handleStreakFreezeError(res, serviceError);
     }
+});
+
+export const getStreakCalendarSummary = asyncHandler(async (req, res) => {
+    const data = await getStreakCalendar(req.user.id, { month: req.query.month });
+
+    return res.status(200).json({ data });
 });

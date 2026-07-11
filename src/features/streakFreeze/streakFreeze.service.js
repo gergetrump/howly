@@ -24,6 +24,15 @@ function startOfDay(date) {
     return value;
 }
 
+function toDateKey(date) {
+    const value = new Date(date);
+    return [
+        value.getFullYear(),
+        String(value.getMonth() + 1).padStart(2, '0'),
+        String(value.getDate()).padStart(2, '0'),
+    ].join('-');
+}
+
 function daysBetween(a, b) {
     return Math.round((startOfDay(a) - startOfDay(b)) / DAY_MS);
 }
@@ -180,6 +189,7 @@ export async function runDailyStreakMaintenance(now = new Date()) {
             {
                 $inc: { streakShields: -1 },
                 $set: { streakLastDay: endOfYesterday(now), streakRepairDeadline: null, streakShieldAutoUsedAt: now },
+                $addToSet: { streakShieldUsedDays: toDateKey(endOfYesterday(now)) },
             },
         );
         if (autoSpent) {
@@ -250,7 +260,11 @@ export async function applyFreezeToHabit(userId, habitId, now = new Date()) {
     if (!isHabitStreakAtRisk(habit)) throw streakFreezeError(STREAK_FREEZE_ERROR_CODES.NOT_AT_RISK);
 
     const shieldUpdate = isOverallStreakMissed(user, now)
-        ? { $inc: { streakShields: -1 }, $set: { streakLastDay: endOfYesterday(now), streakRepairDeadline: null } }
+        ? {
+            $inc: { streakShields: -1 },
+            $set: { streakLastDay: endOfYesterday(now), streakRepairDeadline: null },
+            $addToSet: { streakShieldUsedDays: toDateKey(endOfYesterday(now)) },
+        }
         : { $inc: { streakShields: -1 } };
 
     const spent = await User.findOneAndUpdate(
@@ -276,7 +290,11 @@ export async function applyFreezeToOverall(userId, now = new Date()) {
 
     const spent = await User.findOneAndUpdate(
         { _id: userId, streakShields: { $gt: 0 } },
-        { $inc: { streakShields: -1 }, $set: { streakLastDay: endOfYesterday(now), streakRepairDeadline: null } },
+        {
+            $inc: { streakShields: -1 },
+            $set: { streakLastDay: endOfYesterday(now), streakRepairDeadline: null },
+            $addToSet: { streakShieldUsedDays: toDateKey(endOfYesterday(now)) },
+        },
         { new: true },
     );
 

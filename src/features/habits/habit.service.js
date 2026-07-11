@@ -553,12 +553,29 @@ export async function uncompleteHabit(habitId, userId) {
 }
 
 
+function toDateKey(date) {
+    const value = new Date(date);
+    return [
+        value.getFullYear(),
+        String(value.getMonth() + 1).padStart(2, '0'),
+        String(value.getDate()).padStart(2, '0'),
+    ].join('-');
+}
+
 async function creditOverallStreak(userId) {
     const user = await User.findById(userId).select('streak streakLastDay streakRepairDeadline');
     if (!user) return null;
 
-    // Already credited today → nothing to do.
+    // Already credited today → nothing to do (but make sure today is in the calendar log,
+    // covering streaks credited before the log existed).
     if (user.streakLastDay && isToday(user.streakLastDay)) {
+        await User.updateOne(
+            { _id: userId },
+            {
+                $addToSet: { streakPerfectDays: toDateKey(user.streakLastDay) },
+                $max: { bestStreak: user.streak },
+            },
+        );
         return { streak: user.streak, creditedToday: true };
     }
 
@@ -581,6 +598,15 @@ async function creditOverallStreak(userId) {
     user.streakLastDay = new Date();
     user.streakRepairDeadline = null;
     await user.save();
+
+    // Forward-only log for the streak calendar: mark today as a perfect day, and bump the all-time best.
+    await User.updateOne(
+        { _id: userId },
+        {
+            $addToSet: { streakPerfectDays: toDateKey(user.streakLastDay) },
+            $max: { bestStreak: user.streak },
+        },
+    );
 
     return { streak: user.streak, creditedToday: true };
 }
@@ -606,6 +632,12 @@ async function revokeOverallStreakIfIncomplete(userId) {
     yesterday.setDate(yesterday.getDate() - 1);
     user.streakLastDay = yesterday;
     await user.save();
+
+    // Today is no longer a perfect day → drop it from the streak-calendar log.
+    await User.updateOne(
+        { _id: userId },
+        { $pull: { streakPerfectDays: toDateKey(new Date()) } },
+    );
 
     return { streak: user.streak, revoked: true };
 }
