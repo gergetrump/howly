@@ -11,7 +11,7 @@ import { getCurrentUserPlan } from '@/services/userService';
 const FALLBACK_FREE_PLAN = {
     label: 'Free',
     limits: {
-        maxHabits: 2,
+        maxHabits: 4,
         maxActiveChallenges: 2,
         maxActiveCreatedChallenges: 0,
     },
@@ -28,9 +28,9 @@ const FALLBACK_FREE_PLAN = {
 const FALLBACK_PREMIUM_PLAN = {
     label: 'Premium',
     limits: {
-        maxHabits: 6,
-        maxActiveChallenges: 5,
-        maxActiveCreatedChallenges: 1,
+        maxHabits: 20,
+        maxActiveChallenges: 8,
+        maxActiveCreatedChallenges: 3,
     },
     permissions: {
         canCreateChallenges: true,
@@ -64,25 +64,30 @@ function yesNo(value) {
 }
 
 function buildHighlights(plan) {
+    const maxActiveCreatedChallenges = plan.limits?.maxActiveCreatedChallenges ?? FALLBACK_PREMIUM_PLAN.limits.maxActiveCreatedChallenges;
+    const hostedChallengesText = maxActiveCreatedChallenges === 1
+        ? 'host one of your own'
+        : `host up to ${maxActiveCreatedChallenges} of your own`;
+
     return [
         {
             icon: Crown,
-            title: `Create up to ${plan.limits?.maxHabits ?? 6} habits`,
+            title: `Create up to ${plan.limits?.maxHabits ?? FALLBACK_PREMIUM_PLAN.limits.maxHabits} habits`,
             text: 'Track more routines without pruning your current habit list.',
         },
         {
             icon: Sparkles,
             title: 'Create your own challenges',
-            text: `Join up to ${plan.limits?.maxActiveChallenges ?? 5} active challenges and host one of your own.`,
+            text: `Join up to ${plan.limits?.maxActiveChallenges ?? FALLBACK_PREMIUM_PLAN.limits.maxActiveChallenges} active challenges and ${hostedChallengesText}.`,
         },
         {
             icon: Coins,
-            title: `${plan.monthlyBenefits?.coins ?? 300} moon coins every month`,
+            title: `${plan.monthlyBenefits?.coins ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.coins} moon coins every month`,
             text: 'Use bonus coins for accessories and shop items.',
         },
         {
             icon: Shield,
-            title: `${plan.monthlyBenefits?.streakShields ?? 1} streak shield every month`,
+            title: `${plan.monthlyBenefits?.streakShields ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.streakShields} streak shield every month`,
             text: 'A little protection for the days life gets loud.',
         },
     ];
@@ -294,13 +299,18 @@ export function PremiumPage() {
                     </div>
                     <FeatureRow
                         label="Habits"
-                        freeValue={`${freePlan.limits?.maxHabits ?? 2}`}
-                        premiumValue={`${premiumPlan.limits?.maxHabits ?? 6}`}
+                        freeValue={`${freePlan.limits?.maxHabits ?? FALLBACK_FREE_PLAN.limits.maxHabits}`}
+                        premiumValue={`${premiumPlan.limits?.maxHabits ?? FALLBACK_PREMIUM_PLAN.limits.maxHabits}`}
                     />
                     <FeatureRow
                         label="Active challenges"
-                        freeValue={`${freePlan.limits?.maxActiveChallenges ?? 2}`}
-                        premiumValue={`${premiumPlan.limits?.maxActiveChallenges ?? 5}`}
+                        freeValue={`${freePlan.limits?.maxActiveChallenges ?? FALLBACK_FREE_PLAN.limits.maxActiveChallenges}`}
+                        premiumValue={`${premiumPlan.limits?.maxActiveChallenges ?? FALLBACK_PREMIUM_PLAN.limits.maxActiveChallenges}`}
+                    />
+                    <FeatureRow
+                        label="Hosted challenges"
+                        freeValue={`${freePlan.limits?.maxActiveCreatedChallenges ?? FALLBACK_FREE_PLAN.limits.maxActiveCreatedChallenges}`}
+                        premiumValue={`${premiumPlan.limits?.maxActiveCreatedChallenges ?? FALLBACK_PREMIUM_PLAN.limits.maxActiveCreatedChallenges}`}
                     />
                     <FeatureRow
                         label="Create challenges"
@@ -314,13 +324,23 @@ export function PremiumPage() {
                     />
                     <FeatureRow
                         label="Monthly moon coins"
-                        freeValue={`${freePlan.monthlyBenefits?.coins ?? 0}`}
-                        premiumValue={`${premiumPlan.monthlyBenefits?.coins ?? 300}`}
+                        freeValue={`${freePlan.monthlyBenefits?.coins ?? FALLBACK_FREE_PLAN.monthlyBenefits.coins}`}
+                        premiumValue={`${premiumPlan.monthlyBenefits?.coins ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.coins}`}
                     />
                     <FeatureRow
                         label="Monthly streak shields"
-                        freeValue={`${freePlan.monthlyBenefits?.streakShields ?? 0}`}
-                        premiumValue={`${premiumPlan.monthlyBenefits?.streakShields ?? 1}`}
+                        freeValue={`${freePlan.monthlyBenefits?.streakShields ?? FALLBACK_FREE_PLAN.monthlyBenefits.streakShields}`}
+                        premiumValue={`${premiumPlan.monthlyBenefits?.streakShields ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.streakShields}`}
+                    />
+                    <FeatureRow
+                        label="Analytics and trends"
+                        freeValue="Not included"
+                        premiumValue="Included"
+                    />
+                    <FeatureRow
+                        label="Premium themes"
+                        freeValue="Default only"
+                        premiumValue="All themes"
                     />
                 </div>
             </PageSection>
