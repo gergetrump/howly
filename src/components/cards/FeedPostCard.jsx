@@ -1,15 +1,27 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
 import { appCardClassName } from '@/components/cards/cardStyles';
+import { useEffect, useState } from 'react';
 
 export function PostAuthorAvatar({ avatarSrc, name, isPremium }) {
     const initial = name?.trim()?.charAt(0)?.toUpperCase() || '?';
+    const resolvedAvatarSrc = typeof avatarSrc === 'string' ? avatarSrc.trim() : '';
+    const [hasImageLoadError, setHasImageLoadError] = useState(false);
+
+    useEffect(() => {
+        setHasImageLoadError(false);
+    }, [resolvedAvatarSrc]);
 
     return (
         <div className="relative shrink-0">
             <div className={`flex size-12 items-center justify-center overflow-hidden rounded-full bg-slate-300 text-lg font-bold text-slate-950 ${isPremium ? 'ring-2 ring-theme-gold ring-offset-2 ring-offset-theme-surface' : ''}`}>
-                {avatarSrc ? (
-                    <img src={avatarSrc} alt="" className="h-full w-full object-cover" />
+                {resolvedAvatarSrc && !hasImageLoadError ? (
+                    <img
+                        src={resolvedAvatarSrc}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        onError={() => setHasImageLoadError(true)}
+                    />
                 ) : (
                     initial
                 )}
