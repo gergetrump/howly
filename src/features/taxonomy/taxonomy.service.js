@@ -130,6 +130,28 @@ export async function applyTaxonomyToHabit(habitDoc) {
     return habitDoc;
 }
 
+export async function applyCanonicalTaxonomyToHabit(habitDoc, canonicalHabitKey) {
+    const canonical = await CanonicalHabit.findOne({
+        key: canonicalHabitKey,
+        status: 'active',
+    }).lean();
+
+    if (!canonical) {
+        return false;
+    }
+
+    applyAssignment(habitDoc, {
+        categoryKey: canonical.categoryKey,
+        subcategoryKey: canonical.subcategoryKey,
+        canonicalHabitKey: canonical.key,
+        categoryLabel: canonical.categoryLabel,
+        score: 1,
+        assignedAt: new Date(),
+    });
+    await habitDoc.save();
+    return true;
+}
+
 export async function applyTaxonomyToChallenge(challengeDoc) {
     const assignment = await assignTaxonomy(buildEmbedText({
         title: challengeDoc.habitTemplate?.title ?? challengeDoc.habitTitle,

@@ -225,6 +225,10 @@ export async function softDeleteUser(userId) {
     );
 }
 
+export async function deleteUserById(userId) {
+    return User.findByIdAndDelete(userId);
+}
+
 export async function updateUserProfilePicture(userId, profilePictureUrl) {
     return User.findByIdAndUpdate(
         userId,

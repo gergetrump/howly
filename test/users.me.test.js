@@ -212,6 +212,22 @@ test('owned premium themes remain selectable after premium ends', async () => {
     assert.equal(updatedUser.preferences.theme, 'sakura-light');
 });
 
+test('DELETE /api/users/me permanently removes the current user', async () => {
+    const email = 'delete-me@example.com';
+    const user = await buildUser({ email, username: 'delete_me' });
+    const token = signAccessToken(user);
+
+    await request(app)
+        .delete('/api/users/me')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(204);
+
+    assert.equal(await User.exists({ _id: user._id }), null);
+
+    const recreatedUser = await buildUser({ email, username: 'delete_me_again' });
+    assert.equal(recreatedUser.email, email);
+});
+
 // Ensures a user can update their profile fields via /me.
 test('PATCH /api/users/me updates profile fields', async () => {
     const user = await buildUser();

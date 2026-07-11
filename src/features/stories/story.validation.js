@@ -7,6 +7,7 @@ const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 const DEFAULT_STORY_LIST_LIMIT = 10;
 const MAX_STORY_LIST_LIMIT = 50;
 
+/* Validates that a story id is a well-formed ObjectId. */
 export function validateStoryId(id) {
   if (!isNonEmptyString(id) || !isValidObjectId(id)) {
     return { error: 'storyId must be a valid ObjectId' };
@@ -15,6 +16,7 @@ export function validateStoryId(id) {
   return { value: id.trim() };
 }
 
+/* Validates and normalizes the create-story body (source type/id and optional caption). */
 export function validateCreateStoryInput(body = {}) {
   const errors = [];
 
@@ -51,6 +53,7 @@ export function validateCreateStoryInput(body = {}) {
   };
 }
 
+/* Validates and normalizes a comment body (content and optional parent comment id). */
 export function validateCommentInput(body = {}) {
   const errors = [];
   
@@ -82,6 +85,7 @@ export function validateCommentInput(body = {}) {
   };
 }
 
+/* Validates offset pagination query params for story list endpoints. */
 export function validateStoryListPagination(query = {}, options = {}) {
   return validateOffsetPagination(query, {
     defaultLimit: options.defaultLimit ?? DEFAULT_STORY_LIST_LIMIT,

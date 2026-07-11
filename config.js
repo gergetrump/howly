@@ -1,5 +1,6 @@
 const config = {
     port: 3000,
+    timezone: process.env.APP_TIMEZONE || 'Europe/Berlin',
     mongoUri: 'mongodb://127.0.0.1:27017/howly',
     jwtSecret: 'REDACTED',
     serverBaseUrl: 'http://localhost:3000',

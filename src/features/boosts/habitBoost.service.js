@@ -146,7 +146,7 @@ export async function applyHabitBoostReward({ userId, habit }) {
             $push: { rewardedPeriodKeys: periodKey },
             $inc: { remainingCompletions: -1 },
         },
-        { new: true, sort: { createdAt: 1 } },
+        { returnDocument: 'after', sort: { createdAt: 1 } },
     );
 
     if (!boost) {
@@ -161,7 +161,7 @@ export async function applyHabitBoostReward({ userId, habit }) {
     const updatedUser = await User.findByIdAndUpdate(
         userId,
         { $inc: { coins: boost.bonusCoins } },
-        { new: true },
+        { returnDocument: 'after' },
     ).select('coins');
 
     return {
@@ -188,7 +188,7 @@ export async function revertHabitBoostReward({ userId, habit, uncompletedAt = ne
             $inc: { remainingCompletions: 1 },
             $set: { completedAt: null },
         },
-        { new: true },
+        { returnDocument: 'after' },
     );
 
     if (!boost) {
@@ -198,7 +198,7 @@ export async function revertHabitBoostReward({ userId, habit, uncompletedAt = ne
     const updatedUser = await User.findByIdAndUpdate(
         userId,
         { $inc: { coins: -boost.bonusCoins } },
-        { new: true },
+        { returnDocument: 'after' },
     ).select('coins');
 
     return {

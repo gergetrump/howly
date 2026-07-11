@@ -12,7 +12,7 @@ const userSchema = new Schema(
       trim: true,
       minlength: 3,
       maxlength: 30,
-      match: [USERNAME_PATTERN, "Username may only contain letters, numbers, underscores, or hyphens."],
+      match: [USERNAME_PATTERN, "Username may only contain letters, numbers, dots, underscores, or hyphens."],
     },
 
     email: {
@@ -108,6 +108,13 @@ const userSchema = new Schema(
       default: 0,
       min: 0,
     },
+    // All-time longest streak. Only ever grows (via $max in creditOverallStreak); a break or
+    // revoke never lowers it. Forward-only — not backfilled for streaks before this field existed.
+    bestStreak: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     streakLastDay: {
       type: Date,
       default: null,
@@ -132,6 +139,16 @@ const userSchema = new Schema(
     streakShieldAutoUsedAt: {
       type: Date,
       default: null,
+    },
+      
+
+    streakShieldUsedDays: {
+      type: [String],
+      default: [],
+    },
+    streakPerfectDays: {
+      type: [String],
+      default: [],
     },
     notificationPreferences: {
       emailEnabled: { type: Boolean, default: false },
