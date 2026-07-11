@@ -140,6 +140,56 @@ test('POST /api/challenges creates a challenge for a premium user', async () => 
     assert.equal(challengeHabit.title, 'Reading');
 });
 
+test('premium-ended users keep existing active created challenges but cannot create new ones', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const token = signAccessToken(owner);
+    const createdChallenges = [];
+
+    for (let index = 1; index <= getPlanForUser({ isPremium: true }).limits.maxActiveCreatedChallenges; index += 1) {
+        createdChallenges.push(
+            await createChallenge(token, {
+                ownerId: owner._id,
+                title: `Premium Challenge ${index}`,
+                habit: await buildHabit(owner._id, { title: `Habit ${index}` }),
+                visibility: 'public',
+            }),
+        );
+    }
+
+    await User.updateOne({ _id: owner._id }, { isPremium: false });
+
+    const activeResponse = await request(app)
+        .get('/api/challenges?scope=active')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+    const activeIds = activeResponse.body.map((challenge) => challenge.id);
+    for (const challenge of createdChallenges) {
+        assert.equal(activeIds.includes(challenge.id), true);
+        assert.equal(
+            activeResponse.body.find((activeChallenge) => activeChallenge.id === challenge.id).viewerParticipantStatus,
+            'active',
+        );
+    }
+
+    const createResponse = await request(app)
+        .post('/api/challenges')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+            title: 'Free Plan Challenge',
+            habitTemplate: {
+                title: 'Blocked Habit',
+                frequency: 'Daily',
+                type: 'boolean',
+            },
+            frequency: 'daily',
+            durationDays: 7,
+        })
+        .expect(400);
+
+    assert.equal(createResponse.body.code, 'PREMIUM_REQUIRED');
+});
+
 test('free users cannot create challenges', async () => {
     const user = await buildUser();
     const habit = await buildHabit(user._id);
