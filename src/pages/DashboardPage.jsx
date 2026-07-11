@@ -577,6 +577,8 @@ export function DashboardPage() {
                 title={habit.title}
                 frequency={habit.frequency}
                 category={habit.category}
+                target={habit.target}
+                unit={habit.unit}
                 streakDays={habit.streakCount}
                 completed={habit.isCompletedToday}
                 atRisk={Boolean(habit.streakRepairDeadline)}

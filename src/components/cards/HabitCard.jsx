@@ -28,6 +28,8 @@ export function HabitCard({
     title,
     frequency,
     category = null,
+    target = null,
+    unit = null,
     streakDays = 0,
     completed = false,
     atRisk = false,
@@ -59,6 +61,11 @@ export function HabitCard({
                             </Badge>
                         ) : null}
                         {frequency ? <Badge variant="secondary" className="shrink-0">{frequency}</Badge> : null}
+                        {target ? (
+                            <Badge variant="secondary" className="shrink-0">
+                                {target}{unit ? ` ${unit}` : ''}
+                            </Badge>
+                        ) : null}
                         {category ? (
                             <Badge className="shrink-0 border border-theme-accent/30 bg-theme-accent/15 text-theme-accent-soft hover:bg-theme-accent/15">
                                 {category}

@@ -49,6 +49,8 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [icon, setIcon] = useState('🎯');
+    const [target, setTarget] = useState('');
+    const [unit, setUnit] = useState('');
     const [frequency, setFrequency] = useState('');
     const [customDays, setCustomDays] = useState([]);
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
@@ -61,12 +63,16 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             setName(editHabit.title || '');
             setDescription(editHabit.description || '');
             setIcon(editHabit.icon || '🎯');
+            setTarget(editHabit.target ? String(editHabit.target) : '');
+            setUnit(editHabit.unit || '');
             setFrequency(editHabit.frequency || '');
             setCustomDays(editHabit.customDays || []);
             setFormError('');
         } else if (open && prefill) {
             setName(prefill.title || '');
             setDescription(prefill.description || '');
+            setTarget(prefill.target ? String(prefill.target) : '');
+            setUnit(prefill.unit || '');
             setFrequency(prefill.frequency || '');
             setCustomDays([]);
             setFormError('');
@@ -74,6 +80,8 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
         } else if (open && !editHabit) {
             setName('');
             setDescription('');
+            setTarget('');
+            setUnit('');
             setFrequency('');
             setCustomDays([]);
             setIcon('🎯');
@@ -107,6 +115,12 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             customDays,
             icon,
         };
+
+        const numericTarget = Number(target);
+        if (target !== '' && Number.isFinite(numericTarget) && numericTarget >= 1) {
+            data.target = numericTarget;
+            if (unit.trim()) data.unit = unit.trim();
+        }
 
         try {
             setFormError('');
@@ -240,6 +254,29 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                             placeholder="What does this habit mean to you?"
                             className="w-full resize-none rounded-2xl border border-theme-accent/20 bg-theme-surface-2/60 px-3 py-3 text-sm text-theme-text outline-none placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-3 focus:ring-theme-accent/20"
                         />
+                    </div>
+
+                    <div className="space-y-2.5">
+                        <Label className="text-sm font-medium text-theme-text">
+                            Goal <span className="font-normal text-theme-text-muted">(optional)</span>
+                        </Label>
+                        <div className="flex gap-3">
+                            <Input
+                                type="number"
+                                min={1}
+                                value={target}
+                                onChange={(e) => setTarget(e.target.value)}
+                                placeholder="8"
+                                className="h-12 w-24 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text caret-theme-accent placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-theme-accent/20"
+                            />
+                            <Input
+                                value={unit}
+                                onChange={(e) => setUnit(e.target.value)}
+                                placeholder="glasses, min, pages…"
+                                maxLength={50}
+                                className="h-12 flex-1 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text caret-theme-accent placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-theme-accent/20"
+                            />
+                        </div>
                     </div>
 
                     <div className="space-y-2.5">
