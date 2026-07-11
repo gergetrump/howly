@@ -262,6 +262,7 @@ export function FriendsPanel({
                                 />
                             ))}
                             {hasMoreFriends ? (
+                                // Long friend lists stay scrollable and cheap to load.
                                 <Button
                                     type="button"
                                     variant="ghost"
@@ -294,6 +295,7 @@ export function FriendsPanel({
                                 />
                             ))}
                             {hasMoreIncomingRequests ? (
+                                // Request pagination is separate from the tab badge count.
                                 <Button
                                     type="button"
                                     variant="ghost"

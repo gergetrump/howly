@@ -43,6 +43,8 @@ const SYMBOL_PREVIEW_CLASSES = {
     moon: 'h-full max-h-10 max-w-12 overflow-visible',
 };
 
+// The color wheel stores color as HSL while the rest of the app saves HEX.
+// These helpers keep the UI flexible without changing the saved data format.
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 function componentToHex(value) {
@@ -175,6 +177,8 @@ export function ShopCustomizationPanel({
     }
 
     function handleTextChange(event) {
+        // Custom text is optional. When present, keep it short and SVG-safe so
+        // it can render inside small clothing graphics.
         const nextText = event.target.value
             .replace(/[^a-zA-Z0-9 ]/g, '')
             .slice(0, MAX_CUSTOM_TEXT_LENGTH)
@@ -184,6 +188,8 @@ export function ShopCustomizationPanel({
     }
 
     function handleColorWheelPick(event) {
+        // Pick hue/saturation from the wheel and keep the current lightness
+        // slider value, matching common color-picker behavior.
         const rect = event.currentTarget.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;

@@ -12,6 +12,8 @@ import { NotificationBanner } from '@/components/ui/notification-banner.jsx';
 import { sendUserReport } from '@/services/reportApi';
 import { getDisplayName, getUsername } from '@/components/social/socialHelpers.js';
 
+// These tags are hints for the team. The written description remains required
+// so a report has enough context even when no tag is selected.
 const REPORT_TAGS = [
     'Hate Speech or Harassment',
     'Explicit or Dangerous Content',
@@ -32,6 +34,8 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
 
     useEffect(() => {
         if (!open) {
+            // Reopen the dialog as a clean form so an old report draft or error
+            // does not leak into the next user being reported.
             setSelectedTags([]);
             setMessage('');
             setAttachment(null);
@@ -69,6 +73,8 @@ export function ReportUserDialog({ user, open, onOpenChange }) {
         setSuccess('');
 
         try {
+            // Reporting is intentionally separate from blocking. Sending a
+            // report does not change the friendship or visibility state.
             const response = await sendUserReport({
                 reportedUserId,
                 tags: selectedTags,

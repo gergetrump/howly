@@ -15,6 +15,8 @@ export function getEquippedItemConfigsFromInventory(inventory = []) {
     return (inventory ?? [])
         .filter((entry) => entry.equipped)
         .map((entry) => {
+            // CompanionAvatar only needs the asset key plus saved customization.
+            // Keep this adapter small so shop and inventory can share rendering.
             const itemConfig = {
                 assetKey: entry.item?.assetKey,
                 customization: entry.customization ?? {},

@@ -47,6 +47,8 @@ export function BoostPowerUpCards({
     const [openHelpAssetKey, setOpenHelpAssetKey] = useState('');
 
     useEffect(() => {
+        // Boost cards use real catalog items for price/premium status, while
+        // this component provides the visual and explanation copy.
         let active = true;
 
         getItems()
@@ -76,6 +78,8 @@ export function BoostPowerUpCards({
     }, [items]);
 
     function guardPremium(item, action) {
+        // Reuse the normal premium prompt instead of letting a premium-only
+        // boost purchase fail after the user clicks.
         if (isFreeUser && item?.premiumOnly) {
             onPremiumRequired?.();
             return;
@@ -98,6 +102,8 @@ export function BoostPowerUpCards({
         const monthlyQuantityMax = isMonthlyQuantityMax?.(item) ?? false;
         const limitLabel = getLimitLabel?.(item) ?? 'Limit reached';
 
+        // Cart limit checks include owned stock and monthly purchase count, so
+        // the user cannot add more boosts than the backend will accept.
         return (
             <ItemCard
                 key={boost.assetKey}

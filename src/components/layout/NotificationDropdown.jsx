@@ -119,6 +119,7 @@ export function NotificationDropdown({
                                             </span>
                                         </span>
                                     </Link>
+                                    {/* Delete stays outside the Link so removal never triggers navigation. */}
                                     <button
                                         type="button"
                                         className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full text-theme-text-muted opacity-0 transition hover:bg-theme-text/10 hover:text-theme-text group-hover:opacity-100 focus:opacity-100"

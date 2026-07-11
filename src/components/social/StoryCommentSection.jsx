@@ -77,6 +77,8 @@ export function StoryCommentSection({
     const suggestions = useMemo(() => {
         if (mentionQuery === null) return [];
 
+        // Mention candidates come from users who can see this story, not just
+        // users who already liked or commented.
         const uniqueUsers = getUniqueUsers(mentionCandidates);
 
         return uniqueUsers.filter((u) => {
@@ -133,6 +135,8 @@ export function StoryCommentSection({
         const targetComment = comments.find((comment) => comment.id === targetCommentId);
 
         if (!targetComment) {
+            // The notification can outlive its comment. Load more first in case
+            // the target is on a later page, then fall back to "Comment not found".
             if (hasMoreComments && onLoadMoreComments) {
                 void onLoadMoreComments();
                 return;
@@ -243,6 +247,8 @@ export function StoryCommentSection({
             setIsSubmitting(true);
             setError('');
             const parentCommentId = replyingTo?.id || null;
+            // Backend moderation owns the final decision. The frontend only
+            // translates moderation errors into friendly UI copy.
             const res = await postStoryComment(story.id, trimmed, parentCommentId);
             if (res && res.id) {
                 setComments((prev) => [...prev, res]);
