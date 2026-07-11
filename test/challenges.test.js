@@ -255,6 +255,52 @@ test('GET /api/challenges supports active, friends, and public scopes', async ()
     );
 });
 
+test('GET /api/challenges paginates challenge tabs with limit and offset', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const viewer = await buildUser();
+    const viewerToken = signAccessToken(viewer);
+    const startsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const challengeDocs = Array.from({ length: 25 }, (_, index) => ({
+        createdBy: owner._id,
+        title: `Paged Challenge ${index}`,
+        habitTitle: `Paged Habit ${index}`,
+        habitTemplate: {
+            title: `Paged Habit ${index}`,
+            icon: 'C',
+            type: 'boolean',
+            frequency: 'Daily',
+            category: 'Challenge',
+        },
+        description: '',
+        coinReward: 50,
+        frequency: 'daily',
+        durationDays: 10,
+        startsAt,
+        visibility: 'public',
+        status: 'active',
+    }));
+
+    await Challenge.create(challengeDocs);
+
+    const firstPage = await request(app)
+        .get('/api/challenges?scope=public&limit=20&offset=0')
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .expect(200);
+
+    assert.equal(firstPage.body.items.length, 20);
+    assert.equal(firstPage.body.hasMore, true);
+    assert.equal(firstPage.body.nextOffset, 20);
+
+    const secondPage = await request(app)
+        .get('/api/challenges?scope=public&limit=20&offset=20')
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .expect(200);
+
+    assert.equal(secondPage.body.items.length, 5);
+    assert.equal(secondPage.body.hasMore, false);
+    assert.equal(secondPage.body.nextOffset, 25);
+});
+
 test('GET /api/challenges?scope=past returns recent ended participations only', async () => {
     const owner = await buildUser({ isPremium: true });
     const ownerToken = signAccessToken(owner);
@@ -398,6 +444,49 @@ test('challenge details can be edited before start but not after start', async (
         .expect(400);
 
     assert.equal(lockedResponse.body.code, 'CHALLENGE_EDIT_LOCKED');
+});
+
+test('DELETE /api/challenges/:id permanently deletes future own challenges only', async () => {
+    const owner = await buildUser({ isPremium: true });
+    const invitee = await buildUser();
+    const ownerToken = signAccessToken(owner);
+    const futureChallenge = await createChallenge(ownerToken, {
+        ownerId: owner._id,
+        habit: await buildHabit(owner._id, { title: 'Reading' }),
+        startsAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        durationDays: 10,
+    });
+
+    await ChallengeInvitation.create({
+        challenge: futureChallenge.id,
+        inviter: owner._id,
+        invitee: invitee._id,
+    });
+
+    await request(app)
+        .delete(`/api/challenges/${futureChallenge.id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .expect(204);
+
+    assert.equal(await Challenge.exists({ _id: futureChallenge.id }), null);
+    assert.equal(await ChallengeParticipant.countDocuments({ challenge: futureChallenge.id }), 0);
+    assert.equal(await ChallengeInvitation.countDocuments({ challenge: futureChallenge.id }), 0);
+    assert.equal(await Habit.countDocuments({ challengeId: futureChallenge.id, source: 'challenge' }), 0);
+
+    const startedChallenge = await createChallenge(ownerToken, {
+        ownerId: owner._id,
+        habit: await buildHabit(owner._id, { title: 'Running' }),
+        startsAt: new Date(Date.now() - 1000).toISOString(),
+        durationDays: 10,
+    });
+
+    const lockedResponse = await request(app)
+        .delete(`/api/challenges/${startedChallenge.id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .expect(400);
+
+    assert.equal(lockedResponse.body.code, 'CHALLENGE_DELETE_LOCKED');
+    assert.ok(await Challenge.exists({ _id: startedChallenge.id }));
 });
 
 test('PATCH /api/challenges clears taxonomy when title or habit template text changes', async () => {
