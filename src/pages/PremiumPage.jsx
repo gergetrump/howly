@@ -331,7 +331,7 @@ export function PremiumPage() {
                 width="lg"
                 align="center"
                 title="Free vs Premium"
-                description={isLoadingPlan ? 'Loading plan details...' : 'Premium values come from the backend plan configuration.'}
+                description={isLoadingPlan ? 'Loading plan details...' : 'See what changes when you upgrade.'}
             >
                 <div className="overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-surface text-theme-text shadow-xl">
                     <div className="grid grid-cols-[1.25fr_0.8fr_0.8fr] gap-3 bg-theme-surface-2 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-theme-text-soft">
@@ -345,24 +345,19 @@ export function PremiumPage() {
                         premiumValue={`${premiumPlan.limits?.maxHabits ?? FALLBACK_PREMIUM_PLAN.limits.maxHabits}`}
                     />
                     <FeatureRow
-                        label="Active challenges"
+                        label="Joined active challenges"
                         freeValue={`${freePlan.limits?.maxActiveChallenges ?? FALLBACK_FREE_PLAN.limits.maxActiveChallenges}`}
                         premiumValue={`${premiumPlan.limits?.maxActiveChallenges ?? FALLBACK_PREMIUM_PLAN.limits.maxActiveChallenges}`}
                     />
                     <FeatureRow
-                        label="Hosted challenges"
+                        label="Created active challenges"
                         freeValue={`${freePlan.limits?.maxActiveCreatedChallenges ?? FALLBACK_FREE_PLAN.limits.maxActiveCreatedChallenges}`}
                         premiumValue={`${premiumPlan.limits?.maxActiveCreatedChallenges ?? FALLBACK_PREMIUM_PLAN.limits.maxActiveCreatedChallenges}`}
                     />
                     <FeatureRow
-                        label="Create challenges"
-                        freeValue={yesNo(freePlan.permissions?.canCreateChallenges)}
-                        premiumValue={yesNo(premiumPlan.permissions?.canCreateChallenges)}
-                    />
-                    <FeatureRow
-                        label="Premium shop items"
-                        freeValue={yesNo(freePlan.permissions?.canBuyPremiumItems)}
-                        premiumValue={yesNo(premiumPlan.permissions?.canBuyPremiumItems)}
+                        label="Monthly streak shields"
+                        freeValue={`${freePlan.monthlyBenefits?.streakShields ?? FALLBACK_FREE_PLAN.monthlyBenefits.streakShields}`}
+                        premiumValue={`${premiumPlan.monthlyBenefits?.streakShields ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.streakShields}`}
                     />
                     <FeatureRow
                         label="Monthly moon coins"
@@ -370,9 +365,9 @@ export function PremiumPage() {
                         premiumValue={`${premiumPlan.monthlyBenefits?.coins ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.coins}`}
                     />
                     <FeatureRow
-                        label="Monthly streak shields"
-                        freeValue={`${freePlan.monthlyBenefits?.streakShields ?? FALLBACK_FREE_PLAN.monthlyBenefits.streakShields}`}
-                        premiumValue={`${premiumPlan.monthlyBenefits?.streakShields ?? FALLBACK_PREMIUM_PLAN.monthlyBenefits.streakShields}`}
+                        label="Premium shop items"
+                        freeValue={yesNo(freePlan.permissions?.canBuyPremiumItems)}
+                        premiumValue={yesNo(premiumPlan.permissions?.canBuyPremiumItems)}
                     />
                     <FeatureRow
                         label="Analytics"
@@ -385,9 +380,14 @@ export function PremiumPage() {
                         premiumValue="Included"
                     />
                     <FeatureRow
-                        label="Premium themes"
+                        label="Themes"
                         freeValue="Default only"
                         premiumValue="All themes"
+                    />
+                    <FeatureRow
+                        label="Companions"
+                        freeValue="Starter choice only"
+                        premiumValue="Switch anytime"
                     />
                 </div>
             </PageSection>
