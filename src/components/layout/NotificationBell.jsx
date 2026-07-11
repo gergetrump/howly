@@ -7,7 +7,6 @@ import {
     getUnreadNotificationCount,
     markNotificationRead,
 } from '@/services/notificationApi';
-import { setNotificationMenuOpen } from '@/components/layout/notificationMenuState';
 import { NotificationDropdown } from '@/components/layout/NotificationDropdown';
 
 const NOTIFICATION_PAGE_SIZE = 10;
@@ -53,7 +52,6 @@ export function NotificationBell({ user }) {
         // The unread red dot is visual while the dropdown is open. Closing the
         // menu clears that local state and lets the stored read count take over.
         isMenuOpenRef.current = false;
-        setNotificationMenuOpen(false);
         setIsNotificationMenuOpen(false);
         setVisibleUnreadNotificationIds(new Set());
     }, []);
@@ -142,12 +140,6 @@ export function NotificationBell({ user }) {
     }, [closeNotificationMenu, user]);
 
     useEffect(() => {
-        return () => {
-            setNotificationMenuOpen(false);
-        };
-    }, []);
-
-    useEffect(() => {
         function handleDocumentPointerDown(event) {
             if (!notificationMenuRef.current?.contains(event.target)) {
                 closeNotificationMenu();
@@ -233,7 +225,6 @@ export function NotificationBell({ user }) {
         const nextIsOpen = !isNotificationMenuOpen;
 
         isMenuOpenRef.current = nextIsOpen;
-        setNotificationMenuOpen(nextIsOpen);
         setIsNotificationMenuOpen(nextIsOpen);
 
         if (!nextIsOpen) {

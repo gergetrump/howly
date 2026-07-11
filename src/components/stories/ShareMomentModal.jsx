@@ -47,6 +47,7 @@ export function ShareMomentModal({
         };
     }, [previewUrl]);
 
+    /* Validates the picked image (size limit) and shows a local preview, or an error. */
     function handleFileChange(event) {
         const file = event.target.files?.[0];
 
@@ -67,6 +68,7 @@ export function ShareMomentModal({
         setPreviewUrl(URL.createObjectURL(file));
     }
 
+    /* Uploads the selected photo and caption as a new story, then closes the modal. */
     async function handlePost() {
         if (!imageFile) {
             setError('Please pick a photo first');

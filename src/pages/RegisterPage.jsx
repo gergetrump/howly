@@ -21,6 +21,7 @@ function normalizeInputText(value) {
     return typeof value === 'string' ? value.normalize('NFKC').trim() : '';
 }
 
+/* Validates the registration fields and returns the first error message, or '' if all are valid. */
 function validateAccountFields(data) {
     const email = normalizeInputText(data.email).toLowerCase();
     const firstName = normalizeInputText(data.firstName);
@@ -68,6 +69,7 @@ function validateAccountFields(data) {
     return '';
 }
 
+/* Registration page: validates the form (with async username checks) and creates the account. */
 export function RegisterPage() {
     const navigate = useNavigate();
 
@@ -89,6 +91,7 @@ export function RegisterPage() {
     // in-flight server check can't overwrite the field with a stale result.
     const usernameCheckSeqRef = useRef(0);
 
+    /* Updates a form field; when the username changes, cancels any pending availability check. */
     function handleChange(event) {
         const { name, value } = event.target;
 
@@ -119,6 +122,7 @@ export function RegisterPage() {
         }
     }
 
+    /* On blur, runs the instant format check then asks the server whether the username is allowed. */
     async function handleUsernameBlur() {
         const value = formData.username;
 
@@ -151,6 +155,7 @@ export function RegisterPage() {
         setUsernameError(allowed ? '' : USERNAME_BLOCKED_MESSAGE);
     }
 
+    /* Validates the username and account fields, registers the user, then redirects to login. */
     async function handleSubmit(event) {
         event.preventDefault();
 

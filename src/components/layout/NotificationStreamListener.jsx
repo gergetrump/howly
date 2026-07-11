@@ -1,6 +1,7 @@
 import { useNotificationStream } from '@/hooks/useNotificationStream';
 import { useAuth } from '@/context/AuthContext';
 
+/* Invisible listener that subscribes to the notification SSE stream while logged in and broadcasts a window event on updates. */
 export function NotificationStreamListener() {
     const { user } = useAuth();
 

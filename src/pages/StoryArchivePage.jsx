@@ -6,6 +6,7 @@ import { getMyStoryArchive } from '@/services/storyApi';
 import { StoryDetailDialog } from '@/components/stories/StoryDetailDialog';
 import { cloudinaryUrl } from '@/lib/cloudinary';
 
+/* Groups stories into date buckets, preserving order, for the archive layout. */
 function groupByDate(stories) {
     const groups = [];
     const byKey = new Map();
@@ -25,6 +26,7 @@ function groupByDate(stories) {
     return groups;
 }
 
+/* Formats a date as "Today", "Yesterday", or a localized day/month(/year) label. */
 function formatDateLabel(dateValue) {
     const date = new Date(dateValue);
     const today = new Date();
@@ -46,6 +48,7 @@ function formatDateLabel(dateValue) {
     });
 }
 
+/* Story archive: loads and shows the user's stories from the last 90 days, grouped by date, with a detail dialog. */
 export function StoryArchivePage() {
     const { user } = useAuth();
     const [stories, setStories] = useState([]);

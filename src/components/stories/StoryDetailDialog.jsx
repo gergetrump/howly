@@ -7,6 +7,7 @@ import {
 import { StoryFeedCard } from '@/components/cards/StoryFeedCard';
 import { deleteStory } from '@/services/storyApi';
 
+/* Formats a timestamp as a full "1 January 2026" style date string. */
 function formatFullDate(value) {
     return new Date(value).toLocaleDateString(undefined, {
         day: 'numeric',
@@ -15,6 +16,7 @@ function formatFullDate(value) {
     });
 }
 
+/* Dialog that shows one of the user's own stories full-size with read-only comments. */
 export function StoryDetailDialog({
     story,
     open,
@@ -24,6 +26,7 @@ export function StoryDetailDialog({
     authorIsPremium,
     onDeleted,
 }) {
+    /* Deletes the story via the API, notifies the parent, and closes the dialog. */
     async function handleDelete(target) {
         await deleteStory(target.id);
         onDeleted?.(target.id);

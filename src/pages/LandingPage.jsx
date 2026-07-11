@@ -81,6 +81,7 @@ function FeatureCard({ icon: Icon, iconColor, iconBg, title, description }) {
 /*  Landing Page                                                       */
 /* ------------------------------------------------------------------ */
 
+/* Landing page: marketing hero and feature grid with links to log in or sign up. */
 export function LandingPage() {
     return (
         <Background className="min-h-screen overflow-y-auto overflow-x-hidden">

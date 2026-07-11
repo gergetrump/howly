@@ -41,6 +41,7 @@ const FRIEND_PAGE_SIZE = 10;
 const FRIEND_REQUEST_PAGE_SIZE = 10;
 const OUTGOING_REQUEST_LOOKUP_LIMIT = 50;
 
+/* Friends/social: shows the friend feed and friends panel, and handles requests, blocking, reactions, and notification deep-links. */
 export function SocialPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -151,6 +152,7 @@ export function SocialPage() {
         };
     }
 
+    /* Loads the next page of feed posts, de-duplicating against those already shown. */
     const handleLoadMoreFeed = useCallback(async () => {
         if (isLoadingMoreFeed || !hasMoreFeed) {
             return;
@@ -192,6 +194,7 @@ export function SocialPage() {
         }
     }, [hasMoreFeed, isLoadingMoreFeed]);
 
+    /* Loads the next page of friends, de-duplicating against those already shown. */
     const handleLoadMoreFriends = useCallback(async () => {
         if (isLoadingMoreFriends || !hasMoreFriends) {
             return;
@@ -230,6 +233,7 @@ export function SocialPage() {
         }
     }, [hasMoreFriends, isLoadingMoreFriends]);
 
+    /* Loads the next page of incoming friend requests, de-duplicating against those already shown. */
     const handleLoadMoreIncomingRequests = useCallback(async () => {
         if (isLoadingMoreIncomingRequests || !hasMoreIncomingRequests) {
             return;
@@ -278,6 +282,7 @@ export function SocialPage() {
         }
     }, [hasMoreIncomingRequests, isLoadingMoreIncomingRequests]);
 
+    /* Works out the viewer's relationship (self/friends/incoming/outgoing/none) to a given user. */
     function getProfileRelationship(profileUser) {
         if (!profileUser) {
             return { status: 'unknown' };
@@ -308,6 +313,7 @@ export function SocialPage() {
         return { status: 'none' };
     }
 
+    /* Reloads friends, requests, feed, and block lists together, sharing one in-flight request. */
     const refreshSocialData = useCallback(({ showLoading = false, silent = false } = {}) => {
         if (showLoading) {
             setIsLoading(true);
@@ -624,6 +630,7 @@ export function SocialPage() {
         showUnavailableNotificationBanner,
     ]);
 
+    /* Switches between the friends and requests panels, refreshing requests when shown. */
     function handleActivePanelChange(nextPanel) {
         setActivePanel(nextPanel);
         setError('');
@@ -649,6 +656,7 @@ export function SocialPage() {
         }));
     }
 
+    /* Optimistically moves an accepted request into the friends list and notifies other views. */
     function acceptRequestLocally(requestId, friendship) {
         incomingRequestsLoadedCountRef.current = Math.max(0, incomingRequestsLoadedCountRef.current - 1);
         setRequests((currentRequests) => ({
@@ -663,6 +671,7 @@ export function SocialPage() {
         void refreshSocialData({ silent: true });
     }
 
+    /* Sends a friend request to a user and adds it to the outgoing list. */
     async function sendRequestToUser(targetUser, { closeProfile = false } = {}) {
         setIsSubmitting(true);
         setError('');
@@ -742,6 +751,7 @@ export function SocialPage() {
         };
     }, []);
 
+    /* Searches users by username and shows the results (or a not-found message). */
     async function handleSearchUsers(event) {
         event.preventDefault();
 
@@ -775,6 +785,7 @@ export function SocialPage() {
         await sendRequestToUser(profileUser, { closeProfile: true });
     }
 
+    /* Accepts a friend request opened from a profile preview. */
     async function handleAcceptProfileFriendRequest(requestId) {
         setBusyRequestId(requestId);
         setError('');
@@ -792,6 +803,7 @@ export function SocialPage() {
         }
     }
 
+    /* Accepts an incoming friend request from the requests panel. */
     async function handleAcceptRequest(requestId) {
         setBusyRequestId(requestId);
         setError('');
@@ -808,6 +820,7 @@ export function SocialPage() {
         }
     }
 
+    /* Declines an incoming friend request and removes it from the list. */
     async function handleRejectRequest(requestId) {
         setBusyRequestId(requestId);
         setError('');
@@ -830,6 +843,7 @@ export function SocialPage() {
         }
     }
 
+    /* Removes a friend and drops their posts from the feed. */
     async function handleDeleteFriend(friendshipId, friend) {
         setBusyFriendId(friendshipId);
         setError('');
@@ -848,6 +862,7 @@ export function SocialPage() {
         }
     }
 
+    /* Likes or unlikes a story, optimistically updating the feed and any open reactions dialog. */
     async function handleToggleStoryLike(post) {
         setBusyPostId(post.id);
         setError('');
@@ -910,6 +925,7 @@ export function SocialPage() {
         });
     }
 
+    /* Loads the users who reacted to a story (likes) or milestone post. */
     const handleLoadReactionUsers = useCallback(async (post, pagination) => {
         if (post.type === 'story') {
             const response = await getStoryLikes(post.id, pagination);
@@ -929,6 +945,7 @@ export function SocialPage() {
         return getMilestoneReactions(post.id, pagination);
     }, []);
 
+    /* Deletes one of the user's own stories and removes it from the feed. */
     async function handleDeleteStory(post) {
         await deleteStory(post.id);
         setFeed((currentFeed) =>
@@ -938,6 +955,7 @@ export function SocialPage() {
         );
     }
 
+    /* Adds or updates an emoji reaction on a milestone post. */
     async function handleReactToMilestone(post, emoji) {
         setBusyPostId(post.id);
         setError('');
@@ -972,6 +990,7 @@ export function SocialPage() {
         return handleReactToMilestone(post, emoji);
     }
 
+    /* Blocks a user and refreshes the social data and block lists. */
     async function handleBlockUser(targetUserId) {
         try {
             setIsSubmitting(true);
@@ -989,6 +1008,7 @@ export function SocialPage() {
         }
     }
 
+    /* Unblocks a user and refreshes the block list. */
     async function handleUnblockUser(targetUserId) {
         try {
             setIsSubmitting(true);

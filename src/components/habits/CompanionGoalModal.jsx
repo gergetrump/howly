@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 const FREE_MAX_HABITS = 9999;
 const PREMIUM_MAX_HABITS = 9999;
 
+/* Modal where the companion asks for a goal, fetches AI habit suggestions, and lets the user pick several to create at once. */
 export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingHabits = [] }) {
     const { user, companion } = useAuth();
     const companionName = companion?.name || 'Howly';
@@ -48,6 +49,7 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
         }
     }
 
+    /* Sends the goal to the AI suggestion service and shows the results, handling moderation blocks and empty responses. */
     async function handleAsk(event) {
         event.preventDefault();
         if (!goal.trim()) return;
@@ -78,6 +80,7 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
         }
     }
 
+    /* Toggles a suggestion's selection, enforcing the remaining-habit limit. */
     function toggleSuggestion(index) {
         setSelected((previous) => {
             if (previous.includes(index)) {
@@ -90,6 +93,7 @@ export function CompanionGoalModal({ open, onOpenChange, onHabitAdded, existingH
         });
     }
 
+    /* Creates the selected suggested habits via the templates API and prompts an upgrade when the free-plan limit is hit. */
     async function handleCreate() {
         if (!selected.length) return;
 

@@ -3,6 +3,7 @@ import { BarChart3, Dumbbell, Globe, Home, PackageOpen, ShoppingBag, Trophy, Use
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
 import { StreakShieldBadge } from '@/components/brand/StreakShieldBadge.jsx';
+import { StreakCalendarPopover } from '@/components/habits/StreakCalendarPopover.jsx';
 import { NotificationBell } from '@/components/layout/NotificationBell';
 import howlyIcon from '@/assets/wolf.svg';
 import { cn } from '@/lib/utils';
@@ -103,7 +104,9 @@ export function NavBar({
 
                 <div className="flex shrink-0 items-center gap-2 lg:gap-3">
                     <MoonCoin amount={coinAmount} compact className={navStatBadgeClassName} />
-                    <StreakBadge days={streakAmount} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'rounded-full border border-theme-gold/20 bg-theme-gold/10 text-theme-gold [&>span:first-child]:text-lg')} />
+                    <StreakCalendarPopover>
+                        <StreakBadge days={streakAmount} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'cursor-pointer rounded-full border border-theme-gold/20 bg-theme-gold/10 text-theme-gold transition-colors hover:bg-theme-gold/20 [&>span:first-child]:text-lg')} />
+                    </StreakCalendarPopover>
                     <StreakShieldBadge count={streakShields} showLabel={false} size="sm" className={cn(navStatBadgeClassName, 'rounded-full border border-theme-accent/25 bg-theme-accent/10 text-theme-accent-soft [&>svg]:h-6')} />
                     <NotificationBell user={user} />
                     {profileItem ? (
