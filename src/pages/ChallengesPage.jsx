@@ -69,6 +69,7 @@ const CHALLENGE_TABS = [
     { value: 'public', label: 'Public Challenges' },
     { value: 'past', label: 'Past Challenges' },
 ];
+const CHALLENGE_TAB_VALUES = new Set(CHALLENGE_TABS.map((tab) => tab.value));
 const PAST_CHALLENGE_STATUSES = new Set(['completed', 'failed']);
 
 function getUserId(user) {
@@ -356,12 +357,17 @@ function ChallengeParticipantsBadge({
     );
 }
 
+function readTabFromSearchParams(searchParams) {
+    const requestedTab = searchParams.get('tab');
+    return requestedTab && CHALLENGE_TAB_VALUES.has(requestedTab) ? requestedTab : 'active';
+}
+
 export function ChallengesPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState('active');
+    const [activeTab, setActiveTab] = useState(() => readTabFromSearchParams(searchParams));
     const [challenges, setChallenges] = useState([]);
     const [invitations, setInvitations] = useState({ incoming: [], outgoing: [] });
     const [pendingNotificationJump, setPendingNotificationJump] = useState(() => (
@@ -508,6 +514,10 @@ export function ChallengesPage() {
     }, []);
 
     useEffect(() => {
+        setActiveTab(readTabFromSearchParams(searchParams));
+    }, [searchParams]);
+
+    useEffect(() => {
         if (!taxonomyCategories.length || hasInitializedCategoryFromUrl.current) {
             return undefined;
         }
@@ -529,6 +539,22 @@ export function ChallengesPage() {
             }
         };
     }, [searchParams, taxonomyCategories]);
+
+    function handleTabChange(nextTab) {
+        setActiveTab(nextTab);
+
+        setSearchParams((currentParams) => {
+            const nextParams = new URLSearchParams(currentParams);
+
+            if (nextTab === 'active') {
+                nextParams.delete('tab');
+            } else {
+                nextParams.set('tab', nextTab);
+            }
+
+            return nextParams;
+        }, { replace: true });
+    }
 
     function handleCategoryChange(nextCategory) {
         setSelectedCategory(nextCategory);
@@ -1143,7 +1169,7 @@ export function ChallengesPage() {
                 onAction={openCreateDialog}
                 titleAction={<ChallengeInfoPopover />}
             >
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <Tabs value={activeTab} onValueChange={handleTabChange}>
                     <TabsList className={appTabsListFullWidthClassName}>
                         {CHALLENGE_TABS.map((tab) => (
                             <TabsTrigger
