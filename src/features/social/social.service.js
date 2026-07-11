@@ -102,10 +102,14 @@ async function deleteFriendRequestsBetweenUsers(firstUserId, secondUserId) {
 }
 
 async function deleteNotificationsBetweenUsers(firstUserId, secondUserId) {
+  // Blocking removes cross-user notification links in both directions. This is
+  // stronger than unfriending, which keeps historical activity intact.
   return deleteNotificationsByFilter(buildTwoUserQuery(firstUserId, secondUserId, 'actor', 'recipient'));
 }
 
 async function deletePendingChallengeInvitationsBetweenUsers(firstUserId, secondUserId) {
+  // Only pending direct invites are cancelled by blocking. Existing shared
+  // challenge participation is left to challenge participant state.
   return ChallengeInvitation.deleteMany({
     status: 'pending',
     ...buildTwoUserQuery(firstUserId, secondUserId, 'inviter', 'invitee'),
@@ -136,6 +140,8 @@ async function getOwnedInteractionTargets(userId, targetUserId) {
 }
 
 async function deleteMutualStoryInteractions({ userId, targetUserId, userStoryIds, targetStoryIds }) {
+  // After a block, neither user should keep likes/comments on the other's
+  // stories. Collect deleted comment IDs first so their replies are removed too.
   const deletedComments = await StoryComment.find({
     $or: [
       { story: { $in: userStoryIds }, user: targetUserId },
@@ -163,6 +169,8 @@ async function deleteMutualStoryInteractions({ userId, targetUserId, userStoryId
 }
 
 async function deleteMutualMilestoneReactions({ userId, targetUserId, userMilestoneIds, targetMilestoneIds }) {
+  // Milestone reactions are also social interactions, so block cleanup removes
+  // them symmetrically from both users' milestone posts.
   return MilestoneLike.deleteMany({
     $or: [
       { milestonePost: { $in: userMilestoneIds }, user: targetUserId },
@@ -482,7 +490,7 @@ export async function deleteFriend({ friendshipId, userId }) {
   }
 
   // Unfriending only removes future friend-only access. Historical comments,
-  // tags, and notifications remain; blocking owns privacy cleanup.
+  // tags, and notifications remain because blocking owns privacy cleanup.
   return { friendship: toFriendshipResponse(friendship, userId) };
 }
 
@@ -503,6 +511,8 @@ export async function blockUser({ userId, targetUserId }) {
 
   const interactionTargets = await getOwnedInteractionTargets(userId, targetUserId);
 
+  // Keep all block side effects together so social content, pending invites,
+  // and notification counters cannot drift apart.
   await Promise.all([
     removeFriendshipBetweenUsers(userId, targetUserId),
     deleteFriendRequestsBetweenUsers(userId, targetUserId),

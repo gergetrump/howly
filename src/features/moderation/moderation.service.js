@@ -1,5 +1,7 @@
 const COMMENT_MODERATION_BLOCKED = 'COMMENT_MODERATION_BLOCKED';
 
+// Local, narrow moderation for comments. It blocks obvious abuse while keeping
+// normal friend conversations out of an external moderation API.
 const COMMENT_BLOCK_RULES = [
   {
     reason: 'threat',

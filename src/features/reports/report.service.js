@@ -3,6 +3,8 @@ import User from '../users/user.model.js';
 import { sendUserReportEmail } from '../mail/mail.service.js';
 
 function toPublicReport(report) {
+  // Return only the fields the client needs after submission. The reporter id
+  // stays server-side because the current UI only confirms the created report.
   return {
     id: report._id.toString(),
     reportedUser: report.reportedUser.toString(),
@@ -19,6 +21,8 @@ export async function createReport({ reporterId, reportedUserId, message, tags, 
     return { errorCode: 'CANNOT_REPORT_SELF' };
   }
 
+  // Load both users before saving so reports cannot point to deleted or
+  // non-existing users.
   const [reporter, reportedUser] = await Promise.all([
     User.findById(reporterId).select('username email firstName lastName').lean(),
     User.findById(reportedUserId).select('username email firstName lastName').lean(),
@@ -44,6 +48,8 @@ export async function createReport({ reporterId, reportedUserId, message, tags, 
     attachment,
   });
 
+  // Report creation is the source of truth. Email delivery is tracked on the
+  // report, but a skipped email does not discard the user's report.
   const emailResult = await sendUserReportEmail({
     report,
     reporter,

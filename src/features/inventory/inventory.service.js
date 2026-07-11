@@ -26,7 +26,10 @@ export const INVENTORY_ERROR_CODES = {
 };
 
 // Consumable power-up in the catalog: buying it grants a streak shield instead
+// of creating a normal owned cosmetic item.
 export const STREAK_FREEZE_ASSET_KEY = 'streak-freeze';
+// Boost limits are split into stock and monthly purchase caps. This prevents
+// both long-term stacking and repeated farming within a single month.
 export const MAX_OWNED_BOOST_QUANTITY = 20;
 export const MAX_MONTHLY_BOOST_PURCHASE_QUANTITY = 20;
 
@@ -293,6 +296,8 @@ async function incrementMonthlyBoostPurchaseCount({ userId, assetKey, date = new
     const monthKey = getBoostPurchaseMonthKey(date);
 
     try {
+        // The counter update is atomic, so parallel boost purchases cannot pass
+        // the monthly limit by racing each other.
         const counter = await BoostPurchaseLimit.findOneAndUpdate(
             {
                 user: userId,
@@ -349,6 +354,8 @@ function normalizeCustomizationForItem(item, customization = {}) {
     }
 
     const normalizedCustomization = {
+        // Merge caller input with defaults before building the ownership key.
+        // This lets "no text" be a real saved choice while keeping color defaults.
         ...defaults,
         ...customization,
     };
@@ -460,6 +467,8 @@ export async function buyItem({ userId, itemId, customization = {} }) {
     }
 
     if (item.assetKey === STREAK_FREEZE_ASSET_KEY) {
+        // Streak shields are purchased through the shop but stored on the user,
+        // not as equipable inventory rows.
         return buyStreakFreeze({ user, item });
     }
 
@@ -563,6 +572,8 @@ async function buyBoostPowerUp({ user, item }) {
     let coinsCharged = false;
     let savedUserItem;
     try {
+        // Charge coins and increase inventory after the monthly counter is
+        // reserved. If saving inventory fails, the counter and coins roll back.
         user.coins -= item.price;
         await user.save();
         coinsCharged = true;
@@ -617,6 +628,8 @@ export async function useInventoryItem({ userId, userItemId, habitId }) {
         habitId,
     });
 
+    // Activating a boost consumes exactly one owned boost item. Remove the row
+    // when quantity reaches zero so inventory does not show empty stock.
     userItem.quantity = Math.max(0, (userItem.quantity ?? 1) - 1);
 
     if (userItem.quantity === 0) {

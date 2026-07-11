@@ -23,6 +23,8 @@ export const BOOST_CONFIG_BY_ASSET_KEY = {
     },
 };
 
+// Boosts reward a fixed number of future completions for one habit. They are
+// activated from inventory, then consumed automatically when the habit completes.
 export const BOOST_ERROR_CODES = {
     HABIT_REQUIRED: 'BOOST_HABIT_REQUIRED',
     HABIT_NOT_FOUND: 'BOOST_HABIT_NOT_FOUND',
@@ -52,6 +54,8 @@ function getWeekKey(date) {
 }
 
 function getCompletionPeriodKey(habit, date = new Date()) {
+    // A boosted habit should only pay once per habit period. Daily, weekly, and
+    // monthly habits therefore use different reward keys.
     if (habit.frequency === 'Weekly') {
         return getWeekKey(date);
     }
@@ -87,6 +91,8 @@ export async function activateHabitBoost({ userId, item, habitId }) {
     });
 
     if (activeBoost) {
+        // Only one active boost per habit keeps reward math predictable and
+        // prevents stacking multiple boosts on the same completion.
         throw boostError(BOOST_ERROR_CODES.BOOST_ALREADY_ACTIVE);
     }
 
@@ -127,6 +133,8 @@ export async function activateHabitBoost({ userId, item, habitId }) {
 export async function applyHabitBoostReward({ userId, habit }) {
     const periodKey = getCompletionPeriodKey(habit, habit.lastCompletedAt ?? new Date());
 
+    // Atomic update prevents double rewards if completion is submitted twice
+    // for the same habit period.
     const boost = await HabitBoost.findOneAndUpdate(
         {
             user: userId,
@@ -167,6 +175,8 @@ export async function applyHabitBoostReward({ userId, habit }) {
 export async function revertHabitBoostReward({ userId, habit, uncompletedAt = new Date() }) {
     const periodKey = getCompletionPeriodKey(habit, uncompletedAt);
 
+    // If a completion is undone, restore the boost use and remove the coins for
+    // that same period.
     const boost = await HabitBoost.findOneAndUpdate(
         {
             user: userId,

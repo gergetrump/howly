@@ -12,6 +12,7 @@ const badRequest = (res, message, code) => {
 };
 
 export async function createReport(req, res) {
+  // Validate text/tags before the service stores the report or sends email.
   const { error, value } = validateCreateReportInput(req.body);
 
   if (error) {
