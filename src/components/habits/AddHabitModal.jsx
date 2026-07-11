@@ -30,19 +30,6 @@ const ICONS = [
   '🚴', '🍎', '😴', '🧹', '💻', '💸',
 ];
 
-const UNITS = ['L', 'ml', 'min', 'hours', 'km', 'steps', 'times', 'pages', 'Custom'];
-const UNIT_LABELS = {
-    L: 'l',
-    ml: 'ml',
-    min: 'min',
-    hours: 'hours',
-    km: 'km',
-    steps: 'Steps',
-    times: 'Times',
-    pages: 'Pages',
-    Custom: 'Custom',
-};
-
 const FREQUENCIES = ['Daily', 'Weekly', 'Monthly', 'Custom'];
 
 const DAYS_OF_WEEK = [
@@ -61,9 +48,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [icon, setIcon] = useState('🎯');
-    const [target, setTarget] = useState('1');
-    const [unit, setUnit] = useState('');
-    const [customUnit, setCustomUnit] = useState('');
     const [frequency, setFrequency] = useState('');
     const [customDays, setCustomDays] = useState([]);
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
@@ -75,27 +59,13 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
         if (open && editHabit) {
             setName(editHabit.title || '');
             setDescription(editHabit.description || '');
-            setTarget(String(editHabit.target || 1));
             setIcon(editHabit.icon || '🎯');
             setFrequency(editHabit.frequency || '');
             setCustomDays(editHabit.customDays || []);
             setFormError('');
-
-            if (UNITS.includes(editHabit.unit)) {
-                setUnit(editHabit.unit);
-                setCustomUnit('');
-            } else if (editHabit.unit) {
-                setUnit('Custom');
-                setCustomUnit(editHabit.unit);
-            } else {
-                setUnit('');
-            }
         } else if (open && prefill) {
             setName(prefill.title || '');
             setDescription(prefill.description || '');
-            setTarget('1');
-            setUnit('');
-            setCustomUnit('');
             setFrequency(prefill.frequency || '');
             setCustomDays([]);
             setFormError('');
@@ -103,9 +73,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
         } else if (open && !editHabit) {
             setName('');
             setDescription('');
-            setTarget('1');
-            setUnit('');
-            setCustomUnit('');
             setFrequency('');
             setCustomDays([]);
             setIcon('🎯');
@@ -121,16 +88,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             return;
         }
 
-        if (!unit) {
-            setFormError('Unit is required.');
-            return;
-        }
-
-        if (unit === 'Custom' && !customUnit.trim()) {
-            setFormError('Custom unit is required.');
-            return;
-        }
-
         if (!frequency) {
             setFormError('Frequency is required.');
             return;
@@ -141,19 +98,9 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             return;
         }
 
-        if (!target || Number(target) < 1) {
-            setFormError('Target must be at least 1.');
-            return;
-        }
-
-        const finalUnit = unit === 'Custom' ? customUnit : unit;
-
         const data = {
             title: name,
             description: description.trim(),
-            type: 'numeric',
-            target: Number(target) || 1,
-            unit: finalUnit,
             frequency,
             customDays,
             icon,
@@ -291,55 +238,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
                             placeholder="What does this habit mean to you?"
                             className="w-full resize-none rounded-2xl border border-theme-accent/20 bg-theme-surface-2/60 px-3 py-3 text-sm text-theme-text outline-none placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-3 focus:ring-theme-accent/20"
                         />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2.5">
-                            <Label htmlFor="habit-target" className="text-sm font-medium text-theme-text">
-                                Target
-                            </Label>
-                            <Input
-                                id="habit-target"
-                                type="number"
-                                min={1}
-                                value={target}
-                                onChange={(e) => setTarget(e.target.value)}
-                                className="h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20 [&::-webkit-inner-spin-button]:opacity-50"
-                            />
-                        </div>
-
-                        <div className="space-y-2.5">
-                            <Label className="text-sm font-medium text-theme-text">Unit</Label>
-                            <Select value={unit} onValueChange={setUnit}>
-                                <SelectTrigger className="!h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:ring-theme-accent/20 [&>svg]:opacity-50 [&>svg]:text-theme-text">
-                                    <SelectValue placeholder="Select unit" />
-                                </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={4} className="rounded-xl border-theme-accent/20 bg-theme-surface w-[var(--radix-select-trigger-width)] z-[100]">
-                                    {UNITS.map((u) => (
-                                        <SelectItem
-                                            key={u}
-                                            value={u}
-                                            className="text-theme-text focus:!bg-theme-accent/40 focus:!text-theme-text data-[state=checked]:text-theme-text cursor-pointer [&_*]:!text-theme-text"
-                                        >
-                                            {UNIT_LABELS[u] ?? u}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {unit === 'Custom' && (
-                            <div className="col-span-2 space-y-2.5">
-                                <Label className="text-sm font-medium text-theme-text">Custom Unit</Label>
-                                <Input
-                                    value={customUnit}
-                                    onChange={(e) => setCustomUnit(e.target.value)}
-                                    placeholder="e.g. push-ups"
-                                    aria-required="true"
-                                    className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20"
-                                />
-                            </div>
-                        )}
                     </div>
 
                     <div className="space-y-2.5">
