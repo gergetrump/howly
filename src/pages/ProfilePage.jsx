@@ -5,14 +5,15 @@ import {
     ChevronRight,
     Crown,
     EyeOff,
-    Flame,
     Info,
     MessageSquare,
     Target,
     Ban,
 } from 'lucide-react';
 
+import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
 import { Page, PageSection, Heading } from '@/components/layout';
+import { profileCompletedChallengeIconClassName } from '@/components/cards/cardStyles';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -25,8 +26,19 @@ import { logoutUser } from '@/services/authService';
 import {
     uploadCurrentUserProfilePicture,
     deleteCurrentUserProfilePicture,
+    deleteCurrentUser,
     updateCurrentUser,
 } from '@/services/userService';
+import {
+    ConfirmationDialog,
+    ConfirmationDialogAction,
+    ConfirmationDialogCancel,
+    ConfirmationDialogContent,
+    ConfirmationDialogDescription,
+    ConfirmationDialogFooter,
+    ConfirmationDialogHeader,
+    ConfirmationDialogTitle,
+} from '@/components/ui/confirmation-dialog';
 import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
 import { NotificationMuteDialog } from '@/components/social/NotificationMuteDialog.jsx';
 import { useAuth } from '@/context/authContext';
@@ -86,8 +98,8 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                         ))}
                     </div>
 
-                    <label className="block space-y-3">
-                        <span className="text-sm font-semibold text-theme-text">Subject</span>
+                    <label className="block">
+                        <span className="mb-3 block text-sm font-semibold leading-none text-theme-text">Subject</span>
                         <input
                             type="text"
                             value={form.subject}
@@ -98,8 +110,8 @@ function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSu
                         />
                     </label>
 
-                    <label className="block space-y-3">
-                        <span className="text-sm font-semibold text-theme-text">Message</span>
+                    <label className="block">
+                        <span className="mb-3 block text-sm font-semibold leading-none text-theme-text">Message</span>
                         <textarea
                             value={form.message}
                             onChange={(event) => onFormChange({ ...form, message: event.target.value })}
@@ -209,6 +221,11 @@ export function ProfilePage() {
     const [feedbackSuccess, setFeedbackSuccess] = useState('');
     const [isMuteDialogOpen, setIsMuteDialogOpen] = useState(false);
     const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+    const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+    const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
+    const [hasConfirmedAccountDeletion, setHasConfirmedAccountDeletion] = useState(false);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+    const [deleteAccountError, setDeleteAccountError] = useState('');
 
     function handleUpgradeToPremium() {
         navigate('/premium', {
@@ -228,6 +245,25 @@ export function ProfilePage() {
             localStorage.removeItem('howly_token');
             setUser(null);
             navigate('/login');
+        }
+    }
+
+    async function handleDeleteAccount() {
+        if (!hasConfirmedAccountDeletion || isDeletingAccount) {
+            return;
+        }
+
+        try {
+            setDeleteAccountError('');
+            setIsDeletingAccount(true);
+            await deleteCurrentUser();
+            localStorage.removeItem('howly_token');
+            setUser(null);
+            navigate('/login');
+        } catch (error) {
+            setDeleteAccountError(error.message || 'Could not delete your account.');
+        } finally {
+            setIsDeletingAccount(false);
         }
     }
 
@@ -338,7 +374,7 @@ export function ProfilePage() {
 
     const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Howly User'; const username = user?.username || 'unknown';
     const streak = user?.streak ?? 0;
-    const completed = user?.completedHabits ?? 0;
+    const completedChallenges = user?.completedChallenges ?? 0;
     const isPremium = user?.isPremium === true || user?.role === 'admin';
     return (
         <Page theme="forest">
@@ -414,18 +450,22 @@ export function ProfilePage() {
                 <div className="mt-6 flex items-center justify-center gap-10">
                     <div>
                         <div className="flex items-center justify-center gap-2 text-lg font-semibold text-theme-text">
-                            <Flame className="size-5 text-theme-gold" />
-                            <span>{streak}</span>
+                            <StreakBadge
+                                days={streak}
+                                showLabel={false}
+                                size="md"
+                                className="text-lg font-semibold text-theme-text [&>span:first-child]:text-lg"
+                            />
                         </div>
                         <p className="mt-1 text-sm text-theme-text-muted">Day Streak</p>
                     </div>
 
                     <div>
                         <div className="flex items-center justify-center gap-2 text-lg font-semibold text-theme-text">
-                            <Target className="size-5 text-theme-success" />
-                            <span>{completed}</span>
+                            <Target className={`size-5 ${profileCompletedChallengeIconClassName}`} />
+                            <span>{completedChallenges}</span>
                         </div>
-                        <p className="mt-1 text-sm text-theme-text-muted">Completed</p>
+                        <p className="mt-1 text-sm text-theme-text-muted">Challenges</p>
                     </div>
                 </div>
             </section>
@@ -465,29 +505,33 @@ export function ProfilePage() {
             </PageSection>
 
             <PageSection title="Account">
-                <div className="overflow-hidden rounded-2xl">
-                    {isPremium ? (
+                <div className="space-y-3">
+                    <div className="overflow-hidden rounded-2xl">
+                        {isPremium ? (
+                            <SettingsRow
+                                icon={Crown}
+                                iconColor="text-theme-gold"
+                                title={isManagingPremium ? 'Opening portal...' : 'Manage your Premium Subscription'}
+                                onClick={handleManagePremium}
+                                disabled={isManagingPremium}
+                            />
+                        ) : (
+                            <SettingsRow
+                                icon={Crown}
+                                iconColor="text-theme-gold"
+                                title="Upgrade to Premium"
+                                onClick={handleUpgradeToPremium}
+                            />
+                        )}
+                    </div>
+                    <div className="overflow-hidden rounded-2xl">
                         <SettingsRow
-                            icon={Crown}
-                            iconColor="text-theme-gold"
-                            title={isManagingPremium ? 'Opening portal...' : 'Manage your Premium Subscription'}
-                            onClick={handleManagePremium}
-                            disabled={isManagingPremium}
+                            icon={Bell}
+                            title="Notifications"
+                            subtitle="Manage in-app notifications and email preferences"
+                            onClick={() => setIsMuteDialogOpen(true)}
                         />
-                    ) : (
-                        <SettingsRow
-                            icon={Crown}
-                            iconColor="text-theme-gold"
-                            title="Upgrade to Premium"
-                            onClick={handleUpgradeToPremium}
-                        />
-                    )}
-                    <SettingsRow
-                        icon={Bell}
-                        title="Notifications"
-                        subtitle="Mute in-app notifications and manage email preferences"
-                        onClick={() => setIsMuteDialogOpen(true)}
-                    />
+                    </div>
                 </div>
                 {premiumError && (
                     <p className="mt-3 rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
@@ -497,20 +541,37 @@ export function ProfilePage() {
             </PageSection>
 
             <PageSection title="Support">
-                <div className="overflow-hidden rounded-2xl">
-                    <SettingsRow icon={MessageSquare} title="Help & Feedback" subtitle="Report a problem or share an idea" onClick={() => setIsFeedbackDialogOpen(true)} />
-                    <SettingsRow icon={Info} title="About Howly" onClick={() => setIsAboutDialogOpen(true)} />
+                <div className="space-y-3">
+                    <div className="overflow-hidden rounded-2xl">
+                        <SettingsRow icon={MessageSquare} title="Help & Feedback" subtitle="Report a problem or share an idea" onClick={() => setIsFeedbackDialogOpen(true)} />
+                    </div>
+                    <div className="overflow-hidden rounded-2xl">
+                        <SettingsRow icon={Info} title="About Howly" onClick={() => setIsAboutDialogOpen(true)} />
+                    </div>
                 </div>
             </PageSection>
 
             <PageSection title="Session">
-                <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="w-full rounded-2xl bg-theme-danger/90 px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-theme-danger"
-                >
-                    Log out
-                </button>
+                <div className="space-y-3">
+                    <button
+                        type="button"
+                        onClick={() => setIsLogoutDialogOpen(true)}
+                        className="w-full rounded-2xl bg-theme-danger px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-theme-danger/90"
+                    >
+                        Log out
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setDeleteAccountError('');
+                            setHasConfirmedAccountDeletion(false);
+                            setIsDeleteAccountDialogOpen(true);
+                        }}
+                        className="w-full rounded-2xl bg-theme-danger px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-theme-danger/90"
+                    >
+                        Delete account
+                    </button>
+                </div>
             </PageSection>
 
             <BlockedUsersDialog
@@ -536,6 +597,90 @@ export function ProfilePage() {
                 open={isMuteDialogOpen}
                 onOpenChange={setIsMuteDialogOpen}
             />
+
+            <ConfirmationDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+                <ConfirmationDialogContent className="border-theme-text/10 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
+                    <ConfirmationDialogHeader className="space-y-4 text-center">
+                        <ConfirmationDialogTitle className="text-center text-2xl font-bold tracking-tight">
+                            Log out?
+                        </ConfirmationDialogTitle>
+                        <ConfirmationDialogDescription className="text-base text-theme-text-soft">
+                            Are you sure you want to log out of Howly?
+                        </ConfirmationDialogDescription>
+                    </ConfirmationDialogHeader>
+                    <ConfirmationDialogFooter className="mt-4 gap-3 sm:justify-center">
+                        <ConfirmationDialogCancel className="h-12 rounded-xl border-theme-text/20 bg-theme-text/10 px-6 text-theme-text hover:bg-theme-text/20 hover:text-theme-text">
+                            Stay logged in
+                        </ConfirmationDialogCancel>
+                        <ConfirmationDialogAction
+                            className="h-12 rounded-xl bg-theme-danger px-6 font-semibold text-white hover:bg-theme-danger/90"
+                            onClick={handleLogout}
+                        >
+                            Log out
+                        </ConfirmationDialogAction>
+                    </ConfirmationDialogFooter>
+                </ConfirmationDialogContent>
+            </ConfirmationDialog>
+
+            <ConfirmationDialog
+                open={isDeleteAccountDialogOpen}
+                onOpenChange={(nextOpen) => {
+                    setIsDeleteAccountDialogOpen(nextOpen);
+
+                    if (!nextOpen) {
+                        setHasConfirmedAccountDeletion(false);
+                        setDeleteAccountError('');
+                    }
+                }}
+            >
+                <ConfirmationDialogContent className="border-theme-text/10 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
+                    <ConfirmationDialogHeader className="space-y-4 text-center">
+                        <ConfirmationDialogTitle className="text-center text-2xl font-bold tracking-tight">
+                            Delete account?
+                        </ConfirmationDialogTitle>
+                        <ConfirmationDialogDescription className="text-base text-theme-text-soft">
+                            This will permanently delete your Howly account and remove access to your profile, habits, stories, challenges, progress, and items.
+                        </ConfirmationDialogDescription>
+                    </ConfirmationDialogHeader>
+
+                    <label className="mt-2 flex items-start gap-3 rounded-2xl border border-theme-danger/20 bg-theme-danger/10 p-4 text-left">
+                        <input
+                            type="checkbox"
+                            checked={hasConfirmedAccountDeletion}
+                            onChange={(event) => setHasConfirmedAccountDeletion(event.target.checked)}
+                            className="mt-0.5 size-4 rounded border-theme-danger/40 accent-[var(--color-theme-danger)]"
+                        />
+                        <span className="text-sm leading-5 text-theme-text-soft">
+                            I understand that deleting my account cannot be undone.
+                        </span>
+                    </label>
+
+                    {deleteAccountError ? (
+                        <p className="rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
+                            {deleteAccountError}
+                        </p>
+                    ) : null}
+
+                    <ConfirmationDialogFooter className="mt-4 gap-3 sm:justify-center">
+                        <ConfirmationDialogCancel
+                            className="h-12 rounded-xl border-theme-text/20 bg-theme-text/10 px-6 text-theme-text hover:bg-theme-text/20 hover:text-theme-text"
+                            disabled={isDeletingAccount}
+                        >
+                            Keep account
+                        </ConfirmationDialogCancel>
+                        <ConfirmationDialogAction
+                            className="h-12 rounded-xl bg-theme-danger/90 px-6 font-semibold text-white hover:bg-theme-danger disabled:pointer-events-none disabled:opacity-50"
+                            disabled={!hasConfirmedAccountDeletion || isDeletingAccount}
+                            onClick={(event) => {
+                                event.preventDefault();
+                                void handleDeleteAccount();
+                            }}
+                        >
+                            {isDeletingAccount ? 'Deleting...' : 'Delete account'}
+                        </ConfirmationDialogAction>
+                    </ConfirmationDialogFooter>
+                </ConfirmationDialogContent>
+            </ConfirmationDialog>
         </Page>
     );
 }

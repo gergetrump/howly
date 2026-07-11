@@ -89,6 +89,14 @@ const EMAIL_NOTIFICATION_OPTIONS = [
     },
 ];
 
+const IN_APP_NOTIFICATION_KEYS = MUTE_OPTIONS
+    .filter((option) => !option.featured)
+    .map((option) => option.key);
+
+const EMAIL_NOTIFICATION_KEYS = EMAIL_NOTIFICATION_OPTIONS
+    .filter((option) => !option.featured)
+    .map((option) => option.key);
+
 function NotificationToggleRow({ option, checked, disabled, onToggle }) {
     return (
         <div className={`flex min-h-[4.5rem] items-center justify-between gap-4 p-3 ${option.featured ? 'rounded-2xl border border-theme-text/10' : 'rounded-xl'} bg-theme-text/5`}>
@@ -122,21 +130,56 @@ export function NotificationMuteDialog({ open, onOpenChange }) {
         ...(user?.notificationPreferences ?? {}),
     };
 
-    async function handleToggle(key) {
+    const allInAppEnabled = !prefs.muteAll
+        && IN_APP_NOTIFICATION_KEYS.every((key) => !prefs[key]);
+    const allEmailEnabled = prefs.emailEnabled
+        && EMAIL_NOTIFICATION_KEYS.every((key) => prefs[key]);
+
+    async function savePreferences(changes) {
         if (isSaving) return;
         setIsSaving(true);
         setError('');
 
-        const nextPrefs = { ...prefs, [key]: !prefs[key] };
+        const nextPrefs = { ...prefs, ...changes };
 
         try {
-            const updated = await updateCurrentUser({ notificationPreferences: { [key]: nextPrefs[key] } });
+            const updated = await updateCurrentUser({ notificationPreferences: changes });
             setUser((current) => (current ? { ...current, notificationPreferences: updated?.notificationPreferences ?? nextPrefs } : current));
         } catch (err) {
             setError(err.message || 'Failed to update preferences');
         } finally {
             setIsSaving(false);
         }
+    }
+
+    function handleToggle(key) {
+        void savePreferences({ [key]: !prefs[key] });
+    }
+
+    function handleToggleAllInApp() {
+        const enableAll = !allInAppEnabled;
+        const changes = { muteAll: !enableAll };
+
+        if (enableAll) {
+            IN_APP_NOTIFICATION_KEYS.forEach((key) => {
+                changes[key] = false;
+            });
+        }
+
+        void savePreferences(changes);
+    }
+
+    function handleToggleAllEmail() {
+        const enableAll = !allEmailEnabled;
+        const changes = { emailEnabled: enableAll };
+
+        if (enableAll) {
+            EMAIL_NOTIFICATION_KEYS.forEach((key) => {
+                changes[key] = true;
+            });
+        }
+
+        void savePreferences(changes);
     }
 
     return (
@@ -175,9 +218,9 @@ export function NotificationMuteDialog({ open, onOpenChange }) {
                             <NotificationToggleRow
                                 key={option.key}
                                 option={option}
-                                checked={!prefs[option.key]}
+                                checked={allInAppEnabled}
                                 disabled={isSaving}
-                                onToggle={() => handleToggle(option.key)}
+                                onToggle={handleToggleAllInApp}
                             />
                         ))}
 
@@ -199,9 +242,9 @@ export function NotificationMuteDialog({ open, onOpenChange }) {
                             <NotificationToggleRow
                                 key={option.key}
                                 option={option}
-                                checked={prefs[option.key]}
+                                checked={allEmailEnabled}
                                 disabled={isSaving}
-                                onToggle={() => handleToggle(option.key)}
+                                onToggle={handleToggleAllEmail}
                             />
                         ))}
 
