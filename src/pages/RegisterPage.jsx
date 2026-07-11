@@ -224,13 +224,6 @@ export function RegisterPage() {
                     <span className="font-heading tracking-tight">Howly</span>
                 </Link>
 
-                <Button
-                    variant="ghost"
-                    className="text-theme-text-soft hover:text-theme-text"
-                    asChild
-                >
-                    <Link to="/login">Log in</Link>
-                </Button>
             </nav>
 
             <main className="relative z-10 mx-auto flex min-h-[calc(100vh-80px)] max-w-7xl items-center justify-center px-4 pb-12 pt-6 xs:px-6 md:px-12 lg:px-20">

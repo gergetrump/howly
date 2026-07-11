@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Check, Loader2, Sparkles } from 'lucide-react';
 import { CardGrid, CompletionCircle, PlanLimitDialog } from '@/components/common';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -33,6 +33,11 @@ import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';
 import { getEquippedItemConfigsFromInventory } from '@/lib/inventoryItems';
+import {
+    clearPendingCompanionIntent,
+    isValidCompanionIntent,
+    readPendingCompanionIntent,
+} from '@/lib/trendCompanionIntent';
 
 /* Card for a single challenge habit on the dashboard, with a completion toggle. */
 function DashboardChallengeHabitCard({ item, onToggle }) {
@@ -189,11 +194,22 @@ function HabitLimitCleanupDialog({
 /* Dashboard: shows the companion, daily progress, habits, and challenge habits; handles check-ins, edits, and plan limits. */
 export function DashboardPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user, companion, setUser } = useAuth();
     const [habits, setHabits] = useState([]);
     const [challengeHabits, setChallengeHabits] = useState([]);
+    const initialCompanionIntentRef = useRef(undefined);
+    if (initialCompanionIntentRef.current === undefined) {
+        initialCompanionIntentRef.current = readPendingCompanionIntent()
+            ?? (isValidCompanionIntent(location.state?.companionIntent)
+                ? location.state.companionIntent
+                : null);
+    }
+    const initialCompanionIntent = initialCompanionIntentRef.current;
+
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(Boolean(initialCompanionIntent));
+    const [companionLaunchIntent, setCompanionLaunchIntent] = useState(initialCompanionIntent);
     const [habitToEdit, setHabitToEdit] = useState(null);
     const [prefillHabit, setPrefillHabit] = useState(null);
     const [consumeSuggestion, setConsumeSuggestion] = useState(null);
@@ -336,6 +352,15 @@ export function DashboardPage() {
             description: `Your ${user?.streak ?? 0}-day streak is safe.`,
         });
     }, [user?.streakShieldAutoUsedAt, user?.streak]);
+
+    useLayoutEffect(() => {
+        if (!location.state?.companionIntent) {
+            return undefined;
+        }
+
+        navigate('/dashboard', { replace: true, state: null });
+        return undefined;
+    }, [location.state, navigate]);
 
     // After a check-in the day may be complete → refetch the user so the overall
     // streak (🔥) in the header updates right away. Uses a direct fetch (not
@@ -684,7 +709,12 @@ export function DashboardPage() {
                         <CompanionChatPanel
                             className="max-w-2xl"
                             companionName={companion?.name}
-                            onClose={() => setIsChatOpen(false)}
+                            launchIntent={companionLaunchIntent}
+                            onClose={() => {
+                                setIsChatOpen(false);
+                                setCompanionLaunchIntent(null);
+                                clearPendingCompanionIntent();
+                            }}
                             onHabitAdded={(habit) => { handleNewHabitAdded(habit); refreshUserStreak(); }}
                             onEditSuggestion={(suggestion, removeFromPanel) => {
                                 setHabitToEdit(null);

@@ -122,6 +122,10 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
             if (unit.trim()) data.unit = unit.trim();
         }
 
+        if (!editHabit && prefill?.canonicalHabitKey) {
+            data.canonicalHabitKey = prefill.canonicalHabitKey;
+        }
+
         try {
             setFormError('');
             let result;
