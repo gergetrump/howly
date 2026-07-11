@@ -1,4 +1,4 @@
-export { Background } from './background';
+export { Background } from './Background.jsx';
 export { BigBoost } from './BigBoost.jsx';
 export { Companion } from './Companion';
 export { CompanionAvatar } from './CompanionAvatar';
