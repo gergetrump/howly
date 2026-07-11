@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CircleHelp } from 'lucide-react';
 
-import { useAuth } from '@/context/authContext';
 import { getItems } from '@/services/itemApi';
 import { ItemCard } from '@/components/cards';
 import { ActionButton } from '@/components/common';
@@ -10,8 +9,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 
 // Catalog asset key for the consumable Streak Freeze (mirrors the backend).
 const STREAK_FREEZE_ASSET_KEY = 'streak-freeze';
-// Reserve cap — keep in sync with backend config/plans.js (MAX_STREAK_SHIELDS).
-const MAX_STREAK_SHIELDS = 3;
 
 // Shop card for the Streak Freeze power-up. Renders as a normal ItemCard (same
 // look as the wearable items) but with cart/buy controls like boost power-ups.
@@ -27,7 +24,6 @@ export function StreakFreezeCard({
     isFreeUser,
     onPremiumRequired,
 }) {
-    const { user } = useAuth();
     const [item, setItem] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -62,10 +58,9 @@ export function StreakFreezeCard({
         return null;
     }
 
-    const owned = user?.streakShields ?? 0;
     const cartQuantity = getCartQuantity?.(item) ?? 0;
     const cartQuantityMax = isCartQuantityMax?.(item) ?? false;
-    const ownedQuantityMax = isOwnedQuantityMax?.(item) ?? owned >= MAX_STREAK_SHIELDS;
+    const ownedQuantityMax = isOwnedQuantityMax?.(item) ?? false;
 
     function guardPremium(action) {
         if (isFreeUser && item?.premiumOnly) {

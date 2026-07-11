@@ -159,7 +159,7 @@ export function UserPreviewDialog({
     return (
         <>
             <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-                <DialogContent className="border-theme-text/10 bg-theme-surface text-theme-text shadow-2xl sm:max-w-sm">
+                <DialogContent className="border-theme-text/10 bg-theme-surface text-theme-text shadow-2xl sm:max-w-2xl">
                     <DialogHeader>
                         <DialogTitle className="sr-only">User profile</DialogTitle>
                         <DialogDescription className="sr-only">
@@ -180,43 +180,43 @@ export function UserPreviewDialog({
                                 ) : null}
                             </div>
                             {isFriend && !isGhostFriend && !isProfileRestricted ? (
-                                <div className="w-full">
-                                    <p className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-theme-text-muted">Habits</p>
-                                    {!habitsLoaded ? (
-                                        <p className="text-sm text-theme-text-muted">Loading habits…</p>
-                                    ) : friendHabits.length > 0 ? (
-                                        <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
-                                            {friendHabits.map((habit) => (
-                                                <div key={habit.id} className="flex items-center gap-3 rounded-xl bg-theme-text/5 px-3 py-2 text-left">
-                                                    <span className="text-lg" aria-hidden="true">{habit.icon}</span>
-                                                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-theme-text">{habit.title}</span>
-                                                    <span className="shrink-0 text-sm font-semibold text-theme-gold">🔥 {habit.streakCount}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm text-theme-text-muted">No habits yet.</p>
-                                    )}
-                                </div>
-                            ) : null}
-                            {isFriend && !isGhostFriend && !isProfileRestricted ? (
-                                <div className="w-full">
-                                    <p className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-theme-text-muted">Active Challenges</p>
-                                    {!challengesLoaded ? (
-                                        <p className="text-sm text-theme-text-muted">Loading challenges…</p>
-                                    ) : friendChallenges.length > 0 ? (
-                                        <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
-                                            {friendChallenges.map((challenge) => (
-                                                <div key={challenge.id} className="flex items-center gap-3 rounded-xl bg-theme-text/5 px-3 py-2 text-left">
-                                                    <span className="text-lg" aria-hidden="true">🏆</span>
-                                                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-theme-text">{challenge.title}</span>
-                                                    <span className="shrink-0 text-xs font-semibold text-theme-text-soft">{challenge.daysCompleted}/{challenge.totalDays} days</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm text-theme-text-muted">No active challenges.</p>
-                                    )}
+                                <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div className="flex flex-col">
+                                        <p className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-theme-text-muted">Habits</p>
+                                        {!habitsLoaded ? (
+                                            <p className="flex flex-1 items-center justify-center text-sm text-theme-text-muted">Loading habits…</p>
+                                        ) : friendHabits.length > 0 ? (
+                                            <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                                                {friendHabits.map((habit) => (
+                                                    <div key={habit.id} className="flex items-center gap-3 rounded-xl bg-theme-text/5 px-3 py-2 text-left">
+                                                        <span className="text-lg" aria-hidden="true">{habit.icon}</span>
+                                                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-theme-text">{habit.title}</span>
+                                                        <span className="shrink-0 text-sm font-semibold text-theme-gold">🔥 {habit.streakCount}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="flex flex-1 items-center justify-center text-sm text-theme-text-muted">No habits yet.</p>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <p className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-theme-text-muted">Active Challenges</p>
+                                        {!challengesLoaded ? (
+                                            <p className="flex flex-1 items-center justify-center text-sm text-theme-text-muted">Loading challenges…</p>
+                                        ) : friendChallenges.length > 0 ? (
+                                            <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                                                {friendChallenges.map((challenge) => (
+                                                    <div key={challenge.id} className="flex items-center gap-3 rounded-xl bg-theme-text/5 px-3 py-2 text-left">
+                                                        <span className="text-lg" aria-hidden="true">🏆</span>
+                                                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-theme-text">{challenge.title}</span>
+                                                        <span className="shrink-0 text-xs font-semibold text-theme-text-soft">{challenge.daysCompleted}/{challenge.totalDays} days</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="flex flex-1 items-center justify-center text-sm text-theme-text-muted">No active challenges.</p>
+                                        )}
+                                    </div>
                                 </div>
                             ) : null}
                             {relationship.status === 'self' ? (

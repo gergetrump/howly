@@ -63,6 +63,10 @@ function applyTheme(theme) {
 }
 
 function getStoredTheme() {
+    if (!localStorage.getItem('howly_token')) {
+        return DEFAULT_THEME;
+    }
+
     const stored = localStorage.getItem(STORAGE_KEY);
     return isValidTheme(stored) ? stored : DEFAULT_THEME;
 }

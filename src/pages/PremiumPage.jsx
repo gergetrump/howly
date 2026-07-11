@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BarChart3, Check, Coins, Crown, Globe, Loader2, Shield, Sparkles, X } from 'lucide-react';
+import { BarChart3, Check, Coins, Crown, Globe, Loader2, Shield, Sparkles } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
@@ -230,7 +230,7 @@ export function PremiumPage() {
 
             <PageSection width="lg" align="center">
                 <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-                    <section className="rounded-2xl border border-theme-text/10 bg-theme-surface/80 p-6 shadow-2xl">
+                    <section className="rounded-2xl border border-theme-text/10 bg-theme-surface p-6 shadow-2xl">
                         <div className="flex flex-col gap-5">
                             {redirectMessage ? (
                                 <p className="rounded-xl border border-amber-200/30 bg-amber-300/10 px-4 py-3 text-sm text-theme-gold">
@@ -273,7 +273,7 @@ export function PremiumPage() {
                         </div>
                     </section>
 
-                    <aside className="rounded-2xl border border-amber-200/30 bg-amber-300/10 p-6 text-theme-text shadow-2xl">
+                    <aside className="rounded-2xl border border-amber-200/30 bg-theme-surface p-6 text-theme-text shadow-2xl">
                         <p className="text-sm font-semibold uppercase tracking-wide text-theme-gold">
                             Monthly plan
                         </p>
@@ -333,8 +333,8 @@ export function PremiumPage() {
                 title="Free vs Premium"
                 description={isLoadingPlan ? 'Loading plan details...' : 'Premium values come from the backend plan configuration.'}
             >
-                <div className="overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-surface/80 text-theme-text shadow-xl">
-                    <div className="grid grid-cols-[1.25fr_0.8fr_0.8fr] gap-3 bg-theme-text/5 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-theme-text-soft">
+                <div className="overflow-hidden rounded-2xl border border-theme-text/10 bg-theme-surface text-theme-text shadow-xl">
+                    <div className="grid grid-cols-[1.25fr_0.8fr_0.8fr] gap-3 bg-theme-surface-2 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-theme-text-soft">
                         <span>Feature</span>
                         <span>{freePlan.label ?? 'Free'}</span>
                         <span>{premiumPlan.label ?? 'Premium'}</span>
@@ -393,13 +393,11 @@ export function PremiumPage() {
             </PageSection>
 
             <PageSection width="lg" align="center">
-                <div className="rounded-2xl border border-theme-text/10 bg-theme-text/5 p-5 text-sm text-theme-text-soft">
+                <div className="rounded-2xl border border-theme-text/10 bg-theme-surface p-5 text-sm text-theme-text-soft">
                     <div className="flex items-start gap-3">
                         {isPremium ? (
                             <Check className="mt-0.5 size-5 shrink-0 text-theme-success" aria-hidden="true" />
-                        ) : (
-                            <X className="mt-0.5 size-5 shrink-0 text-theme-text-muted" aria-hidden="true" />
-                        )}
+                        ) : null}
                         <p>
                             {isPremium
                                 ? 'Premium is active on your account. You can manage billing from this page.'

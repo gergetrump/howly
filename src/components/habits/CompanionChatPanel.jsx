@@ -3,20 +3,7 @@ import { Sparkles, X, Plus, Pencil, ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { suggestHabits, createHabitsFromTemplates } from '@/services/habitService';
-import { STARTER_HABITS } from '@/constants/starterHabits';
 import { getCompanionLines } from '@/constants/companionDialogue';
-
-// If the AI is unreachable or returns nothing usable, fall back to a few classic
-// starter habits so the panel never dead-ends.
-function fallbackHabits() {
-    return STARTER_HABITS.slice(0, 3).map((habit, index) => ({
-        key: index,
-        title: habit.title,
-        icon: habit.icon,
-        frequency: habit.frequency,
-        category: habit.category,
-    }));
-}
 
 // The companion "speaks" via this panel; the actual avatar sits to the left
 // (CompanionStage on the dashboard). Mounted fresh each time it opens, so no
@@ -41,18 +28,24 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
         try {
             const response = await suggestHabits(input.trim());
             const list = response?.data?.suggestions ?? [];
-            setGoal(response?.data?.goal || input.trim());
-            setHabits(
-                list.length
-                    ? list.map((habit, index) => ({ key: index, ...habit }))
-                    : fallbackHabits(),
-            );
-        } catch {
-            setGoal(input.trim());
-            setHabits(fallbackHabits());
-        }
 
-        setPhase('results');
+            if (!list.length) {
+                setError("Oops — I can't find any habits right now. Please ask me again in a moment.");
+                setPhase('input');
+                return;
+            }
+
+            setGoal(response?.data?.goal || input.trim());
+            setHabits(list.map((habit, index) => ({ key: index, ...habit })));
+            setPhase('results');
+        } catch (err) {
+            if (err.code === 'GOAL_MODERATION_BLOCKED') {
+                setError(err.message || 'Please rephrase your goal without harmful or inappropriate content.');
+            } else {
+                setError("Oops — I can't find any habits right now. Please ask me again in a moment.");
+            }
+            setPhase('input');
+        }
     }
 
     // Quick-add a suggestion as-is, then drop it from the list.
@@ -63,6 +56,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
         try {
             const response = await createHabitsFromTemplates([{
                 title: habit.title,
+                description: habit.description,
                 icon: habit.icon,
                 frequency: habit.frequency,
                 category: habit.category,
@@ -79,7 +73,7 @@ export function CompanionChatPanel({ companionName = 'Howly', onClose, onHabitAd
     const bubble = phase === 'thinking' ? lines.thinking : phase === 'results' ? lines.results : lines.greeting;
 
     return (
-        <div className={cn('min-w-0 flex-1 rounded-2xl border border-theme-accent/20 bg-theme-surface/70 p-4 text-theme-text shadow-xl', className)}>
+        <div className={cn('min-w-0 flex-1 rounded-2xl border border-theme-accent/20 bg-theme-surface p-4 text-theme-text shadow-xl', className)}>
             <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-sm font-semibold text-theme-accent-soft">
                     <Sparkles size={15} aria-hidden="true" />

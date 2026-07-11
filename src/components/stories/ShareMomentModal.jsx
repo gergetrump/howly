@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Image as ImageIcon, X } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,8 +19,7 @@ export function ShareMomentModal({
     sourceEmoji = '🎯',
     onPosted,
 }) {
-    const cameraInputRef = useRef(null);
-    const galleryInputRef = useRef(null);
+    const fileInputRef = useRef(null);
     const [imageFile, setImageFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState('');
     const [caption, setCaption] = useState('');
@@ -126,39 +125,19 @@ export function ShareMomentModal({
                             </button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-3">
-                            <button
-                                type="button"
-                                onClick={() => cameraInputRef.current?.click()}
-                                className="flex h-36 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-theme-text/20 bg-theme-text/5 text-theme-text-muted transition hover:border-theme-accent/50 hover:text-theme-text"
-                            >
-                                <Camera className="size-7" aria-hidden="true" />
-                                <span className="text-sm font-medium">Take a photo</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => galleryInputRef.current?.click()}
-                                className="flex h-36 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-theme-text/20 bg-theme-text/5 text-theme-text-muted transition hover:border-theme-accent/50 hover:text-theme-text"
-                            >
-                                <ImageIcon className="size-7" aria-hidden="true" />
-                                <span className="text-sm font-medium">Pick from gallery</span>
-                            </button>
-                        </div>
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="flex h-40 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-theme-text/20 bg-theme-text/5 text-theme-text-muted transition hover:border-theme-accent/50 hover:text-theme-text"
+                        >
+                            <Upload className="size-7" aria-hidden="true" />
+                            <span className="text-sm font-medium">Upload a picture</span>
+                        </button>
                     )}
 
-                    {/* Camera input — `capture` forces the camera on mobile browsers */}
+                    {/* Single file input — opens the native picker (photo library, or camera on mobile) */}
                     <input
-                        ref={cameraInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        capture="environment"
-                        onChange={handleFileChange}
-                        className="hidden"
-                    />
-
-                    {/* Gallery input — no `capture`, opens the photo picker / file chooser */}
-                    <input
-                        ref={galleryInputRef}
+                        ref={fileInputRef}
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         onChange={handleFileChange}
