@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Bell,
@@ -226,6 +226,11 @@ export function ProfilePage() {
     const [hasConfirmedAccountDeletion, setHasConfirmedAccountDeletion] = useState(false);
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
     const [deleteAccountError, setDeleteAccountError] = useState('');
+    const [hasProfilePictureLoadError, setHasProfilePictureLoadError] = useState(false);
+
+    useEffect(() => {
+        setHasProfilePictureLoadError(false);
+    }, [user?.profilePictureUrl]);
 
     function handleUpgradeToPremium() {
         navigate('/premium', {
@@ -363,7 +368,11 @@ export function ProfilePage() {
         );
     }
 
-    const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Howly User'; const username = user?.username || 'unknown';
+    const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Howly User';
+    const username = user?.username || 'unknown';
+    const profilePictureUrl = typeof user?.profilePictureUrl === 'string' ? user.profilePictureUrl.trim() : '';
+    const profileInitial = (fullName || username).trim().charAt(0).toUpperCase() || '?';
+    const shouldShowProfilePicture = profilePictureUrl && !hasProfilePictureLoadError;
     const streak = user?.streak ?? 0;
     const completedChallenges = user?.completedChallenges ?? 0;
     const isPremium = user?.isPremium === true || user?.role === 'admin';
@@ -380,14 +389,15 @@ export function ProfilePage() {
                     <div className="relative">
 
                         <div className={`flex size-24 items-center justify-center overflow-hidden rounded-full bg-theme-surface-2 ${isPremium ? 'ring-2 ring-theme-gold ring-offset-2 ring-offset-theme-surface' : ''}`}>
-                            {user?.profilePictureUrl ? (
+                            {shouldShowProfilePicture ? (
                                 <img
-                                    src={user.profilePictureUrl}
+                                    src={profilePictureUrl}
                                     alt={`${fullName}'s profile`}
                                     className="size-full object-cover"
+                                    onError={() => setHasProfilePictureLoadError(true)}
                                 />
                             ) : (
-                                <span className="text-5xl">🦊</span>
+                                <span className="text-4xl font-bold text-theme-text">{profileInitial}</span>
                             )}
                         </div>
                     </div>
@@ -669,7 +679,6 @@ export function ProfilePage() {
         </Page>
     );
 }
-
 
 
 
