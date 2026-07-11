@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Check, Coins, Crown, Loader2, Shield, Sparkles, X } from 'lucide-react';
+import { Check, Coins, Crown, Loader2, Shield, Sparkles } from 'lucide-react';
 
 import { Page, PageSection, Heading } from '@/components/layout';
 import { Button } from '@/components/ui/button';
@@ -330,9 +330,7 @@ export function PremiumPage() {
                     <div className="flex items-start gap-3">
                         {isPremium ? (
                             <Check className="mt-0.5 size-5 shrink-0 text-theme-success" aria-hidden="true" />
-                        ) : (
-                            <X className="mt-0.5 size-5 shrink-0 text-theme-text-muted" aria-hidden="true" />
-                        )}
+                        ) : null}
                         <p>
                             {isPremium
                                 ? 'Premium is active on your account. You can manage billing from this page.'
