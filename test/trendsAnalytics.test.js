@@ -161,11 +161,11 @@ test('GET /api/trends/analytics returns anonymous trends aggregates', async () =
     ]);
 
     const response = await request(app)
-        .get('/api/trends/analytics?period=week')
+        .get('/api/trends/analytics?period=7d')
         .set('Authorization', token)
         .expect(200);
 
-    assert.equal(response.body.data.period.key, 'week');
+    assert.equal(response.body.data.period.key, '7d');
     assert.equal(response.body.data.summary.topCategory.categoryKey, 'movement');
     assert.equal(response.body.data.summary.standing.display, 'percent');
     assert.equal(response.body.data.summary.standing.userCompletionRate, 14);
@@ -174,7 +174,7 @@ test('GET /api/trends/analytics returns anonymous trends aggregates', async () =
     assert.equal(response.body.data.trendingHabits.length, 2);
     assert.equal(response.body.data.trendingHabits[0].canonicalHabitKey, 'run');
     assert.equal(response.body.data.trendingHabits[0].checkIns, 2);
-    assert.equal(response.body.data.comparisonPeriod.key, 'previous_7_days');
+    assert.equal(response.body.data.comparisonPeriod.key, 'previous_7d');
     assert.equal(response.body.data.byCategory[0].trend.direction, 'up');
 
     const todayResponse = await request(app)
@@ -184,20 +184,13 @@ test('GET /api/trends/analytics returns anonymous trends aggregates', async () =
 
     assert.equal(todayResponse.body.data.period.key, '24h');
     assert.equal(todayResponse.body.data.comparisonPeriod.key, 'previous_24h');
-
-    const legacyTodayResponse = await request(app)
-        .get('/api/trends/analytics?period=today')
-        .set('Authorization', token)
-        .expect(200);
-
-    assert.equal(legacyTodayResponse.body.data.period.key, '24h');
 });
 
 test('GET /api/trends/analytics requires premium access', async () => {
     const user = await buildUser({ isPremium: false });
 
     const response = await request(app)
-        .get('/api/trends/analytics?period=week')
+        .get('/api/trends/analytics?period=7d')
         .set('Authorization', authHeader(user))
         .expect(403);
 
@@ -266,7 +259,7 @@ test('GET /api/trends/analytics excludes deleted users from standing pool', asyn
     ]);
 
     const response = await request(app)
-        .get('/api/trends/analytics?period=week')
+        .get('/api/trends/analytics?period=7d')
         .set('Authorization', token)
         .expect(200);
 
@@ -299,7 +292,7 @@ test('GET /api/trends/analytics keeps check-ins after habit soft-delete', async 
     await recordHabitCheckIn({ userId: user._id, habit: runHabit, completedAt });
 
     const beforeDelete = await request(app)
-        .get('/api/trends/analytics?period=week')
+        .get('/api/trends/analytics?period=7d')
         .set('Authorization', token)
         .expect(200);
 
@@ -314,7 +307,7 @@ test('GET /api/trends/analytics keeps check-ins after habit soft-delete', async 
     assert.ok(softDeleted.deletedAt);
 
     const afterDelete = await request(app)
-        .get('/api/trends/analytics?period=week')
+        .get('/api/trends/analytics?period=7d')
         .set('Authorization', token)
         .expect(200);
 
@@ -366,7 +359,7 @@ test('GET /api/trends/analytics returns period-over-period category trends', asy
     ]);
 
     const response = await request(app)
-        .get('/api/trends/analytics?period=week')
+        .get('/api/trends/analytics?period=7d')
         .set('Authorization', token)
         .expect(200);
 
@@ -397,7 +390,7 @@ test('GET /api/trends/analytics returns completion standing percentile', async (
     }
 
     const response = await request(app)
-        .get('/api/trends/analytics?period=week')
+        .get('/api/trends/analytics?period=7d')
         .set('Authorization', authHeader(users[0]))
         .expect(200);
 
@@ -430,7 +423,7 @@ test('GET /api/trends/analytics excludes mid-period habits from standing', async
     await seedDailyCheckIns(viewer._id, midPeriodHabit._id, 1);
 
     const response = await request(app)
-        .get('/api/trends/analytics?period=week')
+        .get('/api/trends/analytics?period=7d')
         .set('Authorization', authHeader(viewer))
         .expect(200);
 
@@ -463,7 +456,7 @@ test('GET /api/trends/analytics keeps soft-deleted habits in standing denominato
     }
 
     const response = await request(app)
-        .get('/api/trends/analytics?period=week')
+        .get('/api/trends/analytics?period=7d')
         .set('Authorization', authHeader(users[0]))
         .expect(200);
 
@@ -499,7 +492,7 @@ test('GET /api/trends/analytics excludes challenge habits from standing', async 
     });
 
     const response = await request(app)
-        .get('/api/trends/analytics?period=week')
+        .get('/api/trends/analytics?period=7d')
         .set('Authorization', authHeader(users[0]))
         .expect(200);
 
