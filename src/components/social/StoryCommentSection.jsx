@@ -7,7 +7,7 @@ import {
     getNormalizedUsername,
     isBlockedByRelationship,
 } from '@/components/social/socialHelpers';
-import { DEFAULT_PROFILE_AVATAR_SRC } from '@/lib/profileAvatar.js';
+import { UserAvatar } from '@/components/social/UserProfileTrigger.jsx';
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -368,10 +368,9 @@ export function StoryCommentSection({
                     className="shrink-0 rounded-full transition hover:opacity-85 focus:outline-none focus:ring-2 focus:ring-theme-accent/70 focus:ring-offset-2 focus:ring-offset-theme-bg disabled:cursor-default disabled:hover:opacity-100"
                     aria-label={`Open ${commentUserName}'s profile preview`}
                 >
-                    <img
-                        src={commentUser?.profilePictureUrl || DEFAULT_PROFILE_AVATAR_SRC}
-                        alt=""
-                        className={`${isReply ? 'size-6' : 'size-8'} rounded-full bg-theme-surface-2 object-cover`}
+                    <UserAvatar
+                        user={commentUser}
+                        className={isReply ? 'size-6' : 'size-8'}
                     />
                 </button>
                 <div className="flex-1 min-w-0">
@@ -491,11 +490,7 @@ export function StoryCommentSection({
                                         onClick={() => handleSelectSuggestion(u)}
                                         className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-theme-surface-2/80 text-theme-text transition"
                                     >
-                                        <img
-                                            src={u.profilePictureUrl || DEFAULT_PROFILE_AVATAR_SRC}
-                                            alt={u.username}
-                                            className="size-6 rounded-full object-cover bg-theme-surface-2"
-                                        />
+                                        <UserAvatar user={u} className="size-6" />
                                         <div className="flex flex-col min-w-0">
                                             <span className="font-semibold truncate text-theme-text">{u.firstName || u.username}</span>
                                             <span className="text-[10px] text-theme-text-muted truncate">@{u.username}</span>
