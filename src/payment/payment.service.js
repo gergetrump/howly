@@ -38,6 +38,14 @@ function toPeriodEndDate(periodEndUnix) {
     return new Date(periodEndUnix * 1000);
 }
 
+function getSubscriptionPeriodEndUnix(subscription) {
+    return subscription?.current_period_end
+        ?? subscription?.items?.data?.[0]?.current_period_end
+        ?? subscription?.items?.data?.[0]?.period?.end
+        ?? subscription?.latest_invoice?.lines?.data?.[0]?.period?.end
+        ?? null;
+}
+
 function hasCoinsForBillingPeriod(user, periodEndUnix) {
     if (!user?.coinsLastGrantedPeriodEnd || !periodEndUnix) {
         return false;
@@ -149,6 +157,7 @@ export async function grantPremiumCoinsFromInvoice(invoice) {
 
 async function syncSubscriptionToUser(userId, subscription, customerId) {
     const isPremium = PREMIUM_SUBSCRIPTION_STATUSES.has(subscription.status);
+    const periodEndUnix = getSubscriptionPeriodEndUnix(subscription);
     const stripeCustomerId =
         typeof customerId === 'string'
             ? customerId
@@ -161,15 +170,17 @@ async function syncSubscriptionToUser(userId, subscription, customerId) {
             stripeCustomerId,
             stripeSubscriptionId: subscription.id,
             premiumStatus: subscription.status,
-            premiumUntil: subscription.current_period_end
-                ? new Date(subscription.current_period_end * 1000)
+            premiumUntil: periodEndUnix
+                ? new Date(periodEndUnix * 1000)
                 : null,
         },
         { returnDocument: 'after', runValidators: true }
     );
 
-    if (isPremium && subscription.current_period_end) {
-        await grantPremiumBenefitsForBillingPeriod(userId, subscription.current_period_end);
+    if (isPremium && periodEndUnix) {
+        await grantPremiumBenefitsForBillingPeriod(userId, periodEndUnix, {
+            requirePremiumAccess: false,
+        });
         return User.findById(userId);
     }
 
@@ -262,7 +273,7 @@ export async function confirmPremiumCheckoutSession(userId, sessionId) {
     }
 
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
-        expand: ['subscription'],
+        expand: ['subscription', 'subscription.latest_invoice'],
     });
 
     if (session.metadata?.userId !== userId.toString()) {
