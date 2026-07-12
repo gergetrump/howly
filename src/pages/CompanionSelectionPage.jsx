@@ -32,7 +32,6 @@ export function CompanionSelectionPage() {
     /* Selects a companion type and pre-fills the matching default name. */
     function handleSelectType(type) {
         setSelectedType(type);
-        // Pre-fill the matching default name; the user can still edit it.
         setName(getDefaultCompanionName(type));
     }
 
