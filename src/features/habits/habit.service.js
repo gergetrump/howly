@@ -77,8 +77,7 @@ export function isCompletedForPeriod(habit) {
     if (frequency === 'Monthly') {
         return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
     }
-    
-    // Custom specific days acts exactly like Daily (must be completed today)
+
     return isToday(date);
 }
 
@@ -410,7 +409,7 @@ export async function createHabitsFromTemplates(userId, templates) {
 }
 
 /**
- * Partially update a habit. Enforces ownership.
+ * Partially update a habit.
  */
 export async function updateHabit(habitId, userId, data) {
     const habit = await Habit.findOne(withActiveHabitFilter({ _id: habitId, ownerId: userId }));
@@ -455,7 +454,7 @@ export async function updateHabit(habitId, userId, data) {
 }
 
 /**
- * Delete a habit. Enforces ownership.
+ * Delete a habit.
  */
 export async function deleteHabit(habitId, userId) {
     const habit = await Habit.findOneAndUpdate(
@@ -472,7 +471,7 @@ export async function deleteHabit(habitId, userId) {
 }
 
 /**
- * Mark a habit as completed for today (check-in).
+ * Mark a habit as completed for today.
  * Handles streak calculation based on the habit's frequency.
  */
 export async function completeHabit(habitId, userId) {
@@ -600,8 +599,7 @@ async function creditOverallStreak(userId) {
     const user = await User.findById(userId).select('streak streakLastDay streakRepairDeadline');
     if (!user) return null;
 
-    // Already credited today → nothing to do (but make sure today is in the calendar log,
-    // covering streaks credited before the log existed).
+
     if (user.streakLastDay && isToday(user.streakLastDay)) {
         await User.updateOne(
             { _id: userId },
@@ -618,7 +616,7 @@ async function creditOverallStreak(userId) {
         .select('frequency lastCompletedAt customDays');
     const dueToday = habits.filter(isDueToday);
 
-    // A complete day = every habit due today is done (and there is at least one).
+    // A complete day = every habit due today is done
     if (dueToday.length === 0 || !dueToday.every((habit) => isCompletedForPeriod(habit))) {
         return { streak: user.streak, creditedToday: false };
     }
@@ -633,7 +631,7 @@ async function creditOverallStreak(userId) {
     user.streakRepairDeadline = null;
     await user.save();
 
-    // Forward-only log for the streak calendar: mark today as a perfect day, and bump the all-time best.
+    // Forward-only log for the streak calendar: mark today as a perfect day, and bump the all-time best
     await User.updateOne(
         { _id: userId },
         {
@@ -667,7 +665,7 @@ async function revokeOverallStreakIfIncomplete(userId) {
     user.streakLastDay = yesterday;
     await user.save();
 
-    // Today is no longer a perfect day → drop it from the streak-calendar log.
+    // Today is no longer a perfect day → drop it from the streak-calendar log
     await User.updateOne(
         { _id: userId },
         { $pull: { streakPerfectDays: toDateKey(new Date()) } },
