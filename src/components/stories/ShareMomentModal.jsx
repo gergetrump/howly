@@ -162,7 +162,7 @@ export function ShareMomentModal({
                             type="button"
                             variant="ghost"
                             onClick={() => handleOpenChange(false)}
-                            className="flex-1 rounded-2xl text-theme-text-muted hover:text-theme-text"
+                            className="flex-1 rounded-xl text-theme-text-soft hover:bg-theme-text/10 hover:text-theme-text"
                         >
                             Maybe later
                         </Button>
@@ -171,7 +171,7 @@ export function ShareMomentModal({
                             variant="primary"
                             onClick={handlePost}
                             disabled={isPosting || !imageFile}
-                            className="flex-1 rounded-2xl disabled:opacity-50"
+                            className="flex-1 rounded-xl disabled:opacity-50"
                         >
                             {isPosting ? 'Posting...' : 'Post Story'}
                         </Button>
