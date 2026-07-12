@@ -44,19 +44,7 @@ const ICONS = [
     '\uD83D\uDEB4', '\uD83C\uDF4E', '\uD83D\uDE34', '\uD83E\uDDF9', '\uD83D\uDCBB', '\uD83D\uDCB8',
 ];
 
-const UNITS = ['L', 'ml', 'min', 'hours', 'km', 'steps', 'times', 'pages', 'Custom'];
 const FREQUENCIES = ['Daily', 'Weekly', 'Monthly'];
-const UNIT_LABELS = {
-    L: 'l',
-    ml: 'ml',
-    min: 'min',
-    hours: 'hours',
-    km: 'km',
-    steps: 'Steps',
-    times: 'Times',
-    pages: 'Pages',
-    Custom: 'Custom',
-};
 
 function toDateInputValue(date = new Date()) {
     const parsedDate = new Date(date);
@@ -93,16 +81,13 @@ function calculateDurationDays(startsAt, endsAt) {
 const INITIAL_CHALLENGE_FORM = {
     title: '',
     description: '',
-    frequency: 'daily',
     visibility: 'public',
     startsAt: toDateInputValue(),
     endsAt: addDaysToDateInput(toDateInputValue(), 30),
     habitTitle: '',
     habitIcon: '\uD83C\uDFAF',
-    habitType: 'numeric',
-    habitTarget: 1,
+    habitTarget: '',
     habitUnit: '',
-    customHabitUnit: '',
     habitFrequency: 'Daily',
 };
 
@@ -114,7 +99,6 @@ function buildChallengeForm(challenge) {
     return {
         title: challenge.title ?? '',
         description: challenge.description ?? '',
-        frequency: challenge.frequency ?? 'daily',
         visibility: challenge.visibility ?? 'public',
         startsAt: toDateInputValue(challenge.startsAt ?? new Date()),
         endsAt: challenge.endsAt
@@ -122,14 +106,8 @@ function buildChallengeForm(challenge) {
             : addDaysToDateInput(challenge.startsAt ?? new Date(), challenge.durationDays ?? 30),
         habitTitle: challenge.habitTemplate?.title ?? challenge.habitTitle ?? '',
         habitIcon: challenge.habitTemplate?.icon ?? '\uD83C\uDFAF',
-        habitType: challenge.habitTemplate?.type ?? 'numeric',
-        habitTarget: challenge.habitTemplate?.target ?? 1,
-        habitUnit: challenge.habitTemplate?.unit
-            ? (UNITS.includes(challenge.habitTemplate.unit) ? challenge.habitTemplate.unit : 'Custom')
-            : '',
-        customHabitUnit: challenge.habitTemplate?.unit && !UNITS.includes(challenge.habitTemplate.unit)
-            ? challenge.habitTemplate.unit
-            : '',
+        habitTarget: challenge.habitTemplate?.target ? String(challenge.habitTemplate.target) : '',
+        habitUnit: challenge.habitTemplate?.unit ?? '',
         habitFrequency: challenge.habitTemplate?.frequency ?? 'Daily',
     };
 }
@@ -143,7 +121,6 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, onDelete, is
     const durationDays = calculateDurationDays(form.startsAt, form.endsAt);
     const maxEndDate = addDaysToDateInput(form.startsAt, MAX_CHALLENGE_DURATION_DAYS);
     const calculatedReward = Math.max(durationDays, 0) * COINS_PER_CHALLENGE_DAY;
-    const finalHabitUnit = form.habitUnit === 'Custom' ? form.customHabitUnit : form.habitUnit;
     function updateField(field, value) {
         setFormError('');
         setForm((currentForm) => ({
@@ -161,12 +138,12 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, onDelete, is
             return 'Habit name is required.';
         }
 
-        if (!form.habitUnit) {
-            return 'Unit is required.';
-        }
+        if (form.habitTarget !== '') {
+            const numericTarget = Number(form.habitTarget);
 
-        if (form.habitUnit === 'Custom' && !form.customHabitUnit.trim()) {
-            return 'Custom unit is required.';
+            if (!Number.isFinite(numericTarget) || numericTarget < 1) {
+                return 'Goal must be a positive number.';
+            }
         }
 
         if (!form.startsAt) {
@@ -198,6 +175,8 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, onDelete, is
             return;
         }
 
+        const numericTarget = Number(form.habitTarget);
+        const hasGoal = form.habitTarget !== '' && Number.isFinite(numericTarget) && numericTarget >= 1;
         const payload = {
             title: form.title,
             description: form.description,
@@ -208,12 +187,17 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, onDelete, is
             habitTemplate: {
                 title: form.habitTitle,
                 icon: form.habitIcon || '\uD83C\uDFAF',
-                type: form.habitType,
-                target: Number(form.habitTarget || 1),
-                unit: finalHabitUnit,
+                type: hasGoal ? 'numeric' : 'boolean',
                 frequency: form.habitFrequency,
             },
         };
+
+        if (hasGoal) {
+            payload.habitTemplate.target = numericTarget;
+            if (form.habitUnit.trim()) {
+                payload.habitTemplate.unit = form.habitUnit.trim();
+            }
+        }
 
         await onSubmit(payload, challenge);
     }
@@ -381,54 +365,28 @@ export function ChallengeFormDialog({ open, onOpenChange, onSubmit, onDelete, is
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2.5">
-                                <Label htmlFor="habit-target" className="text-sm font-medium text-theme-text">
-                                    Target
-                                </Label>
+                        <div className="space-y-2.5">
+                            <Label className="text-sm font-medium text-theme-text">
+                                Goal <span className="font-normal text-theme-text-muted">(optional)</span>
+                            </Label>
+                            <div className="flex gap-3">
                                 <Input
                                     id="habit-target"
                                     type="number"
                                     min={1}
                                     value={form.habitTarget}
                                     onChange={(event) => updateField('habitTarget', event.target.value)}
-                                    className="h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20 [color-scheme:dark] [&::-webkit-inner-spin-button]:opacity-50"
+                                    placeholder="8"
+                                    className="h-12 w-24 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text caret-theme-accent placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-theme-accent/20 [color-scheme:dark] [&::-webkit-inner-spin-button]:opacity-50"
+                                />
+                                <Input
+                                    value={form.habitUnit}
+                                    onChange={(event) => updateField('habitUnit', event.target.value)}
+                                    placeholder="glasses, min, pages..."
+                                    maxLength={50}
+                                    className="h-12 flex-1 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text caret-theme-accent placeholder:text-theme-text-muted focus:border-theme-accent focus:ring-theme-accent/20"
                                 />
                             </div>
-
-                            <div className="space-y-2.5">
-                                <Label className="text-sm font-medium text-theme-text">Unit</Label>
-                                <Select value={form.habitUnit} onValueChange={(value) => updateField('habitUnit', value)}>
-                                    <SelectTrigger className="!h-12 w-full rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:ring-theme-accent/20 [&>svg]:text-theme-text [&>svg]:opacity-50">
-                                        <SelectValue placeholder="Select Unit" />
-                                    </SelectTrigger>
-                                    <SelectContent position="popper" sideOffset={4} className="z-[100] w-[var(--radix-select-trigger-width)] rounded-xl border-theme-accent/20 bg-theme-surface">
-                                        {UNITS.map((unit) => (
-                                            <SelectItem
-                                                key={unit}
-                                                value={unit}
-                                                className="cursor-pointer text-theme-text focus:!bg-theme-accent/40 focus:!text-theme-text data-[state=checked]:text-theme-text [&_*]:!text-theme-text"
-                                            >
-                                                {UNIT_LABELS[unit] ?? unit.toUpperCase()}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {form.habitUnit === 'Custom' ? (
-                                <div className="col-span-2 space-y-2.5">
-                                    <Label className="text-sm font-medium text-theme-text">Custom Unit</Label>
-                                    <Input
-                                        value={form.customHabitUnit}
-                                        onChange={(event) => updateField('customHabitUnit', event.target.value)}
-                                        placeholder="e.g. Push-Ups"
-                                        aria-required="true"
-                                        maxLength={50}
-                                        className="h-12 rounded-2xl border-theme-accent/20 bg-theme-surface-2/60 text-theme-text focus:border-theme-accent focus:ring-theme-accent/20"
-                                    />
-                                </div>
-                            ) : null}
                         </div>
 
                         <div className="grid grid-cols-1 gap-4">
