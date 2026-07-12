@@ -6,28 +6,33 @@ import User from '../users/user.model.js';
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const WEEKDAY_VALUES = [1, 2, 3, 4, 5, 6, 7];
 
+/* Returns the start of a local day. */
 function startOfDay(date) {
     const nextDate = new Date(date);
     nextDate.setHours(0, 0, 0, 0);
     return nextDate;
 }
 
+/* Returns the end of a local day. */
 function endOfDay(date) {
     const nextDate = new Date(date);
     nextDate.setHours(23, 59, 59, 999);
     return nextDate;
 }
 
+/* Adds calendar days to a date. */
 function addDays(date, days) {
     const nextDate = new Date(date);
     nextDate.setDate(nextDate.getDate() + days);
     return nextDate;
 }
 
+/* Counts days between two dates, including both ends. */
 function daysBetweenInclusive(start, end) {
     return Math.round((startOfDay(end).getTime() - startOfDay(start).getTime()) / DAY_IN_MS) + 1;
 }
 
+/* Formats a date as YYYY-MM-DD. */
 function toDateKey(date) {
     return [
         date.getFullYear(),
@@ -36,10 +41,12 @@ function toDateKey(date) {
     ].join('-');
 }
 
+/* Formats a date as YYYY-MM. */
 function toMonthKey(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
+/* Adds a valid date's year to a set. */
 function addYearToSet(years, date) {
     if (!date) {
         return;
@@ -52,6 +59,7 @@ function addYearToSet(years, date) {
     }
 }
 
+/* Sorts available analytics years newest first. */
 function serializeAvailableYears(years) {
     const currentYear = new Date().getFullYear();
     years.add(currentYear);
@@ -61,6 +69,7 @@ function serializeAvailableYears(years) {
         .sort((left, right) => right - left);
 }
 
+/* Gets the ISO week-year for weekly habits. */
 function getIsoWeekYear(date) {
     const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNumber = utcDate.getUTCDay() || 7;
@@ -68,6 +77,7 @@ function getIsoWeekYear(date) {
     return utcDate.getUTCFullYear();
 }
 
+/* Gets the ISO week number for weekly habits. */
 function getIsoWeek(date) {
     const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNumber = utcDate.getUTCDay() || 7;
@@ -76,6 +86,7 @@ function getIsoWeek(date) {
     return Math.ceil((((utcDate - yearStart) / DAY_IN_MS) + 1) / 7);
 }
 
+/* Builds the check-in period key for a habit. */
 function getPeriodKeyForHabit(habit, date = new Date()) {
     if (habit.frequency === 'Weekly') {
         return `${getIsoWeekYear(date)}-W${String(getIsoWeek(date)).padStart(2, '0')}`;
@@ -88,6 +99,7 @@ function getPeriodKeyForHabit(habit, date = new Date()) {
     return toDateKey(date);
 }
 
+/* Builds the date range and labels for an analytics period. */
 function buildPeriod(periodKey, year = new Date().getFullYear()) {
     const today = startOfDay(new Date());
     const normalizedPeriodKey = ['week', 'month', 'year'].includes(periodKey) ? periodKey : 'week';
@@ -133,6 +145,7 @@ function buildPeriod(periodKey, year = new Date().getFullYear()) {
     };
 }
 
+/* Checks whether a habit is scheduled on a day. */
 function isHabitExpectedOnDay(habit, day) {
     const createdAt = startOfDay(habit.createdAt ?? day.date);
 
@@ -162,10 +175,12 @@ function isHabitExpectedOnDay(habit, day) {
     return false;
 }
 
+/* Converts a date's time to minutes since midnight. */
 function getMinutesSinceMidnight(date) {
     return date.getHours() * 60 + date.getMinutes();
 }
 
+/* Formats minutes since midnight as HH:mm. */
 function formatTime(minutes) {
     if (!Number.isFinite(minutes)) {
         return null;
@@ -178,6 +193,7 @@ function formatTime(minutes) {
     return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 }
 
+/* Calculates a circular average completion time. */
 function averageTimeOfDay(dates) {
     if (!dates.length) {
         return null;
@@ -204,6 +220,7 @@ function averageTimeOfDay(dates) {
     };
 }
 
+/* Compares one average time against peer averages. */
 function buildEarlierThanComparison(currentAverageCompletionTime, peerAverageCompletionTimes) {
     if (!currentAverageCompletionTime?.label || !peerAverageCompletionTimes.length) {
         return null;
@@ -219,6 +236,7 @@ function buildEarlierThanComparison(currentAverageCompletionTime, peerAverageCom
     };
 }
 
+/* Calculates a rounded completion percentage. */
 function completionRate(completed, expected) {
     if (!expected) {
         return null;
@@ -227,6 +245,7 @@ function completionRate(completed, expected) {
     return Math.round((completed / expected) * 100);
 }
 
+/* Builds day labels when a period has none. */
 function buildLabelsForPeriod(period) {
     if (period.labels?.length) {
         return period.labels;
@@ -249,6 +268,7 @@ function buildLabelsForPeriod(period) {
     return labels;
 }
 
+/* Builds the habit filter for benchmark analytics. */
 function buildPeriodStartHabitFilter(periodStart) {
     return {
         source: { $ne: 'challenge' },
@@ -261,6 +281,7 @@ function buildPeriodStartHabitFilter(periodStart) {
     };
 }
 
+/* Calculates personal completion from supplied habits and check-ins. */
 function computePersonalCompletionRateFromData(period, habits, checkIns) {
     if (!habits.length) {
         return { expected: 0, completed: 0, completionRate: null };
@@ -304,6 +325,7 @@ function computePersonalCompletionRateFromData(period, habits, checkIns) {
     };
 }
 
+/* Serializes a habit for analytics responses. */
 function serializeHabit(habit) {
     return {
         id: habit._id.toString(),
@@ -314,6 +336,7 @@ function serializeHabit(habit) {
     };
 }
 
+/* Serializes a challenge for analytics responses. */
 function serializeChallenge(challenge) {
     return {
         id: challenge._id.toString(),
@@ -328,10 +351,12 @@ function serializeChallenge(challenge) {
     };
 }
 
+/* Checks whether a day falls inside a challenge range. */
 function isWithinRange(day, startsAt, endsAt) {
     return day.date >= startOfDay(startsAt) && day.date <= endOfDay(endsAt);
 }
 
+/* Captures taxonomy fields for a check-in. */
 function buildCheckInTaxonomySnapshot(habit) {
     return {
         categoryKey: habit.taxonomy?.categoryKey ?? null,
@@ -341,6 +366,7 @@ function buildCheckInTaxonomySnapshot(habit) {
     };
 }
 
+/* Stores or updates a habit check-in for its period. */
 export async function recordHabitCheckIn({ userId, habit, completedAt = new Date() }) {
     await HabitCheckIn.findOneAndUpdate(
         {
@@ -363,6 +389,7 @@ export async function recordHabitCheckIn({ userId, habit, completedAt = new Date
     );
 }
 
+/* Keeps only the latest check-in per habit period. */
 function mergeCheckInsByLatestPeriodEvent(checkIns) {
     const checkInsByEventKey = new Map();
 
@@ -379,6 +406,7 @@ function mergeCheckInsByLatestPeriodEvent(checkIns) {
         .sort((left, right) => left.completedAt.getTime() - right.completedAt.getTime());
 }
 
+/* Builds peer timing comparison data for analytics summaries. */
 async function getPeerAverageCompletionTimeComparison({
     userId,
     selectedPeriod,
@@ -438,6 +466,7 @@ async function getPeerAverageCompletionTimeComparison({
     return buildEarlierThanComparison(currentAverageCompletionTime, peerAverageCompletionTimes);
 }
 
+/* Finds years with habit analytics data for a user. */
 async function getHabitAnalyticsAvailableYears(userId) {
     const years = new Set();
     const habits = await Habit.find({
@@ -470,6 +499,7 @@ async function getHabitAnalyticsAvailableYears(userId) {
     return serializeAvailableYears(years);
 }
 
+/* Finds years with challenge analytics data for a user. */
 async function getChallengeAnalyticsAvailableYears(userId) {
     const years = new Set();
     const participants = await ChallengeParticipant.find({
@@ -507,6 +537,7 @@ async function getChallengeAnalyticsAvailableYears(userId) {
     return serializeAvailableYears(years);
 }
 
+/* Removes the current period's habit check-in. */
 export async function removeHabitCheckInForCurrentPeriod({ userId, habit }) {
     await HabitCheckIn.findOneAndDelete({
         user: userId,
@@ -515,6 +546,7 @@ export async function removeHabitCheckInForCurrentPeriod({ userId, habit }) {
     });
 }
 
+/* Builds habit analytics for a user and period. */
 export async function getHabitAnalytics(userId, { period = 'week', year } = {}) {
     const selectedPeriod = buildPeriod(period, year);
     const habits = await Habit.find({
@@ -673,6 +705,7 @@ export async function getHabitAnalytics(userId, { period = 'week', year } = {}) 
     };
 }
 
+/* Builds challenge analytics for a user and period. */
 export async function getChallengeAnalytics(userId, { period = 'week', year } = {}) {
     const selectedPeriod = buildPeriod(period, year);
     const participants = await ChallengeParticipant.find({
@@ -868,6 +901,7 @@ export async function getChallengeAnalytics(userId, { period = 'week', year } = 
 }
 
 
+/* Builds the monthly overall-streak calendar. */
 export async function getStreakCalendar(userId, { month } = {}) {
     const now = startOfDay(new Date());
     let year = now.getFullYear();

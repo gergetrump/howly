@@ -30,12 +30,14 @@ const COINS_PER_CHALLENGE_DAY = 5;
 const CHALLENGE_INVITATIONS_PATH = '/challenges';
 const PAST_CHALLENGE_STATUSES = ['completed', 'failed'];
 
+/* Checks whether a user wants a challenge email type. */
 function canSendNotificationEmail(user, preferenceKey) {
     const preferences = user?.notificationPreferences ?? {};
 
     return preferences.emailEnabled === true && preferences[preferenceKey] === true;
 }
 
+/* Builds a readable display name for a user. */
 function getUserDisplayName(user) {
     return [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() || user?.username || 'A friend';
 }
@@ -50,37 +52,45 @@ const START_LOCKED_UPDATE_FIELDS = [
     'visibility',
 ];
 
+/* Calculates a challenge end date from start and duration. */
 function calculateEndDate(startsAt, durationDays) {
     return new Date(startsAt.getTime() + durationDays * DAY_IN_MS);
 }
 
+/* Calculates the coin reward for a challenge duration. */
 function getCoinReward(durationDays) {
     return durationDays * COINS_PER_CHALLENGE_DAY;
 }
 
+/* Checks whether the user owns a challenge. */
 function isChallengeOwner(challenge, user) {
     return challenge.createdBy.toString() === user.id || user.role === 'admin';
 }
 
+/* Checks whether the user created a challenge. */
 function isChallengeCreator(challenge, user) {
     return challenge.createdBy.toString() === user.id;
 }
 
+/* Compares two Mongo ids as strings. */
 function sameId(firstId, secondId) {
     return firstId?.toString() === secondId?.toString();
 }
 
+/* Builds the canonical friendship pair key. */
 function buildFriendshipPair(firstUserId, secondUserId) {
     const [userA, userB] = [firstUserId.toString(), secondUserId.toString()].sort();
     return { userA, userB };
 }
 
+/* Checks whether two users are friends. */
 async function areFriends(firstUserId, secondUserId) {
     const friendship = await Friendship.findOne(buildFriendshipPair(firstUserId, secondUserId)).lean();
 
     return Boolean(friendship);
 }
 
+/* Loads ids for all friends of a user. */
 async function getFriendIds(userId) {
     const friendships = await Friendship.find({
         $or: [{ userA: userId }, { userB: userId }],
@@ -91,6 +101,7 @@ async function getFriendIds(userId) {
     ));
 }
 
+/* Loads users blocked by or blocking this user. */
 async function getBlockedRelationshipUserIds(userId) {
     const [user, blockedMe] = await Promise.all([
         User.findById(userId).select('blockedUsers').lean(),
@@ -103,6 +114,7 @@ async function getBlockedRelationshipUserIds(userId) {
     ]);
 }
 
+/* Checks whether either user blocks the other. */
 async function hasBlockRelationship(firstUserId, secondUserId) {
     if (sameId(firstUserId, secondUserId)) {
         return false;
@@ -114,6 +126,7 @@ async function hasBlockRelationship(firstUserId, secondUserId) {
     return blockedRelationshipIds.has(secondUserIdString);
 }
 
+/* Checks challenge visibility with preloaded relationship context. */
 function canViewChallengeFromContext(challenge, user, { friendIds = new Set(), blockedRelationshipIds = new Set(), viewerParticipant = null } = {}) {
     if (isChallengeOwner(challenge, user)) {
         return true;
@@ -136,6 +149,7 @@ function canViewChallengeFromContext(challenge, user, { friendIds = new Set(), b
     return friendIds.has(creatorId);
 }
 
+/* Checks whether a user can view a challenge. */
 async function canViewChallenge(challenge, user) {
     if (isChallengeOwner(challenge, user)) {
         return true;
@@ -162,10 +176,12 @@ async function canViewChallenge(challenge, user) {
     return areFriends(user.id, challenge.createdBy);
 }
 
+/* Converts habit frequency labels to challenge frequency values. */
 function habitFrequencyToChallengeFrequency(frequency) {
     return String(frequency || '').toLowerCase();
 }
 
+/* Normalizes challenge habit template input. */
 function toHabitTemplate(input = {}) {
     return {
         title: input.title,
@@ -180,6 +196,7 @@ function toHabitTemplate(input = {}) {
     };
 }
 
+/* Builds habit creation fields from a challenge template. */
 function getHabitFieldsFromTemplate(template) {
     const habitTemplate = toHabitTemplate(template);
 
@@ -204,12 +221,14 @@ const EMPTY_TAXONOMY_FIELDS = {
     assignedAt: null,
 };
 
+/* Builds habit update fields for synced participant habits. */
 function getHabitFieldsFromTemplateForParticipantSync(template) {
     const fields = getHabitFieldsFromTemplate(template);
     delete fields.category;
     return fields;
 }
 
+/* Decides whether challenge taxonomy must be recalculated. */
 function shouldReassignChallengeTaxonomy(challenge, updates, nextHabitTemplate) {
     if (updates.title !== undefined && updates.title !== challenge.title) {
         return true;
@@ -234,6 +253,7 @@ function shouldReassignChallengeTaxonomy(challenge, updates, nextHabitTemplate) 
     return false;
 }
 
+/* Decides whether participant habit taxonomy must be recalculated. */
 function shouldReassignParticipantHabitTaxonomy(challenge, updates, nextHabitTemplate) {
     if (!updates.habitTemplate) {
         return false;
@@ -245,6 +265,7 @@ function shouldReassignParticipantHabitTaxonomy(challenge, updates, nextHabitTem
         || (nextHabitTemplate.description ?? '') !== (currentTemplate?.description ?? '');
 }
 
+/* Clears taxonomy fields before background reassignment. */
 function clearChallengeTaxonomyFields(challenge) {
     clearTaxonomyFields(challenge);
 
@@ -253,6 +274,7 @@ function clearChallengeTaxonomyFields(challenge) {
     }
 }
 
+/* Creates the linked habit for one challenge participant. */
 async function createChallengeHabitForUser({ challenge, userId }) {
     const habit = await Habit.create({
         ...getHabitFieldsFromTemplate(challenge.habitTemplate),
@@ -268,6 +290,7 @@ async function createChallengeHabitForUser({ challenge, userId }) {
     return habit;
 }
 
+/* Loads reusable user relationship context for challenge checks. */
 async function getChallengeUserContext(user) {
     const currentUser = await User.findOne({ _id: user.id, isDeleted: false })
         .select('role isPremium')
@@ -280,14 +303,17 @@ async function getChallengeUserContext(user) {
     };
 }
 
+/* Checks whether a user has premium challenge privileges. */
 function hasPremiumMembership(user) {
     return hasPremiumAccess(user);
 }
 
+/* Reads the user's active challenge limit. */
 function getActiveChallengeLimit(user) {
     return getPlanForUser(user).limits.maxActiveChallenges;
 }
 
+/* Builds query conditions for active challenges. */
 function getActiveChallengeConditions(now = new Date()) {
     return {
         status: { $nin: ['completed', 'failed'] },
@@ -295,6 +321,7 @@ function getActiveChallengeConditions(now = new Date()) {
     };
 }
 
+/* Builds query conditions for recent past challenges. */
 function getPastChallengeConditions(now = new Date()) {
     const pastWindowStart = new Date(now.getTime() - 30 * DAY_IN_MS);
 
@@ -307,6 +334,7 @@ function getPastChallengeConditions(now = new Date()) {
     };
 }
 
+/* Loads active challenge ids for a participant. */
 async function getActiveChallengeIdsForUser(userId, now = new Date()) {
     const activeChallengeConditions = getActiveChallengeConditions(now);
     const activeParticipations = await ChallengeParticipant.find({
@@ -328,6 +356,7 @@ async function getActiveChallengeIdsForUser(userId, now = new Date()) {
     ]);
 }
 
+/* Counts active challenges created by a user. */
 async function getActiveCreatedChallengeCount(userId, now = new Date()) {
     return Challenge.countDocuments({
         createdBy: userId,
@@ -335,6 +364,7 @@ async function getActiveCreatedChallengeCount(userId, now = new Date()) {
     });
 }
 
+/* Checks whether a user can join another active challenge. */
 async function canAddActiveChallenge(user, challengeId) {
     const currentUser = await getChallengeUserContext(user);
     const activeChallengeIds = await getActiveChallengeIdsForUser(currentUser.id);
@@ -350,6 +380,7 @@ async function canAddActiveChallenge(user, challengeId) {
     };
 }
 
+/* Checks whether a user can create another active challenge. */
 async function canCreateChallenge(user) {
     const currentUser = await getChallengeUserContext(user);
     const plan = getPlanForUser(currentUser);
@@ -383,6 +414,7 @@ async function canCreateChallenge(user) {
     return { allowed: true };
 }
 
+/* Calculates reward coins based on completed days. */
 function getRewardCoins(challenge, participant) {
     const cappedDays = Math.min(participant.daysCompleted, challenge.durationDays);
     const progressRatio = cappedDays / challenge.durationDays;
@@ -390,18 +422,22 @@ function getRewardCoins(challenge, participant) {
     return Math.floor(challenge.coinReward * progressRatio);
 }
 
+/* Checks whether a challenge reward can be claimed. */
 function isRewardClaimable(challenge, now = new Date()) {
     return challenge.status === 'completed' || challenge.endsAt <= now;
 }
 
+/* Checks whether a challenge can still be joined. */
 function isChallengeJoinable(challenge, now = new Date()) {
     return challenge.status !== 'completed' && challenge.status !== 'failed' && challenge.endsAt > now;
 }
 
+/* Checks whether a challenge has started. */
 function hasStarted(challenge, now = new Date()) {
     return challenge.startsAt <= now;
 }
 
+/* Computes the status shown to clients. */
 function getDisplayStatus(challenge, now = new Date()) {
     if (challenge.status === 'completed' || challenge.status === 'failed') {
         return challenge.status;
@@ -418,10 +454,12 @@ function getDisplayStatus(challenge, now = new Date()) {
     return 'notStarted';
 }
 
+/* Checks whether updates touch fields locked after start. */
 function hasStartLockedUpdates(updates) {
     return START_LOCKED_UPDATE_FIELDS.some((field) => updates[field] !== undefined);
 }
 
+/* Serializes a challenge for API responses. */
 function serializeChallenge(challenge, participantCount = 0, viewerParticipant = null, extras = {}) {
     if (!challenge) {
         return null;
@@ -459,6 +497,7 @@ function serializeChallenge(challenge, participantCount = 0, viewerParticipant =
     };
 }
 
+/* Checks whether a habit is completed in its current period. */
 function isCompletedForPeriod(habit) {
     if (!habit?.lastCompletedAt) {
         return false;
@@ -485,6 +524,7 @@ function isCompletedForPeriod(habit) {
         && completedAt.getDate() === now.getDate();
 }
 
+/* Serializes a challenge-linked habit for the dashboard. */
 function serializeChallengeHabit(habit) {
     if (!habit) {
         return null;
@@ -510,6 +550,7 @@ function serializeChallengeHabit(habit) {
     };
 }
 
+/* Counts non-left participants for challenge ids. */
 async function getParticipantCounts(challengeIds) {
     if (!challengeIds.length) {
         return new Map();
@@ -533,6 +574,7 @@ async function getParticipantCounts(challengeIds) {
     return new Map(counts.map((item) => [item._id.toString(), item.count]));
 }
 
+/* Loads the viewer's participant records for challenge ids. */
 async function getViewerParticipations(challengeIds, userId) {
     if (!challengeIds.length || !userId) {
         return new Map();
@@ -549,6 +591,7 @@ async function getViewerParticipations(challengeIds, userId) {
     );
 }
 
+/* Serializes one challenge participant. */
 function serializeParticipant(participant, challenge) {
     if (!participant) {
         return null;
@@ -576,6 +619,7 @@ function serializeParticipant(participant, challenge) {
     };
 }
 
+/* Checks whether a participant user was populated. */
 function isPopulatedParticipantUser(user) {
     return Boolean(
         user
@@ -591,6 +635,7 @@ function isPopulatedParticipantUser(user) {
     );
 }
 
+/* Serializes a user inside participant lists. */
 function serializeParticipantUser(user) {
     return {
         id: user._id.toString(),
@@ -606,6 +651,7 @@ function serializeParticipantUser(user) {
     };
 }
 
+/* Serializes a challenge invitation. */
 function serializeInvitation(invitation, participantCount = 0) {
     if (!invitation) {
         return null;
@@ -627,6 +673,7 @@ function serializeInvitation(invitation, participantCount = 0) {
     };
 }
 
+/* Creates a new challenge and owner participation. */
 export async function createChallenge(input, user) {
     const createPermission = await canCreateChallenge(user);
 
@@ -672,6 +719,7 @@ export async function createChallenge(input, user) {
     };
 }
 
+/* Lists challenges visible to a user. */
 export async function listChallenges(filters = {}, user) {
     const conditions = [];
     const now = new Date();
@@ -822,6 +870,7 @@ export async function listChallenges(filters = {}, user) {
     return filters.pagination ? { ...page, items } : items;
 }
 
+/* Loads one visible challenge by id. */
 export async function getChallengeById(challengeId, user) {
     const challenge = await Challenge.findById(challengeId);
 
@@ -848,6 +897,7 @@ export async function getChallengeById(challengeId, user) {
     return { challenge: serializeChallenge(challenge, participantCount, viewerParticipant) };
 }
 
+/* Updates a future owned challenge. */
 export async function updateChallenge(challengeId, updates, user) {
     const challenge = await Challenge.findById(challengeId);
 
@@ -966,6 +1016,7 @@ export async function updateChallenge(challengeId, updates, user) {
     return { challenge: serializeChallenge(challenge, participantCount) };
 }
 
+/* Permanently deletes a future owned challenge. */
 export async function deleteChallenge(challengeId, user) {
     const challenge = await Challenge.findById(challengeId);
 
@@ -992,6 +1043,7 @@ export async function deleteChallenge(challengeId, user) {
     return { challenge: serializeChallenge(challenge) };
 }
 
+/* Joins a user to a challenge and creates their habit. */
 export async function joinChallenge(challengeId, user) {
     const challenge = await Challenge.findById(challengeId);
 
@@ -1071,6 +1123,7 @@ export async function joinChallenge(challengeId, user) {
     };
 }
 
+/* Creates a pending challenge invitation. */
 export async function createInvitation(challengeId, inviteeId, user) {
     const challenge = await Challenge.findById(challengeId);
 
@@ -1160,6 +1213,7 @@ export async function createInvitation(challengeId, inviteeId, user) {
     return { invitation: serializeInvitation(invitation, participantCount) };
 }
 
+/* Lists pending incoming and outgoing invitations. */
 export async function listInvitations(userId) {
     const [incoming, outgoing] = await Promise.all([
         ChallengeInvitation.find({ invitee: userId, status: 'pending' })
@@ -1184,6 +1238,7 @@ export async function listInvitations(userId) {
     };
 }
 
+/* Accepts an invitation and joins the challenge. */
 export async function acceptInvitation(invitationId, user) {
     const invitation = await ChallengeInvitation.findOne({
         _id: invitationId,
@@ -1268,6 +1323,7 @@ export async function acceptInvitation(invitationId, user) {
     };
 }
 
+/* Rejects a pending invitation. */
 export async function rejectInvitation(invitationId, user) {
     const invitation = await ChallengeInvitation.findOne({
         _id: invitationId,
@@ -1286,6 +1342,7 @@ export async function rejectInvitation(invitationId, user) {
     return { invitation: serializeInvitation(invitation) };
 }
 
+/* Lists active challenge habits for a user. */
 export async function listMyChallengeHabits(user) {
     const participants = await ChallengeParticipant.find({
         user: user.id,
@@ -1317,6 +1374,7 @@ export async function listMyChallengeHabits(user) {
     }));
 }
 
+/* Records challenge progress from habit check-ins. */
 export async function recordProgressForHabit({ userId, habitId, days = 1 }) {
     const participants = await ChallengeParticipant.find({
         user: userId,
@@ -1360,6 +1418,7 @@ export async function recordProgressForHabit({ userId, habitId, days = 1 }) {
     return results;
 }
 
+/* Marks a participant as having left a challenge. */
 export async function leaveChallenge(challengeId, userId) {
     const participant = await ChallengeParticipant.findOne({
         challenge: challengeId,
@@ -1403,6 +1462,7 @@ export async function leaveChallenge(challengeId, userId) {
     };
 }
 
+/* Lists participants for a visible challenge. */
 export async function listParticipants(challengeId, user) {
     const challenge = await Challenge.findById(challengeId);
 
@@ -1427,6 +1487,7 @@ export async function listParticipants(challengeId, user) {
     };
 }
 
+/* Records manual participant progress. */
 export async function recordProgress(challengeId, userId, { days }) {
     const challenge = await Challenge.findById(challengeId);
 
@@ -1459,6 +1520,7 @@ export async function recordProgress(challengeId, userId, { days }) {
     };
 }
 
+/* Claims a user's challenge reward. */
 export async function claimReward(challengeId, userId) {
     const challenge = await Challenge.findById(challengeId);
 

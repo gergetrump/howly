@@ -12,6 +12,7 @@ const CANONICAL_WEIGHT = 10;
 const SUBCATEGORY_WEIGHT = 5;
 const CATEGORY_WEIGHT = 3;
 
+/* Creates an empty recommendation score map. */
 function emptyScoreMap() {
     return {
         categoryScores: {},
@@ -20,6 +21,7 @@ function emptyScoreMap() {
     };
 }
 
+/* Adds a weighted score to a map key. */
 function addToMap(map, key, amount) {
     if (!key) {
         return;
@@ -28,6 +30,7 @@ function addToMap(map, key, amount) {
     map[key] = (map[key] ?? 0) + amount;
 }
 
+/* Converts a score map into a plain object. */
 function normalizeScoreMap(map) {
     const values = Object.values(map);
     const max = values.length ? Math.max(...values) : 0;
@@ -41,6 +44,7 @@ function normalizeScoreMap(map) {
     );
 }
 
+/* Reads a score value from a map-like object. */
 function getMapValue(map, key) {
     if (!key) {
         return 0;
@@ -49,6 +53,7 @@ function getMapValue(map, key) {
     return map[key] ?? 0;
 }
 
+/* Builds recommendation signals from a user's habits. */
 export async function buildUserHabitProfile(userId, { windowDays = 30 } = {}) {
     const now = new Date();
     const windowStart = new Date(now.getTime() - windowDays * DAY_IN_MS);
@@ -126,6 +131,7 @@ export async function buildUserHabitProfile(userId, { windowDays = 30 } = {}) {
     };
 }
 
+/* Scores a challenge against a user's habit profile. */
 export function scoreChallenge(challenge, profile) {
     const taxonomy = challenge.taxonomy;
 
@@ -140,6 +146,7 @@ export function scoreChallenge(challenge, profile) {
     );
 }
 
+/* Converts a taxonomy key into a readable label. */
 function formatSubcategoryLabel(subcategoryKey) {
     if (!subcategoryKey) {
         return '';
@@ -148,6 +155,7 @@ function formatSubcategoryLabel(subcategoryKey) {
     return subcategoryKey.replace(/-/g, ' ');
 }
 
+/* Loads display labels for recommendation reasons. */
 export async function loadRecommendationLabels(keys = []) {
     const uniqueKeys = [...new Set(keys.filter(Boolean))];
 
@@ -203,6 +211,7 @@ export async function loadRecommendationLabels(keys = []) {
     return { canonicalLabels, categoryLabels, subcategoryLabels };
 }
 
+/* Builds the short recommendation reason text. */
 export function buildRecommendationReason(challenge, profile, labels = {}) {
     const taxonomy = challenge.taxonomy;
     const score = scoreChallenge(challenge, profile);
@@ -244,6 +253,7 @@ export function buildRecommendationReason(challenge, profile, labels = {}) {
     return null;
 }
 
+/* Sorts equal recommendation scores by practical tie-breakers. */
 function compareTiebreakers(left, right, participantCounts, now = new Date()) {
     const leftParticipants = participantCounts.get(left._id.toString()) ?? 0;
     const rightParticipants = participantCounts.get(right._id.toString()) ?? 0;
@@ -262,6 +272,7 @@ function compareTiebreakers(left, right, participantCounts, now = new Date()) {
     return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
 }
 
+/* Sorts one bucket of challenges by score and tie-breakers. */
 function sortChallengeBucket(challenges, profile, participantCounts, now = new Date()) {
     return [...challenges].sort((left, right) => {
         const leftScore = scoreChallenge(left, profile);
@@ -275,6 +286,7 @@ function sortChallengeBucket(challenges, profile, participantCounts, now = new D
     });
 }
 
+/* Sorts challenges into recommended and fallback groups. */
 export function sortChallengesByRecommendation(
     challenges,
     profile,
@@ -301,6 +313,7 @@ export function sortChallengesByRecommendation(
     ];
 }
 
+/* Chooses the default sort mode for a challenge query. */
 export function resolveDefaultChallengeSort(filters = {}) {
     if (filters.sort) {
         return filters.sort;

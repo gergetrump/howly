@@ -64,6 +64,7 @@ const habitTemplateSchema = new Schema(
   { _id: false }
 );
 
+/* Calculates the challenge end date from start and duration. */
 function calculateEndDate(startsAt, durationDays) {
   return new Date(startsAt.getTime() + durationDays * DAY_IN_MS);
 }

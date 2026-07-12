@@ -16,12 +16,15 @@ const CHALLENGE_SCOPE_SET = new Set(CHALLENGE_SCOPES);
 const CHALLENGE_SORTS = ['recommended', 'createdAt', 'endsAt'];
 const CHALLENGE_SORT_SET = new Set(CHALLENGE_SORTS);
 
+/* Checks whether a value is a non-empty string. */
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
 const HABIT_TEMPLATE_FREQUENCIES = ['Daily', 'Weekly', 'Monthly'];
 const HABIT_TEMPLATE_FREQUENCY_SET = new Set(HABIT_TEMPLATE_FREQUENCIES);
 
+/* Checks whether a value is a valid Mongo ObjectId. */
 export const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
+/* Validates and copies an optional string field. */
 function toOptionalString(value, fieldName, maxLength, errors, updates) {
     if (value === undefined) {
         return;
@@ -47,6 +50,7 @@ function toOptionalString(value, fieldName, maxLength, errors, updates) {
     updates[fieldName] = trimmed;
 }
 
+/* Validates and copies a bounded positive integer. */
 function toPositiveInteger(value, fieldName, min, max, errors, updates) {
     if (!Number.isInteger(value) || value < min || value > max) {
         errors.push(`${fieldName} must be an integer between ${min} and ${max}`);
@@ -56,6 +60,7 @@ function toPositiveInteger(value, fieldName, min, max, errors, updates) {
     updates[fieldName] = value;
 }
 
+/* Validates and copies a date field. */
 function toDate(value, fieldName, errors, updates) {
     if (value === undefined) {
         return;
@@ -71,6 +76,7 @@ function toDate(value, fieldName, errors, updates) {
     updates[fieldName] = date;
 }
 
+/* Validates the habit template embedded in a challenge. */
 function validateHabitTemplate(input, errors) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) {
         errors.push('habitTemplate is required');
@@ -160,6 +166,7 @@ function validateHabitTemplate(input, errors) {
     return template;
 }
 
+/* Validates challenge creation input. */
 export function validateCreateChallengeInput(body = {}) {
     const errors = [];
     const value = {};
@@ -223,6 +230,7 @@ export function validateCreateChallengeInput(body = {}) {
     return { value };
 }
 
+/* Validates challenge update input. */
 export function validateUpdateChallengeInput(body = {}) {
     const errors = [];
     const updates = {};
@@ -308,6 +316,7 @@ export function validateUpdateChallengeInput(body = {}) {
     return { value: updates };
 }
 
+/* Validates challenge list query parameters. */
 export function validateListChallengesInput(query = {}) {
     const value = {};
     const errors = [];
@@ -383,6 +392,7 @@ export function validateListChallengesInput(query = {}) {
     return { value };
 }
 
+/* Validates a challenge ObjectId. */
 export function validateChallengeId(id) {
     if (!isValidObjectId(id)) {
         return { error: 'challengeId must be a valid ObjectId' };
@@ -391,6 +401,7 @@ export function validateChallengeId(id) {
     return { value: id };
 }
 
+/* Validates a challenge invitation ObjectId. */
 export function validateChallengeInvitationId(id) {
     if (!isValidObjectId(id)) {
         return { error: 'invitationId must be a valid ObjectId' };
@@ -399,6 +410,7 @@ export function validateChallengeInvitationId(id) {
     return { value: id };
 }
 
+/* Validates challenge invitation input. */
 export function validateCreateInvitationInput(body = {}) {
     const inviteeId = body.inviteeId;
 
@@ -409,14 +421,17 @@ export function validateCreateInvitationInput(body = {}) {
     return { value: { inviteeId } };
 }
 
+/* Provides a join payload placeholder. */
 export function validateJoinChallengeInput() {
     return { value: {} };
 }
 
+/* Provides an accept payload placeholder. */
 export function validateAcceptInvitationInput() {
     return { value: {} };
 }
 
+/* Validates manual challenge progress input. */
 export function validateRecordProgressInput(body = {}) {
     const days = body.days === undefined ? 1 : body.days;
     const value = {};
