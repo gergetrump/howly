@@ -12,6 +12,7 @@ import { appCardClassName } from '@/components/cards/cardStyles';
 import { getStoryLikes, getStoryComments } from '@/services/storyApi';
 import { StoryCommentSection } from '@/components/social/StoryCommentSection';
 import { cloudinaryUrl } from '@/lib/cloudinary';
+import { UserAvatar } from '@/components/social/UserProfileTrigger.jsx';
 import { isBlockedByRelationship } from '@/components/social/socialHelpers';
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -566,15 +567,14 @@ export function StoryFeedCard({
                             {visibleLikers.length ? (
                                 <>
                                 {visibleLikers.map((liker) => (
-                                    <div
+                                    <button
+                                        type="button"
                                         key={liker.id || liker._id}
-                                        className="flex items-center gap-3 rounded-xl bg-theme-text/5 px-3 py-2"
+                                        className="flex w-full items-center gap-3 rounded-xl bg-theme-text/5 px-3 py-2 text-left transition hover:bg-theme-text/10 disabled:hover:bg-theme-text/5"
+                                        disabled={!onOpenProfile}
+                                        onClick={() => onOpenProfile?.(liker)}
                                     >
-                                        <img
-                                            src={liker.profilePictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'}
-                                            alt=""
-                                            className="size-9 rounded-full bg-theme-surface-2 object-cover"
-                                        />
+                                        <UserAvatar user={liker} className="size-9" />
                                         <div className="min-w-0">
                                             <p className="truncate font-semibold text-theme-text">
                                                 {liker.firstName || liker.username || 'someone'}
@@ -584,7 +584,7 @@ export function StoryFeedCard({
                                             ) : null}
                                         </div>
                                         <Heart className="ml-auto size-4 fill-theme-love text-theme-love" />
-                                    </div>
+                                    </button>
                                 ))}
                                 {hasMoreLikers ? (
                                     <Button

@@ -42,6 +42,7 @@ import {
 import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
 import { NotificationMuteDialog } from '@/components/social/NotificationMuteDialog.jsx';
 import { useAuth } from '@/context/AuthContext';
+import { DEFAULT_PROFILE_AVATAR_SRC } from '@/lib/profileAvatar.js';
 import { sendFeedback } from '@/services/feedbackService';
 import { toast } from 'sonner';
 
@@ -227,9 +228,11 @@ export function ProfilePage() {
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
     const [deleteAccountError, setDeleteAccountError] = useState('');
     const [hasProfilePictureLoadError, setHasProfilePictureLoadError] = useState(false);
+    const [hasDefaultProfilePictureLoadError, setHasDefaultProfilePictureLoadError] = useState(false);
 
     useEffect(() => {
         setHasProfilePictureLoadError(false);
+        setHasDefaultProfilePictureLoadError(false);
     }, [user?.profilePictureUrl]);
 
     function handleUpgradeToPremium() {
@@ -372,7 +375,9 @@ export function ProfilePage() {
     const username = user?.username || 'unknown';
     const profilePictureUrl = typeof user?.profilePictureUrl === 'string' ? user.profilePictureUrl.trim() : '';
     const profileInitial = (fullName || username).trim().charAt(0).toUpperCase() || '?';
-    const shouldShowProfilePicture = profilePictureUrl && !hasProfilePictureLoadError;
+    const profileAvatarSrc = profilePictureUrl && !hasProfilePictureLoadError
+        ? profilePictureUrl
+        : hasDefaultProfilePictureLoadError ? '' : DEFAULT_PROFILE_AVATAR_SRC;
     const streak = user?.streak ?? 0;
     const completedChallenges = user?.completedChallenges ?? 0;
     const isPremium = user?.isPremium === true || user?.role === 'admin';
@@ -389,12 +394,18 @@ export function ProfilePage() {
                     <div className="relative">
 
                         <div className={`flex size-24 items-center justify-center overflow-hidden rounded-full bg-theme-surface-2 ${isPremium ? 'ring-2 ring-theme-gold ring-offset-2 ring-offset-theme-surface' : ''}`}>
-                            {shouldShowProfilePicture ? (
+                            {profileAvatarSrc ? (
                                 <img
-                                    src={profilePictureUrl}
+                                    src={profileAvatarSrc}
                                     alt={`${fullName}'s profile`}
                                     className="size-full object-cover"
-                                    onError={() => setHasProfilePictureLoadError(true)}
+                                    onError={() => {
+                                        if (profileAvatarSrc === profilePictureUrl) {
+                                            setHasProfilePictureLoadError(true);
+                                        } else {
+                                            setHasDefaultProfilePictureLoadError(true);
+                                        }
+                                    }}
                                 />
                             ) : (
                                 <span className="text-4xl font-bold text-theme-text">{profileInitial}</span>
@@ -679,7 +690,6 @@ export function ProfilePage() {
         </Page>
     );
 }
-
 
 
 
