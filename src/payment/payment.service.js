@@ -127,7 +127,7 @@ export async function markPremiumFromSubscription(subscription) {
 
 export function constructStripeWebhookEvent(payload, signature, webhookSecret) {
     if (!webhookSecret) {
-        return JSON.parse(payload.toString('utf8'));
+        throw new Error('STRIPE_WEBHOOK_SECRET is required');
     }
 
     return stripe.webhooks.constructEvent(payload, signature, webhookSecret);
