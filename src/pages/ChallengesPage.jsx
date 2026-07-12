@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Check, ChevronDown, CircleHelp, Loader2, Pencil, Trophy, TriangleAlert, UserPlus, UsersRound, X } from 'lucide-react';
+import { ChevronDown, Loader2, Pencil, Trophy, TriangleAlert, UserPlus } from 'lucide-react';
 import { ActionButton, CardGrid, PlanLimitDialog } from '@/components/common';
 import { ChallengeCategoryChips } from '@/components/challenges/ChallengeCategoryChips.jsx';
+import { ChallengeInfoPopover } from '@/components/challenges/ChallengeInfoPopover.jsx';
+import { ChallengeInvitationPreviewDialog } from '@/components/challenges/ChallengeInvitationPreviewDialog.jsx';
+import { ChallengeParticipantsBadge } from '@/components/challenges/ChallengeParticipantsBadge.jsx';
 import { appTabsListFullWidthClassName, appTabsTriggerClassName } from '@/components/cards/cardStyles';
 import { ChallengeCard } from '@/components/cards/ChallengeCard.jsx';
 import { ChallengeFormDialog } from '@/components/cards/ChallengeFormDialog.jsx';
 import { ChallengeInviteDialog } from '@/components/cards/ChallengeInviteDialog.jsx';
 import { ChallengeInvitationList } from '@/components/cards/ChallengeInvitationList.jsx';
 import { Page, PageSection, Heading } from '@/components/layout';
-import { UserPanelRow } from '@/components/social/UserPanelRow.jsx';
 import { UserPreviewDialog } from '@/components/social/UserPreviewDialog.jsx';
 import {
     getSocialErrorMessage,
@@ -21,14 +23,6 @@ import {
 } from '@/components/social/socialHelpers.js';
 import { Button } from '@/components/ui/button';
 import { NotificationBanner } from '@/components/ui/notification-banner.jsx';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     ConfirmationDialog,
@@ -81,13 +75,6 @@ const PAST_CHALLENGE_STATUSES = new Set(['completed', 'failed']);
 /* Returns the normalized id for the current user object. */
 function getUserId(user) {
     return user?.id ?? user?._id;
-}
-
-/* Extracts the populated user from a challenge participant. */
-function getParticipantUser(participant) {
-    return typeof participant?.user === 'object' && participant.user
-        ? participant.user
-        : null;
 }
 
 /* Normalizes paginated or plain list responses into arrays. */
@@ -252,161 +239,6 @@ function ChallengeAlert({ error, onUpgrade }) {
     }
 
     return null;
-}
-
-/* Explains how challenges work. */
-function ChallengeInfoPopover() {
-    return (
-        <Popover>
-            <PopoverTrigger asChild>
-                <button
-                    type="button"
-                    className="grid h-7 w-7 place-items-center rounded-full border border-theme-text/10 bg-theme-surface text-theme-text transition hover:bg-theme-text/20 hover:text-theme-text"
-                    aria-label="How do challenges work?"
-                >
-                    <CircleHelp className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-            </PopoverTrigger>
-            <PopoverContent
-                align="start"
-                side="bottom"
-                sideOffset={8}
-                className="z-[120] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-theme-text/10 bg-theme-bg/95 p-4 text-left text-xs leading-snug text-theme-text shadow-xl shadow-theme-bg/30"
-            >
-                <p className="text-sm font-bold text-theme-text">How Challenges Work</p>
-                <div className="mt-3 space-y-3">
-                    <div>
-                        <p className="font-semibold text-theme-accent-soft">Find or Get Invited</p>
-                        <p>Public Challenges can be found by everyone. Friend Challenges are visible to friends. Direct invitations always work, even for private Challenges.</p>
-                    </div>
-                    <div>
-                        <p className="font-semibold text-theme-accent-soft">Join and Track</p>
-                        <p>After joining, the Challenge adds its Habit to your dashboard. Completing that Habit counts as progress for the Challenge.</p>
-                    </div>
-                    <div>
-                        <p className="font-semibold text-theme-accent-soft">Progress and Rewards</p>
-                        <p>Each completed Challenge day increases your progress. When the Challenge is over, you can claim Coins if you completed at least one day.</p>
-                    </div>
-                    <div>
-                        <p className="font-semibold text-theme-accent-soft">Leaving</p>
-                        <p>Leaving removes the Challenge from your active limit, but you will not receive its reward later.</p>
-                    </div>
-                </div>
-            </PopoverContent>
-        </Popover>
-    );
-}
-
-/* Shows joined users on hover and opens their profiles. */
-function ChallengeParticipantsBadge({
-    challenge,
-    participants = [],
-    isLoading = false,
-    error = '',
-    onLoad,
-    onOpenProfile,
-}) {
-    const [isOpen, setIsOpen] = useState(false);
-    const closeTimerRef = useRef(null);
-    const participantCount = challenge?.participantCount ?? 0;
-    const participantUsers = participants.map(getParticipantUser).filter(Boolean);
-
-    /* Clears the delayed hover-close timer. */
-    function clearCloseTimer() {
-        if (closeTimerRef.current) {
-            window.clearTimeout(closeTimerRef.current);
-            closeTimerRef.current = null;
-        }
-    }
-
-    /* Opens the participant popover and triggers loading. */
-    function openParticipants() {
-        clearCloseTimer();
-        setIsOpen(true);
-        onLoad?.(challenge?.id);
-    }
-
-    /* Delays closing so the pointer can move into the popover. */
-    function scheduleClose() {
-        clearCloseTimer();
-        closeTimerRef.current = window.setTimeout(() => {
-            setIsOpen(false);
-        }, 120);
-    }
-
-    useEffect(() => () => {
-        if (closeTimerRef.current) {
-            window.clearTimeout(closeTimerRef.current);
-        }
-    }, []);
-
-    return (
-        <Popover
-            open={isOpen}
-            onOpenChange={(nextOpen) => {
-                setIsOpen(nextOpen);
-
-                if (nextOpen) {
-                    onLoad?.(challenge?.id);
-                }
-            }}
-        >
-            <PopoverTrigger asChild>
-                <button
-                    type="button"
-                    className="inline-flex h-6 items-center gap-1 rounded-full border border-theme-text/15 bg-theme-text/10 px-2.5 py-0.5 text-xs font-semibold text-theme-text transition hover:bg-theme-text/15"
-                    onMouseEnter={openParticipants}
-                    onMouseLeave={scheduleClose}
-                    onFocus={openParticipants}
-                    onBlur={scheduleClose}
-                >
-                    <UsersRound className="size-3" aria-hidden="true" />
-                    {participantCount} joined
-                </button>
-            </PopoverTrigger>
-            <PopoverContent
-                align="start"
-                side="bottom"
-                sideOffset={8}
-                onOpenAutoFocus={(event) => event.preventDefault()}
-                onCloseAutoFocus={(event) => event.preventDefault()}
-                onMouseEnter={openParticipants}
-                onMouseLeave={scheduleClose}
-                className="z-[130] w-64 rounded-xl border border-theme-text/10 bg-theme-surface p-2 text-theme-text shadow-xl shadow-theme-bg/30"
-            >
-                <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-theme-text-muted">
-                    Joined users
-                </p>
-                {isLoading ? (
-                    <div className="flex items-center gap-2 px-2 py-3 text-sm text-theme-text-soft">
-                        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                        Loading users
-                    </div>
-                ) : error ? (
-                    <p className="px-2 py-3 text-sm text-theme-danger">{error}</p>
-                ) : participantUsers.length > 0 ? (
-                    <div className="max-h-64 space-y-1 overflow-y-auto pr-1">
-                        {participantUsers.map((participantUser) => (
-                            <UserPanelRow
-                                key={participantUser.id ?? participantUser._id}
-                                user={participantUser}
-                                avatarClassName="size-9"
-                                relationship={{ status: 'self' }}
-                                surfaceClassName="bg-transparent"
-                                className="rounded-lg px-2 py-2 transition hover:bg-theme-text/10"
-                                onOpenProfile={() => {
-                                    setIsOpen(false);
-                                    onOpenProfile?.(participantUser);
-                                }}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <p className="px-2 py-3 text-sm text-theme-text-soft">No joined users yet.</p>
-                )}
-            </PopoverContent>
-        </Popover>
-    );
 }
 
 /* Challenges page: lists, creates, edits, joins, leaves, and claims challenge rewards. */
@@ -1319,12 +1151,6 @@ export function ChallengesPage() {
     const hasSelectedUserBlockedMe = selectedProfileUser
         ? hasUserBlockedMe(selectedProfileUser, blockers)
         : false;
-    const invitationPreviewChallenge = typeof invitationPreview?.challenge === 'object'
-        ? invitationPreview.challenge
-        : null;
-    const invitationPreviewCategory = categoryLabelByKey.get(invitationPreviewChallenge?.taxonomy?.categoryKey)
-        ?? invitationPreviewChallenge?.habitTemplate?.category;
-
     return (
         <Page theme="forest">
             <Heading title="Challenges" subtitle="Join friendly habit challenges." streakDays={user?.streakCount ?? user?.streak ?? 0} />
@@ -1607,82 +1433,20 @@ export function ChallengesPage() {
                 error={inviteError}
             />
 
-            <Dialog
-                open={Boolean(invitationPreview)}
-                onOpenChange={(nextOpen) => {
-                    if (!nextOpen) {
-                        setInvitationPreview(null);
-                    }
-                }}
-            >
-                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-                    <DialogHeader className="pr-8">
-                        <DialogTitle className="text-2xl font-bold text-theme-text">
-                            Challenge invitation
-                        </DialogTitle>
-                        <DialogDescription className="text-theme-text-soft">
-                            Review the challenge and decide if you want to join.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    {invitationPreviewChallenge ? (
-                        <ChallengeCard
-                            title={invitationPreviewChallenge.title}
-                            description={invitationPreviewChallenge.description}
-                            habitIcon={invitationPreviewChallenge.habitTemplate?.icon}
-                            habitTitle={invitationPreviewChallenge.habitTitle}
-                            category={invitationPreviewCategory}
-                            status={invitationPreviewChallenge.status}
-                            visibility={invitationPreviewChallenge.visibility}
-                            participants={invitationPreviewChallenge.participantCount ?? 0}
-                            participantsSlot={(
-                                <ChallengeParticipantsBadge
-                                    challenge={invitationPreviewChallenge}
-                                    participants={participantsByChallengeId[invitationPreviewChallenge.id] ?? []}
-                                    isLoading={participantLoadingByChallengeId[invitationPreviewChallenge.id] === true}
-                                    error={participantErrorsByChallengeId[invitationPreviewChallenge.id]}
-                                    onLoad={loadChallengeParticipants}
-                                    onOpenProfile={setSelectedProfileUser}
-                                />
-                            )}
-                            totalDays={invitationPreviewChallenge.durationDays ?? 0}
-                            reward={getChallengeReward(invitationPreviewChallenge)}
-                            startsAt={invitationPreviewChallenge.startsAt}
-                        >
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={handleRejectPreviewInvitation}
-                                disabled={busyAction === `reject-${invitationPreview.id}`}
-                                className="border-theme-text/20 bg-theme-text/10 text-theme-text hover:bg-theme-text/20"
-                            >
-                                {busyAction === `reject-${invitationPreview.id}` ? (
-                                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                                ) : (
-                                    <X className="size-4" aria-hidden="true" />
-                                )}
-                                Reject
-                            </Button>
-                            <ActionButton
-                                type="button"
-                                onClick={handleJoinPreviewInvitation}
-                                disabled={busyAction === `accept-${invitationPreview.id}`}
-                            >
-                                {busyAction === `accept-${invitationPreview.id}` ? (
-                                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                                ) : (
-                                    <Check className="size-4" aria-hidden="true" />
-                                )}
-                                Join
-                            </ActionButton>
-                        </ChallengeCard>
-                    ) : (
-                        <div className="rounded-xl border border-theme-text/10 bg-theme-text/5 p-4 text-sm text-theme-text-soft">
-                            This invitation is no longer available.
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+            <ChallengeInvitationPreviewDialog
+                invitation={invitationPreview}
+                categoryLabelByKey={categoryLabelByKey}
+                busyAction={busyAction}
+                participantsByChallengeId={participantsByChallengeId}
+                participantLoadingByChallengeId={participantLoadingByChallengeId}
+                participantErrorsByChallengeId={participantErrorsByChallengeId}
+                onClose={() => setInvitationPreview(null)}
+                onJoin={handleJoinPreviewInvitation}
+                onReject={handleRejectPreviewInvitation}
+                onLoadParticipants={loadChallengeParticipants}
+                onOpenProfile={setSelectedProfileUser}
+                getReward={getChallengeReward}
+            />
 
             <PlanLimitDialog
                 open={Boolean(limitPrompt)}
