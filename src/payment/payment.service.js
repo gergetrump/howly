@@ -160,6 +160,21 @@ export async function confirmPremiumCheckoutSession(userId, sessionId) {
     return user;
 }
 
+export async function cancelStripeBillingForUser(user) {
+    if (!user?.stripeSubscriptionId) {
+        return;
+    }
+
+    try {
+        await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+    } catch (error) {
+        // Subscription may already be canceled or missing in Stripe test data.
+        if (error?.code !== 'resource_missing') {
+            throw error;
+        }
+    }
+}
+
 export async function createManagePremiumSession(userId) {
     const user = await User.findById(userId);
 

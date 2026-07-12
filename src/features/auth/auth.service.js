@@ -132,7 +132,7 @@ export async function authenticateLocalUser({ identifier, password }) {
 
 // Fetch a user for /me.
 export async function getUserById(userId) {
-    return User.findById(userId);
+    return User.findOne({ _id: userId, isDeleted: false });
 }
 
 export async function requestPasswordReset(email) {
@@ -217,7 +217,7 @@ export async function resetPassword(token, newPassword) {
         return { error: 'Invalid or expired reset token' };
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
+    const passwordHash = await bcrypt.hash(newPassword, 12);
 
     user.passwordHash = passwordHash;
     user.passwordResetTokenHash = null;

@@ -15,7 +15,7 @@ function getJwtSecret() {
 }
 
 // Require a valid bearer token and attach the user claims to req.user.
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
     const header = req.headers.authorization || '';
     const [, token] = header.split(' ');
 
@@ -25,9 +25,15 @@ export function requireAuth(req, res, next) {
 
     try {
         const payload = jwt.verify(token, getJwtSecret());
+        const user = await User.findById(payload.sub).select('role isDeleted').lean();
+
+        if (!user || user.isDeleted) {
+            return res.status(401).json({ message: 'Invalid or expired token' });
+        }
+
         req.user = {
             id: payload.sub,
-            role: payload.role,
+            role: user.role,
         };
         return next();
     } catch (err) {
