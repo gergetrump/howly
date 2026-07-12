@@ -60,7 +60,7 @@ import {
     sendFriendRequest,
     unblockUser,
 } from '@/services/socialApi';
-import { getCurrentUserPlan } from '@/services/userService';
+import { getCurrentUser, getCurrentUserPlan } from '@/services/userService';
 import { getTaxonomyCategories } from '@/services/taxonomyService';
 
 const CHALLENGE_TABS = [
@@ -246,7 +246,7 @@ export function ChallengesPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
-    const { user } = useAuth();
+    const { user, setUser } = useAuth();
     const [activeTab, setActiveTab] = useState('active');
     const [challenges, setChallenges] = useState([]);
     const [hasMoreChallenges, setHasMoreChallenges] = useState(false);
@@ -1027,9 +1027,26 @@ export function ChallengesPage() {
         clearChallengeFeedback();
 
         try {
-            await claimChallengeReward(challengeId);
+            const rewardResult = await claimChallengeReward(challengeId);
+            const rewardCoins = Number(rewardResult?.rewardCoins ?? 0);
+
+            if (rewardCoins > 0) {
+                setUser((currentUser) => (currentUser
+                    ? { ...currentUser, coins: Number(currentUser.coins ?? 0) + rewardCoins }
+                    : currentUser));
+            }
+
             showChallengeToast("You've claimed your reward.");
-            await refreshCurrentChallenges();
+            await Promise.all([
+                refreshCurrentChallenges(),
+                getCurrentUser()
+                    .then((currentUser) => {
+                        setUser(currentUser.user ?? currentUser);
+                    })
+                    .catch((currentUserError) => {
+                        console.error('Failed to refresh user after claiming challenge reward:', currentUserError);
+                    }),
+            ]);
         } catch (actionError) {
             showActionError(actionError, actionError.message || "We couldn't claim your reward. Please try again.");
         } finally {
