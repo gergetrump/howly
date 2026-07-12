@@ -6,9 +6,9 @@ import {
     requestPasswordReset,
     signAccessToken,
     resetPassword as resetUserPassword,
-    toPublicUser,
     verifyEmail as verifyUserEmail,
 } from './auth.service.js';
+import { toPublicUser } from '../users/user.service.js';
 import { validateLoginInput, validateRegisterInput } from './auth.validation.js';
 import { validateUsernameValue } from '../../utils/accountInputValidation.js';
 import config from '../../../config.js';
