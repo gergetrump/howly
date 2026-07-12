@@ -10,12 +10,10 @@ import { ChallengeFormDialog } from '@/components/cards/ChallengeFormDialog.jsx'
 import { ChallengeInviteDialog } from '@/components/cards/ChallengeInviteDialog.jsx';
 import { ChallengeInvitationList } from '@/components/cards/ChallengeInvitationList.jsx';
 import { Page, PageSection, Heading } from '@/components/layout';
-import { UserAvatar } from '@/components/social/UserProfileTrigger.jsx';
+import { UserPanelRow } from '@/components/social/UserPanelRow.jsx';
 import { UserPreviewDialog } from '@/components/social/UserPreviewDialog.jsx';
 import {
-    getDisplayName,
     getSocialErrorMessage,
-    getUsername,
     hasUserBlockedMe,
     isBlockedByRelationship,
     isUserBlockedByMe,
@@ -327,25 +325,18 @@ function ChallengeParticipantsBadge({
                 ) : participantUsers.length > 0 ? (
                     <div className="max-h-64 space-y-1 overflow-y-auto pr-1">
                         {participantUsers.map((participantUser) => (
-                            <button
+                            <UserPanelRow
                                 key={participantUser.id ?? participantUser._id}
-                                type="button"
-                                className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-theme-text/10"
-                                onClick={() => {
+                                user={participantUser}
+                                avatarClassName="size-9"
+                                relationship={{ status: 'self' }}
+                                surfaceClassName="bg-transparent"
+                                className="rounded-lg px-2 py-2 transition hover:bg-theme-text/10"
+                                onOpenProfile={() => {
                                     setIsOpen(false);
                                     onOpenProfile?.(participantUser);
                                 }}
-                            >
-                                <UserAvatar user={participantUser} className="size-9" />
-                                <span className="min-w-0">
-                                    <span className="block truncate text-sm font-semibold text-theme-text">
-                                        {getDisplayName(participantUser)}
-                                    </span>
-                                    <span className="block truncate text-xs text-theme-text-soft">
-                                        @{getUsername(participantUser)}
-                                    </span>
-                                </span>
-                            </button>
+                            />
                         ))}
                     </div>
                 ) : (
