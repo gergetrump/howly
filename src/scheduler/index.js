@@ -1,6 +1,5 @@
 import cron from 'node-cron';
 import {
-    grantMonthlyShields,
     runDailyStreakMaintenance,
     sendStreakRepairReminders,
 } from '../features/streakFreeze/streakFreeze.service.js';
@@ -27,16 +26,6 @@ async function runStreakReminders() {
     }
 }
 
-/* Grants the monthly premium streak shields, logging the outcome. */
-async function runMonthly() {
-    try {
-        const result = await grantMonthlyShields();
-        console.log('[cron] monthly shield grant:', result);
-    } catch (error) {
-        console.error('[cron] monthly shield grant failed:', error);
-    }
-}
-
 /**
  * Start the streak-freeze background jobs. Call once after the DB is connected.
  * Jobs are idempotent, so the startup catch-up is safe on every restart.
@@ -51,9 +40,6 @@ export function startSchedulers() {
 
     // Streak reminder emails - every 30 minutes, for deadlines within the next 2 hours.
     cron.schedule('*/30 * * * *', runStreakReminders);
-
-    // Monthly premium shield grant - 1st of each month at 01:00.
-    cron.schedule('0 1 1 * *', runMonthly);
 
     console.log('[cron] streak-freeze schedulers started');
 }

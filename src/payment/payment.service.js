@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import config from '../../config.js';
 import { ApiError } from '../errors/ApiError.js';
 import User from '../features/users/user.model.js';
-import { PLANS, PLAN_KEYS } from '../config/plans.js';
+import { PLANS, PLAN_KEYS, hasPremiumAccess } from '../config/plans.js';
 
 
 const stripe = new Stripe(config.stripe.secretKey);
@@ -32,6 +32,121 @@ async function getStripeCustomerForUser(user) {
     return customer.id;
 }
 
+const PREMIUM_BENEFIT_INVOICE_REASONS = new Set(['subscription_create', 'subscription_cycle']);
+
+function toPeriodEndDate(periodEndUnix) {
+    return new Date(periodEndUnix * 1000);
+}
+
+function hasCoinsForBillingPeriod(user, periodEndUnix) {
+    if (!user?.coinsLastGrantedPeriodEnd || !periodEndUnix) {
+        return false;
+    }
+
+    return user.coinsLastGrantedPeriodEnd.getTime() === toPeriodEndDate(periodEndUnix).getTime();
+}
+
+function hasShieldsForBillingPeriod(user, periodEndUnix) {
+    if (!user?.streakShieldsLastGrantedPeriodEnd || !periodEndUnix) {
+        return false;
+    }
+
+    return user.streakShieldsLastGrantedPeriodEnd.getTime() === toPeriodEndDate(periodEndUnix).getTime();
+}
+
+/* Grants premium coins and streak shields once per paid subscription billing period (idempotent). */
+export async function grantPremiumBenefitsForBillingPeriod(userId, periodEndUnix, options = {}) {
+    const { requirePremiumAccess = true } = options;
+    const coinAmount = premiumPlan.monthlyBenefits.coins;
+    const shieldAmount = premiumPlan.monthlyBenefits.streakShields;
+
+    if (!periodEndUnix || (!coinAmount && !shieldAmount)) {
+        return { coinsGranted: false, shieldsGranted: false };
+    }
+
+    const user = await User.findOne({
+        _id: userId,
+        isDeleted: false,
+    }).select(
+        'role isPremium coins streakShields coinsLastGrantedPeriodEnd streakShieldsLastGrantedPeriodEnd'
+    );
+
+    if (!user || (requirePremiumAccess && !hasPremiumAccess(user))) {
+        return { coinsGranted: false, shieldsGranted: false };
+    }
+
+    const periodEndDate = toPeriodEndDate(periodEndUnix);
+    let changed = false;
+    let coinsGranted = false;
+    let shieldsGranted = false;
+
+    if (coinAmount && !hasCoinsForBillingPeriod(user, periodEndUnix)) {
+        user.coins = (user.coins ?? 0) + coinAmount;
+        user.coinsLastGrantedPeriodEnd = periodEndDate;
+        coinsGranted = true;
+        changed = true;
+    }
+
+    if (shieldAmount && !hasShieldsForBillingPeriod(user, periodEndUnix)) {
+        user.streakShields = (user.streakShields ?? 0) + shieldAmount;
+        user.streakShieldsLastGrantedPeriodEnd = periodEndDate;
+        shieldsGranted = true;
+        changed = true;
+    }
+
+    if (changed) {
+        await user.save();
+    }
+
+    return { coinsGranted, shieldsGranted };
+}
+
+/* Grants premium moon coins once per paid subscription billing period (idempotent). */
+export async function grantPremiumCoinsForBillingPeriod(userId, periodEndUnix, options = {}) {
+    const result = await grantPremiumBenefitsForBillingPeriod(userId, periodEndUnix, options);
+    return { granted: result.coinsGranted };
+}
+
+/* Grants premium streak shields once per paid subscription billing period (idempotent). */
+export async function grantPremiumShieldsForBillingPeriod(userId, periodEndUnix, options = {}) {
+    const result = await grantPremiumBenefitsForBillingPeriod(userId, periodEndUnix, options);
+    return { granted: result.shieldsGranted };
+}
+
+/* Grants premium benefits from a paid subscription invoice (initial checkout or renewal). */
+export async function grantPremiumBenefitsFromInvoice(invoice) {
+    if (invoice?.status !== 'paid' || !PREMIUM_BENEFIT_INVOICE_REASONS.has(invoice.billing_reason)) {
+        return { coinsGranted: false, shieldsGranted: false };
+    }
+
+    const customerId = typeof invoice.customer === 'string'
+        ? invoice.customer
+        : invoice.customer?.id;
+    if (!customerId || !invoice.subscription) {
+        return { coinsGranted: false, shieldsGranted: false };
+    }
+
+    const user = await User.findOne({ stripeCustomerId: customerId }).select('_id');
+    if (!user) {
+        return { coinsGranted: false, shieldsGranted: false };
+    }
+
+    const periodEndUnix = invoice.lines?.data?.[0]?.period?.end;
+    if (!periodEndUnix) {
+        return { coinsGranted: false, shieldsGranted: false };
+    }
+
+    return grantPremiumBenefitsForBillingPeriod(user._id, periodEndUnix, {
+        requirePremiumAccess: false,
+    });
+}
+
+/* Grants premium coins from a paid subscription invoice (initial checkout or renewal). */
+export async function grantPremiumCoinsFromInvoice(invoice) {
+    const result = await grantPremiumBenefitsFromInvoice(invoice);
+    return { granted: result.coinsGranted };
+}
+
 async function syncSubscriptionToUser(userId, subscription, customerId) {
     const isPremium = PREMIUM_SUBSCRIPTION_STATUSES.has(subscription.status);
     const stripeCustomerId =
@@ -39,7 +154,7 @@ async function syncSubscriptionToUser(userId, subscription, customerId) {
             ? customerId
             : customerId?.id;
 
-    return User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
         userId,
         {
             isPremium,
@@ -52,6 +167,13 @@ async function syncSubscriptionToUser(userId, subscription, customerId) {
         },
         { returnDocument: 'after', runValidators: true }
     );
+
+    if (isPremium && subscription.current_period_end) {
+        await grantPremiumBenefitsForBillingPeriod(userId, subscription.current_period_end);
+        return User.findById(userId);
+    }
+
+    return user;
 }
 
 export async function createPremiumCheckoutSession(userId) {

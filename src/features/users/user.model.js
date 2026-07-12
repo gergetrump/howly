@@ -119,15 +119,20 @@ const userSchema = new Schema(
       type: Date,
       default: null,
     },
-    // Streak Freeze ("shields") balance the user holds. Granted monthly to premium users (cron) and buyable in the shop. A daily cron consumes one
-    //to protect all habit streaks on a missed day.
+    // Streak Freeze ("shields") balance the user holds. Granted per premium billing period and buyable in the shop.
+    // A daily cron consumes one to protect all habit streaks on a missed day.
     streakShields: {
       type: Number,
       default: 0,
       min: 0,
     },
-    // Last time the monthly premium grant ran for this user (idempotency).
-    streakShieldsLastGrantedAt: {
+    // Subscription billing period end for the last premium shield grant (idempotency).
+    streakShieldsLastGrantedPeriodEnd: {
+      type: Date,
+      default: null,
+    },
+    // Subscription billing period end for the last premium coin grant (idempotency).
+    coinsLastGrantedPeriodEnd: {
       type: Date,
       default: null,
     },

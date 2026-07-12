@@ -6,6 +6,7 @@ import {
     confirmPremiumCheckoutSession,
     constructStripeWebhookEvent,
     createPremiumCheckoutSession,
+    grantPremiumBenefitsFromInvoice,
     markPremiumFromCheckoutSession,
     markPremiumFromSubscription,
     createManagePremiumSession,
@@ -91,6 +92,10 @@ export async function handleStripeWebhook(req, res) {
             event.type === 'customer.subscription.deleted'
         ) {
             await markPremiumFromSubscription(event.data.object);
+        }
+
+        if (event.type === 'invoice.paid') {
+            await grantPremiumBenefitsFromInvoice(event.data.object);
         }
 
         return res.status(200).json({ received: true });
