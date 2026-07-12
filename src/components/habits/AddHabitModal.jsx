@@ -252,9 +252,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
 
                     <div className="space-y-2.5">
                         <Label htmlFor="habit-description" className="text-sm font-medium text-theme-text">
-                            Description{!editHabit
-                                ? <span className="text-theme-danger"> *</span>
-                                : <span className="font-normal text-theme-text-muted"> (optional)</span>}
+                            Description
                         </Label>
                         <textarea
                             id="habit-description"
