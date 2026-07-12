@@ -25,19 +25,19 @@ function sameId(firstId, secondId) {
   return firstId?.toString() === secondId?.toString();
 }
 
-/* Builds the normalized {userA, userB} key (IDs sorted) used to look up a friendship regardless of direction. */
+/* Builds the normalized {userA, userB} key (IDs sorted) used to look up a friendship regardless of direction*/
 function buildFriendshipPair(firstUserId, secondUserId) {
   const [userA, userB] = [firstUserId.toString(), secondUserId.toString()].sort();
   return { userA, userB };
 }
 
-/* Returns whether the two users are friends. */
+/* Returns whether the two users are friends */
 async function areFriends(firstUserId, secondUserId) {
   const friendship = await Friendship.findOne(buildFriendshipPair(firstUserId, secondUserId)).lean();
   return Boolean(friendship);
 }
 
-/* Removes the "story liked" notification for a given actor/story after an unlike. */
+/* Removes the "story liked" notification for a given actor/story after an unlike */
 async function deleteStoryLikeNotification({ storyId, actorId, recipientId }) {
   // Unlike removes the like notification so the recipient cannot click into a
   // like that no longer exists.
@@ -50,7 +50,7 @@ async function deleteStoryLikeNotification({ storyId, actorId, recipientId }) {
   });
 }
 
-/* Removes comment/tag notifications tied to the given comment ids. */
+/* Removes comment/tag notifications tied to the given comment ids */
 async function deleteStoryCommentNotifications(commentIds) {
   if (!commentIds.length) return;
 

@@ -7,9 +7,6 @@ const FATAL_STATUS = new Set([401, 402]);
 /**
  * Thin adapter around OpenRouter (OpenAI-compatible aggregator, free tier).
  *
- * Provider-specific but feature-agnostic: other AI features (coach, insights, ...)
- * can reuse generateText(). To swap providers later, only this file changes —
- * the signature stays the same.
  *
  * @param {string} prompt                  The full prompt to send to the model.
  * @param {object} [options]

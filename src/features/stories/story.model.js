@@ -83,7 +83,7 @@ const storySchema = new Schema(
   }
 );
 
-// Auto-delete the document 90 days after creation (feed visibility is query-filtered, not TTL)
+// Auto-delete the document 90 days after creation
 storySchema.index({ archiveExpiresAt: 1 }, { expireAfterSeconds: 0 });
 storySchema.index({ user: 1, createdAt: -1 });
 
