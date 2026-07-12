@@ -9,7 +9,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { createPremiumCheckoutSession } from '@/services/paymentApi';
+import { createCheckoutSession } from '@/services/paymentService';
 import { getCurrentUserPlan } from '@/services/userService';
 
 const FALLBACK_PREMIUM_BENEFITS = [
@@ -98,7 +98,7 @@ export function PremiumUpgradeDialog({
 
         try {
             onBeforeCheckout?.();
-            const session = await createPremiumCheckoutSession();
+            const session = await createCheckoutSession();
 
             if (!session?.url) {
                 throw new Error('Premium checkout is not available right now.');
