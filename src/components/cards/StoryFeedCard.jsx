@@ -12,6 +12,7 @@ import { appCardClassName } from '@/components/cards/cardStyles';
 import { getStoryLikes, getStoryComments } from '@/services/storyApi';
 import { StoryCommentSection } from '@/components/social/StoryCommentSection';
 import { cloudinaryUrl } from '@/lib/cloudinary';
+import { DEFAULT_PROFILE_AVATAR_SRC } from '@/lib/profileAvatar.js';
 import { isBlockedByRelationship } from '@/components/social/socialHelpers';
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -571,7 +572,7 @@ export function StoryFeedCard({
                                         className="flex items-center gap-3 rounded-xl bg-theme-text/5 px-3 py-2"
                                     >
                                         <img
-                                            src={liker.profilePictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'}
+                                            src={liker.profilePictureUrl || DEFAULT_PROFILE_AVATAR_SRC}
                                             alt=""
                                             className="size-9 rounded-full bg-theme-surface-2 object-cover"
                                         />

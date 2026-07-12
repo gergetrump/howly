@@ -7,6 +7,7 @@ import {
     getNormalizedUsername,
     isBlockedByRelationship,
 } from '@/components/social/socialHelpers';
+import { DEFAULT_PROFILE_AVATAR_SRC } from '@/lib/profileAvatar.js';
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -368,7 +369,7 @@ export function StoryCommentSection({
                     aria-label={`Open ${commentUserName}'s profile preview`}
                 >
                     <img
-                        src={commentUser?.profilePictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'}
+                        src={commentUser?.profilePictureUrl || DEFAULT_PROFILE_AVATAR_SRC}
                         alt=""
                         className={`${isReply ? 'size-6' : 'size-8'} rounded-full bg-theme-surface-2 object-cover`}
                     />
@@ -491,7 +492,7 @@ export function StoryCommentSection({
                                         className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-theme-surface-2/80 text-theme-text transition"
                                     >
                                         <img
-                                            src={u.profilePictureUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'}
+                                            src={u.profilePictureUrl || DEFAULT_PROFILE_AVATAR_SRC}
                                             alt={u.username}
                                             className="size-6 rounded-full object-cover bg-theme-surface-2"
                                         />

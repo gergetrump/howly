@@ -7,6 +7,7 @@ import { StreakShieldBadge } from '@/components/brand/StreakShieldBadge.jsx';
 import { StreakCalendarPopover } from '@/components/habits/StreakCalendarPopover.jsx';
 import { NotificationBell } from '@/components/layout/NotificationBell';
 import howlyIcon from '@/assets/wolf.svg';
+import { DEFAULT_PROFILE_AVATAR_SRC } from '@/lib/profileAvatar.js';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 
@@ -54,10 +55,15 @@ export function NavBar({
     const navProfilePictureUrl = typeof user?.profilePictureUrl === 'string' ? user.profilePictureUrl.trim() : '';
     const navProfileInitial = (user?.firstName || user?.username || 'Profile').trim().charAt(0).toUpperCase() || '?';
     const [hasProfilePictureLoadError, setHasProfilePictureLoadError] = useState(false);
+    const [hasDefaultProfilePictureLoadError, setHasDefaultProfilePictureLoadError] = useState(false);
     const isPremium = user?.isPremium === true || user?.role === 'admin';
+    const navAvatarSrc = navProfilePictureUrl && !hasProfilePictureLoadError
+        ? navProfilePictureUrl
+        : hasDefaultProfilePictureLoadError ? '' : DEFAULT_PROFILE_AVATAR_SRC;
 
     useEffect(() => {
         setHasProfilePictureLoadError(false);
+        setHasDefaultProfilePictureLoadError(false);
     }, [navProfilePictureUrl]);
 
     return (
@@ -130,12 +136,18 @@ export function NavBar({
                                 }
                                 aria-label="Profile"
                             >
-                                {navProfilePictureUrl && !hasProfilePictureLoadError ? (
+                                {navAvatarSrc ? (
                                     <img
-                                        src={navProfilePictureUrl}
+                                        src={navAvatarSrc}
                                         alt="Profile"
                                         className="size-full rounded-full object-cover"
-                                        onError={() => setHasProfilePictureLoadError(true)}
+                                        onError={() => {
+                                            if (navAvatarSrc === navProfilePictureUrl) {
+                                                setHasProfilePictureLoadError(true);
+                                            } else {
+                                                setHasDefaultProfilePictureLoadError(true);
+                                            }
+                                        }}
                                     />
                                 ) : (
                                     <span className="text-lg font-bold text-theme-text">{navProfileInitial}</span>

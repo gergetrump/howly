@@ -1,26 +1,38 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
 import { appCardClassName } from '@/components/cards/cardStyles';
+import { DEFAULT_PROFILE_AVATAR_SRC } from '@/lib/profileAvatar.js';
 import { useEffect, useState } from 'react';
 
 export function PostAuthorAvatar({ avatarSrc, name, isPremium }) {
     const initial = name?.trim()?.charAt(0)?.toUpperCase() || '?';
     const resolvedAvatarSrc = typeof avatarSrc === 'string' ? avatarSrc.trim() : '';
     const [hasImageLoadError, setHasImageLoadError] = useState(false);
+    const [hasDefaultImageLoadError, setHasDefaultImageLoadError] = useState(false);
+    const displayedAvatarSrc = resolvedAvatarSrc && !hasImageLoadError
+        ? resolvedAvatarSrc
+        : hasDefaultImageLoadError ? '' : DEFAULT_PROFILE_AVATAR_SRC;
 
     useEffect(() => {
         setHasImageLoadError(false);
+        setHasDefaultImageLoadError(false);
     }, [resolvedAvatarSrc]);
 
     return (
         <div className="relative shrink-0">
             <div className={`flex size-12 items-center justify-center overflow-hidden rounded-full bg-slate-300 text-lg font-bold text-slate-950 ${isPremium ? 'ring-2 ring-theme-gold ring-offset-2 ring-offset-theme-surface' : ''}`}>
-                {resolvedAvatarSrc && !hasImageLoadError ? (
+                {displayedAvatarSrc ? (
                     <img
-                        src={resolvedAvatarSrc}
+                        src={displayedAvatarSrc}
                         alt=""
                         className="h-full w-full object-cover"
-                        onError={() => setHasImageLoadError(true)}
+                        onError={() => {
+                            if (displayedAvatarSrc === resolvedAvatarSrc) {
+                                setHasImageLoadError(true);
+                            } else {
+                                setHasDefaultImageLoadError(true);
+                            }
+                        }}
                     />
                 ) : (
                     initial
