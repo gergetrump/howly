@@ -35,8 +35,7 @@ export function HabitSelectionPage() {
         });
     }
 
-    // Mark onboarding done, refresh the user,
-    // then enter the dashboard.
+    // Mark onboarding done, refresh the user,then enter the dashboard.
     async function finishOnboarding() {
         await completeOnboarding();
         await refreshUser();

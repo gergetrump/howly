@@ -41,7 +41,7 @@ const FEATURES = [
         icon: Sparkles,
         iconColor: 'text-howly-primary',
         iconBg: 'bg-howly-primary/15',
-        title: 'Level up your companion',
+        title: 'Customize your companion',
         description:
             'Earn in-game currency for consistency and customise your cosmic companion.',
     },

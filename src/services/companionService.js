@@ -9,9 +9,7 @@ export async function getMyCompanion() {
 }
 
 /**
- * Create or update the user's companion (used during onboarding and when
- * switching/renaming the companion later).
- * payload: { type: 'wolf' | 'panda' | 'bear', name: string }
+ * Create or update the user's companion (used during onboarding and when switching/renaming the companion later).
  */
 export async function selectCompanion({ type, name }) {
     return apiRequest('/companions/me', {
