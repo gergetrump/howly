@@ -192,6 +192,8 @@ export function toPublicUser(user, extras = {}) {
         onboardingCompleted: user.onboardingCompleted,
         authProvider: user.authProvider,
         providerId: user.providerId,
+        isEmailVerified: user.isEmailVerified,
+        emailVerifiedAt: user.emailVerifiedAt,
         coins: user.coins,
         streak: user.streak,
         ...(

@@ -1,4 +1,5 @@
 import * as userService from './user.service.js';
+import { deleteUserAccount } from './userDeletion.service.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cloudinary.service.js';
 import { moderateImage } from '../../moderation/moderation.service.js';
 import { PLANS, getPlanForUser, getPlanKeyForUser } from '../../config/plans.js';
@@ -210,7 +211,7 @@ export async function deleteCurrentUser(req, res) {
         return badRequest(res, error);
     }
 
-    const user = await userService.deleteUserById(req.user.id);
+    const user = await deleteUserAccount(req.user.id);
 
     if (!user) {
         return notFound(res);

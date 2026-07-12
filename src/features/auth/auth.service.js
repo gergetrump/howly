@@ -10,29 +10,6 @@ import {
 
 const TOKEN_EXPIRES_IN = config.jwtExpiresIn || '7d';
 
-const DEFAULT_NOTIFICATION_PREFERENCES = {
-    emailEnabled: false,
-    challengeInvitations: false,
-    friendRequests: false,
-    streakReminders: false,
-    muteAll: false,
-    muteTag: false,
-    muteFriendRequest: false,
-    muteComment: false,
-    muteLike: false,
-    muteReaction: false,
-    muteChallengeInvitation: false,
-};
-
-function normalizeNotificationPreferences(preferences = {}) {
-    return {
-        ...DEFAULT_NOTIFICATION_PREFERENCES,
-        ...Object.fromEntries(
-            Object.entries(preferences ?? {}).filter(([, value]) => typeof value === 'boolean')
-        ),
-    };
-}
-
 // Centralized lookup for the JWT secret.
 function getJwtSecret() {
     const secret = config.jwtSecret;
@@ -155,34 +132,7 @@ export async function authenticateLocalUser({ identifier, password }) {
 
 // Fetch a user for /me.
 export async function getUserById(userId) {
-    return User.findById(userId);
-}
-
-// Return only safe fields to send to the client.
-export function toPublicUser(user) {
-    if (!user) {
-        return null;
-    }
-
-    return {
-        id: user._id.toString(),
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        isPremium: user.isPremium,
-        onboardingCompleted: user.onboardingCompleted,
-        authProvider: user.authProvider,
-        providerId: user.providerId,
-        isEmailVerified: user.isEmailVerified,
-        emailVerifiedAt: user.emailVerifiedAt,
-        coins: user.coins,
-        streak: user.streak,
-        notificationPreferences: normalizeNotificationPreferences(user.notificationPreferences),
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-    };
+    return User.findOne({ _id: userId, isDeleted: false });
 }
 
 export async function requestPasswordReset(email) {
@@ -267,7 +217,7 @@ export async function resetPassword(token, newPassword) {
         return { error: 'Invalid or expired reset token' };
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
+    const passwordHash = await bcrypt.hash(newPassword, 12);
 
     user.passwordHash = passwordHash;
     user.passwordResetTokenHash = null;

@@ -127,7 +127,7 @@ export async function markPremiumFromSubscription(subscription) {
 
 export function constructStripeWebhookEvent(payload, signature, webhookSecret) {
     if (!webhookSecret) {
-        return JSON.parse(payload.toString('utf8'));
+        throw new Error('STRIPE_WEBHOOK_SECRET is required');
     }
 
     return stripe.webhooks.constructEvent(payload, signature, webhookSecret);
@@ -158,6 +158,21 @@ export async function confirmPremiumCheckoutSession(userId, sessionId) {
     }
 
     return user;
+}
+
+export async function cancelStripeBillingForUser(user) {
+    if (!user?.stripeSubscriptionId) {
+        return;
+    }
+
+    try {
+        await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+    } catch (error) {
+        // Subscription may already be canceled or missing in Stripe test data.
+        if (error?.code !== 'resource_missing') {
+            throw error;
+        }
+    }
 }
 
 export async function createManagePremiumSession(userId) {
