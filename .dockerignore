@@ -2,4 +2,7 @@
 .DS_Store
 npm-debug.log
 node_modules
-uploads
+.env
+uploads/*
+!uploads/profile-pictures/
+!uploads/profile-pictures/default.png

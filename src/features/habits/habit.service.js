@@ -316,10 +316,7 @@ async function assertHabitTextClean(text) {
     }
 }
 
-function validateHabitFields({ description, target, frequency, customDays }) {
-    if (typeof description !== 'string' || !description.trim()) {
-        throw new ApiError(400, 'INVALID_HABIT', 'Description is required.');
-    }
+function validateHabitFields({ target, frequency, customDays }) {
     if (target !== undefined && target !== null && !(typeof target === 'number' && Number.isFinite(target) && target >= 1)) {
         throw new ApiError(400, 'INVALID_HABIT', 'Target must be a positive number.');
     }

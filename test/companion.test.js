@@ -83,8 +83,32 @@ test('PUT /api/companions/me creates a companion with the chosen type and name',
     assert.equal(await Companion.countDocuments({ user: user._id }), 1);
 });
 
-test('PUT /api/companions/me switches the existing companion without creating a duplicate', async () => {
+test('free users cannot switch companion type after their starter choice', async () => {
     const user = await buildUser();
+    const header = authHeader(user);
+
+    await request(app)
+        .put('/api/companions/me')
+        .set('Authorization', header)
+        .send({ type: 'panda', name: 'Bamboo' })
+        .expect(200);
+
+    const response = await request(app)
+        .put('/api/companions/me')
+        .set('Authorization', header)
+        .send({ type: 'bear', name: 'Brownie' })
+        .expect(403);
+
+    assert.equal(response.body.errorCode, 'FORBIDDEN');
+    assert.equal(await Companion.countDocuments({ user: user._id }), 1);
+
+    const companion = await Companion.findOne({ user: user._id }).lean();
+    assert.equal(companion.type, 'panda');
+    assert.equal(companion.name, 'Bamboo');
+});
+
+test('premium users can switch companion type without creating a duplicate', async () => {
+    const user = await buildUser({ isPremium: true });
     const header = authHeader(user);
 
     const first = await request(app)
@@ -104,6 +128,43 @@ test('PUT /api/companions/me switches the existing companion without creating a 
     // Same document was updated, not a new one.
     assert.equal(second.body.data.id, first.body.data.id);
     assert.equal(await Companion.countDocuments({ user: user._id }), 1);
+});
+
+test('existing companion stays after premium ends but type switching is blocked', async () => {
+    const user = await buildUser({ isPremium: true });
+    const header = authHeader(user);
+
+    await request(app)
+        .put('/api/companions/me')
+        .set('Authorization', header)
+        .send({ type: 'panda', name: 'Bamboo' })
+        .expect(200);
+
+    await request(app)
+        .put('/api/companions/me')
+        .set('Authorization', header)
+        .send({ type: 'bear', name: 'Brownie' })
+        .expect(200);
+
+    await User.updateOne({ _id: user._id }, { isPremium: false });
+
+    const current = await request(app)
+        .get('/api/companions/me')
+        .set('Authorization', header)
+        .expect(200);
+
+    assert.equal(current.body.data.type, 'bear');
+    assert.equal(current.body.data.name, 'Brownie');
+
+    await request(app)
+        .put('/api/companions/me')
+        .set('Authorization', header)
+        .send({ type: 'wolf', name: 'Howly' })
+        .expect(403);
+
+    const companion = await Companion.findOne({ user: user._id }).lean();
+    assert.equal(companion.type, 'bear');
+    assert.equal(companion.name, 'Brownie');
 });
 
 test('GET /api/companions/me returns the previously selected companion', async () => {

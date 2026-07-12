@@ -1,9 +1,5 @@
 import Item from './item.model.js';
 
-export async function createItem(itemData) {
-    return Item.create(itemData);
-}
-
 export async function listItems({ type, premiumOnly } = {}) {
     const filter = {};
 
@@ -15,6 +11,8 @@ export async function listItems({ type, premiumOnly } = {}) {
         filter.premiumOnly = premiumOnly;
     }
 
+    // Keep a deterministic catalog order. Buying an item updates inventory, not
+    // the catalog, so the shop grid should not jump after purchase.
     return Item.find(filter).sort({ type: 1, price: 1, name: 1 });
 }
 

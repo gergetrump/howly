@@ -3,6 +3,8 @@ import helmet from 'helmet';
 const PROTOTYPE_POLLUTION_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const MONGO_OPERATOR_KEY_PATTERN = /[$.]/;
 
+// Security stays as a separate app layer: headers reduce XSS impact, and unsafe
+// request keys are rejected before feature controllers build Mongo queries.
 const HELMET_OPTIONS = {
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     contentSecurityPolicy: {

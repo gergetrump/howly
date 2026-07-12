@@ -10,7 +10,6 @@ import { Friendship } from '../social/social.model.js';
 import { getBlockedUserIds } from '../social/social.service.js';
 import { MilestonePost } from '../milestones/milestone.model.js';
 import Habit from '../habits/habit.model.js';
-import Challenge from '../challenges/challenge.model.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../cloudinary/cloudinary.service.js';
 import { toPublicUser } from '../users/user.service.js';
 import { createNotification, deleteNotificationsByFilter } from '../notifications/notification.service.js';
@@ -40,6 +39,8 @@ async function areFriends(firstUserId, secondUserId) {
 
 /* Removes the "story liked" notification for a given actor/story after an unlike. */
 async function deleteStoryLikeNotification({ storyId, actorId, recipientId }) {
+  // Unlike removes the like notification so the recipient cannot click into a
+  // like that no longer exists.
   await deleteNotificationsByFilter({
     recipient: recipientId,
     actor: actorId,
@@ -53,6 +54,8 @@ async function deleteStoryLikeNotification({ storyId, actorId, recipientId }) {
 async function deleteStoryCommentNotifications(commentIds) {
   if (!commentIds.length) return;
 
+  // Comment and tag notifications point to a concrete comment id in metadata.
+  // Deleting the comment must delete those notification links too.
   await deleteNotificationsByFilter({
     type: { $in: ['story_commented', 'story_tagged'] },
     entityType: 'story',
@@ -62,6 +65,7 @@ async function deleteStoryCommentNotifications(commentIds) {
 
 /* Removes every notification associated with a story. */
 async function deleteStoryNotifications(storyId) {
+  // Deleting the whole story invalidates every notification that targets it.
   await deleteNotificationsByFilter({
     entityType: 'story',
     entityId: storyId,
@@ -111,16 +115,6 @@ async function resolveSource({ userId, sourceType, sourceId }) {
     }
 
     return { sourceTitle: habit.title, sourceEmoji: habit.icon || '🎯' };
-  }
-
-  if (sourceType === 'challenge') {
-    const challenge = await Challenge.findById(sourceId).lean();
-
-    if (!challenge) {
-      return { errorCode: 'SOURCE_NOT_FOUND' };
-    }
-
-    return { sourceTitle: challenge.title, sourceEmoji: '🏋️' };
   }
 
   if (sourceType === 'milestone') {
@@ -198,6 +192,8 @@ async function getVisibleStoryEngagementCounts({ storyIds, userId }) {
   const blockedSet = await getBlockedUserIds(userId);
   const hiddenUserIds = [...blockedSet].map((id) => new mongoose.Types.ObjectId(id));
 
+  // Counts should match what the viewer is allowed to see. Interactions from
+  // blocked relationships are hidden instead of counted.
   const likesQuery = { story: { $in: storyIds } };
   const commentsQuery = { story: { $in: storyIds } };
 
@@ -348,6 +344,8 @@ export async function toggleStoryLike({ userId, storyId }) {
   const existingLike = await StoryLike.findOne({ story: storyId, user: userId });
 
   if (existingLike) {
+    // Unlike is also notification cleanup. The fallback banner should be rare
+    // because the stale notification is removed as soon as the like disappears.
     await existingLike.deleteOne();
     await deleteStoryLikeNotification({
       storyId: story._id,
@@ -386,7 +384,9 @@ export async function toggleStoryLike({ userId, storyId }) {
     type: 'story_liked',
     entityType: 'story',
     entityId: story._id,
-    deduplicate: true, // one notification per (actor, story) — prevents like-spam
+    // One notification per actor/story prevents like-spam from filling the
+    // dropdown with duplicate rows.
+    deduplicate: true,
   });
 
   await story.populate('user');
@@ -397,8 +397,8 @@ export async function toggleStoryLike({ userId, storyId }) {
   };
 }
 
-// Who liked a story — the owner can always see it (incl. their archive); friends
-// only while the story is still inside the feed window.
+// Who liked a story: the owner can always see it (including their archive);
+// friends can only see it while the story is still inside the feed window.
 export async function getStoryLikes({ userId, storyId, pagination = null }) {
   const story = await Story.findById(storyId).lean();
 
@@ -446,6 +446,8 @@ export async function getStoryMentionCandidates({ userId, storyId }) {
   }).lean();
   const candidateIds = new Set([story.user.toString()]);
 
+  // Mention suggestions come from users who can see the story owner's post,
+  // not from users who already liked/commented on it.
   friendships.forEach((friendship) => {
     const friendId = sameId(friendship.userA, story.user) ? friendship.userB : friendship.userA;
     candidateIds.add(friendId.toString());
@@ -474,7 +476,8 @@ export async function deleteStory({ userId, storyId }) {
     return { errorCode: 'STORY_NOT_FOUND' };
   }
 
-  // remove the image from Cloudinary, then the story and its likes
+  // Remove external media first, then database rows and notification links.
+  // If Cloudinary cleanup fails, still remove the story from the app.
   try {
     await deleteFromCloudinary(story.imagePublicId);
   } catch (err) {
@@ -508,10 +511,13 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
     if (!parentComment) {
       return { errorCode: 'PARENT_COMMENT_NOT_FOUND' };
     }
-    // Restrict nesting to exactly 1 level (replies of replies become replies to the parent comment)
+    // Restrict nesting to one level. Replies to replies become replies to the
+    // original parent comment.
     finalParentId = parentComment.parentComment || parentComment._id;
   }
 
+  // The backend owns moderation so bypassing the frontend cannot save a blocked
+  // comment.
   const moderation = moderateCommentText(content);
   if (!moderation.allowed) {
     return { errorCode: moderation.errorCode };
@@ -539,6 +545,9 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
     ? mentionedUsernames.includes(storyOwner.username.toLowerCase())
     : false;
 
+  // The owner receives one notification for the new comment. If they were
+  // explicitly tagged on their own post, the type reflects that without sending
+  // a second duplicate owner notification.
   await createNotification({
     recipientId: story.user,
     actorId: userId,
@@ -578,7 +587,7 @@ export async function addStoryComment({ userId, storyId, content, parentCommentI
           if (sameId(tagged._id, story.user)) return;
 
           // Visibility check: tagged user must be friends with the story owner
-          // to be able to see the post — only then send the notification.
+          // to be able to see the post. Only then send the notification.
           const canSeePost = await areFriends(tagged._id, story.user);
           if (!canSeePost) return;
 
@@ -625,6 +634,8 @@ export async function getStoryComments({ userId, storyId, pagination = null }) {
   }
 
   if (pagination) {
+    // Page parent comments only, then include replies for those visible parents.
+    // This keeps threading intact while still limiting the initial payload.
     const parents = await StoryComment.find({
       ...commentVisibilityQuery,
       parentComment: null,

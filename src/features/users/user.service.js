@@ -84,25 +84,6 @@ export async function getCompletedChallengeCount(userId) {
     }).length;
 }
 
-export async function listDevUsers() {
-    const users = await User.find({})
-        .select('username email firstName lastName authProvider isDeleted createdAt updatedAt')
-        .sort({ createdAt: -1 })
-        .lean();
-
-    return users.map((user) => ({
-        id: user._id.toString(),
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        authProvider: user.authProvider,
-        isDeleted: user.isDeleted,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-    }));
-}
-
 export async function searchUsersByUsername({ query, currentUserId, limit = 10 }) {
     const escapedQuery = escapeRegex(query);
     
@@ -231,6 +212,17 @@ export function toPublicUser(user, extras = {}) {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
     };
+}
+
+export async function softDeleteUser(userId) {
+    return User.findByIdAndUpdate(
+        userId,
+        {
+            isDeleted: true,
+            deletedAt: new Date(),
+        },
+        { returnDocument: 'after' }
+    );
 }
 
 export async function deleteUserById(userId) {

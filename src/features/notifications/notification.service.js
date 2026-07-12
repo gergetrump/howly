@@ -5,7 +5,7 @@ import { toOffsetPage } from '../../utils/pagination.js';
 
 // ---------------------------------------------------------------------------
 // SSE client registry
-// Maps userId (string) → Set of active Express response objects.
+// Maps userId (string) to a set of active Express response objects.
 // ---------------------------------------------------------------------------
 const sseClients = new Map();
 
@@ -19,6 +19,8 @@ const NOTIFICATION_PREFERENCE_BY_TYPE = {
   challenge_invitation_received: 'muteChallengeInvitation',
 };
 
+// SSE streams are kept in memory because they are short-lived browser
+// connections. Mongo stores notifications; this map only wakes open clients.
 export function registerSSEClient(userId, res) {
   const id = userId.toString();
   if (!sseClients.has(id)) {
@@ -131,6 +133,8 @@ function toNotificationResponse(notification) {
 }
 
 export async function deleteNotificationsByFilter(filter) {
+  // Shared stale-notification cleanup for social, story, and challenge flows.
+  // Recipients are collected before deleteMany so their bell counters refresh.
   const recipients = await Notification.distinct('recipient', filter);
   const result = await Notification.deleteMany(filter);
 

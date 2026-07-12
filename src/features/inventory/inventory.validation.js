@@ -61,6 +61,8 @@ function sanitizeCustomization(customization = {}) {
 
     const sanitizedCustomization = {};
 
+    // Only allow known HEX color fields. Unknown keys are ignored so the client
+    // cannot store arbitrary customization data.
     CUSTOMIZATION_COLOR_FIELDS.forEach((field) => {
         const value = customization[field];
 
@@ -70,6 +72,8 @@ function sanitizeCustomization(customization = {}) {
     });
 
     if (typeof customization.text === 'string') {
+        // Empty text is allowed and saved as an intentional design choice.
+        // Unsupported characters are stripped before ownership keys are built.
         const text = customization.text
             .replace(/[^a-zA-Z0-9 ]/g, '')
             .trim()
@@ -105,6 +109,8 @@ function sanitizeOutfitCustomization(customization = {}) {
 
     const sanitizedCustomization = {};
 
+    // Saving an outfit can only update placement. Color/text/symbol variants are
+    // chosen at purchase time and belong to the owned inventory row.
     if (typeof customization.side === 'string') {
         const side = customization.side.trim().toLowerCase();
 
@@ -166,6 +172,7 @@ export function validateSaveOutfitInput(body = {}) {
         : {};
     const sanitizedCustomizationUpdates = {};
 
+    // Ignore invalid item ids instead of letting them reach the service layer.
     Object.entries(customizationUpdates).forEach(([userItemId, customization]) => {
         if (mongoose.Types.ObjectId.isValid(userItemId)) {
             sanitizedCustomizationUpdates[userItemId] = sanitizeOutfitCustomization(customization);

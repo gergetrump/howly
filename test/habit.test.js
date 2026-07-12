@@ -393,7 +393,7 @@ test('habit creation validates numeric target, custom weekdays, and icon size', 
   try {
     const post = (body) => request(app).post('/api/habits').set('Authorization', token).send(body);
 
-    await post({ title: 'Pushups', type: 'numeric', frequency: 'Daily' }).expect(400);
+    await post({ title: 'Pushups', frequency: 'Daily', target: 0 }).expect(400);
     await post({ title: 'Gym', type: 'boolean', frequency: 'Custom' }).expect(400);
     await post({ title: 'Gym', type: 'boolean', frequency: 'Custom', customDays: [2.5] }).expect(400);
     await post({ title: 'Gym', type: 'boolean', frequency: 'Daily', icon: 'x'.repeat(100) }).expect(400);
@@ -871,6 +871,48 @@ test('premium users can create habits without hitting the plan limit', async () 
         category: 'Movement',
       })
       .expect(201);
+  }
+});
+
+test('premium-ended habit cleanup keeps selected free-limit habits and deletes the rest', async () => {
+  const user = await buildUser({ isPremium: true });
+  const token = authHeader(user);
+  const freeHabitLimit = getPlanForUser({ isPremium: false }).limits.maxHabits;
+  const habits = await Habit.create(
+    Array.from({ length: freeHabitLimit + 2 }, (_, index) => ({
+      ownerId: user._id,
+      title: `Premium Habit ${index + 1}`,
+      type: 'boolean',
+      frequency: 'Daily',
+      category: 'Movement',
+    })),
+  );
+  const selectedHabitIds = new Set(
+    habits.slice(0, freeHabitLimit).map((habit) => habit._id.toString()),
+  );
+  const habitsToDelete = habits.slice(freeHabitLimit);
+
+  await User.updateOne({ _id: user._id }, { isPremium: false });
+
+  for (const habit of habitsToDelete) {
+    await request(app)
+      .delete(`/api/habits/${habit._id}`)
+      .set('Authorization', token)
+      .expect(204);
+  }
+
+  const response = await request(app)
+    .get('/api/habits?limit=20')
+    .set('Authorization', token)
+    .expect(200);
+
+  const remainingHabitIds = response.body.data.map((habit) => habit.id);
+  assert.equal(response.body.pagination.total, freeHabitLimit);
+  assert.equal(remainingHabitIds.every((habitId) => selectedHabitIds.has(habitId)), true);
+
+  for (const deletedHabit of habitsToDelete) {
+    const stored = await Habit.findById(deletedHabit._id).lean();
+    assert.ok(stored.deletedAt);
   }
 });
 

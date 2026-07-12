@@ -8,6 +8,8 @@ import connectDB from '../src/config/database.js';
 import User from '../src/features/users/user.model.js';
 import Challenge from '../src/features/challenges/challenge.model.js';
 import ChallengeParticipant from '../src/features/challenges/challengeParticipant.model.js';
+import Item from '../src/features/items/item.model.js';
+import UserItem from '../src/features/inventory/inventory.model.js';
 import { signAccessToken } from '../src/features/auth/auth.service.js';
 import config from '../config.js';
 
@@ -42,6 +44,8 @@ afterEach(async () => {
         User.deleteMany({}),
         Challenge.deleteMany({}),
         ChallengeParticipant.deleteMany({}),
+        Item.deleteMany({}),
+        UserItem.deleteMany({}),
     ]);
 });
 
@@ -180,6 +184,32 @@ test('GET /api/users/me/plan returns premium plan details for premium users', as
     assert.equal(response.body.currentPlanKey, 'premium');
     assert.equal(response.body.currentPlan.limits.maxActiveChallenges, 8);
     assert.equal(response.body.currentPlan.monthlyBenefits.coins, 300);
+});
+
+test('owned premium themes remain selectable after premium ends', async () => {
+    const user = await buildUser({ isPremium: true });
+    const token = signAccessToken(user);
+    const sakuraTheme = await Item.create({
+        name: 'Sakura Theme',
+        type: 'theme',
+        price: 1000,
+        assetKey: 'theme-sakura-light',
+        premiumOnly: true,
+    });
+
+    await UserItem.create({ user: user._id, item: sakuraTheme._id });
+    await User.updateOne({ _id: user._id }, { isPremium: false });
+
+    const response = await request(app)
+        .patch('/api/users/me/preferences')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ theme: 'sakura-light' })
+        .expect(200);
+
+    assert.equal(response.body.preferences.theme, 'sakura-light');
+
+    const updatedUser = await User.findById(user._id).lean();
+    assert.equal(updatedUser.preferences.theme, 'sakura-light');
 });
 
 test('DELETE /api/users/me permanently removes the current user', async () => {

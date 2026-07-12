@@ -64,22 +64,19 @@ test('GET /api/items lists items sorted and filterable by type and premiumOnly',
   );
 });
 
-test('POST /api/items rejects duplicate asset keys', async () => {
-  await Item.syncIndexes();
-  await buildItem({ assetKey: 'same-key' });
-
+test('POST /api/items is not exposed as a public catalog mutation route', async () => {
   const response = await request(app)
     .post('/api/items')
     .send({
-      name: 'Duplicate',
+      name: 'New item',
       type: 'accessory',
       price: 100,
-      assetKey: 'same-key',
+      assetKey: 'new-item',
     })
-    .expect(400);
+    .expect(404);
 
-  assert.match(response.body.message, /assetKey already exists/);
-  assert.equal(await Item.countDocuments({ assetKey: 'same-key' }), 1);
+  assert.match(response.text, /Cannot POST \/api\/items/);
+  assert.equal(await Item.countDocuments({ assetKey: 'new-item' }), 0);
 });
 
 test('GET /api/items rejects invalid filters and missing items', async () => {
