@@ -42,6 +42,9 @@ import {
 /* Card for a single challenge habit on the dashboard, with a completion toggle. */
 function DashboardChallengeHabitCard({ item, onToggle }) {
     const progressText = `${item.participant?.daysCompleted ?? 0}/${item.challenge?.durationDays ?? 0} days`;
+    const goal = item.habit?.target;
+    const unit = item.habit?.unit;
+    const hasGoal = goal !== null && goal !== undefined && goal !== '';
 
     return (
         <Card className={cn(appCardClassName, item.habit.isCompletedToday && 'bg-theme-success-surface ring-theme-success/25')}>
@@ -51,16 +54,28 @@ function DashboardChallengeHabitCard({ item, onToggle }) {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate font-semibold text-theme-text">{item.habit.title}</h3>
+                    <div className="min-w-0">
+                        <h3 className="truncate font-semibold text-theme-text">{item.challenge?.title}</h3>
+                    </div>
+                    <p className="mt-1 truncate text-sm text-theme-text-soft">{item.habit.title}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <StreakBadge
+                            days={item.participant?.daysCompleted ?? 0}
+                            icon={'\uD83D\uDD25'}
+                            showLabel={false}
+                            className="shrink-0"
+                        />
+                        {hasGoal ? (
+                            <Badge variant="secondary" className="shrink-0">
+                                {goal}{unit ? ` ${unit}` : ''}
+                            </Badge>
+                        ) : null}
                         {item.habit.category ? (
                             <Badge className="border border-theme-accent/30 bg-theme-accent/15 text-theme-accent-soft hover:bg-theme-accent/15">
                                 {item.habit.category}
                             </Badge>
                         ) : null}
                     </div>
-                    <p className="mt-1 truncate text-sm text-theme-text-soft">{item.challenge?.title}</p>
-                    <StreakBadge days={item.participant?.daysCompleted ?? 0} icon={'\uD83D\uDD25'} className="mt-1" />
                 </div>
 
                 <div className="flex shrink-0 items-center gap-3">
