@@ -28,7 +28,7 @@ import { createCheckoutSession } from '@/services/paymentService';
 import { getMyInventory } from '@/services/inventoryApi';
 import { getMyActiveStories } from '@/services/storyApi';
 import { getMyChallengeHabits } from '@/services/challengeService';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
 import { appCardClassName, appCardInsetClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';

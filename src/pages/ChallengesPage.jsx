@@ -35,7 +35,7 @@ import {
     ConfirmationDialogHeader,
     ConfirmationDialogTitle,
 } from '@/components/ui/confirmation-dialog';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import {
     acceptChallengeInvitation,
     claimChallengeReward,

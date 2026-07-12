@@ -33,7 +33,7 @@ import {
 } from '@/services/socialApi';
 import { searchUsers } from '@/services/userApi';
 import { deleteStory, getStoryLikes, toggleStoryLike } from '@/services/storyApi';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 
 const SOCIAL_REFRESH_INTERVAL_MS = 10000;
 const SOCIAL_FEED_PAGE_SIZE = 10;
@@ -393,6 +393,8 @@ export function SocialPage() {
     }, []);
 
     const showUnavailableNotificationBanner = useCallback((title) => {
+        // Used as the final fallback when a notification points to content that
+        // was deleted, expired, or hidden by social relationship changes.
         setBanner({
             variant: 'unavailable',
             eyebrow: 'Notification link unavailable',
@@ -928,6 +930,8 @@ export function SocialPage() {
         if (post.type === 'story') {
             const response = await getStoryLikes(post.id, pagination);
 
+            // Story likes and milestone reactions share the same dialog shape,
+            // so story likers are adapted into reaction rows here.
             if (Array.isArray(response)) {
                 return response.map((liker) => ({ emoji: '💜', user: liker }));
             }

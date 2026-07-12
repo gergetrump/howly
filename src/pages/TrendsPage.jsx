@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Page, PageSection, Heading } from '@/components/layout';
 import { PremiumFeaturePreview } from '@/components/common';
 import { getTrendsAnalytics } from '@/services/trendsService';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { buildTrendCompanionIntent, storePendingCompanionIntent } from '@/lib/trendCompanionIntent';
 import { appCardClassName, appCardInsetClassName, appTabsListCompactClassName, appTabsTriggerCompactClassName } from '@/components/cards/cardStyles';
 import { cn } from '@/lib/utils';

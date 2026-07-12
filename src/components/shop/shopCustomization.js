@@ -1,6 +1,8 @@
 export const MAX_CUSTOM_TEXT_LENGTH = 20;
 const NON_OWNERSHIP_CUSTOMIZATION_KEYS = new Set(['side']);
 
+// The customization config is the single source for shop controls and preview
+// defaults. Item SVGs read these same keys from the saved customization object.
 const wholeColorCustomization = (color) => ({
     defaults: {
         color,
@@ -563,6 +565,8 @@ export function normalizeItemCustomization(itemOrAssetKey, customization = {}) {
         return {};
     }
 
+    // Always merge with defaults before previewing, buying, or saving. This
+    // keeps older inventory rows valid when a new color slot is added later.
     const normalizedCustomization = {
         ...config.defaults,
         ...customization,
@@ -585,6 +589,9 @@ export function getItemOwnershipSignature(item, customization = {}) {
     }
 
     const normalizedCustomization = normalizeItemCustomization(item, customization);
+    // Side/placement is intentionally excluded from ownership. Moving a cup
+    // from right to left should update the same owned item, not create a second
+    // purchase variant.
     const signatureParts = Object.keys(config.defaults)
         .filter((key) => !NON_OWNERSHIP_CUSTOMIZATION_KEYS.has(key))
         .map((key) => normalizedCustomization[key]);

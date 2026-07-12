@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import { BarChart3, Dumbbell, Globe, Home, PackageOpen, ShoppingBag, Trophy, UserRound, UsersRound } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { MoonCoin } from '@/components/brand/MoonCoin.jsx';
 import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
 import { StreakShieldBadge } from '@/components/brand/StreakShieldBadge.jsx';
@@ -7,7 +8,7 @@ import { StreakCalendarPopover } from '@/components/habits/StreakCalendarPopover
 import { NotificationBell } from '@/components/layout/NotificationBell';
 import howlyIcon from '@/assets/wolf.svg';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 
 const defaultItems = [
     { label: 'Home', to: '/dashboard', icon: Home },
@@ -50,8 +51,14 @@ export function NavBar({
     const coinAmount = user?.coins ?? 0;
     const streakAmount = user?.streak ?? 0;
     const streakShields = user?.streakShields ?? 0;
-    const navProfilePictureUrl = user?.profilePictureUrl;
+    const navProfilePictureUrl = typeof user?.profilePictureUrl === 'string' ? user.profilePictureUrl.trim() : '';
+    const navProfileInitial = (user?.firstName || user?.username || 'Profile').trim().charAt(0).toUpperCase() || '?';
+    const [hasProfilePictureLoadError, setHasProfilePictureLoadError] = useState(false);
     const isPremium = user?.isPremium === true || user?.role === 'admin';
+
+    useEffect(() => {
+        setHasProfilePictureLoadError(false);
+    }, [navProfilePictureUrl]);
 
     return (
         <>
@@ -123,14 +130,15 @@ export function NavBar({
                                 }
                                 aria-label="Profile"
                             >
-                                {navProfilePictureUrl ? (
+                                {navProfilePictureUrl && !hasProfilePictureLoadError ? (
                                     <img
                                         src={navProfilePictureUrl}
                                         alt="Profile"
                                         className="size-full rounded-full object-cover"
+                                        onError={() => setHasProfilePictureLoadError(true)}
                                     />
                                 ) : (
-                                    <UserRound className="size-7" aria-hidden="true" />
+                                    <span className="text-lg font-bold text-theme-text">{navProfileInitial}</span>
                                 )}
                             </NavLink>
                         </div>

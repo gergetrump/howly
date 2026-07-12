@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CompanionAvatar } from '@/components/brand/CompanionAvatar';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { getMyInventory } from '@/services/inventoryApi';
 import { getEquippedItemConfigsFromInventory } from '@/lib/inventoryItems';
 import { cn } from '@/lib/utils';

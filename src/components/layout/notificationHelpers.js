@@ -6,6 +6,8 @@ function getActorName(actor) {
 export function getNotificationMessage(notification) {
     const actorName = getActorName(notification.actor);
 
+    // Keep message copy centralized so NotificationDropdown stays presentational
+    // and every notification type has one consistent label.
     switch (notification.type) {
         case 'friend_request_received':
             return `${actorName} sent you a friend request`;
@@ -48,6 +50,8 @@ export function getNotificationLink(notification) {
     const entityId = notification.entityId;
     const commentId = notification.metadata?.commentId;
 
+    // The URL gets the user to the right page. Detailed one-time jump data goes
+    // through navigation state below so it does not stay permanently in the URL.
     switch (notification.type) {
         case 'story_tagged':
         case 'story_commented':
@@ -76,6 +80,8 @@ export function getNotificationNavigationState(notification) {
     }
 
     if (notification.type === 'friend_request_received') {
+        // The token makes repeated clicks on the same notification count as a
+        // fresh jump intent for React effects.
         return {
             notificationJump: {
                 requestId: entityId,

@@ -21,7 +21,7 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { PlanLimitDialog } from '@/components/common';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { createHabit, updateHabit } from '@/services/habitService';
 
 const ICONS = [
@@ -95,11 +95,6 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
 
         if (!name.trim()) {
             setFormError('Habit name is required.');
-            return;
-        }
-
-        if (!editHabit && !description.trim()) {
-            setFormError('Description is required.');
             return;
         }
 
@@ -252,7 +247,7 @@ export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, pre
 
                     <div className="space-y-2.5">
                         <Label htmlFor="habit-description" className="text-sm font-medium text-theme-text">
-                            Description{!editHabit && <span className="text-theme-danger"> *</span>}
+                            Description <span className="font-normal text-theme-text-muted">(optional)</span>
                         </Label>
                         <textarea
                             id="habit-description"

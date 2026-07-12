@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { PremiumUpgradeDialog } from '@/components/common';
 import { CompanionAvatar } from '@/components/brand';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { suggestHabits, createHabitsFromTemplates } from '@/services/habitService';
 import { getCompanionLines } from '@/constants/companionDialogue';
 import { cn } from '@/lib/utils';

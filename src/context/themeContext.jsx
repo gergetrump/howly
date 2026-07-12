@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { updateUserPreferences } from '@/services/userApi';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 
 /* The selectable UI themes, with premium flags and preview color swatches. */
 export const THEMES = [

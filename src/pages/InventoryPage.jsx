@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { appTabsListWrapClassName, appTabsTriggerWrapClassName } from '@/components/cards/cardStyles';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import {
     getMyInventory,
@@ -101,6 +101,8 @@ export function InventoryPage() {
             return entry.customization ?? {};
         }
 
+        // Side changes are draft-only until the outfit is saved, but the
+        // companion preview should still reflect the unsaved left/right choice.
         return {
             ...(entry.customization ?? {}),
             side: draftItemSides[entry._id] ?? entry.customization?.side ?? 'right',
@@ -149,6 +151,8 @@ export function InventoryPage() {
     }, [getInventorySides]);
 
     const equippedItemConfigs = useMemo(
+        // Build the companion preview from draft state, not only saved state, so
+        // users can inspect outfit changes before committing them.
         () => getEquippedItemConfigsFromInventory(
             inventory.map((entry) => ({
                 ...entry,
@@ -192,6 +196,8 @@ export function InventoryPage() {
             let result = base;
 
             if ((activeCategory === 'all' || activeCategory === 'powerUp') && streakShields > 0) {
+                // Streak shields live on the user record, but the inventory
+                // shows them beside power-ups so the reserve is visible.
                 result = [{
                     userItemId: 'streak-shield-reserve',
                     type: 'powerUp',
@@ -249,6 +255,8 @@ export function InventoryPage() {
         const itemSlot = getItemEquipSlot(item.assetKey);
 
         if ((itemSlot === 'hand' || isSideableHeadItem(item.assetKey)) && hasItemSideOptions(item.assetKey)) {
+            // Sideable items try their preferred side first, then the alternate
+            // side, so equipping does not unnecessarily replace another item.
             const preferredSide = draftItemSides[item.userItemId] ?? item.customization?.side ?? 'right';
             const alternateSide = preferredSide === 'right' ? 'left' : 'right';
             const occupiedSides = new Set(
@@ -310,6 +318,8 @@ export function InventoryPage() {
         setCompanionMessage('');
 
         try {
+            // Only send side customizations that actually changed. Equipped
+            // item ids carry the rest of the outfit state.
             const customizationUpdates = Object.fromEntries(
                 Object.entries(draftItemSides)
                     .filter(([userItemId, side]) => savedItemSides[userItemId] !== side)
@@ -427,6 +437,7 @@ export function InventoryPage() {
     }
 
     function openBoostDialog(item) {
+        // Boosts must be attached to one habit before they become active.
         setBoostDialogItemId(item.userItemId);
         setBoostDialogHabitId(habits[0]?.id || '');
         setBoostDialogError('');
@@ -453,6 +464,8 @@ export function InventoryPage() {
         setBoostDialogError('');
 
         try {
+            // Consuming the inventory row activates the boost on the selected
+            // habit. Future habit completions apply the coin reward.
             const result = await consumeInventoryItem(item.userItemId, habitId);
 
             setInventory((currentInventory) => {

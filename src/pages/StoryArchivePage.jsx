@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Heart, MessageCircle } from 'lucide-react';
 import { Page, Heading } from '@/components/layout';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { getMyStoryArchive } from '@/services/storyApi';
 import { StoryDetailDialog } from '@/components/stories/StoryDetailDialog';
 import { cloudinaryUrl } from '@/lib/cloudinary';

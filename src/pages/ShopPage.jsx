@@ -22,7 +22,7 @@ import {
     ShopCustomizationPanel,
     ShopItemGrid,
 } from '@/components/shop';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/AuthContext';
 import { ITEM_CATEGORIES, SINGLE_EQUIP_ITEM_TYPES } from '@/constants/itemCategories';
 import { StreakFreezeCard } from '@/components/shop/StreakFreezeCard.jsx';
 import { buyItem, getBoostPurchaseLimits, getMyInventory } from '@/services/inventoryApi';
@@ -91,6 +91,8 @@ export function ShopPage() {
 
     /* Restores the item the user was viewing before being sent to the Premium page. */
     const restorePremiumReturnItem = useCallback(() => {
+        // After returning from Premium checkout, reopen/highlight the item that
+        // originally triggered the upgrade prompt.
         const returnItemId = window.sessionStorage.getItem(PREMIUM_RETURN_ITEM_STORAGE_KEY);
 
         if (returnItemId) {
@@ -102,6 +104,8 @@ export function ShopPage() {
     /* Opens the Premium upsell dialog, remembering which item to return to afterward. */
     const openPremiumPage = useCallback((description, returnItemId = '', title = undefined, showUpgradeActions = true) => {
         if (returnItemId) {
+            // Session storage survives the external Stripe redirect but clears
+            // naturally when the tab is closed.
             window.sessionStorage.setItem(PREMIUM_RETURN_ITEM_STORAGE_KEY, returnItemId);
             setPremiumReturnItemId(returnItemId);
         }
@@ -245,6 +249,9 @@ export function ShopPage() {
 
                 if (isCurrent) {
                     setItems(nextItems);
+                    // Ownership signatures include customization. That lets
+                    // fixed designs, color variants, and empty-text variants be
+                    // compared consistently.
                     setOwnedItemSignatures(new Set(
                         nextInventory
                             .map(getInventoryEntryOwnershipSignature)
@@ -314,8 +321,8 @@ export function ShopPage() {
         }
     }
 
-    // Power-ups are consumables shown via their own card (StreakFreezeCard), not
-    // the wearable grid — keep them out.
+    // Power-ups are consumables shown via their own cards, not the wearable
+    // grid, so keep them out of the normal item grid.
     const filteredItems = useMemo(
         () => {
             const wearableItems = items.filter((item) => item.type !== 'powerUp');
@@ -325,22 +332,7 @@ export function ShopPage() {
         },
         [items, selectedCategory],
     );
-    const ownedItemIds = useMemo(
-        () => new Set(
-            [...ownedItemSignatures]
-                .map((signature) => signature.split(':')[0])
-                .filter(Boolean),
-        ),
-        [ownedItemSignatures],
-    );
-    const orderedItems = useMemo(
-        () => [...filteredItems].sort(
-            (firstItem, secondItem) => (
-                Number(ownedItemIds.has(String(firstItem._id))) - Number(ownedItemIds.has(String(secondItem._id)))
-            ),
-        ),
-        [filteredItems, ownedItemIds],
-    );
+    const orderedItems = filteredItems;
     const selectedCustomItem = useMemo(() => {
         return items.find((item) => item._id === selectedCustomItemId) ?? null;
     }, [items, selectedCustomItemId]);
@@ -461,7 +453,7 @@ export function ShopPage() {
 
     function getMaxOwnedQuantityForPowerUp(item) {
         if (item?.assetKey === STREAK_FREEZE_ASSET_KEY) {
-            // No stockpile cap on shields — buy as many as you can afford.
+            // No stockpile cap on shields. Buy as many as you can afford.
             return Number.POSITIVE_INFINITY;
         }
 
@@ -783,6 +775,8 @@ export function ShopPage() {
         let failedEntry = null;
 
         try {
+            // Buy one quantity at a time because boosts and streak shields have
+            // per-purchase limits that the backend enforces.
             for (const entry of entriesForPurchase) {
                 const item = getPurchaseEntryItem(entry);
                 const customization = getPurchaseEntryCustomization(entry);

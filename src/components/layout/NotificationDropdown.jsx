@@ -76,10 +76,8 @@ export function NotificationDropdown({
                             const isVisuallyUnread = visibleUnreadNotificationIds.has(notification.id);
 
                             return (
-                                <Link
+                                <div
                                     key={notification.id}
-                                    to={getNotificationLink(notification)}
-                                    state={getNotificationNavigationState(notification)}
                                     data-notification-id={notification.id}
                                     data-unread={isUnread ? 'true' : 'false'}
                                     className={cn(
@@ -89,32 +87,39 @@ export function NotificationDropdown({
                                             : 'bg-theme-surface-2/30 text-theme-text-soft hover:bg-theme-surface-2/45',
                                         isRemoving && 'translate-x-8 opacity-0',
                                     )}
-                                    onClick={() => onNotificationClick(notification.id)}
                                 >
-                                    <span
-                                        className={cn(
-                                            'mt-1 flex size-8 shrink-0 items-center justify-center rounded-full text-sm',
-                                            isVisuallyUnread ? 'bg-theme-accent/20' : 'bg-theme-surface-2/50',
-                                        )}
+                                    <Link
+                                        to={getNotificationLink(notification)}
+                                        state={getNotificationNavigationState(notification)}
+                                        className="flex min-w-0 flex-1 gap-3"
+                                        onClick={() => onNotificationClick(notification.id)}
                                     >
-                                        <Bell
-                                            className={cn('size-4', isVisuallyUnread ? 'text-theme-accent-soft' : 'text-theme-text-soft')}
-                                            aria-hidden="true"
-                                        />
-                                    </span>
-                                    <span className="min-w-0 flex-1">
-                                        <span className="flex items-start gap-2">
-                                            {isVisuallyUnread ? (
-                                                <span className="mt-1.5 size-2 shrink-0 rounded-full bg-red-500" aria-hidden="true" />
-                                            ) : null}
-                                            <span className={cn('block text-sm font-semibold leading-snug', isVisuallyUnread ? 'text-theme-text' : 'text-theme-text-soft')}>
-                                                {getNotificationMessage(notification)}
+                                        <span
+                                            className={cn(
+                                                'mt-1 flex size-8 shrink-0 items-center justify-center rounded-full text-sm',
+                                                isVisuallyUnread ? 'bg-theme-accent/20' : 'bg-theme-surface-2/50',
+                                            )}
+                                        >
+                                            <Bell
+                                                className={cn('size-4', isVisuallyUnread ? 'text-theme-accent-soft' : 'text-theme-text-soft')}
+                                                aria-hidden="true"
+                                            />
+                                        </span>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="flex items-start gap-2">
+                                                {isVisuallyUnread ? (
+                                                    <span className="mt-1.5 size-2 shrink-0 rounded-full bg-red-500" aria-hidden="true" />
+                                                ) : null}
+                                                <span className={cn('block text-sm font-semibold leading-snug', isVisuallyUnread ? 'text-theme-text' : 'text-theme-text-soft')}>
+                                                    {getNotificationMessage(notification)}
+                                                </span>
+                                            </span>
+                                            <span className={cn('mt-1 block text-xs', isVisuallyUnread ? 'text-theme-accent-soft/70' : 'text-theme-text-muted')}>
+                                                {formatNotificationTime(notification.createdAt)}
                                             </span>
                                         </span>
-                                        <span className={cn('mt-1 block text-xs', isVisuallyUnread ? 'text-theme-accent-soft/70' : 'text-theme-text-muted')}>
-                                            {formatNotificationTime(notification.createdAt)}
-                                        </span>
-                                    </span>
+                                    </Link>
+                                    {/* Delete stays outside the Link so removal never triggers navigation. */}
                                     <button
                                         type="button"
                                         className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full text-theme-text-muted opacity-0 transition hover:bg-theme-text/10 hover:text-theme-text group-hover:opacity-100 focus:opacity-100"
@@ -123,7 +128,7 @@ export function NotificationDropdown({
                                     >
                                         <Trash2 className="size-4" aria-hidden="true" />
                                     </button>
-                                </Link>
+                                </div>
                             );
                         })}
                         {hasMore ? (

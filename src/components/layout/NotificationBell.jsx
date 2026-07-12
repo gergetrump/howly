@@ -12,6 +12,8 @@ import { NotificationDropdown } from '@/components/layout/NotificationDropdown';
 const NOTIFICATION_PAGE_SIZE = 10;
 
 function normalizeNotificationPage(response) {
+    // Older API responses returned a plain array. Accept both shapes so the
+    // paginated backend can coexist with an already-open frontend.
     if (Array.isArray(response)) {
         return {
             items: response,
@@ -47,6 +49,8 @@ export function NotificationBell({ user }) {
     const displayedUnreadNotificationCount = user ? unreadNotificationCount : 0;
 
     const closeNotificationMenu = useCallback(() => {
+        // The unread red dot is visual while the dropdown is open. Closing the
+        // menu clears that local state and lets the stored read count take over.
         isMenuOpenRef.current = false;
         setIsNotificationMenuOpen(false);
         setVisibleUnreadNotificationIds(new Set());
@@ -175,6 +179,8 @@ export function NotificationBell({ user }) {
                     const isFullyVisible = entry.intersectionRatio >= 0.98;
 
                     if (isFullyVisible && !isRead) {
+                        // Mark read in the backend, but keep the dot visible
+                        // until the row leaves view or the menu closes.
                         setVisibleUnreadNotificationIds((currentIds) => {
                             if (currentIds.has(notificationId)) return currentIds;
                             const nextIds = new Set(currentIds);
@@ -258,6 +264,8 @@ export function NotificationBell({ user }) {
             return;
         }
 
+        // Load older notifications in small pages so the bell opens quickly for
+        // users with a long history.
         setIsLoadingMoreNotifications(true);
 
         try {
@@ -318,7 +326,6 @@ export function NotificationBell({ user }) {
     }
 
     async function handleDeleteNotification(event, notificationId) {
-        event.preventDefault();
         event.stopPropagation();
 
         if (removingNotificationIds.includes(notificationId)) {
@@ -328,6 +335,8 @@ export function NotificationBell({ user }) {
         const targetNotification = notifications.find((notification) => notification.id === notificationId);
         const wasUnread = targetNotification && !targetNotification.readAt;
 
+        // Optimistically animate the row out, then remove it after the backend
+        // delete succeeds.
         setRemovingNotificationIds((currentIds) => [...currentIds, notificationId]);
 
         try {

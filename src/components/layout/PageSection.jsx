@@ -1,4 +1,4 @@
-import { SectionHeader } from '@/components/common/sectionHeader';
+import { SectionHeader } from '@/components/common/SectionHeader';
 import { cn } from '@/lib/utils';
 
 const widthClasses = {
