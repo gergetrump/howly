@@ -37,18 +37,6 @@ export function ChallengeInvitationList({ invitations, busyAction, onAccept, onR
                             reward={getChallengeReward(challenge)}
                             startsAt={challenge?.startsAt}
                         >
-                            <ActionButton
-                                type="button"
-                                onClick={() => onAccept(invitation.id)}
-                                disabled={busyAction === `accept-${invitation.id}`}
-                            >
-                                {busyAction === `accept-${invitation.id}` ? (
-                                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                                ) : (
-                                    <Check className="size-4" aria-hidden="true" />
-                                )}
-                                Accept
-                            </ActionButton>
                             <Button
                                 type="button"
                                 variant="outline"
@@ -63,6 +51,18 @@ export function ChallengeInvitationList({ invitations, busyAction, onAccept, onR
                                 )}
                                 Reject
                             </Button>
+                            <ActionButton
+                                type="button"
+                                onClick={() => onAccept(invitation.id)}
+                                disabled={busyAction === `accept-${invitation.id}`}
+                            >
+                                {busyAction === `accept-${invitation.id}` ? (
+                                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                                ) : (
+                                    <Check className="size-4" aria-hidden="true" />
+                                )}
+                                Join
+                            </ActionButton>
                         </ChallengeCard>
                     );
                 })}
