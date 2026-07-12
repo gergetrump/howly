@@ -43,7 +43,7 @@ const DAYS_OF_WEEK = [
 ];
 
 /* Modal for creating or editing a habit; validates input, calls the create/update API, and handles the free-plan habit limit. */
-export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, prefill, existingHabits = [] }) {
+export function AddHabitModal({ open, onOpenChange, onHabitAdded, editHabit, prefill }) {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [name, setName] = useState('');

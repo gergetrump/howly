@@ -815,7 +815,6 @@ export function DashboardPage() {
                 onOpenChange={setIsAddModalOpen}
                 editHabit={habitToEdit}
                 prefill={prefillHabit}
-                existingHabits={habits}
                 onHabitAdded={(savedHabit, isEdit) => {
                     if (isEdit) {
                         setHabits(prev => prev.map(h => h.id === savedHabit.id ? savedHabit : h));
