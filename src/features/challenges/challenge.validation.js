@@ -376,17 +376,6 @@ export function validateListChallengesInput(query = {}) {
         }
     }
 
-    const paginationResult = validateOffsetPagination(query, {
-        defaultLimit: 20,
-        maxLimit: 50,
-    });
-
-    if (paginationResult.error) {
-        errors.push(paginationResult.error);
-    } else if (paginationResult.value) {
-        value.pagination = paginationResult.value;
-    }
-
     if (errors.length) {
         return { error: errors.join(', ') };
     }
