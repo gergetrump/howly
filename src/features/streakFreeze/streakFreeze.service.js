@@ -4,7 +4,6 @@ import { sendStreakReminderEmail } from '../mail/mail.service.js';
 import config from '../../../config.js';
 import { isCompletedForPeriod, isPreviousPeriod, previousPeriodMarker, isDueToday } from '../habits/habit.service.js';
 import {
-    hasPremiumAccess,
     STREAK_REPAIR_WINDOW_DAYS,
 } from '../../config/plans.js';
 
@@ -120,32 +119,6 @@ async function bridgeAtRiskHabits(userId, now) {
         }
     }
     return bridged;
-}
-
-/* Grants one streak shield to each premium/admin user once per calendar month. */
-export async function grantMonthlyShields(now = new Date()) {
-    const users = await User.find({
-        isDeleted: false,
-        $or: [{ isPremium: true }, { role: 'admin' }],
-    }).select('role isPremium streakShields streakShieldsLastGrantedAt');
-
-    let granted = 0;
-    for (const user of users) {
-        if (!hasPremiumAccess(user)) continue;
-
-        const last = user.streakShieldsLastGrantedAt;
-        const alreadyThisMonth = last
-            && last.getFullYear() === now.getFullYear()
-            && last.getMonth() === now.getMonth();
-        if (alreadyThisMonth) continue;
-
-        user.streakShields = (user.streakShields ?? 0) + 1;
-        granted += 1;
-        user.streakShieldsLastGrantedAt = now;
-        await user.save();
-    }
-
-    return { granted };
 }
 
 /* Daily job: opens grace windows, auto-spends shields, rescues rest days, and breaks lapsed habit and overall streaks. */
