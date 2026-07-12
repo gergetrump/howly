@@ -126,10 +126,12 @@ const MOCK_CHALLENGE_ANALYTICS = {
     ],
 };
 
+/* Formats a numeric rate as a percentage label. */
 function percent(value) {
     return value === null || value === undefined ? 'No data' : `${value}%`;
 }
 
+/* Converts backend status values into readable labels. */
 function formatStatusLabel(status) {
     const normalizedStatus = String(status ?? '').trim().replaceAll('_', ' ');
 
@@ -140,10 +142,12 @@ function formatStatusLabel(status) {
     return normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1);
 }
 
+/* Keeps chart percentages inside the 0-100 range. */
 function clampPercent(value) {
     return Math.min(Math.max(value ?? 0, 0), 100);
 }
 
+/* Chooses the completion color class for a rate. */
 function getCompletionTone(rate) {
     if (rate === null || rate === undefined) {
         return 'bg-theme-text/20';
@@ -160,6 +164,7 @@ function getCompletionTone(rate) {
     return 'bg-theme-danger';
 }
 
+/* Builds the helper text for average completion time comparisons. */
 function averageTimePeerHelper(summary, fallback) {
     const comparison = summary?.averageCompletionTimeComparison;
 
@@ -175,6 +180,7 @@ function averageTimePeerHelper(summary, fallback) {
     return fallback;
 }
 
+/* Shows one top-level analytics summary metric. */
 function SummaryCard({ icon: Icon, label, value, helper }) {
     return (
         <Card className={appCardClassName}>
@@ -192,6 +198,7 @@ function SummaryCard({ icon: Icon, label, value, helper }) {
     );
 }
 
+/* Renders the daily completion bar chart for week/month views. */
 function TimelineChart({ dailyTotals }) {
     const maxExpected = Math.max(1, ...dailyTotals.map((day) => day.expected));
     const labelInterval = dailyTotals.length > 14 ? 5 : 1;
@@ -251,6 +258,7 @@ function TimelineChart({ dailyTotals }) {
     );
 }
 
+/* Renders the monthly completion bar chart for yearly views. */
 function MonthlyCompletionChart({ monthlyTotals }) {
     const visibleMonths = monthlyTotals ?? [];
 
@@ -296,6 +304,7 @@ function MonthlyCompletionChart({ monthlyTotals }) {
     );
 }
 
+/* Shows a compact daily trend inside a challenge card. */
 function MiniCompletionTrend({ daily }) {
     const visibleDays = daily ?? [];
 
@@ -343,6 +352,7 @@ function MiniCompletionTrend({ daily }) {
     );
 }
 
+/* Shows a compact monthly trend inside a challenge card. */
 function MiniMonthlyCompletionTrend({ monthly }) {
     const visibleMonths = monthly ?? [];
 
@@ -394,6 +404,7 @@ function MiniMonthlyCompletionTrend({ monthly }) {
         </div>
     );
 }
+/* Lets the user switch the analytics year. */
 function YearSelector({ years, value, onChange }) {
     const visibleYears = years.length ? years : [CURRENT_YEAR];
 
@@ -416,6 +427,7 @@ function YearSelector({ years, value, onChange }) {
     );
 }
 
+/* Lists per-habit performance cards. */
 function HabitPerformance({ habits }) {
     const visibleHabits = habits.filter((item) => (
         item.expected > 0
@@ -491,6 +503,7 @@ function HabitPerformance({ habits }) {
     );
 }
 
+/* Lists per-challenge performance cards. */
 function ChallengePerformance({ challenges, period }) {
     const visibleChallenges = challenges.filter((item) => (
         item.expected > 0
@@ -589,6 +602,7 @@ function ChallengePerformance({ challenges, period }) {
         </Card>
     );
 }
+/* Analytics page: loads habit and challenge insights for premium users. */
 export function AnalyticsPage() {
     const { user } = useAuth();
     const isPremiumUser = user?.isPremium === true || user?.role === 'admin';

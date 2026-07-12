@@ -78,16 +78,19 @@ const CHALLENGE_TABS = [
 const CHALLENGE_PAGE_SIZE = 20;
 const PAST_CHALLENGE_STATUSES = new Set(['completed', 'failed']);
 
+/* Returns the normalized id for the current user object. */
 function getUserId(user) {
     return user?.id ?? user?._id;
 }
 
+/* Extracts the populated user from a challenge participant. */
 function getParticipantUser(participant) {
     return typeof participant?.user === 'object' && participant.user
         ? participant.user
         : null;
 }
 
+/* Normalizes paginated or plain list responses into arrays. */
 function normalizeListPage(response) {
     if (Array.isArray(response)) {
         return response;
@@ -96,6 +99,7 @@ function normalizeListPage(response) {
     return response?.items ?? [];
 }
 
+/* Normalizes challenge list responses into page metadata. */
 function normalizeChallengePage(response) {
     if (Array.isArray(response)) {
         return {
@@ -114,6 +118,7 @@ function normalizeChallengePage(response) {
     };
 }
 
+/* Normalizes incoming and outgoing friend request pages. */
 function normalizeFriendRequestsResponse(requestsResponse) {
     return {
         incoming: normalizeListPage(requestsResponse?.incoming ?? []),
@@ -121,26 +126,32 @@ function normalizeFriendRequestsResponse(requestsResponse) {
     };
 }
 
+/* Reads the reward amount from a challenge response. */
 function getChallengeReward(challenge) {
     return challenge?.coinReward ?? challenge?.reward ?? 0;
 }
 
+/* Checks whether the user has challenge creation access. */
 function hasPremiumMembership(user) {
     return user?.role === 'admin' || user?.isPremium === true;
 }
 
+/* Allows editing only before the challenge starts. */
 function canEditChallenge(challenge) {
     return challenge?.startsAt && new Date(challenge.startsAt).getTime() > Date.now();
 }
 
+/* Checks whether a challenge can expose reward claiming. */
 function isRewardAvailable(challenge) {
     return challenge?.status === 'completed' || new Date(challenge?.endsAt ?? 0).getTime() <= Date.now();
 }
 
+/* Checks whether a status belongs in Past Challenges. */
 function isPastChallengeStatus(status) {
     return PAST_CHALLENGE_STATUSES.has(status);
 }
 
+/* Checks whether a challenge still counts as active. */
 function isActiveChallenge(challenge) {
     return challenge
         && !isPastChallengeStatus(challenge.status)
@@ -148,12 +159,14 @@ function isActiveChallenge(challenge) {
         && new Date(challenge.endsAt).getTime() > Date.now();
 }
 
+/* Reads the challenge id from a populated or plain invitation. */
 function getInvitationChallengeId(invitation) {
     return typeof invitation?.challenge === 'object'
         ? invitation.challenge?.id
         : invitation?.challenge;
 }
 
+/* Checks whether a challenge notification still points to visible data. */
 function isChallengeNotificationAvailable(notificationJump, { challenges = [], invitations = { incoming: [], outgoing: [] } } = {}) {
     const challengeId = notificationJump?.challengeId ?? notificationJump?.metadata?.challengeId;
     const invitationId = notificationJump?.invitationId;
@@ -169,6 +182,7 @@ function isChallengeNotificationAvailable(notificationJump, { challenges = [], i
     );
 }
 
+/* Finds the incoming invitation referenced by a notification jump. */
 function findIncomingInvitationForNotificationJump(notificationJump, invitations = []) {
     const challengeId = notificationJump?.challengeId ?? notificationJump?.metadata?.challengeId;
     const invitationId = notificationJump?.invitationId;
@@ -179,10 +193,12 @@ function findIncomingInvitationForNotificationJump(notificationJump, invitations
     )) ?? null;
 }
 
+/* Checks whether an error should redirect to Premium. */
 function isUpgradeError(code) {
     return code === 'FREE_ACTIVE_CHALLENGE_LIMIT' || code === 'PREMIUM_REQUIRED';
 }
 
+/* Builds the Premium upsell message for challenge limits. */
 function getChallengePremiumPrompt(code) {
     if (code === 'FREE_ACTIVE_CHALLENGE_LIMIT') {
         return 'You reached the free active challenge limit. Upgrade to Premium to join up to 5 active challenges.';
@@ -191,14 +207,17 @@ function getChallengePremiumPrompt(code) {
     return 'Creating your own challenges is a Premium feature. Upgrade to create challenges and invite friends.';
 }
 
+/* Checks whether an error should show a plan limit dialog. */
 function isPlanLimitError(code) {
     return code === 'PREMIUM_ACTIVE_CHALLENGE_LIMIT' || code === 'PREMIUM_ACTIVE_CREATED_LIMIT';
 }
 
+/* Checks whether a join error means the user is already in. */
 function isAlreadyJoinedError(code) {
     return code === 'CHALLENGE_ALREADY_JOINED';
 }
 
+/* Builds copy for active challenge limit dialogs. */
 function getChallengeLimitPrompt(code, backendMessage) {
     if (code === 'PREMIUM_ACTIVE_CREATED_LIMIT') {
         return {
@@ -213,6 +232,7 @@ function getChallengeLimitPrompt(code, backendMessage) {
     };
 }
 
+/* Shows challenge page errors and upgrade actions. */
 function ChallengeAlert({ error, onUpgrade }) {
     if (error) {
         return (
@@ -234,6 +254,7 @@ function ChallengeAlert({ error, onUpgrade }) {
     return null;
 }
 
+/* Explains how challenges work. */
 function ChallengeInfoPopover() {
     return (
         <Popover>
@@ -276,6 +297,7 @@ function ChallengeInfoPopover() {
     );
 }
 
+/* Shows joined users on hover and opens their profiles. */
 function ChallengeParticipantsBadge({
     challenge,
     participants = [],
@@ -289,6 +311,7 @@ function ChallengeParticipantsBadge({
     const participantCount = challenge?.participantCount ?? 0;
     const participantUsers = participants.map(getParticipantUser).filter(Boolean);
 
+    /* Clears the delayed hover-close timer. */
     function clearCloseTimer() {
         if (closeTimerRef.current) {
             window.clearTimeout(closeTimerRef.current);
@@ -296,12 +319,14 @@ function ChallengeParticipantsBadge({
         }
     }
 
+    /* Opens the participant popover and triggers loading. */
     function openParticipants() {
         clearCloseTimer();
         setIsOpen(true);
         onLoad?.(challenge?.id);
     }
 
+    /* Delays closing so the pointer can move into the popover. */
     function scheduleClose() {
         clearCloseTimer();
         closeTimerRef.current = window.setTimeout(() => {
@@ -384,6 +409,7 @@ function ChallengeParticipantsBadge({
     );
 }
 
+/* Challenges page: lists, creates, edits, joins, leaves, and claims challenge rewards. */
 export function ChallengesPage() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -452,6 +478,7 @@ export function ChallengesPage() {
 
     const visibleChallenges = useMemo(() => challenges.filter(Boolean), [challenges]);
 
+    /* Loads one page of challenges and the current invitations. */
     const loadChallengeData = useCallback(async (
         scope,
         {
@@ -520,6 +547,7 @@ export function ChallengesPage() {
         }
     }, []);
 
+    /* Reloads the currently selected challenge tab. */
     const refreshCurrentChallenges = useCallback((options = {}) => (
         loadChallengeData(activeTab, {
             categoryKey: activeTab === 'public' ? selectedCategory : 'all',
@@ -527,6 +555,7 @@ export function ChallengesPage() {
         })
     ), [activeTab, loadChallengeData, selectedCategory]);
 
+    /* Appends the next page of challenges to the current tab. */
     async function handleLoadMoreChallenges() {
         if (isLoadingMoreChallenges || !hasMoreChallenges) {
             return;
@@ -548,6 +577,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Polls for delayed taxonomy assignment after challenge changes. */
     const refreshChallengeTaxonomyInBackground = useCallback((challengeId) => {
         void waitForChallengeTaxonomy(challengeId).then((updatedChallenge) => {
             if (!updatedChallenge) {
@@ -606,6 +636,7 @@ export function ChallengesPage() {
         };
     }, [searchParams, taxonomyCategories]);
 
+    /* Updates the selected public challenge category and URL. */
     function handleCategoryChange(nextCategory) {
         setSelectedCategory(nextCategory);
 
@@ -712,6 +743,7 @@ export function ChallengesPage() {
         };
     }, [refreshCurrentChallenges]);
 
+    /* Reloads social data needed for profile preview actions. */
     const refreshProfileContext = useCallback(async () => {
         try {
             const [friendData, requestData, blockedData, blockerData] = await Promise.all([
@@ -736,6 +768,7 @@ export function ChallengesPage() {
         void refreshProfileContext();
     }, [refreshProfileContext]);
 
+    /* Loads the user list for a challenge participant popover. */
     async function loadChallengeParticipants(challengeId) {
         if (
             !challengeId
@@ -773,6 +806,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Calculates the relationship state for a profile preview. */
     function getProfileRelationship(profileUser) {
         const profileUserId = profileUser?.id ?? profileUser?._id;
 
@@ -809,6 +843,7 @@ export function ChallengesPage() {
         return { status: 'none' };
     }
 
+    /* Sends a friend request from the profile preview. */
     async function handleSendProfileFriendRequest(profileUser) {
         const profileUserId = profileUser?.id ?? profileUser?._id;
 
@@ -836,6 +871,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Accepts a friend request from the profile preview. */
     async function handleAcceptProfileFriendRequest(requestId) {
         if (!requestId) {
             return;
@@ -862,6 +898,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Blocks a user from the profile preview. */
     async function handleBlockProfileUser(profileUserId) {
         if (!profileUserId) {
             return;
@@ -882,6 +919,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Unblocks a user from the profile preview. */
     async function handleUnblockProfileUser(profileUserId) {
         if (!profileUserId) {
             return;
@@ -901,6 +939,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Routes action errors to upgrade, limit, or toast feedback. */
     function showActionError(actionError, fallbackMessage) {
         if (isFreeUser && isUpgradeError(actionError.code)) {
             navigate('/premium', {
@@ -925,20 +964,24 @@ export function ChallengesPage() {
         toast.error(actionError.message || fallbackMessage);
     }
 
+    /* Notifies the app that challenge notification data changed. */
     function refreshChallengeNotifications() {
         window.dispatchEvent(new Event('howly:notifications-updated'));
     }
 
+    /* Shows a success toast and refreshes notification counts. */
     function showChallengeToast(message) {
         toast.success(message);
         refreshChallengeNotifications();
     }
 
+    /* Clears page-level challenge feedback banners. */
     function clearChallengeFeedback() {
         setError(null);
         setBanner(null);
     }
 
+    /* Sends the user to Premium from a challenge limit prompt. */
     function handleUpgradeClick() {
         setError(null);
         navigate('/premium', {
@@ -949,6 +992,7 @@ export function ChallengesPage() {
         });
     }
 
+    /* Opens the create dialog after checking plan limits. */
     async function openCreateDialog() {
         if (isFreeUser) {
             navigate('/premium', {
@@ -995,11 +1039,13 @@ export function ChallengesPage() {
         }
     }
 
+    /* Opens the edit dialog for a future owned challenge. */
     function openEditDialog(challenge) {
         setEditingChallenge(challenge);
         setIsFormOpen(true);
     }
 
+    /* Opens the invite dialog and loads friends. */
     async function openInviteDialog(challenge) {
         setInviteChallenge(challenge);
         setSelectedFriendIds([]);
@@ -1016,6 +1062,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Resets invite state when the invite dialog closes. */
     function closeInviteDialog(nextOpen) {
         if (!nextOpen) {
             setInviteChallenge(null);
@@ -1024,6 +1071,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Toggles a friend selection in the invite dialog. */
     function toggleInviteFriendId(friendId) {
         if (!friendId) {
             return;
@@ -1036,6 +1084,7 @@ export function ChallengesPage() {
         ));
     }
 
+    /* Resets edit state when the create/edit dialog closes. */
     function closeFormDialog(nextOpen) {
         setIsFormOpen(nextOpen);
 
@@ -1044,6 +1093,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Creates or updates a challenge from dialog form data. */
     async function handleSubmitChallenge(formData, challenge) {
         setBusyAction(challenge ? 'edit' : 'create');
         clearChallengeFeedback();
@@ -1074,6 +1124,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Permanently deletes a future owned challenge. */
     async function handleDeleteChallenge(challenge) {
         if (!challenge?.id) {
             return;
@@ -1094,6 +1145,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Joins a public or friend challenge. */
     async function handleJoinChallenge(challengeId) {
         setBusyAction('join');
         clearChallengeFeedback();
@@ -1109,6 +1161,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Leaves a joined challenge. */
     async function handleLeaveChallenge(challengeId) {
         setBusyAction(`leave-${challengeId}`);
         clearChallengeFeedback();
@@ -1124,6 +1177,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Confirms the pending leave action. */
     async function confirmLeaveChallenge() {
         const challenge = pendingLeaveChallenge;
 
@@ -1135,6 +1189,7 @@ export function ChallengesPage() {
         await handleLeaveChallenge(challenge.id);
     }
 
+    /* Claims the reward for a completed challenge. */
     async function handleClaimReward(challengeId) {
         setBusyAction(`reward-${challengeId}`);
         clearChallengeFeedback();
@@ -1150,6 +1205,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Accepts a pending challenge invitation. */
     async function handleAcceptInvitation(invitationId) {
         setBusyAction(`accept-${invitationId}`);
         clearChallengeFeedback();
@@ -1169,6 +1225,7 @@ export function ChallengesPage() {
         return didSucceed;
     }
 
+    /* Rejects a pending challenge invitation. */
     async function handleRejectInvitation(invitationId) {
         setBusyAction(`reject-${invitationId}`);
         clearChallengeFeedback();
@@ -1188,6 +1245,7 @@ export function ChallengesPage() {
         return didSucceed;
     }
 
+    /* Joins from the notification invitation preview. */
     async function handleJoinPreviewInvitation() {
         if (!invitationPreview?.id) {
             return;
@@ -1200,6 +1258,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Rejects from the notification invitation preview. */
     async function handleRejectPreviewInvitation() {
         if (!invitationPreview?.id) {
             return;
@@ -1212,6 +1271,7 @@ export function ChallengesPage() {
         }
     }
 
+    /* Sends invitations to selected friends. */
     async function handleSendChallengeInvitation() {
         if (!inviteChallenge || selectedFriendIds.length === 0) {
             return;
