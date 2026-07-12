@@ -83,6 +83,66 @@ test('checkout completion syncs premium subscription state and grants first bill
     assert.equal(storedUser.streakShields, 1);
 });
 
+test('checkout completion grants benefits when Stripe period end is on the subscription item', async () => {
+    const user = await buildUser({ coins: 0, streakShields: 0, isPremium: false });
+    const periodEnd = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+    const session = {
+        customer: 'cus_item_period_123',
+        metadata: { userId: user._id.toString() },
+        subscription: {
+            id: 'sub_item_period_123',
+            status: 'active',
+            items: {
+                data: [
+                    {
+                        current_period_end: periodEnd,
+                    },
+                ],
+            },
+        },
+    };
+
+    const upgradedUser = await markPremiumFromCheckoutSession(session);
+    assert.equal(upgradedUser.isPremium, true);
+    assert.equal(upgradedUser.premiumUntil.getTime(), periodEnd * 1000);
+    assert.equal(upgradedUser.coins, 300);
+    assert.equal(upgradedUser.streakShields, 1);
+    assert.equal(upgradedUser.coinsLastGrantedPeriodEnd.getTime(), periodEnd * 1000);
+    assert.equal(upgradedUser.streakShieldsLastGrantedPeriodEnd.getTime(), periodEnd * 1000);
+});
+
+test('checkout completion grants benefits when Stripe period end is on the latest invoice', async () => {
+    const user = await buildUser({ coins: 5, streakShields: 2, isPremium: false });
+    const periodEnd = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+    const session = {
+        customer: 'cus_invoice_period_123',
+        metadata: { userId: user._id.toString() },
+        subscription: {
+            id: 'sub_invoice_period_123',
+            status: 'active',
+            latest_invoice: {
+                lines: {
+                    data: [
+                        {
+                            period: {
+                                end: periodEnd,
+                            },
+                        },
+                    ],
+                },
+            },
+        },
+    };
+
+    const upgradedUser = await markPremiumFromCheckoutSession(session);
+    assert.equal(upgradedUser.isPremium, true);
+    assert.equal(upgradedUser.premiumUntil.getTime(), periodEnd * 1000);
+    assert.equal(upgradedUser.coins, 305);
+    assert.equal(upgradedUser.streakShields, 3);
+    assert.equal(upgradedUser.coinsLastGrantedPeriodEnd.getTime(), periodEnd * 1000);
+    assert.equal(upgradedUser.streakShieldsLastGrantedPeriodEnd.getTime(), periodEnd * 1000);
+});
+
 test('grantPremiumBenefitsForBillingPeriod is idempotent for the same billing period', async () => {
     const periodEnd = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
     const user = await buildUser({ coins: 10, streakShields: 2, isPremium: true });
