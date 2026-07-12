@@ -46,6 +46,7 @@ import {
     claimChallengeReward,
     createChallenge,
     createChallengeInvitation,
+    deleteChallenge,
     getChallengeParticipants,
     getChallengeInvitations,
     getChallenges,
@@ -1073,6 +1074,26 @@ export function ChallengesPage() {
         }
     }
 
+    async function handleDeleteChallenge(challenge) {
+        if (!challenge?.id) {
+            return;
+        }
+
+        setBusyAction(`delete-${challenge.id}`);
+        clearChallengeFeedback();
+
+        try {
+            await deleteChallenge(challenge.id);
+            showChallengeToast('Your challenge has been deleted.');
+            closeFormDialog(false);
+            await refreshCurrentChallenges();
+        } catch (deleteError) {
+            showActionError(deleteError, "We couldn't delete your challenge. Please try again.");
+        } finally {
+            setBusyAction('');
+        }
+    }
+
     async function handleJoinChallenge(challengeId) {
         setBusyAction('join');
         clearChallengeFeedback();
@@ -1507,7 +1528,9 @@ export function ChallengesPage() {
                 open={isFormOpen}
                 onOpenChange={closeFormDialog}
                 onSubmit={handleSubmitChallenge}
+                onDelete={handleDeleteChallenge}
                 isSubmitting={busyAction === 'create' || busyAction === 'edit'}
+                isDeleting={editingChallenge ? busyAction === `delete-${editingChallenge.id}` : false}
                 challenge={editingChallenge}
             />
 
