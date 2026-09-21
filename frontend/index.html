@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/src/assets/wolf.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Howly</title>
+    <script>
+        // Apply the saved theme before React mounts to avoid a flash of the wrong theme
+        (function () {
+            try {
+                var theme = localStorage.getItem('howly_theme');
+                var valid = ['forest-dark', 'sakura-light', 'sunset-warm', 'ocean-dark', 'hogwarts-night'];
+                document.documentElement.dataset.theme =
+                    valid.indexOf(theme) !== -1 ? theme : 'forest-dark';
+            } catch (e) {
+                document.documentElement.dataset.theme = 'forest-dark';
+            }
+        })();
+    </script>
+</head>
+<body>
+<div id="root"></div>
+<script type="module" src="/src/main.jsx"></script>
+</body>
+</html>

@@ -1,0 +1,695 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+    Bell,
+    ChevronRight,
+    Crown,
+    EyeOff,
+    Info,
+    MessageSquare,
+    Target,
+    Ban,
+} from 'lucide-react';
+
+import { StreakBadge } from '@/components/brand/StreakBadge.jsx';
+import { Page, PageSection, Heading } from '@/components/layout';
+import { profileCompletedChallengeIconClassName } from '@/components/cards/cardStyles';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { logoutUser } from '@/services/authService';
+import {
+    uploadCurrentUserProfilePicture,
+    deleteCurrentUserProfilePicture,
+    deleteCurrentUser,
+    updateCurrentUser,
+} from '@/services/userService';
+import {
+    ConfirmationDialog,
+    ConfirmationDialogAction,
+    ConfirmationDialogCancel,
+    ConfirmationDialogContent,
+    ConfirmationDialogDescription,
+    ConfirmationDialogFooter,
+    ConfirmationDialogHeader,
+    ConfirmationDialogTitle,
+} from '@/components/ui/confirmation-dialog';
+import { BlockedUsersDialog } from '@/components/social/BlockedUsersDialog.jsx';
+import { NotificationMuteDialog } from '@/components/social/NotificationMuteDialog.jsx';
+import { useAuth } from '@/context/AuthContext';
+import { DEFAULT_PROFILE_AVATAR_SRC } from '@/lib/profileAvatar.js';
+import { sendFeedback } from '@/services/feedbackService';
+import { toast } from 'sonner';
+
+function SettingsRow({ icon: Icon, iconColor = 'text-theme-text-muted', title, subtitle, onClick, disabled }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={disabled}
+            className="flex min-h-20 w-full items-center justify-between border-b border-theme-text/10 bg-theme-surface px-5 py-4 text-left first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 hover:bg-theme-surface-2 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+            <div className="flex items-center gap-4">
+                <Icon className={`size-5 ${iconColor}`} />
+                <div>
+                    <p className="font-semibold text-theme-text">{title}</p>
+                    {subtitle && (
+                        <p className="mt-1 text-sm text-theme-text-muted">{subtitle}</p>
+                    )}
+                </div>
+            </div>
+
+            <ChevronRight className="size-5 text-theme-text-muted" />
+        </button>
+    );
+}
+
+
+function FeedbackDialog({ open, onOpenChange, form, onFormChange, onSubmit, isSubmitting, error, success }) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="p-8 sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-theme-text">Help & Feedback</DialogTitle>
+                    <DialogDescription className="text-theme-text-muted">
+                        Send a problem report or suggestion to the Howly team.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={onSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-theme-surface-2 p-1">
+                        {[
+                            { value: 'problem', label: 'Problem' },
+                            { value: 'suggestion', label: 'Suggestion' },
+                        ].map((option) => (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => onFormChange({ ...form, type: option.value })}
+                                className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${form.type === option.value ? 'bg-white text-slate-950' : 'text-theme-text-soft hover:bg-theme-text/10 hover:text-theme-text'}`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <label className="block">
+                        <span className="mb-3 block text-sm font-semibold leading-none text-theme-text">Subject</span>
+                        <input
+                            type="text"
+                            value={form.subject}
+                            onChange={(event) => onFormChange({ ...form, subject: event.target.value })}
+                            maxLength={120}
+                            className="w-full rounded-2xl border border-theme-text/10 bg-theme-surface-2 px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
+                            placeholder="Briefly summarize the topic."
+                        />
+                    </label>
+
+                    <label className="block">
+                        <span className="mb-3 block text-sm font-semibold leading-none text-theme-text">Message</span>
+                        <textarea
+                            value={form.message}
+                            onChange={(event) => onFormChange({ ...form, message: event.target.value })}
+                            rows={6}
+                            maxLength={2000}
+                            className="w-full resize-none rounded-2xl border border-theme-text/10 bg-theme-surface-2 px-4 py-3 text-sm text-theme-text outline-none transition focus:border-howly-primary"
+                            placeholder="Tell us what happened or what would make Howly better."
+                        />
+                    </label>
+
+                    {error ? <p className="rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">{error}</p> : null}
+                    {success ? <p className="rounded-xl bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{success}</p> : null}
+
+                    <Button
+                        type="submit"
+                        disabled={isSubmitting || form.subject.trim().length < 3 || form.message.trim().length < 10}
+                        className="w-full rounded-xl bg-white text-slate-950 hover:bg-theme-invert/85"
+                    >
+                        {isSubmitting ? 'Sending...' : 'Send feedback'}
+                    </Button>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function AboutDialog({ open, onOpenChange }) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-theme-text">About Howly</DialogTitle>
+                    <DialogDescription className="text-theme-text-muted">
+                        We are four students who want to build a cute, motivating habit tracking website were friends can share their progress.
+                    </DialogDescription>
+                </DialogHeader>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+/* Settings row that toggles Ghost Mode (hides the user's streak from friends) via the API. */
+function GhostModeRow() {
+    const { user, setUser } = useAuth();
+    const [isSaving, setIsSaving] = useState(false);
+    const isGhost = user?.ghostMode === true;
+
+    /* Persists the Ghost Mode on/off change to the server and updates the user. */
+    async function handleToggle() {
+        if (isSaving) {
+            return;
+        }
+
+        setIsSaving(true);
+
+        try {
+            const updated = await updateCurrentUser({ ghostMode: !isGhost });
+            setUser((current) => (current ? { ...current, ghostMode: updated?.ghostMode ?? !isGhost } : current));
+        } catch (error) {
+            console.error('Failed to toggle ghost mode:', error);
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
+    return (
+        <div className="flex items-center justify-between rounded-2xl bg-theme-surface px-5 py-4">
+            <div className="flex items-center gap-4">
+                <EyeOff className="size-5 text-theme-text-muted" />
+                <div>
+                    <p className="font-semibold text-theme-text">Ghost Mode</p>
+                    <p className="mt-1 text-sm text-theme-text-muted">
+                        Hide your streak from friends
+                    </p>
+                </div>
+            </div>
+
+            <button
+                type="button"
+                onClick={handleToggle}
+                disabled={isSaving}
+                role="switch"
+                aria-checked={isGhost}
+                aria-label="Toggle ghost mode"
+                className={`flex h-7 w-12 items-center rounded-full px-1 transition-colors disabled:opacity-60 ${isGhost ? 'justify-end bg-howly-primary' : 'justify-start bg-theme-surface-2'}`}
+            >
+                <span className="size-5 rounded-full bg-theme-invert" />
+            </button>
+        </div>
+    );
+}
+
+/* Profile: shows the user's avatar and stats, and manages picture, privacy, Premium, feedback, logout, and account deletion. */
+export function ProfilePage() {
+    const navigate = useNavigate();
+
+    const { user, setUser, isLoadingUser } = useAuth();
+    // eslint-disable-next-line no-unused-vars
+    const [error, setError] = useState('');
+    const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+    const [isDeletingPicture, setIsDeletingPicture] = useState(false);
+    const [pictureError, setPictureError] = useState('');
+    const [isBlockedUsersDialogOpen, setIsBlockedUsersDialogOpen] = useState(false);
+    const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
+    const [feedbackForm, setFeedbackForm] = useState({ type: 'problem', subject: '', message: '' });
+    const [isSendingFeedback, setIsSendingFeedback] = useState(false);
+    const [feedbackError, setFeedbackError] = useState('');
+    const [feedbackSuccess, setFeedbackSuccess] = useState('');
+    const [isMuteDialogOpen, setIsMuteDialogOpen] = useState(false);
+    const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+    const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+    const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
+    const [hasConfirmedAccountDeletion, setHasConfirmedAccountDeletion] = useState(false);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+    const [deleteAccountError, setDeleteAccountError] = useState('');
+    const [hasProfilePictureLoadError, setHasProfilePictureLoadError] = useState(false);
+    const [hasDefaultProfilePictureLoadError, setHasDefaultProfilePictureLoadError] = useState(false);
+
+    useEffect(() => {
+        setHasProfilePictureLoadError(false);
+        setHasDefaultProfilePictureLoadError(false);
+    }, [user?.profilePictureUrl]);
+
+    function handleUpgradeToPremium() {
+        navigate('/premium', {
+            state: {
+                message: 'Upgrade to Premium to unlock more habits, challenges, monthly coins, streak shields, and premium shop items.',
+                returnTo: '/profile',
+            },
+        });
+    }
+
+    function handleManagePremium() {
+        navigate('/premium', {
+            state: {
+                message: 'You are on Premium. Review your plan benefits below, or manage billing and cancellation in Stripe.',
+                returnTo: '/profile',
+            },
+        });
+    }
+
+    /* Logs the user out, clears the stored token, and returns to the login page. */
+    async function handleLogout() {
+        try {
+            await logoutUser();
+        } catch (error) {
+            console.error('Logout failed:', error);
+        } finally {
+            localStorage.removeItem('howly_token');
+            setUser(null);
+            navigate('/login');
+        }
+    }
+
+    /* Permanently deletes the account after confirmation, then clears the session. */
+    async function handleDeleteAccount() {
+        if (!hasConfirmedAccountDeletion || isDeletingAccount) {
+            return;
+        }
+
+        try {
+            setDeleteAccountError('');
+            setIsDeletingAccount(true);
+            await deleteCurrentUser();
+            localStorage.removeItem('howly_token');
+            setUser(null);
+            navigate('/login');
+        } catch (error) {
+            setDeleteAccountError(error.message || 'Could not delete your account.');
+        } finally {
+            setIsDeletingAccount(false);
+        }
+    }
+
+
+    /* Uploads the chosen image as the new profile picture. */
+    async function handleProfilePictureChange(event) {
+        const file = event.target.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        try {
+            setPictureError('');
+            setIsUploadingPicture(true);
+
+            const updatedUser = await uploadCurrentUserProfilePicture(file);
+            setUser(updatedUser);
+        } catch (error) {
+            setPictureError(error.message || 'Could not upload profile picture');
+        } finally {
+            setIsUploadingPicture(false);
+            event.target.value = '';
+        }
+    }
+
+    /* Removes the current profile picture. */
+    async function handleDeleteProfilePicture() {
+        try {
+            setPictureError('');
+            setIsDeletingPicture(true);
+
+            const updatedUser = await deleteCurrentUserProfilePicture();
+            setUser(updatedUser);
+        } catch (error) {
+            setPictureError(error.message || 'Could not delete profile picture');
+        } finally {
+            setIsDeletingPicture(false);
+        }
+    }
+
+    /* Submits the feedback form to the Howly team and resets it on success. */
+    async function handleSendFeedback(event) {
+        event.preventDefault();
+
+        try {
+            setFeedbackError('');
+            setFeedbackSuccess('');
+            setIsSendingFeedback(true);
+            await sendFeedback(feedbackForm);
+            setFeedbackForm({ type: 'problem', subject: '', message: '' });
+            setIsFeedbackDialogOpen(false);
+            toast.success('Thanks! Your feedback has been sent.');
+        } catch (error) {
+            toast.error(error.message || "We couldn't send your feedback right now. Please try again.");
+        } finally {
+            setIsSendingFeedback(false);
+        }
+    }
+
+    if (isLoadingUser) {
+        return (
+            <Page theme="forest">
+                <Heading
+                    title="Profile"
+                    subtitle="Manage your Howly account."
+                    streakDays={0}
+                />
+                <p className="text-sm text-theme-text-soft">Loading profile...</p>
+            </Page>
+        );
+    }
+
+    if (error) {
+        return (
+            <Page theme="forest">
+                <Heading
+                    title="Profile"
+                    subtitle="Manage your Howly account."
+                    streakDays={0}
+                />
+                <p className="rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
+                    {error}
+                </p>
+            </Page>
+        );
+    }
+
+    const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Howly User';
+    const username = user?.username || 'unknown';
+    const profilePictureUrl = typeof user?.profilePictureUrl === 'string' ? user.profilePictureUrl.trim() : '';
+    const profileInitial = (fullName || username).trim().charAt(0).toUpperCase() || '?';
+    const profileAvatarSrc = profilePictureUrl && !hasProfilePictureLoadError
+        ? profilePictureUrl
+        : hasDefaultProfilePictureLoadError ? '' : DEFAULT_PROFILE_AVATAR_SRC;
+    const streak = user?.streak ?? 0;
+    const completedChallenges = user?.completedChallenges ?? 0;
+    const isPremium = user?.isPremium === true || user?.role === 'admin';
+    return (
+        <Page theme="forest">
+            <Heading
+                title="Profile"
+                subtitle="Manage your Howly account."
+                streakDays={streak}
+            />
+
+            <section className="rounded-2xl bg-theme-surface px-6 py-8 text-center shadow-lg">
+                <div className="mx-auto flex flex-col items-center gap-3">
+                    <div className="relative">
+
+                        <div className={`flex size-24 items-center justify-center overflow-hidden rounded-full bg-theme-surface-2 ${isPremium ? 'ring-2 ring-theme-gold ring-offset-2 ring-offset-theme-surface' : ''}`}>
+                            {profileAvatarSrc ? (
+                                <img
+                                    src={profileAvatarSrc}
+                                    alt={`${fullName}'s profile`}
+                                    className="size-full object-cover"
+                                    onError={() => {
+                                        if (profileAvatarSrc === profilePictureUrl) {
+                                            setHasProfilePictureLoadError(true);
+                                        } else {
+                                            setHasDefaultProfilePictureLoadError(true);
+                                        }
+                                    }}
+                                />
+                            ) : (
+                                <span className="text-4xl font-bold text-theme-text">{profileInitial}</span>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-3">
+                        <Button
+                            asChild
+                            disabled={isUploadingPicture}
+                            className="h-9 rounded-xl bg-theme-invert px-4 text-theme-invert-text hover:bg-theme-invert/85"
+                        >
+                            <label className="cursor-pointer">
+                                {isUploadingPicture ? 'Uploading...' : 'Change picture'}
+                                <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/jpg"
+                                    onChange={handleProfilePictureChange}
+                                    disabled={isUploadingPicture}
+                                    className="hidden"
+                                />
+                            </label>
+                        </Button>
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleDeleteProfilePicture}
+                            disabled={isUploadingPicture || isDeletingPicture}
+                            className="h-9 rounded-xl border-theme-text/20 bg-theme-text/10 px-4 text-theme-text hover:bg-theme-text/20"
+                        >
+                            {isDeletingPicture ? 'Removing...' : 'Remove'}
+                        </Button>
+                    </div>
+
+                    {pictureError && (
+                        <p className="text-sm text-theme-danger">{pictureError}</p>
+                    )}
+                </div>
+
+                <h2 className="mt-5 text-2xl font-bold text-theme-text">{fullName}</h2>
+                <p className="mt-1 text-sm text-theme-text-muted">@{username}</p>
+
+                {isPremium && (
+                    <div className="mt-2 flex justify-center">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400/20 to-yellow-500/20 px-3 py-1 text-xs font-semibold text-theme-gold ring-1 ring-theme-gold/30">
+                            <Crown className="h-3 w-3" aria-hidden="true" />
+                            Premium
+                        </span>
+                    </div>
+                )}
+
+                <div className="mt-6 flex items-center justify-center gap-10">
+                    <div>
+                        <div className="flex items-center justify-center gap-2 text-lg font-semibold text-theme-text">
+                            <StreakBadge
+                                days={streak}
+                                showLabel={false}
+                                size="md"
+                                className="text-lg font-semibold text-theme-text [&>span:first-child]:text-lg"
+                            />
+                        </div>
+                        <p className="mt-1 text-sm text-theme-text-muted">Day Streak</p>
+                    </div>
+
+                    <div>
+                        <div className="flex items-center justify-center gap-2 text-lg font-semibold text-theme-text">
+                            <Target className={`size-5 ${profileCompletedChallengeIconClassName}`} />
+                            <span>{completedChallenges}</span>
+                        </div>
+                        <p className="mt-1 text-sm text-theme-text-muted">Challenges</p>
+                    </div>
+                </div>
+            </section>
+
+            <PageSection title="My Stories">
+                <button
+                    type="button"
+                    onClick={() => navigate('/stories')}
+                    className="flex w-full items-center justify-between gap-4 rounded-2xl bg-theme-surface px-5 py-4 text-left transition-colors hover:bg-theme-surface"
+                >
+                    <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-howly-primary/15 text-xl">
+                            <span aria-hidden="true">📸</span>
+                        </div>
+                        <div className="min-w-0">
+                            <p className="font-semibold text-theme-text">Story Archive</p>
+                            <p className="truncate text-sm text-theme-text-muted">Your shared moments from the last 90 days</p>
+                        </div>
+                    </div>
+                    <ChevronRight className="size-5 shrink-0 text-theme-text-muted" aria-hidden="true" />
+                </button>
+            </PageSection>
+
+            <PageSection title="Privacy">
+                <div className="space-y-3">
+                    <GhostModeRow />
+                    <div className="overflow-hidden rounded-2xl">
+                        <SettingsRow
+                            icon={Ban}
+                            iconColor="text-theme-danger"
+                            title="Blocked Users"
+                            subtitle="Manage accounts you have blocked"
+                            onClick={() => setIsBlockedUsersDialogOpen(true)}
+                        />
+                    </div>
+                </div>
+            </PageSection>
+
+            <PageSection title="Account">
+                <div className="space-y-3">
+                    <div className="overflow-hidden rounded-2xl">
+                        {isPremium ? (
+                            <SettingsRow
+                                icon={Crown}
+                                iconColor="text-theme-gold"
+                                title="Manage your Premium Subscription"
+                                onClick={handleManagePremium}
+                            />
+                        ) : (
+                            <SettingsRow
+                                icon={Crown}
+                                iconColor="text-theme-gold"
+                                title="Upgrade to Premium"
+                                onClick={handleUpgradeToPremium}
+                            />
+                        )}
+                    </div>
+                    <div className="overflow-hidden rounded-2xl">
+                        <SettingsRow
+                            icon={Bell}
+                            title="Notifications"
+                            subtitle="Manage in-app notifications and email preferences"
+                            onClick={() => setIsMuteDialogOpen(true)}
+                        />
+                    </div>
+                </div>
+            </PageSection>
+
+            <PageSection title="Support">
+                <div className="space-y-3">
+                    <div className="overflow-hidden rounded-2xl">
+                        <SettingsRow icon={MessageSquare} title="Help & Feedback" subtitle="Report a problem or share an idea" onClick={() => setIsFeedbackDialogOpen(true)} />
+                    </div>
+                    <div className="overflow-hidden rounded-2xl">
+                        <SettingsRow icon={Info} title="About Howly" onClick={() => setIsAboutDialogOpen(true)} />
+                    </div>
+                </div>
+            </PageSection>
+
+            <PageSection title="Session">
+                <div className="space-y-3">
+                    <button
+                        type="button"
+                        onClick={() => setIsLogoutDialogOpen(true)}
+                        className="w-full rounded-2xl bg-theme-danger px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-theme-danger/90"
+                    >
+                        Log out
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setDeleteAccountError('');
+                            setHasConfirmedAccountDeletion(false);
+                            setIsDeleteAccountDialogOpen(true);
+                        }}
+                        className="w-full rounded-2xl bg-theme-danger px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-theme-danger/90"
+                    >
+                        Delete account
+                    </button>
+                </div>
+            </PageSection>
+
+            <BlockedUsersDialog
+                open={isBlockedUsersDialogOpen}
+                onOpenChange={setIsBlockedUsersDialogOpen}
+            />
+            <FeedbackDialog
+                open={isFeedbackDialogOpen}
+                onOpenChange={setIsFeedbackDialogOpen}
+                form={feedbackForm}
+                onFormChange={setFeedbackForm}
+                onSubmit={handleSendFeedback}
+                isSubmitting={isSendingFeedback}
+                error={feedbackError}
+                success={feedbackSuccess}
+            />
+            <AboutDialog
+                open={isAboutDialogOpen}
+                onOpenChange={setIsAboutDialogOpen}
+            />
+
+            <NotificationMuteDialog
+                open={isMuteDialogOpen}
+                onOpenChange={setIsMuteDialogOpen}
+            />
+
+            <ConfirmationDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+                <ConfirmationDialogContent className="border-theme-text/10 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
+                    <ConfirmationDialogHeader className="space-y-4 text-center">
+                        <ConfirmationDialogTitle className="text-center text-2xl font-bold tracking-tight">
+                            Log out?
+                        </ConfirmationDialogTitle>
+                        <ConfirmationDialogDescription className="text-base text-theme-text-soft">
+                            Are you sure you want to log out of Howly?
+                        </ConfirmationDialogDescription>
+                    </ConfirmationDialogHeader>
+                    <ConfirmationDialogFooter className="mt-4 gap-3 sm:justify-center">
+                        <ConfirmationDialogCancel className="h-12 rounded-xl border-theme-text/20 bg-theme-text/10 px-6 text-theme-text hover:bg-theme-text/20 hover:text-theme-text">
+                            Stay logged in
+                        </ConfirmationDialogCancel>
+                        <ConfirmationDialogAction
+                            className="h-12 rounded-xl bg-theme-danger px-6 font-semibold text-white hover:bg-theme-danger/90"
+                            onClick={handleLogout}
+                        >
+                            Log out
+                        </ConfirmationDialogAction>
+                    </ConfirmationDialogFooter>
+                </ConfirmationDialogContent>
+            </ConfirmationDialog>
+
+            <ConfirmationDialog
+                open={isDeleteAccountDialogOpen}
+                onOpenChange={(nextOpen) => {
+                    setIsDeleteAccountDialogOpen(nextOpen);
+
+                    if (!nextOpen) {
+                        setHasConfirmedAccountDeletion(false);
+                        setDeleteAccountError('');
+                    }
+                }}
+            >
+                <ConfirmationDialogContent className="border-theme-text/10 bg-theme-surface p-8 text-theme-text shadow-2xl sm:max-w-md">
+                    <ConfirmationDialogHeader className="space-y-4 text-center">
+                        <ConfirmationDialogTitle className="text-center text-2xl font-bold tracking-tight">
+                            Delete account?
+                        </ConfirmationDialogTitle>
+                        <ConfirmationDialogDescription className="text-base text-theme-text-soft">
+                            This will permanently delete your Howly account and remove access to your profile, habits, stories, challenges, progress, and items.
+                        </ConfirmationDialogDescription>
+                    </ConfirmationDialogHeader>
+
+                    <label className="mt-2 flex items-start gap-3 rounded-2xl border border-theme-danger/20 bg-theme-danger/10 p-4 text-left">
+                        <input
+                            type="checkbox"
+                            checked={hasConfirmedAccountDeletion}
+                            onChange={(event) => setHasConfirmedAccountDeletion(event.target.checked)}
+                            className="mt-0.5 size-4 rounded border-theme-danger/40 accent-[var(--color-theme-danger)]"
+                        />
+                        <span className="text-sm leading-5 text-theme-text-soft">
+                            I understand that deleting my account cannot be undone.
+                        </span>
+                    </label>
+
+                    {deleteAccountError ? (
+                        <p className="rounded-xl bg-theme-danger/10 px-4 py-3 text-sm text-theme-danger">
+                            {deleteAccountError}
+                        </p>
+                    ) : null}
+
+                    <ConfirmationDialogFooter className="mt-4 gap-3 sm:justify-center">
+                        <ConfirmationDialogCancel
+                            className="h-12 rounded-xl border-theme-text/20 bg-theme-text/10 px-6 text-theme-text hover:bg-theme-text/20 hover:text-theme-text"
+                            disabled={isDeletingAccount}
+                        >
+                            Keep account
+                        </ConfirmationDialogCancel>
+                        <ConfirmationDialogAction
+                            className="h-12 rounded-xl bg-theme-danger/90 px-6 font-semibold text-white hover:bg-theme-danger disabled:pointer-events-none disabled:opacity-50"
+                            disabled={!hasConfirmedAccountDeletion || isDeletingAccount}
+                            onClick={(event) => {
+                                event.preventDefault();
+                                void handleDeleteAccount();
+                            }}
+                        >
+                            {isDeletingAccount ? 'Deleting...' : 'Delete account'}
+                        </ConfirmationDialogAction>
+                    </ConfirmationDialogFooter>
+                </ConfirmationDialogContent>
+            </ConfirmationDialog>
+        </Page>
+    );
+}
+
+
+

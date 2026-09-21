@@ -1,0 +1,140 @@
+import { darkenColor } from '@/lib/colorUtils';
+
+const WOLF_BODY_WIDTH = 1280;
+const COZY_JACKET_WIDTH = 1292;
+const COZY_JACKET_HEIGHT = 554;
+const COZY_JACKET_HEIGHT_AT_WOLF_WIDTH = (WOLF_BODY_WIDTH / COZY_JACKET_WIDTH) * COZY_JACKET_HEIGHT;
+const DEFAULT_JACKET_COLOR = '#4A6741';
+const DEFAULT_STRING_COLOR = '#DADADA';
+const DEFAULT_SHIRT_COLOR = '#F4EFE5';
+
+export function CozyJacketLayer({ transform, jacketColor, stringColor, shirtColor, ...props }) {
+    return (
+        <g transform={transform} {...props}>
+            <CozyJacket
+                width={WOLF_BODY_WIDTH}
+                height={COZY_JACKET_HEIGHT_AT_WOLF_WIDTH}
+                jacketColor={jacketColor}
+                stringColor={stringColor}
+                shirtColor={shirtColor}
+            />
+        </g>
+    );
+}
+
+export default function CozyJacket({
+    className,
+    jacketColor = DEFAULT_JACKET_COLOR,
+    stringColor = DEFAULT_STRING_COLOR,
+    shirtColor = DEFAULT_SHIRT_COLOR,
+    ...props
+}) {
+    const jacketSeamColor = darkenColor(jacketColor, 0.22);
+    const shirtStrokeColor = darkenColor(shirtColor, 0.16);
+
+    return (
+        <svg
+            className={className}
+            width="1292"
+            height="554"
+            viewBox="0 0 1292 554"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            {...props}
+        >
+<g id="Group 49">
+        <g id="Union">
+            <mask id="path-1-inside-1_123_53" fill="white">
+                <path d="M1064.57 86.9885C1088.14 53.3233 1134.36 44.942 1168.23 68.0188L1169.02 68.5696L1291.9 154.607L1205.86 277.479L1082.99 191.443C1049.06 167.684 1040.81 120.919 1064.57 86.9885Z"/>
+            </mask>
+            <path d="M1064.57 86.9885C1088.14 53.3233 1134.36 44.942 1168.23 68.0188L1169.02 68.5696L1291.9 154.607L1205.86 277.479L1082.99 191.443C1049.06 167.684 1040.81 120.919 1064.57 86.9885Z" fill={jacketColor}/>
+            <path d="M1064.57 86.9885L1060.47 84.1206L1060.47 84.1206L1064.57 86.9885ZM1168.23 68.0188L1171.07 63.904L1171.05 63.8955L1171.04 63.887L1168.23 68.0188ZM1169.02 68.5695L1171.89 64.4738L1171.88 64.4642L1171.86 64.4548L1169.02 68.5695ZM1291.9 154.607L1295.99 157.475L1298.86 153.379L1294.76 150.511L1291.9 154.607ZM1205.86 277.479L1202.99 281.574L1207.09 284.442L1209.96 280.347L1205.86 277.479ZM1082.99 191.443L1085.86 187.347L1085.86 187.347L1082.99 191.443ZM1064.57 86.9885L1068.66 89.8564C1090.67 58.4358 1133.81 50.613 1165.41 72.1505L1168.23 68.0188L1171.04 63.887C1134.92 39.271 1085.62 48.2108 1060.47 84.1206L1064.57 86.9885ZM1168.23 68.0188L1165.39 72.1335L1166.18 72.6843L1169.02 68.5695L1171.86 64.4548L1171.07 63.904L1168.23 68.0188ZM1169.02 68.5695L1166.16 72.6653L1289.03 158.702L1291.9 154.607L1294.76 150.511L1171.89 64.4738L1169.02 68.5695ZM1291.9 154.607L1287.8 151.739L1201.76 274.611L1205.86 277.479L1209.96 280.347L1295.99 157.475L1291.9 154.607ZM1205.86 277.479L1208.73 273.383L1085.86 187.347L1082.99 191.443L1080.12 195.538L1202.99 281.574L1205.86 277.479ZM1082.99 191.443L1085.86 187.347C1054.19 165.172 1046.49 121.525 1068.66 89.8563L1064.57 86.9885L1060.47 84.1206C1035.13 120.313 1043.93 170.196 1080.12 195.538L1082.99 191.443Z" fill={jacketColor} mask="url(#path-1-inside-1_123_53)"/>
+        </g>
+        <line id="Line 39" x1="1124.5" y1="71.0241" x2="1120.5" y2="154.024" stroke="white"/>
+        <g id="Group 48">
+            <g id="Rectangle 8" filter="url(#filter0_d_123_53)">
+                <path d="M148 135.171C148 77.5177 207.137 38.7933 259.982 61.8424L626.235 221.587C646.352 230.361 669.191 230.485 689.402 221.93L1071.82 60.0619C1124.56 37.7346 1183 76.4547 1183 133.734V466C1183 510.183 1147.18 546 1103 546H228C183.817 546 148 510.183 148 466V135.171Z" fill={shirtColor}/>
+                <path d="M1072.4 61.4434C1124.16 39.5346 1181.5 77.5291 1181.5 133.734V466C1181.5 509.354 1146.35 544.5 1103 544.5H228C184.645 544.5 149.5 509.354 149.5 466V135.171C149.5 78.5987 207.528 40.6011 259.382 63.2178L625.635 222.962C646.13 231.901 669.397 232.027 689.987 223.312L1072.4 61.4434Z" stroke={shirtStrokeColor} strokeWidth="3"/>
+            </g>
+            <g id="Union_2">
+                <mask id="path-6-inside-2_123_53" fill="white">
+                    <path d="M227.327 89.7754C203.602 56.1188 248.871 35.0592 123.403 71.3262L122.873 70.5694L-5.05242e-07 156.606L86.0361 279.479L206.329 195.249C207.196 194.697 208.057 194.126 208.908 193.533C242.838 169.933 251.085 123.479 227.327 89.7754Z"/>
+                </mask>
+                <path d="M227.327 89.7754C203.602 56.1188 248.871 35.0592 123.403 71.3262L122.873 70.5694L-5.05242e-07 156.606L86.0361 279.479L206.329 195.249C207.196 194.697 208.057 194.126 208.908 193.533C242.838 169.933 251.085 123.479 227.327 89.7754Z" fill={jacketColor}/>
+                <path d="M227.327 89.7754L231.414 86.8947L231.414 86.8947L227.327 89.7754ZM123.403 71.3262L124.792 76.1296L121.359 77.1219L119.308 74.1953L123.403 71.3262ZM122.873 70.5694L120.005 66.4736L124.1 63.6066L126.968 67.7003L122.873 70.5694ZM0 156.606L-4.09576 159.474L-6.96364 155.379L-2.86789 152.511L0 156.606ZM86.0361 279.479L88.904 283.574L84.8082 286.442L81.9404 282.346L86.0361 279.479ZM206.329 195.249L203.461 191.153L203.551 191.091L203.643 191.032L206.329 195.249ZM208.908 193.533L211.763 197.638L211.763 197.638L208.908 193.533ZM227.327 89.7754L223.24 92.6562C216.672 83.3377 214.894 74.8413 213.796 68.4387C213.225 65.1078 212.912 62.9112 212.336 61.0985C211.822 59.4819 211.294 58.8591 210.725 58.4764C210.033 58.0098 208.519 57.3993 205.097 57.3512C201.698 57.3034 196.924 57.8128 190.164 59.089C176.659 61.6387 156.179 67.0569 124.792 76.1296L123.403 71.3262L122.015 66.5229C153.361 57.4621 174.273 51.9125 188.309 49.2626C195.32 47.939 200.854 47.2905 205.237 47.3522C209.597 47.4135 213.339 48.1797 216.312 50.1825C219.41 52.269 220.957 55.2081 221.867 58.0712C222.714 60.7382 223.17 63.9392 223.652 66.7489C224.66 72.6275 226.12 79.3849 231.414 86.8947L227.327 89.7754ZM123.403 71.3262L119.308 74.1953L118.778 73.4385L122.873 70.5694L126.968 67.7003L127.498 68.4571L123.403 71.3262ZM122.873 70.5694L125.741 74.6651L2.86789 160.702L0 156.606L-2.86789 152.511L120.005 66.4736L122.873 70.5694ZM0 156.606L4.09576 153.739L90.1319 276.611L86.0361 279.479L81.9404 282.346L-4.09576 159.474L0 156.606ZM86.0361 279.479L83.1683 275.383L203.461 191.153L206.329 195.249L209.197 199.345L88.904 283.574L86.0361 279.479ZM206.329 195.249L203.643 191.032C204.457 190.514 205.261 189.98 206.053 189.428L208.908 193.533L211.763 197.638C210.853 198.271 209.936 198.88 209.015 199.466L206.329 195.249ZM208.908 193.533L206.053 189.428C237.715 167.406 245.394 124.084 223.24 92.6562L227.327 89.7754L231.414 86.8947C256.776 122.875 247.962 172.461 211.763 197.638L208.908 193.533Z" fill={jacketColor} mask="url(#path-6-inside-2_123_53)"/>
+            </g>
+            <g id="Group 45">
+                <g id="Group 44">
+                    <path id="Rectangle 4" d="M228 546C172.771 546 128 501.228 128 446V150.918C128 79.319 201.044 30.9188 266.98 58.8285L526.48 168.671C563.468 184.328 587.5 220.596 587.5 260.761V446C587.5 501.228 542.728 546 487.5 546H228Z" fill={jacketColor}/>
+                    <g id="Vector 4">
+                        <path d="M415.5 544.5V475.5C467.985 461.726 488.74 442.757 505 382M907.5 544.5V475.5" stroke={jacketSeamColor} strokeWidth="8"/>
+                    </g>
+                    <g id="Vector 5">
+                        <path d="M133 148L580 230" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                    </g>
+                    <g id="Group 21">
+                        <line id="Line 1" x1="481" y1="161" x2="481" y2="297" stroke={stringColor} strokeWidth="14" strokeLinecap="round"/>
+                        <circle id="Ellipse 15" cx="481" cy="269" r="14.5" fill={stringColor} stroke={stringColor}/>
+                    </g>
+                </g>
+                <g id="Line 33" filter="url(#filter3_d_123_53)">
+                    <line x1="182.999" y1="66" x2="182.999" y2="151" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                </g>
+                <line id="Line 34" x1="232.13" y1="54.8632" x2="236.862" y2="160.869" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                <line id="Line 35" x1="286.139" y1="72.8539" x2="290.853" y2="171.861" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                <line id="Line 37" x1="394.17" y1="114.819" x2="398.818" y2="193.829" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                <line id="Line 38" x1="442.081" y1="136.916" x2="443.915" y2="202.918" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                <path id="Line 41" d="M542 178.5L547.5 222.5" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                <path id="Line 40" d="M501.978 158.493C501.838 156.842 500.386 155.617 498.735 155.757C497.084 155.897 495.859 157.349 495.999 159L498.989 158.747L501.978 158.493ZM498.989 158.747L495.999 159L500.999 218L503.989 217.747L506.978 217.493L501.978 158.493L498.989 158.747Z" fill={jacketSeamColor}/>
+                <line id="Line 36" x1="342.064" y1="94.9334" x2="343.933" y2="179.935" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+            </g>
+            <g id="Group 46">
+                <g id="Group 44_2">
+                    <path id="Rectangle 4_2" d="M1095.5 546C1150.73 546 1195.5 501.228 1195.5 446V150.918C1195.5 79.319 1122.46 30.9188 1056.52 58.8285L797.02 168.671C760.032 184.328 736 220.596 736 260.761V446C736 501.228 780.772 546 836 546H1095.5Z" fill={jacketColor}/>
+                    <g id="Vector 4_2">
+                        <path d="M908 544.5V475.5C855.515 461.726 834.76 442.757 818.5 382M416 544.5V475.5" stroke={jacketSeamColor} strokeWidth="8"/>
+                    </g>
+                    <g id="Vector 5_2">
+                        <path d="M1190.5 148L743.5 230" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                    </g>
+                    <g id="Group 21_2">
+                        <line id="Line 1_2" x1="7" y1="-7" x2="143" y2="-7" transform="matrix(0 1 1 0 849.5 154)" stroke={stringColor} strokeWidth="14" strokeLinecap="round"/>
+                        <circle id="Ellipse 15_2" cx="15" cy="15" r="14.5" transform="matrix(-1 0 0 1 857.5 254)" fill={stringColor} stroke={stringColor}/>
+                    </g>
+                </g>
+                <line id="Line 33_2" x1="3" y1="-3" x2="88" y2="-3" transform="matrix(0 1 1 0 1143.5 63)" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                <line id="Line 34_2" x1="3" y1="-3" x2="109.112" y2="-3" transform="matrix(-0.0445984 0.999005 0.999005 0.0445984 1094.5 52)" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                <line id="Line 35_2" x1="3" y1="-3" x2="102.119" y2="-3" transform="matrix(-0.0475652 0.998868 0.998868 0.0475652 1040.5 70)" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                <line id="Line 37_2" x1="3" y1="-3" x2="82.1469" y2="-3" transform="matrix(-0.058722 0.998274 0.998274 0.058722 932.5 112)" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                <line id="Line 38_2" x1="3" y1="-3" x2="69.0278" y2="-3" transform="matrix(-0.0277671 0.999614 0.999614 0.0277671 884.5 134)" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                <path id="Line 41_2" d="M781.5 178.5L776 222.5" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+                <path id="Line 40_2" d="M821.522 158.493C821.662 156.842 823.113 155.617 824.764 155.757C826.415 155.897 827.64 157.349 827.5 159L824.511 158.747L821.522 158.493ZM824.511 158.747L827.5 159L822.5 218L819.511 217.747L816.522 217.493L821.522 158.493L824.511 158.747Z" fill={jacketSeamColor}/>
+                <line id="Line 36_2" x1="3" y1="-3" x2="88.022" y2="-3" transform="matrix(-0.0219727 0.999759 0.999759 0.0219727 984.5 92)" stroke={jacketSeamColor} strokeWidth="6" strokeLinecap="round"/>
+            </g>
+        </g>
+    </g>
+    <defs>
+        <filter id="filter0_d_123_53" x="144" y="53.6489" width="1043" height="500.351" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+            <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+            <feOffset dy="4"/>
+            <feGaussianBlur stdDeviation="2"/>
+            <feComposite in2="hardAlpha" operator="out"/>
+            <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
+            <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_123_53"/>
+            <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_123_53" result="shape"/>
+        </filter>
+        <filter id="filter3_d_123_53" x="175.999" y="63" width="14" height="99" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+            <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+            <feOffset dy="4"/>
+            <feGaussianBlur stdDeviation="2"/>
+            <feComposite in2="hardAlpha" operator="out"/>
+            <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
+            <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_123_53"/>
+            <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_123_53" result="shape"/>
+        </filter>
+    </defs>
+        </svg>
+    );
+}

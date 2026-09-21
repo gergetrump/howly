@@ -1,0 +1,96 @@
+<svg width="1522" height="1564" viewBox="0 0 1522 1564" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="wolf">
+<g id="Vector 2">
+<path d="M1183.63 1129.8C1137.75 1114.13 1050.26 1135.57 918.874 1112.91C1022.06 1283.15 1124 1402.5 1171.5 1429C1219 1455.5 1271 1461 1317 1461C1329.2 1451.16 1348.25 1435.82 1348.25 1435.82L1293.75 1423.39L1342.26 1387.5L1281 1348.18L1344 1332.63L1293.75 1281.47L1348.5 1289.71L1324.65 1239.1C1269.43 1157.52 1229.52 1145.47 1183.63 1129.8Z" fill="#8690A2"/>
+<path d="M1508.5 1342.28C1438.9 1325.74 1385.28 1326.66 1324.65 1239.1L1348.5 1289.71L1293.75 1281.47L1344 1332.63L1281 1348.18L1342.26 1387.5L1293.75 1423.39L1348.25 1435.82C1348.25 1435.82 1329.2 1451.16 1317 1461C1389.5 1459.97 1459.26 1406.78 1508.5 1342.28Z" fill="#BCC5D5"/>
+</g>
+<g id="Group 13">
+<g id="Group 4">
+<circle id="Ellipse 1" cx="486.999" cy="1228" r="100" transform="rotate(-90 486.999 1228)" fill="#555353"/>
+<circle id="Ellipse 2" cx="486.999" cy="1428" r="100" transform="rotate(-90 486.999 1428)" fill="#555353"/>
+<rect id="Rectangle 2" x="386.999" y="1428" width="200" height="200" transform="rotate(-90 386.999 1428)" fill="#555353"/>
+</g>
+<g id="Group 5">
+<circle id="Ellipse 1_2" cx="904.997" cy="1229" r="100" transform="rotate(-90 904.997 1229)" fill="#555353"/>
+<circle id="Ellipse 2_2" cx="904.997" cy="1429" r="100" transform="rotate(-90 904.997 1429)" fill="#555353"/>
+<rect id="Rectangle 2_2" x="804.997" y="1429" width="200" height="200" transform="rotate(-90 804.997 1429)" fill="#555353"/>
+</g>
+<g id="Group 6">
+<ellipse id="Ellipse 1_3" cx="1165.45" cy="969.455" rx="75" ry="75" transform="rotate(-145 1165.45 969.455)" fill="#555353"/>
+<ellipse id="Ellipse 2_3" cx="1288.33" cy="1055.49" rx="75" ry="75" transform="rotate(-145 1288.33 1055.49)" fill="#555353"/>
+<rect id="Rectangle 2_3" x="1245.31" y="1116.93" width="150" height="150" transform="rotate(-145 1245.31 1116.93)" fill="#555353"/>
+</g>
+<g id="Group 7">
+<ellipse id="Ellipse 1_4" cx="75" cy="75" rx="75" ry="75" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 208.909 1073.91)" fill="#555353"/>
+<ellipse id="Ellipse 2_4" cx="75" cy="75" rx="75" ry="75" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 86.0364 1159.95)" fill="#555353"/>
+<rect id="Rectangle 2_4" width="150" height="150" transform="matrix(0.819152 -0.573576 -0.573576 -0.819152 147.473 1116.93)" fill="#555353"/>
+</g>
+<rect id="Rectangle 1" x="195.998" y="178" width="1000" height="1150" rx="100" fill="#9EAAC0"/>
+<g id="Group 2">
+<circle id="Ellipse 1_5" cx="1033.25" cy="516.75" r="27.75" fill="#555353"/>
+<circle id="Ellipse 2_5" cx="977.747" cy="516.75" r="27.75" fill="#555353"/>
+<rect id="Rectangle 2_5" x="977.747" y="489" width="55.5" height="55.5" fill="#555353"/>
+</g>
+<g id="Group 3">
+<circle id="Ellipse 1_6" cx="415.249" cy="516.75" r="27.75" fill="#555353"/>
+<circle id="Ellipse 2_6" cx="359.749" cy="516.75" r="27.75" fill="#555353"/>
+<rect id="Rectangle 2_6" x="359.749" y="489" width="55.5" height="55.5" fill="#555353"/>
+</g>
+<circle id="Ellipse 6" cx="386.999" cy="680" r="100" fill="white"/>
+<circle id="Ellipse 7" cx="1005" cy="680" r="100" fill="white"/>
+<circle id="Ellipse 5" cx="386.999" cy="680" r="80" fill="black"/>
+<circle id="Ellipse 4" cx="1005" cy="680" r="80" fill="black"/>
+<g id="Group 8">
+<path id="Polygon 1" d="M381.018 45C392.565 25 421.433 25 432.98 45L484.941 135C496.488 155 482.054 180 458.96 180H355.037C331.943 180 317.509 155 329.056 135L381.018 45Z" fill="#8690A2"/>
+<path id="Polygon 2" d="M354.999 90L406.96 180H303.037L354.999 90Z" fill="#8690A2"/>
+<path id="Polygon 3" d="M458.599 90L510.56 180H406.637L458.599 90Z" fill="#8690A2"/>
+</g>
+<g id="Group 10">
+<path id="Polygon 1_2" d="M959.017 45C970.564 25 999.431 25 1010.98 45L1062.94 135C1074.49 155 1060.05 180 1036.96 180H933.036C909.942 180 895.508 155 907.055 135L959.017 45Z" fill="#8690A2"/>
+<path id="Polygon 2_2" d="M932.997 90L984.959 180H881.036L932.997 90Z" fill="#8690A2"/>
+<path id="Polygon 3_2" d="M1036.6 90L1088.56 180H984.636L1036.6 90Z" fill="#8690A2"/>
+</g>
+<g id="Group 9">
+<path id="Polygon 1_3" d="M381.518 119C393.065 99 421.933 99 433.48 119L442.573 134.75C454.12 154.75 439.686 179.75 416.592 179.75H398.406C375.311 179.75 360.878 154.75 372.425 134.75L381.518 119Z" fill="#FFCABD"/>
+<path id="Polygon 2_3" d="M377.184 126.875L407.711 179.75H346.656L377.184 126.875Z" fill="#FFCABD"/>
+<path id="Polygon 3_3" d="M437.814 126.875L468.341 179.75H407.286L437.814 126.875Z" fill="#FFCABD"/>
+</g>
+<g id="Group 11">
+<path id="Polygon 1_4" d="M959.517 119C971.064 99 999.931 99 1011.48 119L1020.57 134.75C1032.12 154.75 1017.68 179.75 994.591 179.75H976.404C953.31 179.75 938.876 154.75 950.423 134.75L959.517 119Z" fill="#FFCABD"/>
+<path id="Polygon 2_4" d="M955.182 126.875L985.71 179.75H924.655L955.182 126.875Z" fill="#FFCABD"/>
+<path id="Polygon 3_4" d="M1015.81 126.875L1046.34 179.75H985.285L1015.81 126.875Z" fill="#FFCABD"/>
+</g>
+<path id="Union" d="M695.997 820C729.134 820 755.997 846.863 755.997 880C755.997 913.137 729.134 940 695.997 940C662.86 940 635.997 913.137 635.997 880C635.997 846.863 662.86 820 695.997 820Z" fill="#A45050"/>
+<g id="Group 1">
+<circle id="Ellipse 1_7" cx="795.999" cy="780" r="100" fill="#F4EDDC"/>
+<circle id="Ellipse 2_7" cx="595.999" cy="780" r="100" fill="#F4EDDC"/>
+<rect id="Rectangle 2_7" x="595.999" y="680" width="200" height="200" fill="#F4EDDC"/>
+</g>
+<circle id="Ellipse 3" cx="696" cy="780" r="45" fill="#555353"/>
+<g id="Mask group">
+<g id="Mask group_2">
+<mask id="mask0_3_247" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="635" y="820" width="121" height="120">
+<path id="Union_2" d="M695.997 820C729.134 820 755.997 846.863 755.997 880C755.997 913.137 729.134 940 695.997 940C662.86 940 635.997 913.137 635.997 880C635.997 846.863 662.86 820 695.997 820Z" fill="#A45050"/>
+</mask>
+<g mask="url(#mask0_3_247)">
+<path id="Union_3" d="M695.997 903C729.134 903 755.997 929.863 755.997 963C755.997 996.137 729.134 1023 695.997 1023C662.86 1023 635.997 996.137 635.997 963C635.997 929.863 662.86 903 695.997 903Z" fill="#E88A8A"/>
+</g>
+</g>
+</g>
+</g>
+<g id="Group 14">
+<ellipse id="Ellipse 9" cx="1196.38" cy="760.06" rx="72.2706" ry="39.8228" transform="rotate(13 1196.38 760.06)" fill="#9EAAC0"/>
+<ellipse id="Ellipse 10" cx="1196.38" cy="820.06" rx="72.2706" ry="39.8228" transform="rotate(13 1196.38 820.06)" fill="#9EAAC0"/>
+<ellipse id="Ellipse 11" cx="1196.38" cy="880.06" rx="72.2706" ry="39.8228" transform="rotate(13 1196.38 880.06)" fill="#9EAAC0"/>
+</g>
+<g id="Group 15">
+<ellipse id="Ellipse 9_2" cx="72.2706" cy="39.8228" rx="72.2706" ry="39.8228" transform="matrix(0.97437 -0.224951 -0.224951 -0.97437 134.917 935.119)" fill="#9EAAC0"/>
+<ellipse id="Ellipse 10_2" cx="72.2706" cy="39.8228" rx="72.2706" ry="39.8228" transform="matrix(0.97437 -0.224951 -0.224951 -0.97437 134.917 875.119)" fill="#9EAAC0"/>
+<ellipse id="Ellipse 11_2" cx="72.2706" cy="39.8228" rx="72.2706" ry="39.8228" transform="matrix(0.97437 -0.224951 -0.224951 -0.97437 134.917 815.119)" fill="#9EAAC0"/>
+</g>
+<g id="Group 17">
+<rect id="Rectangle 3" x="531" y="1168" width="320" height="160" fill="#F4EDDC"/>
+<circle id="Ellipse 12" cx="691" cy="1168" r="160" fill="#F4EDDC"/>
+</g>
+</g>
+</svg>

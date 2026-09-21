@@ -1,0 +1,109 @@
+import { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const variantClasses = {
+    success: 'border-theme-success/30 bg-emerald-400/15 text-theme-success',
+    error: 'border-theme-danger/30 bg-red-400/15 text-red-50',
+    info: 'border-sky-300/30 bg-sky-400/15 text-sky-50',
+    milestone: 'border-theme-text/10 bg-[#25243a] text-theme-text',
+    unavailable: 'border-amber-200/25 bg-theme-bg/90 text-theme-text ring-1 ring-amber-200/10',
+};
+
+const iconClasses = {
+    success: 'bg-emerald-300/15 text-theme-success',
+    error: 'bg-red-300/15 text-theme-danger',
+    info: 'bg-sky-300/15 text-sky-100',
+    milestone: 'bg-theme-bg/40 text-2xl',
+    unavailable: 'bg-amber-300/15 text-theme-gold',
+};
+
+const eyebrowClasses = {
+    success: 'text-theme-success/70',
+    error: 'text-theme-danger/75',
+    info: 'text-sky-100/75',
+    milestone: 'text-theme-text-muted',
+    unavailable: 'text-theme-gold/75',
+};
+
+export function NotificationBanner({
+    variant = 'info',
+    title,
+    eyebrow,
+    icon,
+    children,
+    onClose,
+    autoCloseMs,
+    className,
+}) {
+    const [isProgressRunning, setIsProgressRunning] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+        const animationFrame = requestAnimationFrame(() => setIsVisible(true));
+
+        return () => cancelAnimationFrame(animationFrame);
+    }, []);
+
+    useEffect(() => {
+        if (!autoCloseMs || !onClose) {
+            return undefined;
+        }
+
+        const animationFrame = requestAnimationFrame(() => setIsProgressRunning(true));
+        const timeout = setTimeout(onClose, autoCloseMs);
+
+        return () => {
+            cancelAnimationFrame(animationFrame);
+            clearTimeout(timeout);
+        };
+    }, [autoCloseMs, onClose]);
+
+    return (
+        <div
+            className={cn(
+                'relative flex items-start gap-4 overflow-hidden rounded-xl border px-5 py-4 opacity-0 shadow-xl shadow-slate-950/30 backdrop-blur transition duration-300 ease-out',
+                isVisible ? 'translate-y-0 scale-100 opacity-100' : '-translate-y-2 scale-[0.98]',
+                variant === 'milestone' && 'border-l-4 border-l-theme-accent',
+                variant === 'unavailable' && 'border-l-4 border-l-amber-300/80',
+                variantClasses[variant] ?? variantClasses.info,
+                className,
+            )}
+            role="status"
+        >
+            {icon ? (
+                <div className={cn('flex size-12 shrink-0 items-center justify-center rounded-2xl', iconClasses[variant] ?? iconClasses.info)}>
+                    {icon}
+                </div>
+            ) : null}
+            <div className="flex-1">
+                {eyebrow ? (
+                    <p className={cn('text-xs font-bold uppercase tracking-wider', eyebrowClasses[variant] ?? eyebrowClasses.info)}>{eyebrow}</p>
+                ) : null}
+                {title ? <p className="mt-1 text-lg font-bold leading-tight sm:text-xl">{title}</p> : null}
+                {children ? <p className="mt-1 max-w-2xl text-sm leading-relaxed opacity-90">{children}</p> : null}
+            </div>
+            {onClose ? (
+                <button
+                    type="button"
+                    className="rounded-full p-1 opacity-70 transition hover:bg-theme-text/10 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                    aria-label="Dismiss notification"
+                    onClick={onClose}
+                >
+                    <X className="size-4" aria-hidden="true" />
+                </button>
+            ) : null}
+            {autoCloseMs ? (
+                <div className="absolute inset-x-0 bottom-0 h-1 bg-theme-text/10">
+                    <div
+                        className="h-full bg-theme-accent"
+                        style={{
+                            width: isProgressRunning ? '0%' : '100%',
+                            transition: isProgressRunning ? `width ${autoCloseMs}ms linear` : 'none',
+                        }}
+                    />
+                </div>
+            ) : null}
+        </div>
+    );
+}

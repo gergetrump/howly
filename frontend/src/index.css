@@ -1,0 +1,529 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+    color: var(--t-text, #f5f5f5);
+    background: var(--t-bg, #1a1a2e);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+}
+
+body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Geist Variable', sans-serif;
+
+    /* Global Breakpoints */
+    --breakpoint-xs: 480px;
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+    --breakpoint-2xl: 1536px;
+    
+    /* Howly Environment Colors (theme-driven, see [data-theme] blocks below) */
+    --color-howly-sky-top: var(--howly-sky-top);
+    --color-howly-sky-bottom: var(--howly-sky-bottom);
+    --color-howly-moon: var(--howly-moon);
+    --color-howly-forest-back: var(--howly-forest-back);
+    --color-howly-forest-front: var(--howly-forest-front);
+    --color-howly-trunk: var(--howly-trunk);
+    --color-howly-ground: var(--howly-ground);
+    --color-howly-ground-ridge: var(--howly-ground-ridge);
+    --color-howly-card: var(--howly-card);
+    --color-howly-primary: var(--howly-primary);
+    --color-howly-blossom: var(--howly-blossom);
+
+    /* Semantic Theme Tokens (theme-driven, see [data-theme] blocks below) */
+    --color-theme-bg: var(--t-bg);
+    --color-theme-surface: var(--t-surface);
+    --color-theme-surface-2: var(--t-surface-2);
+    --color-theme-text: var(--t-text);
+    --color-theme-text-soft: var(--t-text-soft);
+    --color-theme-text-muted: var(--t-text-muted);
+    --color-theme-accent: var(--t-accent);
+    --color-theme-accent-strong: var(--t-accent-strong);
+    --color-theme-accent-soft: var(--t-accent-soft);
+    --color-theme-on-accent: var(--t-on-accent);
+    --color-theme-success: var(--t-success);
+    --color-theme-on-success: var(--t-on-success);
+    --color-theme-danger: var(--t-danger);
+    --color-theme-love: var(--t-love);
+    --color-theme-gold: var(--t-gold);
+    --color-theme-invert: var(--t-invert);
+    --color-theme-invert-text: var(--t-invert-text);
+    --color-theme-success-surface: var(--t-success-surface);
+    --color-theme-warn-surface: var(--t-warn-surface);
+
+    /* Howly Wolf Companion Colors */
+    --color-wolf-body: #9eaac0;
+    --color-wolf-body-dark: #8690a2;
+    --color-wolf-body-light: #bcc5d5;
+    --color-wolf-dark: #555353;
+    --color-wolf-belly: #f4eddc;
+    --color-wolf-ear-inner: #ffcabd;
+    --color-wolf-tongue: #a45050;
+    --color-wolf-tongue-light: #e88a8a;
+
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+.dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+}
+
+/* Falling sakura petals (Sakura Light theme) */
+.howly-petal {
+    top: -20px;
+    background: var(--howly-blossom, #fff0f6);
+    border-radius: 60% 40% 60% 40%;
+    box-shadow: 0 0 4px rgb(244 143 184 / 0.35);
+    animation-name: howly-petal-fall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+.howly-flower-fall {
+    top: -40px;
+    animation-name: howly-petal-fall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .howly-petal,
+    .howly-flower-fall {
+        animation: none;
+        display: none;
+    }
+}
+
+@keyframes howly-petal-fall {
+    0% {
+        transform: translate3d(0, -5vh, 0) rotate(0deg);
+    }
+    50% {
+        transform: translate3d(var(--petal-drift, 20px), 50vh, 0) rotate(180deg);
+    }
+    100% {
+        transform: translate3d(calc(var(--petal-drift, 20px) * -0.5), 105vh, 0) rotate(360deg);
+    }
+}
+
+/* ============================================================
+   Howly Themes
+   Each theme overrides the raw variables consumed by the
+   @theme tokens above. Default: Forest Dark.
+   ============================================================ */
+
+:root,
+[data-theme='forest-dark'] {
+    /* Scene */
+    --howly-sky-top: #161623;
+    --howly-sky-bottom: #202033;
+    --howly-moon: #f5ecd8;
+    --howly-moon-opacity: 0.5;
+    --howly-forest-back: #282842;
+    --howly-forest-front: #3b3b62;
+    --howly-trunk: #6b5c4d;
+    --howly-ground: #11111a;
+    --howly-ground-ridge: #1a1a2a;
+    --howly-card: #252538;
+    --howly-primary: #c084fc;
+    --howly-blossom: transparent;
+
+    /* Semantic */
+    --t-bg: #161623;
+    --t-surface: #252538;
+    --t-surface-2: #334155;
+    --t-text: #f8fafc;
+    --t-text-soft: #cbd5e1;
+    --t-text-muted: #94a3b8;
+    --t-accent: #a855f7;
+    --t-accent-strong: #7e22ce;
+    --t-accent-soft: #d8b4fe;
+    --t-on-accent: #ffffff;
+    --t-success: #34d399;
+    --t-on-success: #022c22;
+    --t-danger: #f87171;
+    --t-love: #f9a8d4;
+    --t-gold: #facc15;
+    --t-success-surface: #23423b;
+    --t-warn-surface: #42392c;
+    --t-invert: #ffffff;
+    --t-invert-text: #020617;
+}
+
+[data-theme='sakura-light'] {
+    /* Scene — spring morning */
+    --howly-sky-top: #ffe3ee;
+    --howly-sky-bottom: #fff8f0;
+    --howly-moon: #ffd36b; /* the sun */
+    --howly-moon-opacity: 1;
+    --howly-forest-back: #f3b9cf;
+    --howly-forest-front: #f48fb8;
+    --howly-trunk: #8d6e63;
+    --howly-ground: #dff0d4;
+    --howly-ground-ridge: #c8e3b8;
+    --howly-card: #ffffff;
+    --howly-primary: #db2777;
+    --howly-blossom: #fff0f6;
+
+    /* Semantic */
+    --t-bg: #fdf3f7;
+    --t-surface: #ffffff;
+    --t-surface-2: #fce7f1;
+    --t-text: #432a3a;
+    --t-text-soft: #6d4a5e;
+    --t-text-muted: #856074;
+    --t-accent: #db2777;
+    --t-accent-strong: #be185d;
+    --t-accent-soft: #bc3d79;
+    --t-on-accent: #ffffff;
+    --t-success: #15803d;
+    --t-on-success: #ffffff;
+    --t-danger: #dc2626;
+    --t-love: #be185d;
+    --t-gold: #b45309;
+    --t-success-surface: #b8dfc9;
+    --t-warn-surface: #f4e5da;
+    --t-invert: #432a3a;
+    --t-invert-text: #ffffff;
+}
+
+[data-theme='sunset-warm'] {
+    /* Scene — golden hour */
+    --howly-sky-top: #2a1a30;
+    --howly-sky-bottom: #5a2c3c;
+    --howly-moon: #ffce8a;
+    --howly-moon-opacity: 1;
+    --howly-forest-back: #4a2b40;
+    --howly-forest-front: #67384e;
+    --howly-trunk: #7a4a3a;
+    --howly-ground: #1d1320;
+    --howly-ground-ridge: #2e1c30;
+    --howly-card: #3a2433;
+    --howly-primary: #fb923c;
+    --howly-blossom: transparent;
+
+    /* Semantic */
+    --t-bg: #2a1a30;
+    --t-surface: #3a2433;
+    --t-surface-2: #4d3142;
+    --t-text: #fdf6ec;
+    --t-text-soft: #ecd5c0;
+    --t-text-muted: #c4a08a;
+    --t-accent: #fb923c;
+    --t-accent-strong: #ea580c;
+    --t-accent-soft: #fdba74;
+    --t-on-accent: #2a1207;
+    --t-success: #4ade80;
+    --t-on-success: #052e16;
+    --t-danger: #f87171;
+    --t-love: #f9a8d4;
+    --t-gold: #fde047;
+    --t-success-surface: #3c403f;
+    --t-warn-surface: #574036;
+    --t-invert: #fdf6ec;
+    --t-invert-text: #2a1a30;
+}
+
+[data-theme='ocean-dark'] {
+    /* Scene — calm midnight ocean */
+    --howly-sky-top: #0a1628;
+    --howly-sky-bottom: #11263e;
+    --howly-moon: #e8f4ff;
+    --howly-moon-opacity: 1;
+    --howly-forest-back: #16324a;
+    --howly-forest-front: #1f4866;
+    --howly-trunk: #4a5a6b;
+    --howly-ground: #060d18;
+    --howly-ground-ridge: #0f1d30;
+    --howly-card: #14283d;
+    --howly-primary: #38bdf8;
+    --howly-blossom: transparent;
+
+    /* Semantic */
+    --t-bg: #0a1628;
+    --t-surface: #14283d;
+    --t-surface-2: #1f3a54;
+    --t-text: #f0f7ff;
+    --t-text-soft: #bcd3e8;
+    --t-text-muted: #7e9cb8;
+    --t-accent: #38bdf8;
+    --t-accent-strong: #0284c7;
+    --t-accent-soft: #7dd3fc;
+    --t-on-accent: #04222e;
+    --t-success: #2dd4bf;
+    --t-on-success: #042f2e;
+    --t-danger: #f87171;
+    --t-love: #f9a8d4;
+    --t-gold: #facc15;
+    --t-success-surface: #184250;
+    --t-warn-surface: #364137;
+    --t-invert: #f0f7ff;
+    --t-invert-text: #0a1628;
+}
+
+[data-theme='hogwarts-night'] {
+    /* Scene — castle in the midnight blue */
+    --howly-sky-top: #0d1424;
+    --howly-sky-bottom: #2b3a5c;
+    --howly-moon: #f2e8c9;
+    --howly-moon-opacity: 1;
+    --howly-forest-back: #131b2e;
+    --howly-forest-front: #1c2740;
+    --howly-trunk: #3f4a63;
+    --howly-ground: #0b101d;
+    --howly-ground-ridge: #16203a;
+    --howly-card: #202940;
+    --howly-primary: #a83232;
+    --howly-blossom: transparent;
+
+    /* Semantic */
+    --t-bg: #161d2e;
+    --t-surface: #202940;
+    --t-surface-2: #2c3752;
+    --t-text: #edf1f7;
+    --t-text-soft: #c3cddd;
+    --t-text-muted: #93a4bd;
+    --t-accent: #e3b34a;
+    --t-accent-strong: #96700f;
+    --t-accent-soft: #f0c75e;
+    --t-on-accent: #241903;
+    --t-success: #6fd097;
+    --t-on-success: #0a2e17;
+    --t-danger: #f28b73;
+    --t-love: #dda8c6;
+    --t-gold: #f0c75e;
+    --t-invert: #edf1f7;
+    --t-invert-text: #141b2b;
+    --t-success-surface: #2c424d;
+    --t-warn-surface: #3f4144;
+}
+
+@keyframes howly-blink {
+    0%, 92%, 100% { transform: scaleY(1); }
+    96% { transform: scaleY(0.08); }
+}
+
+@keyframes howly-hop {
+    0% { transform: translateY(0) scale(1, 1); }
+    15% { transform: translateY(0) scale(1.06, 0.9); }
+    45% { transform: translateY(-14%) scale(0.95, 1.08); }
+    70% { transform: translateY(0) scale(1.05, 0.92); }
+    85% { transform: translateY(0) scale(0.99, 1.01); }
+    100% { transform: translateY(0) scale(1, 1); }
+}
+
+.howly-blink {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: howly-blink 3.5s ease-in-out infinite;
+}
+
+.howly-hop {
+    transform-origin: bottom center;
+    animation: howly-hop 0.65s ease-in-out;
+}
+
+@keyframes howly-arm-r {
+    0%, 100% { transform: rotate(0deg); }
+    40%, 65% { transform: rotate(-20deg); }
+}
+
+@keyframes howly-arm-l {
+    0%, 100% { transform: rotate(0deg); }
+    40%, 65% { transform: rotate(20deg); }
+}
+
+.howly-arm-l,
+.howly-arm-r {
+    transform-box: fill-box;
+    transform-origin: top center;
+}
+
+.howly-hop .howly-arm-r { animation: howly-arm-r 0.65s ease-in-out; }
+.howly-hop .howly-arm-l { animation: howly-arm-l 0.65s ease-in-out; }
+
+@keyframes howly-celebrate-in {
+    0% { opacity: 0; transform: translateY(14px) scale(0.9); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes howly-celebrate-glow {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+@keyframes howly-confetti {
+    0% { opacity: 0; transform: translate(-50%, 0) rotate(0deg); }
+    12% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 240px)) rotate(var(--spin, 360deg)); }
+}
+
+.howly-celebrate-in { animation: howly-celebrate-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.howly-celebrate-glow { animation: howly-celebrate-glow 1.5s ease-in-out infinite; }
+.howly-roll { transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1); }
+.howly-confetti-piece { animation: howly-confetti var(--dur, 2s) cubic-bezier(0.2, 0.6, 0.3, 1) var(--delay, 0s) forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+    .howly-blink,
+    .howly-hop,
+    .howly-hop .howly-arm-l,
+    .howly-hop .howly-arm-r,
+    .howly-celebrate-in,
+    .howly-celebrate-glow {
+        animation: none;
+    }
+
+    .howly-confetti-piece {
+        animation: none;
+        opacity: 0;
+    }
+
+    .howly-roll {
+        transition: none;
+    }
+}
+
+[data-sonner-toaster] {
+    --toast-close-button-start: unset !important;
+    --toast-close-button-end: 0 !important;
+    --toast-close-button-transform: translate(35%, -35%) !important;
+}
+
+[data-sonner-toast][data-y-position='top']:not([data-mounted='true']) {
+    --y: translateX(110%);
+}
+
+[data-sonner-toast][data-y-position='top'][data-removed='true'][data-front='true'][data-swipe-out='false'] {
+    --y: translateX(110%);
+}
