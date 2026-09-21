@@ -1,0 +1,148 @@
+import mongoose from 'mongoose';
+
+const { Schema } = mongoose;
+
+export const STORY_SOURCE_TYPES = ['habit', 'milestone'];
+export const STORY_FEED_VISIBLE_HOURS = 30 * 24;
+export const STORY_ARCHIVE_DAYS = 90;
+
+/* Story: an image post tied to a habit/challenge/milestone, shown in the feed for 30 days and auto-deleted after 90. */
+const storySchema = new Schema(
+  {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+
+    // --- Generic Source Context ---
+    sourceType: {
+      type: String,
+      enum: STORY_SOURCE_TYPES,
+      required: true,
+    },
+    sourceId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+    },
+    sourceTitle: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 1,
+      maxlength: 100,
+    },
+    sourceEmoji: {
+      type: String,
+      default: '🎯',
+    },
+
+    // --- Content ---
+    imageUrl: {
+      type: String,
+      required: true,
+    },
+    // Cloudinary public_id — needed to delete the image when the story is deleted
+    imagePublicId: {
+      type: String,
+      required: true,
+    },
+    caption: {
+      type: String,
+      trim: true,
+      maxlength: 200,
+      default: '',
+    },
+
+    // --- Lifecycle ---
+    feedExpiresAt: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+    archiveExpiresAt: {
+      type: Date,
+      required: true,
+    },
+
+    // --- Social ---
+    likeCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    commentCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Auto-delete the document 90 days after creation
+storySchema.index({ archiveExpiresAt: 1 }, { expireAfterSeconds: 0 });
+storySchema.index({ user: 1, createdAt: -1 });
+
+/* A single user's like on a story (unique per user/story pair). */
+const storyLikeSchema = new Schema(
+  {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    story: {
+      type: Schema.Types.ObjectId,
+      ref: 'Story',
+      required: true,
+      index: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+storyLikeSchema.index({ user: 1, story: 1 }, { unique: true });
+
+/* A comment on a story, optionally nested one level under a parent comment. */
+const storyCommentSchema = new Schema(
+  {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    story: {
+      type: Schema.Types.ObjectId,
+      ref: 'Story',
+      required: true,
+      index: true,
+    },
+    parentComment: {
+      type: Schema.Types.ObjectId,
+      ref: 'StoryComment',
+      default: null,
+      index: true,
+    },
+    content: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 500,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+export const Story = mongoose.model('Story', storySchema);
+export const StoryLike = mongoose.model('StoryLike', storyLikeSchema);
+export const StoryComment = mongoose.model('StoryComment', storyCommentSchema);

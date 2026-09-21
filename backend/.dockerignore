@@ -1,0 +1,8 @@
+.git
+.DS_Store
+npm-debug.log
+node_modules
+.env
+uploads/*
+!uploads/profile-pictures/
+!uploads/profile-pictures/default.png

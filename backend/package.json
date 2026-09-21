@@ -1,0 +1,41 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "test": "node --test",
+    "seed:taxonomy": "node scripts/seed-taxonomy.js",
+    "backfill:taxonomy": "node scripts/backfill-taxonomy.js",
+    "seed:demo-users": "node scripts/seed-demo-users.js",
+    "tick:demo-users": "node scripts/tick-demo-users.js",
+    "clean:demo-users": "node scripts/clean-demo-users.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.lrz.de/seba-master-2026-21453271/team-21/Backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.10.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "helmet": "^8.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^9.6.3",
+    "multer": "^2.1.1",
+    "node-cron": "^4.5.0",
+    "nodemailer": "^8.0.10",
+    "sharp": "^0.34.5",
+    "stripe": "^22.2.0"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^10.1.4",
+    "supertest": "^7.1.4"
+  }
+}
