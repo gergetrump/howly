@@ -1,54 +1,45 @@
 # Howly Backend
 
-## Docker
-
-`docker-compose.yml` is stored in this repository and must be moved to the parent
-folder after cloning. All paths in the compose file are relative to that parent
-folder (the Team X directory).
-
-```bash
-mkdir Team-21
-cd Team-21
-git clone https://gitlab.lrz.de/seba-master-2026-21453271/team-21/Backend.git Backend
-git clone https://gitlab.lrz.de/seba-master-2026-21453271/team-21/Frontend.git Frontend
-mv Backend/docker-compose.yml .
-docker compose up -d
-```
-
-Configuration lives in committed `config.js` files (no `.env` required). The
-backend connects to MongoDB Atlas using the credentials in `Backend/config.js`.
-
-Open the app after the containers are running:
-
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3000
-
-Stop the stack from the Team X directory:
-
-```bash
-docker compose down
-```
+Express API for the Howly habit tracker. Run it from this folder for local development, or from the repo root with Docker Compose.
 
 ## Local development
 
 ```bash
-# Terminal 1
+cp .env.example .env
+# edit .env — at minimum set JWT_SECRET and MONGO_URI
+npm install
 npm run dev
+```
 
-# Terminal 2
+API: http://localhost:3000
+
+Optional Stripe webhooks:
+
+```bash
 stripe listen --forward-to localhost:3000/api/payments/webhook
+```
+
+## Tests
+
+```bash
+npm test
 ```
 
 ## Habit taxonomy
 
-Canonical categories and habits live in `data/habit-taxonomy.seed.json`. After changing that file, re-seed MongoDB:
+Canonical categories live in `data/habit-taxonomy.seed.json`. After changing that file:
 
 ```bash
 npm run seed:taxonomy
+npm run backfill:taxonomy   # optional: reclassify existing habits and challenges
 ```
 
-Optionally reclassify existing habits and challenges:
+Demo accounts (optional):
 
 ```bash
-npm run backfill:taxonomy
+npm run seed:demo-users
+npm run tick:demo-users
+npm run clean:demo-users
 ```
+
+See the [root README](../README.md) for architecture, Docker, and the full environment variable list.

@@ -1,0 +1,49 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: howly-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - howly-mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: howly-backend
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      MONGO_URI: mongodb://mongo:27017/howly
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me}
+      SERVER_BASE_URL: http://localhost:3000
+      FRONTEND_BASE_URL: http://localhost:5173
+      DISABLE_EMAIL_SENDING: "true"
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      MODERATION_API_KEY: ${MODERATION_API_KEY:-}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: howly-frontend
+    environment:
+      VITE_DEV_PROXY_TARGET: http://backend:3000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  howly-mongo:

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" role="img" aria-labelledby="title desc">
+  <title id="title">Howly architecture</title>
+  <desc id="desc">React frontend talks to an Express API, which uses MongoDB and optional Stripe, Cloudinary, OpenRouter, and SMTP services.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f1a16"/>
+      <stop offset="100%" stop-color="#1a2c24"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="420" rx="24" fill="url(#bg)"/>
+  <text x="48" y="48" fill="#d4f0e2" font-family="ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="700">Howly</text>
+  <text x="120" y="48" fill="#8fbfa8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14">gamified social habit tracker</text>
+
+  <rect x="48" y="88" width="200" height="88" rx="16" fill="#24352e" stroke="#3d5c4d"/>
+  <text x="148" y="126" text-anchor="middle" fill="#e8fff4" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700">React + Vite</text>
+  <text x="148" y="148" text-anchor="middle" fill="#9dccb6" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">frontend/</text>
+
+  <path d="M248 132 H 320" stroke="#7ad0a8" stroke-width="2" marker-end="url(#arrow)"/>
+  <polygon points="320,128 332,132 320,136" fill="#7ad0a8"/>
+
+  <rect x="332" y="72" width="240" height="120" rx="16" fill="#24352e" stroke="#7ad0a8"/>
+  <text x="452" y="118" text-anchor="middle" fill="#e8fff4" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700">Express API</text>
+  <text x="452" y="140" text-anchor="middle" fill="#9dccb6" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">backend/ · REST + SSE</text>
+  <text x="452" y="160" text-anchor="middle" fill="#9dccb6" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">JWT auth · Helmet · moderation</text>
+
+  <path d="M452 192 V 236" stroke="#7ad0a8" stroke-width="2"/>
+  <polygon points="448,236 452,248 456,236" fill="#7ad0a8"/>
+
+  <rect x="352" y="252" width="200" height="72" rx="16" fill="#1b2a24" stroke="#3d5c4d"/>
+  <text x="452" y="284" text-anchor="middle" fill="#e8fff4" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700">MongoDB</text>
+  <text x="452" y="304" text-anchor="middle" fill="#9dccb6" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">users · habits · social</text>
+
+  <rect x="640" y="48" width="272" height="56" rx="14" fill="#1b2a24" stroke="#3d5c4d"/>
+  <text x="776" y="82" text-anchor="middle" fill="#d4f0e2" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14">Stripe · Premium billing</text>
+
+  <rect x="640" y="124" width="272" height="56" rx="14" fill="#1b2a24" stroke="#3d5c4d"/>
+  <text x="776" y="158" text-anchor="middle" fill="#d4f0e2" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14">Cloudinary · media</text>
+
+  <rect x="640" y="200" width="272" height="56" rx="14" fill="#1b2a24" stroke="#3d5c4d"/>
+  <text x="776" y="234" text-anchor="middle" fill="#d4f0e2" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14">OpenRouter · AI suggestions</text>
+
+  <rect x="640" y="276" width="272" height="56" rx="14" fill="#1b2a24" stroke="#3d5c4d"/>
+  <text x="776" y="310" text-anchor="middle" fill="#d4f0e2" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14">SMTP · email verification</text>
+
+  <path d="M572 110 H 640" stroke="#5f8f78" stroke-width="1.5"/>
+  <path d="M572 132 H 640" stroke="#5f8f78" stroke-width="1.5"/>
+  <path d="M572 154 H 640" stroke="#5f8f78" stroke-width="1.5"/>
+  <path d="M572 176 C 600 176, 600 304, 640 304" fill="none" stroke="#5f8f78" stroke-width="1.5"/>
+
+  <text x="48" y="392" fill="#7a9e8d" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">Optional integrations are env-configured and can be left unset for local development.</text>
+</svg>

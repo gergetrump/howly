@@ -5,7 +5,7 @@ import User from '../features/users/user.model.js';
 import { PLANS, PLAN_KEYS, hasPremiumAccess } from '../config/plans.js';
 
 
-const stripe = new Stripe(config.stripe.secretKey);
+const stripe = new Stripe(config.stripe.secretKey || 'sk_test_not_configured');
 const frontendBaseUrl = config.frontendBaseUrl || config.clientBaseUrl;
 const premiumPlan = PLANS[PLAN_KEYS.PREMIUM];
 const PREMIUM_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);

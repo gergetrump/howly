@@ -5,8 +5,8 @@ import config from '../../config.js';
 async function connectDB(uriOverride) {
   const uri = uriOverride || config.mongoUri;
 
-  if (!uri) {
-    throw new Error('mongoUri is missing in config.js');
+    if (!uri) {
+    throw new Error('MONGO_URI is missing. Copy backend/.env.example to backend/.env.');
   }
 
   try {
