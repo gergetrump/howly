@@ -1,26 +1,29 @@
 import helmet from 'helmet';
+import config from '../../config.js';
 
 const PROTOTYPE_POLLUTION_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const MONGO_OPERATOR_KEY_PATTERN = /[$.]/;
 
 // Security stays as a separate app layer: headers reduce XSS impact, and unsafe
 // request keys are rejected before feature controllers build Mongo queries.
-const HELMET_OPTIONS = {
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            baseUri: ["'self'"],
-            objectSrc: ["'none'"],
-            frameAncestors: ["'self'"],
-            scriptSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-            connectSrc: ["'self'", 'http://localhost:5173', 'http://127.0.0.1:5173'],
-            upgradeInsecureRequests: null,
+function helmetOptions() {
+    return {
+        crossOriginResourcePolicy: { policy: 'cross-origin' },
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                baseUri: ["'self'"],
+                objectSrc: ["'none'"],
+                frameAncestors: ["'self'"],
+                scriptSrc: ["'self'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+                connectSrc: ["'self'", ...config.corsOrigins],
+                upgradeInsecureRequests: null,
+            },
         },
-    },
-};
+    };
+}
 
 function isPlainObject(value) {
     return Boolean(value) && Object.prototype.toString.call(value) === '[object Object]';
@@ -81,5 +84,5 @@ export function rejectUnsafeRequestKeys(req, res, next) {
 export function applySecurityMiddleware(app) {
     // XSS protection is layered: React renders user text safely, and CSP tells
     // browsers not to run unexpected scripts if unsafe markup ever slips in.
-    app.use(helmet(HELMET_OPTIONS));
+    app.use(helmet(helmetOptions()));
 }

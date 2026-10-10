@@ -1,3 +1,4 @@
+# Local development with hot reload. Public deploys use docker-compose.prod.yml.
 services:
   mongo:
     image: mongo:7
@@ -13,7 +14,9 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      target: development
     container_name: howly-backend
     ports:
       - "3000:3000"
@@ -36,7 +39,9 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      target: development
     container_name: howly-frontend
     environment:
       VITE_DEV_PROXY_TARGET: http://backend:3000

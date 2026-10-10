@@ -67,7 +67,9 @@ flowchart LR
 howly/
 ├── frontend/          # React SPA
 ├── backend/           # Express API
-├── docker-compose.yml
+├── docker-compose.yml       # local development
+├── docker-compose.prod.yml  # public deployment
+├── render.yaml
 ├── docs/
 └── README.md
 ```
@@ -112,6 +114,43 @@ From the repo root you can also run `npm run dev:backend` and `npm run dev:front
 cd backend && npm test
 ```
 
+## Deploy
+
+People use one HTTPS site. That site serves the built React app and proxies `/api` and `/uploads` to the API, so the browser stays on one origin. Run **one** API instance. The daily streak job lives in that process and would run twice if you scale it out.
+
+Before anyone can sign up:
+
+- MongoDB is reachable (`MONGO_URI`).
+- `JWT_SECRET` is a unique random value, at least 32 characters (`openssl rand -hex 32`). Production refuses the placeholder secret.
+- Email works. Set `DISABLE_EMAIL_SENDING=false` and fill in `SMTP_*`. Login rejects unverified accounts, and a failed verification email deletes the new user.
+- `SERVER_BASE_URL` and `FRONTEND_BASE_URL` are both the public `https://` URL of the site. Verification links and default avatars are opened in the browser, so they use that URL.
+
+Stripe, Cloudinary, and OpenRouter can stay empty. Premium checkout, photo uploads, and AI coaching stay off until those keys exist.
+
+### One machine
+
+```bash
+cp backend/.env.example backend/.env
+# set JWT_SECRET, SMTP_*, and DISABLE_EMAIL_SENDING=false
+
+cp .env.example .env
+# set PUBLIC_URL=https://howly.example.com and HTTP_PORT=80
+
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+Without a domain, leave `PUBLIC_URL` unset and open http://localhost:8080. Put Caddy, nginx, or the host's load balancer in front before sharing the site. MongoDB stays on the private Docker network.
+
+### Render
+
+`render.yaml` defines a private API and the public site. In the Render dashboard, choose **New → Blueprint** and point it at this repo. You will be asked for an Atlas `MONGO_URI` and SMTP settings. Render generates `JWT_SECRET` and wires the site URL and the private API address.
+
+Use an instance that stays awake. A sleeping free instance drops the notification stream. Keep the API at one instance.
+
+After the first deploy, register on the `onrender.com` URL and confirm the verification email. For a custom domain, point DNS at the `howly` service, then set `SERVER_BASE_URL` and `FRONTEND_BASE_URL` on the API to `https://your-domain`. Stripe webhooks, once you enable them, go to `https://your-domain/api/payments/webhook`.
+
+To host the site and API on different public origins instead, build the frontend with `VITE_API_BASE_URL=https://api.example.com/api` and add that site origin to `CORS_ORIGINS`.
+
 ## Environment
 
 Copy [`backend/.env.example`](backend/.env.example) to `backend/.env`. Nothing secret is committed.
@@ -119,7 +158,9 @@ Copy [`backend/.env.example`](backend/.env.example) to `backend/.env`. Nothing s
 | Variable | Purpose |
 | --- | --- |
 | `MONGO_URI` | MongoDB connection string |
-| `JWT_SECRET` | Signing key for access tokens |
+| `JWT_SECRET` | Signing key for access tokens. Required, 32+ characters, in production |
+| `TRUST_PROXY` | Set `true` when TLS terminates in front of the API |
+| `CORS_ORIGINS` | Extra browser origins, comma-separated. The site URL is already allowed |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Premium checkout |
 | `CLOUDINARY_*` | Image uploads |
 | `OPENROUTER_API_KEY` | AI habit suggestions |
@@ -127,7 +168,7 @@ Copy [`backend/.env.example`](backend/.env.example) to `backend/.env`. Nothing s
 | `SMTP_*` | Verification and password-reset email |
 | `DISABLE_EMAIL_SENDING` | Defaults to `true` locally |
 
-Frontend optional: `VITE_API_BASE_URL` (defaults to `http://localhost:3000/api`).
+Frontend optional: `VITE_API_BASE_URL` (defaults to `http://localhost:3000/api`). The production image uses `/api`. Notification streams use that same value.
 
 ## Team
 

@@ -13,6 +13,8 @@ npm run dev
 
 API: http://localhost:3000
 
+Production starts with `npm start` (`node src/server.js`). See the [root README](../README.md) for Docker and Render.
+
 Optional Stripe webhooks:
 
 ```bash

@@ -60,14 +60,34 @@ function envBoolean(name, fallback) {
     return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
 }
 
+function normalizeOrigin(value) {
+    return value.trim().replace(/\/+$/, '');
+}
+
+function envOrigins(name) {
+    return envString(name)
+        .split(',')
+        .map(normalizeOrigin)
+        .filter(Boolean);
+}
+
+const frontendBaseUrl = normalizeOrigin(envString('FRONTEND_BASE_URL', 'http://localhost:5173'));
+
 const config = {
     port: envNumber('PORT', 3000),
     timezone: envString('APP_TIMEZONE', 'Europe/Berlin'),
     mongoUri: envString('MONGO_URI', 'mongodb://127.0.0.1:27017/howly'),
     jwtSecret: envString('JWT_SECRET', 'dev-only-change-me'),
     jwtExpiresIn: envString('JWT_EXPIRES_IN', '7d'),
-    serverBaseUrl: envString('SERVER_BASE_URL', 'http://localhost:3000'),
-    frontendBaseUrl: envString('FRONTEND_BASE_URL', 'http://localhost:5173'),
+    serverBaseUrl: normalizeOrigin(envString('SERVER_BASE_URL', 'http://localhost:3000')),
+    frontendBaseUrl,
+    trustProxy: envBoolean('TRUST_PROXY', false),
+    corsOrigins: [...new Set([
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        frontendBaseUrl,
+        ...envOrigins('CORS_ORIGINS'),
+    ])],
     disableEmailSending: envBoolean('DISABLE_EMAIL_SENDING', true),
     developerFeedbackEmail: envString('DEVELOPER_FEEDBACK_EMAIL', ''),
     cloudinary: {

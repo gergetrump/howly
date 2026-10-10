@@ -21,21 +21,24 @@ import notificationRoutes from './features/notifications/notification.routes.js'
 import { handleStripeWebhook } from './payment/payment.controller.js';
 import paymentRoutes from './payment/payment.routes.js';
 import { applySecurityMiddleware, rejectUnsafeRequestKeys } from './security/security.middleware.js';
+import config from '../config.js';
 
 // Build an Express app instance for both server and tests.
 export default function createApp() {
     const app = express();
 
+    if (config.trustProxy) {
+        app.set('trust proxy', 1);
+    }
+
     applySecurityMiddleware(app);
 
+    const allowedOrigins = new Set(config.corsOrigins);
+
     app.use((req, res, next) => {
-        const allowedOrigins = new Set([
-            'http://localhost:5173',
-            'http://127.0.0.1:5173',
-        ]);
         const origin = req.headers.origin;
 
-        if (allowedOrigins.has(origin)) {
+        if (origin && allowedOrigins.has(origin)) {
             res.setHeader('Access-Control-Allow-Origin', origin);
         }
 
@@ -59,6 +62,10 @@ export default function createApp() {
 
     app.get('/', (req, res) => {
         res.send('Backend is running');
+    });
+
+    app.get('/api/health', (req, res) => {
+        res.json({ ok: true });
     });
 
     app.use('/api/habits', habitRoutes);

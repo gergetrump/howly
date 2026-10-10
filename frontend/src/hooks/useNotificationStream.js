@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
+import { notificationStreamUrl } from '../../config.js';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? '';
 const RECONNECT_DELAY_MS = 3_000;
 
 /**
@@ -31,7 +31,7 @@ export function useNotificationStream(onNotification, enabled = true) {
     function connect() {
       if (!active) return;
 
-      es = new EventSource(`${BASE_URL}/api/notifications/stream?token=${encodeURIComponent(token)}`);
+      es = new EventSource(notificationStreamUrl(token));
 
       es.addEventListener('notification', (event) => {
         try {

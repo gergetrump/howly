@@ -86,3 +86,35 @@ test('security middleware can guard multipart fields after upload parsing', asyn
             assert.equal(response.body.code, 'SECURITY_INVALID_REQUEST');
         });
 });
+
+test('health check is public and CORS allows the local frontend', async () => {
+    const app = createApp();
+
+    const allowed = await request(app)
+        .get('/api/health')
+        .set('Origin', 'http://localhost:5173')
+        .expect(200);
+
+    assert.equal(allowed.body.ok, true);
+    assert.equal(allowed.headers['access-control-allow-origin'], 'http://localhost:5173');
+
+    const blocked = await request(app)
+        .get('/api/health')
+        .set('Origin', 'https://evil.example')
+        .expect(200);
+
+    assert.equal(blocked.headers['access-control-allow-origin'], undefined);
+});
+
+test('CORS preflight allows the authorization header', async () => {
+    const app = createApp();
+
+    const response = await request(app)
+        .options('/api/auth/login')
+        .set('Origin', 'http://127.0.0.1:5173')
+        .set('Access-Control-Request-Method', 'POST')
+        .expect(204);
+
+    assert.equal(response.headers['access-control-allow-origin'], 'http://127.0.0.1:5173');
+    assert.match(response.headers['access-control-allow-headers'], /Authorization/);
+});
