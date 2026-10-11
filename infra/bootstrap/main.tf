@@ -1,0 +1,105 @@
+# State bucket and lock table for infra/production. Apply this once, then point
+# production at the backend_config output. This root keeps local state on purpose:
+# it is the bucket the other root is stored in.
+
+terraform {
+  required_version = ">= 1.11.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.70"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+
+  default_tags {
+    tags = {
+      Project = "howly"
+      Stack   = "bootstrap"
+    }
+  }
+}
+
+variable "aws_region" {
+  type    = string
+  default = "eu-central-1"
+}
+
+data "aws_caller_identity" "current" {}
+
+resource "aws_s3_bucket" "state" {
+  bucket = "howly-terraform-state-${data.aws_caller_identity.current.account_id}"
+}
+
+resource "aws_s3_bucket_versioning" "state" {
+  bucket = aws_s3_bucket.state.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "state" {
+  bucket = aws_s3_bucket.state.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "state" {
+  bucket = aws_s3_bucket.state.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_policy" "state" {
+  bucket = aws_s3_bucket.state.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "DenyInsecureTransport"
+      Effect    = "Deny"
+      Principal = "*"
+      Action    = "s3:*"
+      Resource = [
+        aws_s3_bucket.state.arn,
+        "${aws_s3_bucket.state.arn}/*",
+      ]
+      Condition = {
+        Bool = { "aws:SecureTransport" = "false" }
+      }
+    }]
+  })
+}
+
+resource "aws_dynamodb_table" "locks" {
+  name         = "howly-terraform-locks"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "LockID"
+
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
+}
+
+output "backend_config" {
+  value = <<-EOT
+    bucket         = "${aws_s3_bucket.state.bucket}"
+    key            = "production/terraform.tfstate"
+    region         = "${var.aws_region}"
+    dynamodb_table = "${aws_dynamodb_table.locks.name}"
+    encrypt        = true
+  EOT
+}

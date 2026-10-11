@@ -26,12 +26,12 @@ resource "aws_subnet" "private" {
 }
 
 resource "aws_eip" "nat" {
-  count  = 2
+  count  = 3
   domain = "vpc"
 }
 
 resource "aws_nat_gateway" "this" {
-  count = 2
+  count = 3
 
   allocation_id = aws_eip.nat[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
@@ -60,8 +60,15 @@ resource "aws_route_table" "private" {
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.this[min(count.index, 1)].id
+    nat_gateway_id = aws_nat_gateway.this[count.index].id
   }
+
+  route {
+    cidr_block                = aws_vpc.standby.cidr_block
+    vpc_peering_connection_id = aws_vpc_peering_connection.standby.id
+  }
+
+  depends_on = [aws_vpc_peering_connection_accepter.standby]
 }
 
 resource "aws_route_table_association" "private" {
@@ -74,70 +81,124 @@ resource "aws_route_table_association" "private" {
 resource "aws_security_group" "alb" {
   name   = "howly-production-alb"
   vpc_id = aws_vpc.this.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 }
 
 resource "aws_security_group" "api" {
   name   = "howly-production-api"
   vpc_id = aws_vpc.this.id
-
-  ingress {
-    from_port       = 3000
-    to_port         = 3000
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 }
 
 resource "aws_security_group" "mongo" {
   name   = "howly-production-mongo"
   vpc_id = aws_vpc.this.id
+}
 
-  ingress {
-    from_port       = 27017
-    to_port         = 27017
-    protocol        = "tcp"
-    security_groups = [aws_security_group.api.id]
-  }
+resource "aws_vpc_security_group_ingress_rule" "alb_http" {
+  security_group_id = aws_security_group.alb.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "tcp"
+  from_port         = 80
+  to_port           = 80
+}
 
-  ingress {
-    from_port = 27017
-    to_port   = 27017
-    protocol  = "tcp"
-    self      = true
-  }
+resource "aws_vpc_security_group_ingress_rule" "alb_https" {
+  security_group_id = aws_security_group.alb.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+}
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_egress_rule" "alb_to_api" {
+  security_group_id            = aws_security_group.alb.id
+  referenced_security_group_id = aws_security_group.api.id
+  ip_protocol                  = "tcp"
+  from_port                    = 3000
+  to_port                      = 3000
+}
+
+resource "aws_vpc_security_group_ingress_rule" "api_from_alb" {
+  security_group_id            = aws_security_group.api.id
+  referenced_security_group_id = aws_security_group.alb.id
+  ip_protocol                  = "tcp"
+  from_port                    = 3000
+  to_port                      = 3000
+}
+
+resource "aws_vpc_security_group_egress_rule" "api_to_mongo" {
+  security_group_id            = aws_security_group.api.id
+  referenced_security_group_id = aws_security_group.mongo.id
+  ip_protocol                  = "tcp"
+  from_port                    = 27017
+  to_port                      = 27017
+}
+
+resource "aws_vpc_security_group_egress_rule" "api_to_ireland" {
+  for_each = toset(local.standby_private_cidrs)
+
+  security_group_id = aws_security_group.api.id
+  cidr_ipv4         = each.value
+  ip_protocol       = "tcp"
+  from_port         = 27017
+  to_port           = 27017
+}
+
+resource "aws_vpc_security_group_egress_rule" "api_https" {
+  security_group_id = aws_security_group.api.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+}
+
+resource "aws_vpc_security_group_ingress_rule" "mongo_from_api" {
+  security_group_id            = aws_security_group.mongo.id
+  referenced_security_group_id = aws_security_group.api.id
+  ip_protocol                  = "tcp"
+  from_port                    = 27017
+  to_port                      = 27017
+}
+
+resource "aws_vpc_security_group_ingress_rule" "mongo_self" {
+  security_group_id            = aws_security_group.mongo.id
+  referenced_security_group_id = aws_security_group.mongo.id
+  ip_protocol                  = "tcp"
+  from_port                    = 27017
+  to_port                      = 27017
+}
+
+resource "aws_vpc_security_group_ingress_rule" "mongo_from_ireland" {
+  for_each = toset(local.standby_private_cidrs)
+
+  security_group_id = aws_security_group.mongo.id
+  cidr_ipv4         = each.value
+  ip_protocol       = "tcp"
+  from_port         = 27017
+  to_port           = 27017
+}
+
+resource "aws_vpc_security_group_egress_rule" "mongo_self" {
+  security_group_id            = aws_security_group.mongo.id
+  referenced_security_group_id = aws_security_group.mongo.id
+  ip_protocol                  = "tcp"
+  from_port                    = 27017
+  to_port                      = 27017
+}
+
+resource "aws_vpc_security_group_egress_rule" "mongo_to_ireland" {
+  for_each = toset(local.standby_private_cidrs)
+
+  security_group_id = aws_security_group.mongo.id
+  cidr_ipv4         = each.value
+  ip_protocol       = "tcp"
+  from_port         = 27017
+  to_port           = 27017
+}
+
+resource "aws_vpc_security_group_egress_rule" "mongo_https" {
+  security_group_id = aws_security_group.mongo.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
 }

@@ -116,9 +116,11 @@ cd backend && npm test
 
 ## Deploy
 
-People use one HTTPS site. That site serves the built React app and proxies `/api` and `/uploads` to the API. Run **one** API instance. The daily streak job lives in that process and would run twice if you scale it out.
+People use one HTTPS site. That site serves the built React app and proxies `/api` and `/uploads` to the API.
 
-Two Terraform roots live in `infra/`. Apply `infra/minimal`. Leave `infra/production` unapplied.
+Local Docker and `infra/minimal` run one API process, and that process runs the streak jobs. Production does not. The production API sets `RUN_SCHEDULERS=false`, and EventBridge runs the daily job and the reminder job as separate tasks. A MongoDB lease makes a second run in the same period a no-op.
+
+Two Terraform roots live in `infra/`. Apply `infra/minimal`. Leave `infra/production` unapplied until you intend to pay for it.
 
 ### Minimal stack
 
@@ -136,7 +138,17 @@ The reviewer email and password from `terraform.tfvars` are shown on the landing
 
 ### Production design
 
-`infra/production` is the international layout: three availability zones, private subnets, CloudFront, an Application Load Balancer, one Fargate task, a three-member MongoDB replica set, and a warm standby region. Check it with `terraform validate`. Planning it requires `-var confirm_production_apply=apply-production` because an apply would start the bill.
+`infra/production` is the multi-region layout. Frankfurt runs the site: three availability zones, a NAT gateway in each zone, private subnets, CloudFront, an Application Load Balancer, two Fargate tasks, and a three-member MongoDB replica set. Ireland holds a hidden, non-voting member of that set, delayed by an hour, plus disk backups. A person starts `howly-restore-standby`. On the default path that document disables the Frankfurt streak schedules, stops streak tasks that are already running, and scales the Frankfurt API to zero before it will promote. It also refuses when Ireland is further behind than `failover_max_lag_seconds`, then checks a canary write. If the scale-down does not finish, it puts the API count and the schedules back. `allowUnfencedPromotion=true` skips the fence for a region that no longer answers, and that path can roll back committed writes. DNS stays on Frankfurt until you apply `standby_restore_confirmed=restored`, `standby_desired_count` of at least 1, and `enable_region_failover=true`. That apply leaves the Frankfurt API at zero and its streak schedules disabled.
+
+`infra/bootstrap` creates the state bucket and lock table. Check the design without that backend:
+
+```bash
+cd infra/production
+terraform init -backend=false
+terraform validate
+```
+
+A plan needs `-backend-config` from the bootstrap output, `-var confirm_production_apply=apply-production`, a real `api_image_tag`, a JWT secret of at least 32 characters, and `mongo_image_digest` for the `mongo:7` image mirrored into the `howly-mongo` repository. An apply starts the bill: NAT gateways, two load balancers, Fargate, interface endpoints, and four database instances.
 
 ### Local production compose
 

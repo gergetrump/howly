@@ -82,6 +82,7 @@ const config = {
     serverBaseUrl: normalizeOrigin(envString('SERVER_BASE_URL', 'http://localhost:3000')),
     frontendBaseUrl,
     trustProxy: envBoolean('TRUST_PROXY', false),
+    runSchedulers: envBoolean('RUN_SCHEDULERS', true),
     corsOrigins: [...new Set([
         'http://localhost:5173',
         'http://127.0.0.1:5173',

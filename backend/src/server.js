@@ -21,7 +21,11 @@ const PORT = config.port || 3000;
 connectDB()
   .then(() => {
     console.log('Database initialization successful');
-    startSchedulers();
+    if (config.runSchedulers) {
+        startSchedulers();
+    } else {
+        console.log('[cron] streak schedulers run as separate tasks');
+    }
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server listening on port ${PORT}`);
     });

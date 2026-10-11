@@ -1,0 +1,5 @@
+bucket         = "howly-terraform-state-ACCOUNT_ID"
+key            = "production/terraform.tfstate"
+region         = "eu-central-1"
+dynamodb_table = "howly-terraform-locks"
+encrypt        = true
