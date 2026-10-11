@@ -10,6 +10,7 @@
     "test": "node --test",
     "seed:taxonomy": "node scripts/seed-taxonomy.js",
     "backfill:taxonomy": "node scripts/backfill-taxonomy.js",
+    "seed:reviewer": "node scripts/seed-reviewer.js",
     "seed:demo-users": "node scripts/seed-demo-users.js",
     "tick:demo-users": "node scripts/tick-demo-users.js",
     "clean:demo-users": "node scripts/clean-demo-users.js"

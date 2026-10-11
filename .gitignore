@@ -16,6 +16,15 @@ npm-debug.log*
 *.swp
 *.swo
 
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+override.tf
+override.tf.json
+
 backend/uploads/**
 !backend/uploads/profile-pictures/
 !backend/uploads/profile-pictures/default.png

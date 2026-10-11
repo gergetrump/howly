@@ -1,0 +1,7 @@
+aws_region      = "eu-central-1"
+domain_name     = "howly.example.com"
+acme_email      = "you@example.com"
+reviewer_email  = "reviewer@example.com"
+reviewer_password = "replace-with-8-or-more"
+smtp_username   = "unset"
+smtp_password   = "unset"

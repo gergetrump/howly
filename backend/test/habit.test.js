@@ -77,6 +77,7 @@ test('habits CRUD operations work correctly', async () => {
     .set('Authorization', token)
     .send({
       title: 'Morning Run',
+      description: 'A short run to start the day.',
       type: 'boolean',
       frequency: 'Daily',
       category: 'Movement',
@@ -139,6 +140,7 @@ test('habit check-in and uncheck-in updates streaks correctly', async () => {
     .set('Authorization', token)
     .send({
       title: 'Drink Water',
+      description: 'Two litres across the day.',
       type: 'numeric',
       target: 2,
       unit: 'L',
@@ -233,6 +235,7 @@ test('habit create and update ignore client-supplied internal fields', async () 
       .set('Authorization', token)
       .send({
         title: 'Gym',
+        description: 'A training session.',
         type: 'boolean',
         frequency: 'Daily',
         streakCount: 9999,
@@ -317,7 +320,7 @@ test('habit title update is moderated', async () => {
     const created = await request(app)
       .post('/api/habits')
       .set('Authorization', token)
-      .send({ title: 'Gym', type: 'boolean', frequency: 'Daily' })
+      .send({ title: 'Gym', description: 'A training session.', type: 'boolean', frequency: 'Daily' })
       .expect(201);
 
     moderationResult.flagged = true;
@@ -398,8 +401,8 @@ test('habit creation validates numeric target, custom weekdays, and icon size', 
     await post({ title: 'Gym', type: 'boolean', frequency: 'Custom', customDays: [2.5] }).expect(400);
     await post({ title: 'Gym', type: 'boolean', frequency: 'Daily', icon: 'x'.repeat(100) }).expect(400);
 
-    await post({ title: 'Pushups', type: 'numeric', target: 20, frequency: 'Daily' }).expect(201);
-    await post({ title: 'Gym', type: 'boolean', frequency: 'Custom', customDays: [1, 3, 5] }).expect(201);
+    await post({ title: 'Pushups', description: 'Strength work.', type: 'numeric', target: 20, frequency: 'Daily' }).expect(201);
+    await post({ title: 'Gym', description: 'A training session.', type: 'boolean', frequency: 'Custom', customDays: [1, 3, 5] }).expect(201);
   } finally {
     config.moderation.apiKey = savedKey;
   }
@@ -500,7 +503,7 @@ test('overall streak revoke ignores soft-deleted habits', async () => {
     await request(app)
       .post('/api/habits')
       .set('Authorization', token)
-      .send({ title: 'Alternate day walk', type: 'boolean', frequency: 'Custom', customDays: [otherDay] })
+      .send({ title: 'Alternate day walk', description: 'A walk on the off days.', type: 'boolean', frequency: 'Custom', customDays: [otherDay] })
       .expect(201);
 
     const refreshed = await User.findById(user._id).select('streak');
@@ -525,6 +528,7 @@ test('completing all due habits clears the overall streak repair deadline', asyn
     .set('Authorization', token)
     .send({
       title: 'Read',
+      description: 'Read a few pages.',
       type: 'boolean',
       frequency: 'Daily',
       category: 'Movement',
@@ -582,6 +586,7 @@ test('habit boost can be bought, used from inventory, and grants bonus coins for
     .set('Authorization', token)
     .send({
       title: 'Read',
+      description: 'Read a few pages.',
       type: 'boolean',
       frequency: 'Daily',
       category: 'Productivity',
@@ -827,6 +832,7 @@ test('habit custom frequency stores customDays properly', async () => {
     .set('Authorization', token)
     .send({
       title: 'Custom Workout',
+      description: 'Training on selected days.',
       type: 'boolean',
       frequency: 'Custom',
       customDays: [1, 3, 5], // Mon, Wed, Fri
@@ -848,6 +854,7 @@ test('free users can create multiple habits', async () => {
       .set('Authorization', token)
       .send({
         title: `Free Habit ${index}`,
+        description: 'A daily practice.',
         type: 'boolean',
         frequency: 'Daily',
         category: 'Movement',
@@ -866,6 +873,7 @@ test('premium users can create habits without hitting the plan limit', async () 
       .set('Authorization', token)
       .send({
         title: `Premium Habit ${index}`,
+        description: 'A daily practice.',
         type: 'boolean',
         frequency: 'Daily',
         category: 'Movement',
@@ -935,6 +943,7 @@ test('POST /api/habits applies taxonomy from canonicalHabitKey when provided', a
     .set('Authorization', token)
     .send({
       title: 'Morning Run',
+      description: 'A short run to start the day.',
       type: 'numeric',
       target: 1,
       unit: 'times',

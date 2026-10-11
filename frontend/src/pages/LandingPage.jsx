@@ -51,6 +51,27 @@ const FEATURES = [
 /*  Feature Card                                                       */
 /* ------------------------------------------------------------------ */
 
+function ReviewerLogin() {
+    const email = import.meta.env.VITE_REVIEWER_EMAIL;
+    const password = import.meta.env.VITE_REVIEWER_PASSWORD;
+
+    if (!email || !password) {
+        return null;
+    }
+
+    return (
+        <div className="max-w-md rounded-2xl border border-theme-text/15 bg-theme-surface/60 px-4 py-3 text-sm text-theme-text-muted">
+            <p className="font-medium text-theme-text">Reviewer login</p>
+            <p className="mt-1">
+                Email <span className="text-theme-text">{email}</span>
+            </p>
+            <p>
+                Password <span className="text-theme-text">{password}</span>
+            </p>
+        </div>
+    );
+}
+
 function FeatureCard({ icon: Icon, iconColor, iconBg, title, description }) {
     return (
         <Card
@@ -147,6 +168,7 @@ export function LandingPage() {
                             <Link to="/register">Let&apos;s get started</Link>
                         </Button>
                     </div>
+                    <ReviewerLogin />
 
                 </div>
 

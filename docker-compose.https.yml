@@ -1,0 +1,35 @@
+# Used on the public EC2 host together with docker-compose.prod.yml.
+# Caddy terminates HTTPS. The site container is only reached through Caddy.
+services:
+  frontend:
+    ports: !override
+      - "127.0.0.1:8080:80"
+    build:
+      args:
+        VITE_REVIEWER_EMAIL: ${REVIEWER_EMAIL:-}
+        VITE_REVIEWER_PASSWORD: ${REVIEWER_PASSWORD:-}
+
+  backend:
+    environment:
+      REVIEWER_EMAIL: ${REVIEWER_EMAIL:-}
+      REVIEWER_PASSWORD: ${REVIEWER_PASSWORD:-}
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Set SITE_ADDRESS to the public hostname}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL for certificate registration}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
+volumes:
+  caddy_data:
+  caddy_config:

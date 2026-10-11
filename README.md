@@ -116,40 +116,35 @@ cd backend && npm test
 
 ## Deploy
 
-People use one HTTPS site. That site serves the built React app and proxies `/api` and `/uploads` to the API, so the browser stays on one origin. Run **one** API instance. The daily streak job lives in that process and would run twice if you scale it out.
+People use one HTTPS site. That site serves the built React app and proxies `/api` and `/uploads` to the API. Run **one** API instance. The daily streak job lives in that process and would run twice if you scale it out.
 
-Before anyone can sign up:
+Two Terraform roots live in `infra/`. Apply `infra/minimal`. Leave `infra/production` unapplied.
 
-- MongoDB is reachable (`MONGO_URI`).
-- `JWT_SECRET` is a unique random value, at least 32 characters (`openssl rand -hex 32`). Production refuses the placeholder secret.
-- Email works. Set `DISABLE_EMAIL_SENDING=false` and fill in `SMTP_*`. Login rejects unverified accounts, and a failed verification email deletes the new user.
-- `SERVER_BASE_URL` and `FRONTEND_BASE_URL` are both the public `https://` URL of the site. Verification links and default avatars are opened in the browser, so they use that URL.
+### Minimal stack
 
-Stripe, Cloudinary, and OpenRouter can stay empty. Premium checkout, photo uploads, and AI coaching stay off until those keys exist.
-
-### One machine
+`infra/minimal` is one small EC2 instance, an Elastic IP, ports 80 and 443, SES, and Session Manager. MongoDB runs in Docker on that instance. Copy `infra/minimal/terraform.tfvars.example` to `terraform.tfvars`, then:
 
 ```bash
-cp backend/.env.example backend/.env
-# set JWT_SECRET, SMTP_*, and DISABLE_EMAIL_SENDING=false
+cd infra/minimal
+terraform init
+terraform apply
+```
 
-cp .env.example .env
-# set PUBLIC_URL=https://howly.example.com and HTTP_PORT=80
+The domain already uses the Route 53 zone created when it was registered, and Terraform adds the site records there. GitHub Actions deploys `main` after tests pass once these repository variables exist: `AWS_DEPLOY_ROLE_ARN`, `AWS_REGION`, and `AWS_INSTANCE_ID`. They are the Terraform outputs. Create SES SMTP credentials after the domain verifies, put them in `smtp_username` and `smtp_password`, and apply again.
 
+The reviewer email and password from `terraform.tfvars` are shown on the landing page and can log in without a verification mail.
+
+### Production design
+
+`infra/production` is the international layout: three availability zones, private subnets, CloudFront, an Application Load Balancer, one Fargate task, a three-member MongoDB replica set, and a warm standby region. Check it with `terraform validate`. Planning it requires `-var confirm_production_apply=apply-production` because an apply would start the bill.
+
+### Local production compose
+
+```bash
 docker compose -f docker-compose.prod.yml up --build -d
 ```
 
-Without a domain, leave `PUBLIC_URL` unset and open http://localhost:8080. Put Caddy, nginx, or the host's load balancer in front before sharing the site. MongoDB stays on the private Docker network.
-
-### Render
-
-`render.yaml` defines a private API and the public site. In the Render dashboard, choose **New → Blueprint** and point it at this repo. You will be asked for an Atlas `MONGO_URI` and SMTP settings. Render generates `JWT_SECRET` and wires the site URL and the private API address.
-
-Use an instance that stays awake. A sleeping free instance drops the notification stream. Keep the API at one instance.
-
-After the first deploy, register on the `onrender.com` URL and confirm the verification email. For a custom domain, point DNS at the `howly` service, then set `SERVER_BASE_URL` and `FRONTEND_BASE_URL` on the API to `https://your-domain`. Stripe webhooks, once you enable them, go to `https://your-domain/api/payments/webhook`.
-
-To host the site and API on different public origins instead, build the frontend with `VITE_API_BASE_URL=https://api.example.com/api` and add that site origin to `CORS_ORIGINS`.
+Open http://localhost:8080. `docker-compose.https.yml` adds Caddy and is what the EC2 host runs.
 
 ## Environment
 

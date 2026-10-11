@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Test the API
+        working-directory: backend
+        run: |
+          npm ci
+          npm test
+
+      - name: Build the site
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: /api
+        run: |
+          npm ci
+          npm run build
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AWS_DEPLOY_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy the minimal instance
+        run: |
+          command_id="$(aws ssm send-command \
+            --instance-ids "${{ vars.AWS_INSTANCE_ID }}" \
+            --document-name AWS-RunShellScript \
+            --comment "Deploy Howly" \
+            --parameters '{"commands":["bash /opt/howly/app/deploy/bootstrap.sh"]}' \
+            --query Command.CommandId \
+            --output text)"
+          aws ssm wait command-executed \
+            --command-id "$command_id" \
+            --instance-id "${{ vars.AWS_INSTANCE_ID }}"

@@ -1,0 +1,35 @@
+#!/bin/bash
+set -euo pipefail
+
+dnf install -y docker git
+systemctl enable --now docker
+
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+fi
+
+arch="$(uname -m)"
+case "$arch" in
+  aarch64) compose_arch="aarch64" ;;
+  x86_64) compose_arch="x86_64" ;;
+  *) echo "Unsupported architecture: $arch" >&2; exit 1 ;;
+esac
+
+mkdir -p /usr/libexec/docker/cli-plugins
+curl -fsSL -o /usr/libexec/docker/cli-plugins/docker-compose \
+  "https://github.com/docker/compose/releases/download/v2.32.4/docker-compose-linux-$${compose_arch}"
+chmod +x /usr/libexec/docker/cli-plugins/docker-compose
+
+install -d -m 755 /opt/howly
+cat > /etc/howly.env <<EOF
+REPO_URL='${repo_url}'
+GIT_REF='${git_ref}'
+AWS_REGION='${aws_region}'
+PARAMETER_PREFIX='${parameter_prefix}'
+EOF
+
+git clone --depth 1 --branch '${git_ref}' '${repo_url}' /opt/howly/app
+bash /opt/howly/app/deploy/bootstrap.sh

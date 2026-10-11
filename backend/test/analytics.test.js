@@ -67,6 +67,7 @@ test('GET /api/analytics/habits returns weekly habit completion and timing analy
         .set('Authorization', token)
         .send({
             title: 'Read',
+            description: 'Read a few pages.',
             type: 'boolean',
             frequency: 'Daily',
             category: 'Productivity',
@@ -78,6 +79,7 @@ test('GET /api/analytics/habits returns weekly habit completion and timing analy
         .set('Authorization', token)
         .send({
             title: 'Run',
+            description: 'A short run.',
             type: 'boolean',
             frequency: 'Daily',
             category: 'Movement',

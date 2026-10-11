@@ -292,7 +292,12 @@ export function getBoostPurchaseMonthKey(date = new Date()) {
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
+let boostPurchaseLimitReady = null;
+
 async function incrementMonthlyBoostPurchaseCount({ userId, assetKey, date = new Date() }) {
+    boostPurchaseLimitReady ??= BoostPurchaseLimit.init();
+    await boostPurchaseLimitReady;
+
     const monthKey = getBoostPurchaseMonthKey(date);
 
     try {
