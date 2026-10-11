@@ -1,20 +1,16 @@
 <p align="center">
-  <img src="docs/howly.png" alt="Howly companion" width="96" />
+  <img src="frontend/src/assets/wolf.svg" alt="Howly companion" width="160" />
 </p>
 
 # Howly
 
 **A gamified, social habit tracker in the browser.** Log a day in one click, run challenges with friends, and keep a cosmic companion that grows with your streak.
 
-Built as a university team project for [SEBA](https://www.cit.tum.de/) at the Technical University of Munich.
-
-<p align="center">
-  <img src="docs/architecture.svg" alt="Howly architecture: React frontend, Express API, MongoDB, and optional Stripe, Cloudinary, OpenRouter, and SMTP services" />
-</p>
+The live site is **[howlyhabit.com](https://howlyhabit.com)**.
 
 ## Why this project
 
-Howly is a full-stack product, not a tutorial clone. It covers the hard parts of a real consumer app: auth, payments, moderation, realtime notifications, and a shop economy on top of daily habit tracking.
+Howly is a habit tracker with the rest of a consumer product attached: accounts, friends and stories, shared challenges, a shop, Stripe subscriptions, realtime notifications, and moderation on what people post.
 
 ## Features
 
@@ -70,7 +66,6 @@ howly/
 ├── docker-compose.yml       # local development
 ├── docker-compose.prod.yml  # public deployment
 ├── render.yaml
-├── docs/
 └── README.md
 ```
 
@@ -116,15 +111,15 @@ cd backend && npm test
 
 ## Deploy
 
-People use one HTTPS site. That site serves the built React app and proxies `/api` and `/uploads` to the API.
+[howlyhabit.com](https://howlyhabit.com) is the public site. It serves the built React app and proxies `/api` and `/uploads` to the API.
 
-Local Docker and `infra/minimal` run one API process, and that process runs the streak jobs. Production does not. The production API sets `RUN_SCHEDULERS=false`, and EventBridge runs the daily job and the reminder job as separate tasks. A MongoDB lease makes a second run in the same period a no-op.
+That site is `infra/minimal`: one EC2 instance, and the API process on it also runs the streak jobs. The production design does not. There the API sets `RUN_SCHEDULERS=false`, and EventBridge runs the daily job and the reminder job as separate tasks. A MongoDB lease makes a second run in the same period a no-op.
 
-Two Terraform roots live in `infra/`. Apply `infra/minimal`. Leave `infra/production` unapplied until you intend to pay for it.
+Leave `infra/production` unapplied until you intend to pay for it.
 
 ### Minimal stack
 
-`infra/minimal` is one small EC2 instance, an Elastic IP, ports 80 and 443, SES, and Session Manager. MongoDB runs in Docker on that instance. Copy `infra/minimal/terraform.tfvars.example` to `terraform.tfvars`, then:
+This is what [howlyhabit.com](https://howlyhabit.com) runs. One small EC2 instance, an Elastic IP, ports 80 and 443, SES, and Session Manager. MongoDB runs in Docker on that instance. Copy `infra/minimal/terraform.tfvars.example` to `terraform.tfvars`, then:
 
 ```bash
 cd infra/minimal
@@ -132,9 +127,9 @@ terraform init
 terraform apply
 ```
 
-The domain already uses the Route 53 zone created when it was registered, and Terraform adds the site records there. GitHub Actions deploys `main` after tests pass once these repository variables exist: `AWS_DEPLOY_ROLE_ARN`, `AWS_REGION`, and `AWS_INSTANCE_ID`. They are the Terraform outputs. Create SES SMTP credentials after the domain verifies, put them in `smtp_username` and `smtp_password`, and apply again.
+howlyhabit.com uses the Route 53 zone from when the domain was registered, and Terraform adds the site records there. GitHub Actions deploys `main` after tests pass once these repository variables exist: `AWS_DEPLOY_ROLE_ARN`, `AWS_REGION`, and `AWS_INSTANCE_ID`. They are the Terraform outputs. Create SES SMTP credentials after the domain verifies, put them in `smtp_username` and `smtp_password`, and apply again.
 
-The reviewer email and password from `terraform.tfvars` are shown on the landing page and can log in without a verification mail.
+Set `reviewer_email` and `reviewer_password` in `terraform.tfvars` to seed a demo account. It is shown on the landing page and can log in without a verification email.
 
 ### Production design
 
@@ -180,5 +175,3 @@ Frontend optional: `VITE_API_BASE_URL` (defaults to `http://localhost:3000/api`)
 ## Team
 
 [George Trump](https://github.com/gergetrump), My Nguyen, Abinaya Sivaguru, and Maximilian Mittmann.
-
-Originally developed on GitLab for a TUM SEBA course; this GitHub monorepo is the portfolio snapshot of that work.
