@@ -2,6 +2,8 @@
 # Pull the latest commit on the EC2 host, refresh secrets, and restart the site.
 set -euo pipefail
 
+export HOME="${HOME:-/root}"
+
 if [ ! -f /etc/howly.env ]; then
   echo "Missing /etc/howly.env. This script runs on the minimal EC2 instance."
   exit 1
