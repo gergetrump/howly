@@ -81,6 +81,7 @@ before(async () => {
     config.jwtSecret = 'test-secret';
     mongo = await MongoMemoryServer.create();
     await connectDB(mongo.getUri());
+    await HabitCheckIn.init();
     app = createApp();
 });
 
@@ -151,8 +152,8 @@ test('GET /api/trends/analytics returns anonymous trends aggregates', async () =
         {
             user: userA._id,
             habit: runHabit._id,
-            completedAt: new Date(completedAt.getTime() - 60_000),
-            periodKey: completedAt.toISOString().slice(0, 10),
+            completedAt: new Date(completedAt.getTime() - DAY_IN_MS),
+            periodKey: periodKeyForDate(new Date(completedAt.getTime() - DAY_IN_MS)),
         },
         {
             user: userB._id,
@@ -170,8 +171,8 @@ test('GET /api/trends/analytics returns anonymous trends aggregates', async () =
     assert.equal(response.body.data.period.key, '7d');
     assert.equal(response.body.data.summary.topCategory.categoryKey, 'movement');
     assert.equal(response.body.data.summary.standing.display, 'percent');
-    assert.equal(response.body.data.summary.standing.userCompletionRate, 14);
-    assert.equal(response.body.data.summary.standing.aheadPercent, 0);
+    assert.equal(response.body.data.summary.standing.userCompletionRate, 29);
+    assert.equal(response.body.data.summary.standing.aheadPercent, 50);
     assert.equal(response.body.data.byCategory.length, 2);
     assert.equal(response.body.data.trendingHabits.length, 2);
     assert.equal(response.body.data.trendingHabits[0].canonicalHabitKey, 'run');
@@ -361,8 +362,8 @@ test('GET /api/trends/analytics returns period-over-period category trends', asy
         {
             user: user._id,
             habit: runHabit._id,
-            completedAt: new Date(completedAt.getTime() - 60_000),
-            periodKey: completedAt.toISOString().slice(0, 10),
+            completedAt: new Date(completedAt.getTime() - DAY_IN_MS),
+            periodKey: periodKeyForDate(new Date(completedAt.getTime() - DAY_IN_MS)),
         },
     ]);
 
