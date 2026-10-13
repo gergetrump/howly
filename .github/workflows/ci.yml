@@ -22,7 +22,14 @@ jobs:
         working-directory: backend
         run: |
           npm ci
-          npm test
+          test_log="${RUNNER_TEMP}/howly-api-tests.log"
+          if npm test -- --test-reporter=spec > "$test_log" 2>&1; then
+            cat "$test_log"
+          else
+            cat "$test_log"
+            python3 -c 'import pathlib, sys; text = pathlib.Path(sys.argv[1]).read_text(); details = text.split("✖ failing tests:")[-1][-12000:]; print("::error::" + details.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"))' "$test_log"
+            exit 1
+          fi
 
       - name: Build the site
         working-directory: frontend
