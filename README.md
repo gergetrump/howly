@@ -127,7 +127,7 @@ terraform init
 terraform apply
 ```
 
-howlyhabit.com uses the Route 53 zone from when the domain was registered, and Terraform adds the site records there. GitHub Actions deploys `main` after tests pass once these repository variables exist: `AWS_DEPLOY_ROLE_ARN`, `AWS_REGION`, and `AWS_INSTANCE_ID`. They are the Terraform outputs. Create SES SMTP credentials after the domain verifies, put them in `smtp_username` and `smtp_password`, and apply again.
+howlyhabit.com uses the Route 53 zone from when the domain was registered, and Terraform adds the site records there. GitHub Actions deploys `main` after tests pass once these repository variables exist: `AWS_DEPLOY_ROLE_ARN`, `AWS_REGION`, and `AWS_INSTANCE_ID`. They are the Terraform outputs. Terraform creates the SES SMTP user. While the SES account is in the sandbox, the SMTP parameters stay unset and the site does not send mail. After Amazon grants production access, apply this stack again and redeploy.
 
 Set `reviewer_email` and `reviewer_password` in `terraform.tfvars` to seed a demo account. It is shown on the landing page and can log in without a verification email.
 

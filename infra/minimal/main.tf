@@ -123,6 +123,11 @@ resource "aws_iam_role_policy" "parameters" {
             "kms:ViaService" = "ssm.${var.aws_region}.amazonaws.com"
           }
         }
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["ses:GetAccount"]
+        Resource = "*"
       }
     ]
   })
@@ -139,8 +144,11 @@ resource "random_password" "jwt" {
 }
 
 locals {
-  parameter_prefix = "/howly"
-  public_url       = "https://${var.domain_name}"
+  parameter_prefix      = "/howly"
+  public_url            = "https://${var.domain_name}"
+  ses_production_access = data.external.ses_account.result.production_access == "true"
+  smtp_username         = local.ses_production_access ? aws_iam_access_key.ses_smtp.id : "unset"
+  smtp_password         = local.ses_production_access ? sensitive(data.external.ses_smtp_password.result.password) : "unset"
 }
 
 resource "aws_ssm_parameter" "public_url" {
@@ -167,16 +175,55 @@ resource "aws_ssm_parameter" "jwt_secret" {
   value = random_password.jwt.result
 }
 
+resource "aws_iam_user" "ses_smtp" {
+  name = "howly-ses-smtp"
+}
+
+resource "aws_iam_user_policy" "ses_smtp" {
+  name = "howly-ses-send"
+  user = aws_iam_user.ses_smtp.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["ses:SendRawEmail"]
+      Resource = "*"
+    }]
+  })
+}
+
+resource "aws_iam_access_key" "ses_smtp" {
+  user = aws_iam_user.ses_smtp.name
+}
+
+data "external" "ses_smtp_password" {
+  program = ["python3", "${path.module}/ses_smtp_password.py"]
+
+  query = {
+    secret = aws_iam_access_key.ses_smtp.secret
+    region = var.aws_region
+  }
+}
+
+data "external" "ses_account" {
+  program = ["python3", "${path.module}/ses_account_status.py"]
+
+  query = {
+    region = var.aws_region
+  }
+}
+
 resource "aws_ssm_parameter" "smtp_username" {
   name  = "${local.parameter_prefix}/smtp_username"
   type  = "SecureString"
-  value = var.smtp_username
+  value = local.smtp_username
 }
 
 resource "aws_ssm_parameter" "smtp_password" {
   name  = "${local.parameter_prefix}/smtp_password"
   type  = "SecureString"
-  value = var.smtp_password
+  value = local.smtp_password
 }
 
 resource "aws_ssm_parameter" "smtp_from" {

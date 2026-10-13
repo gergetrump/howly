@@ -47,14 +47,3 @@ variable "reviewer_password" {
   type      = string
   sensitive = true
 }
-
-variable "smtp_username" {
-  type    = string
-  default = "unset"
-}
-
-variable "smtp_password" {
-  type      = string
-  default   = "unset"
-  sensitive = true
-}

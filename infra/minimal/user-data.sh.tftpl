@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-export HOME="${HOME:-/root}"
+export HOME="$${HOME:-/root}"
 
 dnf install -y docker git
 systemctl enable --now docker

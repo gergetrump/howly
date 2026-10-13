@@ -44,7 +44,11 @@ smtp_from="$(fetch_param smtp_from)"
 reviewer_email="$(blank_if_unset "$(fetch_param reviewer_email)")"
 reviewer_password="$(blank_if_unset "$(fetch_param reviewer_password)")"
 
-if [ -n "$smtp_username" ] && [ -n "$smtp_password" ]; then
+# Sandbox SES rejects mail to addresses that are not verified, and registration
+# deletes the new account when that send fails. Leave mail off until Amazon
+# grants production access.
+production_access="$(aws sesv2 get-account --region "$AWS_REGION" --query ProductionAccessEnabled --output text 2>/dev/null || true)"
+if [ -n "$smtp_username" ] && [ -n "$smtp_password" ] && [ "$production_access" = "True" ]; then
   disable_email=false
 else
   disable_email=true
