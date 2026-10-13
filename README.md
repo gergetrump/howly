@@ -127,9 +127,11 @@ terraform init
 terraform apply
 ```
 
-howlyhabit.com uses the Route 53 zone from when the domain was registered, and Terraform adds the site records there. GitHub Actions deploys `main` after tests pass once these repository variables exist: `AWS_DEPLOY_ROLE_ARN`, `AWS_REGION`, and `AWS_INSTANCE_ID`. They are the Terraform outputs. Terraform creates the SES SMTP user. While the SES account is in the sandbox, the SMTP parameters stay unset and the site does not send mail. After Amazon grants production access, apply this stack again and redeploy.
+howlyhabit.com uses the Route 53 zone from when the domain was registered, and Terraform adds the site records there. GitHub Actions deploys `main` after tests pass once these repository variables exist: `AWS_DEPLOY_ROLE_ARN`, `AWS_REGION`, and `AWS_INSTANCE_ID`. They are the Terraform outputs. Terraform creates the SES SMTP user. The sender defaults to `yourhowlyteam@gmail.com` (`sender_email`); after applying, open that inbox and confirm the SES verification link before enabling mail. While the SES account is in the sandbox, the SMTP parameters stay unset and the site does not send mail. After Amazon grants production access, apply this stack again and redeploy.
 
 Set `reviewer_email` and `reviewer_password` in `terraform.tfvars` to seed a demo account. It is shown on the landing page and can log in without a verification email.
+
+To send directly through `yourhowlyteam@gmail.com` while SES approval is pending, enable Google 2-Step Verification and create an app password for Howly. In AWS Systems Manager Parameter Store in Frankfurt, create `/howly/gmail_app_password` as a `SecureString` using the default encryption key, with the app password as its value. Keep it out of Git and chat. Redeploy after the bootstrap changes reach `main`; deployment selects Gmail SMTP and enables email whenever this secret is present. Gmail has sending limits, so this is suitable for initial use. Delete that parameter to return to SES on the next deployment. Verify the deployed configuration by registering an account, receiving the confirmation email, and logging in after verification.
 
 ### Production design
 

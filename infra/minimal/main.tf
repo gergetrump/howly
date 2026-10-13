@@ -229,7 +229,11 @@ resource "aws_ssm_parameter" "smtp_password" {
 resource "aws_ssm_parameter" "smtp_from" {
   name  = "${local.parameter_prefix}/smtp_from"
   type  = "SecureString"
-  value = "Howly <noreply@${var.domain_name}>"
+  value = "Howly <${var.sender_email}>"
+}
+
+resource "aws_ses_email_identity" "sender" {
+  email = var.sender_email
 }
 
 resource "aws_ssm_parameter" "reviewer_email" {

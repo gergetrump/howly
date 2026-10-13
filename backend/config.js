@@ -101,7 +101,7 @@ const config = {
         port: envNumber('SMTP_PORT', 587),
         user: envString('SMTP_USER'),
         pass: envString('SMTP_PASS'),
-        from: envString('SMTP_FROM', 'Howly <noreply@localhost>'),
+        from: envString('SMTP_FROM', 'Howly <yourhowlyteam@gmail.com>'),
     },
     stripe: {
         secretKey: envString('STRIPE_SECRET_KEY'),

@@ -13,6 +13,12 @@ variable "acme_email" {
   description = "Email Let's Encrypt uses for the certificate."
 }
 
+variable "sender_email" {
+  type        = string
+  default     = "yourhowlyteam@gmail.com"
+  description = "Howly sender address. Confirm the SES verification email sent to this inbox after applying."
+}
+
 variable "github_repository" {
   type    = string
   default = "gergetrump/howly"

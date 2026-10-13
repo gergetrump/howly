@@ -424,11 +424,13 @@ test('milestone reaction updates make read notifications unread again', async ()
 
   assert.equal(unreadAfterChangedReaction.body.unreadCount, 1);
 
+  // Each habit/streak pair has one milestone; use a separate habit for this case.
+  const premiumHabit = await buildHabit(author, { title: 'Walking', streakCount: 10 });
   const premiumMilestonePost = await MilestonePost.create({
     user: author._id,
-    habit: habit._id,
-    habitTitle: habit.title,
-    streakDays: habit.streakCount,
+    habit: premiumHabit._id,
+    habitTitle: premiumHabit.title,
+    streakDays: premiumHabit.streakCount,
   });
 
   await request(app)

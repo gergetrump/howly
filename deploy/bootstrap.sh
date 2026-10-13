@@ -44,14 +44,26 @@ smtp_from="$(fetch_param smtp_from)"
 reviewer_email="$(blank_if_unset "$(fetch_param reviewer_email)")"
 reviewer_password="$(blank_if_unset "$(fetch_param reviewer_password)")"
 
-# Sandbox SES rejects mail to addresses that are not verified, and registration
-# deletes the new account when that send fails. Leave mail off until Amazon
-# grants production access.
-production_access="$(aws sesv2 get-account --region "$AWS_REGION" --query ProductionAccessEnabled --output text 2>/dev/null || true)"
-if [ -n "$smtp_username" ] && [ -n "$smtp_password" ] && [ "$production_access" = "True" ]; then
+# This optional secret is managed in Parameter Store, outside Terraform state.
+gmail_app_password="$(blank_if_unset "$(fetch_param gmail_app_password 2>/dev/null || true)")"
+gmail_app_password="${gmail_app_password//[[:space:]]/}"
+smtp_host="email-smtp.${AWS_REGION}.amazonaws.com"
+
+# Gmail can send independently of SES. Without a Gmail secret, keep SES mail
+# off until production access: sandbox rejection causes registration to fail.
+if [ -n "$gmail_app_password" ]; then
+  smtp_host=smtp.gmail.com
+  smtp_username=yourhowlyteam@gmail.com
+  smtp_password="$gmail_app_password"
+  smtp_from="Howly <yourhowlyteam@gmail.com>"
   disable_email=false
 else
-  disable_email=true
+  production_access="$(aws sesv2 get-account --region "$AWS_REGION" --query ProductionAccessEnabled --output text 2>/dev/null || true)"
+  if [ -n "$smtp_username" ] && [ -n "$smtp_password" ] && [ "$production_access" = "True" ]; then
+    disable_email=false
+  else
+    disable_email=true
+  fi
 fi
 
 umask 077
@@ -64,7 +76,7 @@ JWT_SECRET=${jwt_secret}
 SERVER_BASE_URL=${public_url}
 FRONTEND_BASE_URL=${public_url}
 DISABLE_EMAIL_SENDING=${disable_email}
-SMTP_HOST=email-smtp.${AWS_REGION}.amazonaws.com
+SMTP_HOST=${smtp_host}
 SMTP_PORT=587
 SMTP_USER=${smtp_username}
 SMTP_PASS=${smtp_password}
@@ -88,6 +100,7 @@ compose up -d --build
 
 for _ in $(seq 1 30); do
   if compose exec -T backend node -e "fetch('http://127.0.0.1:3000/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"; then
+    compose exec -T backend node scripts/check-mail.js
     compose exec -T backend node scripts/seed-reviewer.js
     exit 0
   fi

@@ -51,7 +51,7 @@ jobs:
             --instance-ids "${{ vars.AWS_INSTANCE_ID }}" \
             --document-name AWS-RunShellScript \
             --comment "Deploy Howly" \
-            --parameters '{"commands":["bash /opt/howly/app/deploy/bootstrap.sh"]}' \
+            --parameters '{"commands":["set -e","git -c safe.directory=/opt/howly/app -C /opt/howly/app fetch origin main","git -c safe.directory=/opt/howly/app -C /opt/howly/app show origin/main:deploy/bootstrap.sh > /tmp/howly-bootstrap.sh","bash /tmp/howly-bootstrap.sh"]}' \
             --query Command.CommandId \
             --output text)"
           aws ssm wait command-executed \
